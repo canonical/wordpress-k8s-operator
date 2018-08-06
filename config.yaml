@@ -1,0 +1,24 @@
+options:
+  image:
+    type: string
+    description: "The docker image to install"
+    default: "prod-is.docker-registry.canonical.com/portal:trunk-1085"
+
+  container_config:
+    type: string
+    descrption: >
+      YAML formatted map of container config keys & values. This is
+      mode error prone than splitting things into separate config
+      items, but requires more maintenance of the charm.
+    default: |
+      PORTAL_HOSTNAME=portal2.admin.canonical.com
+      DEBUG=True
+      
+  container_secrets:
+    type: string
+    description: >
+      YAML formatted map of secrets. Drop this in favor of sane secret
+      management.
+    default: |
+      SECRET_KEY=secret
+      PAGERDUTY_API_KEY=secret

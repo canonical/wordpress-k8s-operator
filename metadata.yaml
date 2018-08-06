@@ -1,0 +1,12 @@
+name: "portal-caas"  
+summary: "CAAS charm to deploy canonical-is-portal"
+description: "Descriptions are mandatory"
+maintainers:
+  - "Us"
+series:
+  - kubernetes
+    
+# Most Django apps will need a PostgreSQL database relation or two.
+# requires:
+#   db:
+#     interface: pgsql

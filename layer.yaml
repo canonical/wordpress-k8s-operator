@@ -1,0 +1,10 @@
+includes:
+  - 'layer:caas-base'
+
+  # Most Django charms will need a PostgreSQL relation.
+  # - 'interface:pgsql'
+
+  # We do *not* need docker-resource, as we want to pull images from
+  # our registry rather than uploading them to the controller as Juju
+  # resources.
+  # - 'layer:docker-resource'

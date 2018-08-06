@@ -5,6 +5,18 @@ juju bootstrap --no-gui localhost lxd \
 # Install microk8s
 sudo snap install microk8s
 
+# Block external access, cause it is open by default
+sudo ufw deny in on wlo1 from any port 8080
+
+# Enable DNS (is this required?)
+microk8s.enable dns
+
+# Probably want the dashboard too
+microk8s.enable dashboard
+kubectl get svc -n kube-system  # report the address & port
+kubectl get secret -n kube-system | grep kubernetes-dashboard # location of token
+kubectl describe secret kubernetes-dashboard-token-bp8dt -n kube-system # the token
+
 # Attach the microk8s cluster to Juju, which will show up as a cloud per juju list-clouds
 # Note that microk8s.config massages the config in a necessary way
 microk8s.config | juju add-k8s microk8s --cluster-name=microk8s-cluster
@@ -18,3 +30,12 @@ charm build -o $JUJU_REPOSITORY
 
 # Deploy the charm
 juju deploy $JUJU_REPOSITORY/builds/portal-caas
+
+# 'juju debug-log' doesn't work, so use kubectl to see the unit logs:
+kubectl logs pod/juju-operator-portal-caas -n modelname
+
+# Set the layer config
+juju config portal-caas juju-external-hostname=192.168.1.39.xip.io
+
+# Expose
+juju expose portal-caas

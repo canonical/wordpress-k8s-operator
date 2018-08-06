@@ -2,7 +2,7 @@ options:
   image:
     type: string
     description: "The docker image to install"
-    default: "prod-is.docker-registry.canonical.com/portal:trunk-1085"
+    default: "prod-is.docker-registry.canonical.com/portal:trunk-1086"
 
   container_config:
     type: string
@@ -11,8 +11,20 @@ options:
       mode error prone than splitting things into separate config
       items, but requires more maintenance of the charm.
     default: |
-      PORTAL_HOSTNAME=portal2.admin.canonical.com
-      DEBUG=True
+      PORTAL_HOSTNAME: portal2.admin.canonical.com
+      DJANGO_DEBUG: "True"
+      PLINTH_CA: notsecret
+      PLINTH_CERT: notsecret
+      PORTAL_DB_NAME: notsecret
+      PORTAL_DB_USERNAME: notsecret
+      PORTAL_DB_PORT: "5432"
+      CRT_DB_NAME: notsecret
+      CRT_DB_USERNAME: notsecret
+      CRT_DB_PASSWORD: "5432"
+      URT_DB_NAME: notsecret
+      URT_DB_USERNAME: notsecret
+      URT_DB_PASSWORD: "5432"
+      SALESFORCE_USERNAME: notsecret
       
   container_secrets:
     type: string
@@ -20,5 +32,10 @@ options:
       YAML formatted map of secrets. Drop this in favor of sane secret
       management.
     default: |
-      SECRET_KEY=secret
-      PAGERDUTY_API_KEY=secret
+      SECRET_KEY: secret
+      PAGERDUTY_API_KEY: secret
+      PLINTH_KEY: secret
+      PORTAL_DB_PASSWORD: secret
+      URT_DB_PASSWORD: secret
+      SALESFORCE_PASSWORD: secret
+      SALESFORCE_SPI_KEY: secret

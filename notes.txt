@@ -5,8 +5,13 @@ juju bootstrap --no-gui localhost lxd \
 # Install microk8s
 sudo snap install microk8s
 
-# Block external access, cause it is open by default
-sudo ufw deny in on wlo1 from any port 8080
+# Block external access to port 8080, cause it is open by default.
+# But allow lxd containers and k8s pods to talk.
+ufw enable
+sudo ufw allow in on cbr0
+sudo ufw allow out on cbr0
+sudo ufw default allow routed
+
 
 # Enable DNS (is this required?)
 microk8s.enable dns
@@ -18,9 +23,11 @@ kubectl get secret -n kube-system | grep kubernetes-dashboard # location of toke
 kubectl describe secret kubernetes-dashboard-token-bp8dt -n kube-system # the token
 
 # Attach the microk8s cluster to Juju, which will show up as a cloud per juju list-clouds
-# Note that microk8s.config massages the config in a necessary way
+# Note that microk8s.config massages the config in a necessary way; don't get the config
+# directly from kubectl or ~/.kubestuff files
 microk8s.config | juju add-k8s microk8s --cluster-name=microk8s-cluster
-## kubectl config view --raw | juju add-k8s microk8s --cluster-name=microk8s-cluster
+juju show-cloud microk8s  # should show non-loopback IP address
+
 
 # Create a model on the newly created microk8s cloud
 juju add-model modelname microk8s
@@ -31,8 +38,13 @@ charm build -o $JUJU_REPOSITORY
 # Deploy the charm
 juju deploy $JUJU_REPOSITORY/builds/portal-caas
 
-# 'juju debug-log' doesn't work, so use kubectl to see the unit logs:
+# 'juju debug-log' doesn't work, so use kubectl to see the unit logs.
+# Need to wait on the pod to exist before it works:
+kubectl get all --all-namespaces
 kubectl logs pod/juju-operator-portal-caas -n modelname
+
+
+## Untested ##
 
 # Set the layer config
 juju config portal-caas juju-external-hostname=192.168.1.39.xip.io

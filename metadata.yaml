@@ -5,8 +5,12 @@ maintainers:
   - "Us"
 series:
   - kubernetes
+resources:
+  image:
+    type: oci-image
+    description: Docker image, needs 'charm attach'.
     
 # Most Django apps will need a PostgreSQL database relation or two.
-# requires:
-#   db:
-#     interface: pgsql
+requires:
+  db:
+    interface: pgsql

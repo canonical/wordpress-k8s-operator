@@ -1,7 +1,7 @@
 from pprint import pprint
 import yaml
 
-from charms.layer import caas_base
+from charms.layer import caas_base, status
 from charms import reactive
 from charms.reactive import hook, when_not
 from charmhelpers.core import hookenv
@@ -20,35 +20,45 @@ def upgrade_charm():
 
 @when_not('container.configured')
 # @when('db.master.available') Portal is not using relations to its databases, but it could be.
-def create_container():
-    image = hookenv.config()['image']
-    hookenv.status_set('maintenance', 'configuring {}'.format(image))
+def config_container():
+    status.maintenance('configuring container')
+    spec = make_pod_spec()
+    if caas_base.pod_spec_set(spec):
+        reactive.set_flag('container.configured')
+    else:
+        status.blocked('k8s spec deployment failed. Check logs with kubectl')
 
+
+def make_pod_spec():
     config = yaml.safe_load(hookenv.config()['container_config'])
-
-    print("Config:\n")
-    pprint(config)
-    secrets = yaml.safe_load(hookenv.config()['container_secrets'])
-
-    for k, v in secrets.items():
-        config[k] = v
 
     # http://interface-pgsql.readthedocs.io on the PostgreSQL interface
     # ep = reactive.endpoint_from_flag('db.master.available')
     # conn_str = ep.master
     # dbname, host, port = ep.dbname, ep.host, ep.port
 
+    # Grab the details from resource-get.
+    image_details_path = hookenv.resource_get("image")
+    if not image_details_path:
+        raise Exception("unable to retrieve image details")
+
+    with open(image_details_path, "r") as f:
+        image_details = yaml.safe_load(f)
+
+    docker_image_path = image_details['registrypath']
+    docker_image_username = image_details['username']
+    docker_image_password = image_details['password']
+
     spec = {
         'containers': [
             {
                 'name': hookenv.charm_name(),
-                'image': image,
                 'imageDetails': {
-                    'imagePath': image,
-                    # 'username': 'username',
-                    # 'password': 'password',
+                    'imagePath': docker_image_path,
+                    'username': docker_image_username,
+                    'password': docker_image_password,
                 },
-                'ports': [{'name': 'the_port_name', 'containerPort': 80}],
+                'ports': [{'name': 'django_http', 'containerPort': 80, 'protocol': 'TCP'}],
                 'config': config,
                 # 'files': [
                 #     {
@@ -64,16 +74,19 @@ def create_container():
     }
     print("\nSpec:\n")
     pprint(spec)
-    if caas_base.pod_spec_set(spec):
-        reactive.set_flag('container.configured')
-        hookenv.status_set('maintenance', 'launching {}'.format(image))
-    else:
-        hookenv.status_set('blocked', 'k8s spec deployment failed. Check logs with kubectl')
+
+    # Add secrets, now spec logged. TODO: Use real secret management, rather than charm config.
+    secrets = yaml.safe_load(hookenv.config()['container_secrets'])
+    for k, v in secrets.items():
+        config[k] = v
+    spec['containers'][0]['config'] = config
+
+    return spec
 
 
 # @when_not('db.connected')
 # def db_not_connected():
-#     hookenv.status_set('blocked', 'charm requires a PostgreSQL relation')
+#     status.blocked('charm requires a PostgreSQL relation')
 #
 #
 # @when('db.connected')

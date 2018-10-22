@@ -8,8 +8,8 @@ options:
     type: string
     descrption: >
       YAML formatted map of container config keys & values. This is
-      mode error prone than splitting things into separate config
-      items, but requires more maintenance of the charm.
+      mode error prone to use than using individual config items, but
+      means less charm maintenance.
     default: |
       PORTAL_HOSTNAME: portal2.admin.canonical.com
       DJANGO_DEBUG: "True"
@@ -20,10 +20,10 @@ options:
       PORTAL_DB_PORT: "5432"
       CRT_DB_NAME: notsecret
       CRT_DB_USERNAME: notsecret
-      CRT_DB_PASSWORD: "5432"
+      CRT_DB_PORT: "5432"
       URT_DB_NAME: notsecret
       URT_DB_USERNAME: notsecret
-      URT_DB_PASSWORD: "5432"
+      URT_DB_PORT: "5432"
       SALESFORCE_USERNAME: notsecret
       
   container_secrets:

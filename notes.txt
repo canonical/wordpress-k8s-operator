@@ -1,22 +1,38 @@
+# Information now buried in Discourse threads: https://discourse.jujucharms.com/c/kubernetes
+
+
+# You need Juju 2.5 and charm-tools from edge (2.5)
+sudo snap refresh juju --edge --classic  # Already classic
+sudo snap refresh charm --edge --classic  # Switching to classic
+
+# And docker, here snap although it is no longer maintained
+sudo snap install docker
+sudo snap connect docker:home
+sudo chmod 666 /var/run/docker.sock
+docker login prod-is.docker-registry.canonical.com
+
+
 # Bootstrap a juju controller, or switch to one you want to use
 juju bootstrap --no-gui localhost lxd \
     --config automatically-retry-hooks=false --config apt-http-proxy=http://10.0.4.1:3142/
 
 # Install microk8s
-sudo snap install microk8s
+sudo snap install microk8s --classic  --edge
+sudo snap alias microk8s.kubectl kubectl
 
 # Block external access to port 8080, cause it is open by default.
 # But allow lxd containers and k8s pods to talk.
-ufw enable
-sudo ufw allow in on cbr0
-sudo ufw allow out on cbr0
-sudo ufw default allow routed
+# TODO: Work this out after getting the basics working.
+#sudo ufw enable
+#sudo ufw allow in on cbr0
+#sudo ufw allow out on cbr0
+#sudo ufw default allow routed
 
 
-# Enable DNS (is this required?)
-microk8s.enable dns
+# Enable DNS & Storage (no idea, but recommended by Juju notes):
+microk8s.enable dns storage
 
-# Probably want the dashboard too
+# Want the dashboard too?
 microk8s.enable dashboard
 kubectl get svc -n kube-system  # report the address & port
 kubectl get secret -n kube-system | grep kubernetes-dashboard # location of token
@@ -25,12 +41,12 @@ kubectl describe secret kubernetes-dashboard-token-bp8dt -n kube-system # the to
 # Attach the microk8s cluster to Juju, which will show up as a cloud per juju list-clouds
 # Note that microk8s.config massages the config in a necessary way; don't get the config
 # directly from kubectl or ~/.kubestuff files
-microk8s.config | juju add-k8s microk8s --cluster-name=microk8s-cluster
+microk8s.config | juju add-k8s microk8s  --cluster-name=microk8s-cluster
 juju show-cloud microk8s  # should show non-loopback IP address
 
-
-# Create a model on the newly created microk8s cloud
+# Create a model on the newly created microk8s cloud. And the required storage pool with the magic name
 juju add-model modelname microk8s
+juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
 
 # Build the charm
 charm build -o $JUJU_REPOSITORY
@@ -41,7 +57,7 @@ juju deploy $JUJU_REPOSITORY/builds/portal-caas
 # 'juju debug-log' doesn't work, so use kubectl to see the unit logs.
 # Need to wait on the pod to exist before it works:
 kubectl get all --all-namespaces
-kubectl logs pod/juju-operator-portal-caas -n modelname
+kubectl logs pod/juju-operator-portal-caas-0 -n modelname
 
 
 ## Untested ##

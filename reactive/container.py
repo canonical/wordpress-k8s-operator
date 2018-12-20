@@ -25,41 +25,32 @@ def config_container():
     spec = make_pod_spec()
     if caas_base.pod_spec_set(spec):
         reactive.set_flag('container.configured')
+        status.active('pods active')
     else:
         status.blocked('k8s spec deployment failed. Check logs with kubectl')
 
 
 def make_pod_spec():
-    config = yaml.safe_load(hookenv.config()['container_config'])
+    config = hookenv.config()
+    container_config = yaml.safe_load(config['container_config'])
 
     # http://interface-pgsql.readthedocs.io on the PostgreSQL interface
     # ep = reactive.endpoint_from_flag('db.master.available')
     # conn_str = ep.master
     # dbname, host, port = ep.dbname, ep.host, ep.port
 
-    # Grab the details from resource-get.
-    image_details_path = hookenv.resource_get("image")
-    if not image_details_path:
-        raise Exception("unable to retrieve image details")
+    ports = [
+        {'name': name, 'containerPort': int(port), 'protocol': 'TCP'} for name, port in [
+            addr.split(':', 1) for addr in config['ports'].split()]]
 
-    with open(image_details_path, "r") as f:
-        image_details = yaml.safe_load(f)
-
-    docker_image_path = image_details['registrypath']
-    docker_image_username = image_details['username']
-    docker_image_password = image_details['password']
-
+    # PodSpec v1? https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#podspec-v1-core
     spec = {
         'containers': [
             {
                 'name': hookenv.charm_name(),
-                'imageDetails': {
-                    'imagePath': docker_image_path,
-                    'username': docker_image_username,
-                    'password': docker_image_password,
-                },
-                'ports': [{'name': 'django_http', 'containerPort': 80, 'protocol': 'TCP'}],
-                'config': config,
+                'image': config['image'],
+                'ports': ports,
+                'config': container_config,
                 # 'files': [
                 #     {
                 #         'name': 'configs',
@@ -76,12 +67,34 @@ def make_pod_spec():
     pprint(spec)
 
     # Add secrets, now spec logged. TODO: Use real secret management, rather than charm config.
-    secrets = yaml.safe_load(hookenv.config()['container_secrets'])
+    secrets = yaml.safe_load(config['container_secrets'])
     for k, v in secrets.items():
-        config[k] = v
-    spec['containers'][0]['config'] = config
+        container_config[k] = v
 
     return spec
+
+
+def resource_image_details(spec):
+    """Add image retrieval stanza for images attached as a Juju oci-image resource.
+
+    This is not being used, and just here for reference.
+    """
+    # Grab the details from resource-get.
+    image_details_path = hookenv.resource_get("image")
+    if not image_details_path:
+        raise Exception("unable to retrieve image details")
+
+    with open(image_details_path, "r") as f:
+        image_details = yaml.safe_load(f)
+
+    docker_image_path = image_details['registrypath']
+    docker_image_username = image_details['username']
+    docker_image_password = image_details['password']
+    spec['imageDetails'] = {
+        'imagePath': docker_image_path,
+        'username': docker_image_username,
+        'password': docker_image_password,
+    },
 
 
 # @when_not('db.connected')

@@ -5,10 +5,18 @@ maintainers:
   - "Us"
 series:
   - kubernetes
-resources:
-  image:
-    type: oci-image
-    description: Docker image, needs 'charm attach'.
+    
+# This is how we would declare the image if we want to attach it as a
+# juju resource. This is helpful if you are publishing to the charm
+# store and wish to tie the published charm to a particular image
+# revision. But for IS use cases, it seems better to specify the
+# image address as charm config, or hardcode or introspect the
+# registry to specify an image by tag. 
+#
+# resources:
+#   image:
+#     type: oci-image
+#     description: Docker image, needs 'charm attach' or 'juju deploy --resource'.
     
 # Most Django apps will need a PostgreSQL database relation or two.
 requires:

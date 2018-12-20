@@ -1,6 +1,8 @@
 includes:
   - 'layer:caas-base'
-  - 'layer:docker-resource'
+    
+  # Don't need this, as we are not using resources.
+  # - 'layer:docker-resource'
 
   # Most Django charms will need a PostgreSQL relation.
   - 'interface:pgsql'

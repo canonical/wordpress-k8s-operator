@@ -1,8 +1,8 @@
-name: "portal-caas"  
-summary: "CAAS charm to deploy canonical-is-portal"
-description: "Descriptions are mandatory"
+name: "generik8s"  
+summary: "Generic k8s image deployment charm"
+description: "Deploy an arbitrary container image to k8s"
 maintainers:
-  - "Us"
+  - launchpad.net/~canonical-is-delta
 series:
   - kubernetes
     
@@ -20,5 +20,5 @@ series:
     
 # Most Django apps will need a PostgreSQL database relation or two.
 requires:
-  db:
+  postgres:
     interface: pgsql

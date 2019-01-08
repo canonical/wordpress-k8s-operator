@@ -4,5 +4,5 @@ includes:
   # Don't need this, as we are not using resources.
   # - 'layer:docker-resource'
 
-  # Most Django charms will need a PostgreSQL relation.
   - 'interface:pgsql'
+repo: git+ssh://git.launchpad.net/generik8s-charm

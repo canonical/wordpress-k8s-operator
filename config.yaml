@@ -1,47 +1,27 @@
 options:
   image:
     type: string
-    description: "The docker image to install"
-    # default: "prod-is.docker-registry.canonical.com/portal:trunk-1086"
-    default: "localhost:32000/directory:trunk-r107"
+    description: "The docker image to install. Required."
+    default: ""
 
   ports:
     type: string
-    description: "Ports to expose, space separated list in name:8000 format. Names are alphanumeric + hyphen"
-    default: "wsgi:32001 http:32002 stats:32003"
+    description: > 
+      Ports to expose, space separated list in name:8000 format. Names are alphanumeric + hyphen.
+      eg. "wsgi:32001 http:32002 stats:32003"
+    default: ""
 
   container_config:
     type: string
-    descrption: >
-      YAML formatted map of container config keys & values. This is
-      mode error prone to use than using individual config items, but
-      means less charm maintenance.
+    description: >
+      YAML formatted map of container config keys & values. These are
+      generally accessed from inside the image as environment variables.
+      PostgreSQL connection details are available using ${PGHOST},
+      ${PGPORT}, ${PGDATABASE} & ${PGUSER} placeholders. ${PGPASSWORD}
+      and ${PGURI} may be specified in container_secrets.
     default: |
-      DIRECTORY_HOSTNAME: directory.somehost
       DJANGO_DEBUG: true
-      DIRECTORY_DB_HOST: directory.localhost
-      DIRECTORY_DB_NAME: directory
-      DIRECTORY_DB_PORT: 5432
-      DIRECTORY_DB_USERNAME: postgres
-      DIRECTORY_LDAP_SERVER: localhost
-      DIRECTORY_LDAP_BIND_USER: localhost
 
-
-      # PORTAL_HOSTNAME: portal2.admin.canonical.com
-      # DJANGO_DEBUG: "True"
-      # PLINTH_CA: notsecret
-      # PLINTH_CERT: notsecret
-      # PORTAL_DB_NAME: notsecret
-      # PORTAL_DB_USERNAME: notsecret
-      # PORTAL_DB_PORT: "5432"
-      # CRT_DB_NAME: notsecret
-      # CRT_DB_USERNAME: notsecret
-      # CRT_DB_PORT: "5432"
-      # URT_DB_NAME: notsecret
-      # URT_DB_USERNAME: notsecret
-      # URT_DB_PORT: "5432"
-      # SALESFORCE_USERNAME: notsecret
-      
   container_secrets:
     type: string
     description: >
@@ -49,14 +29,22 @@ options:
       management.
     default: |
       SECRET_KEY: secret
-      DIRECTORY_DB_PASSWORD: secret
-      DIRECTORY_LDAP_BIND_PASSWORD: secret
 
+  pgdatabase:
+    type: string
+    description: PostgreSQL database name to request. Optional. 
+    default: ""
 
-      # SECRET_KEY: secret
-      # PAGERDUTY_API_KEY: secret
-      # PLINTH_KEY: secret
-      # PORTAL_DB_PASSWORD: secret
-      # URT_DB_PASSWORD: secret
-      # SALESFORCE_PASSWORD: secret
-      # SALESFORCE_SPI_KEY: secret
+  pgextensions:
+    type: string
+    description: >
+      Comma separated list of PostgreSQL extensions to install into
+      the database. Optional.
+    default: ""
+
+  pgroles:
+    type: string
+    description: >
+      Comma separated list of PostgreSQL roles to grant the PostgreSQL
+      user. Optional.
+    default: ""

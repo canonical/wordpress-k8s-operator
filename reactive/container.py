@@ -6,7 +6,7 @@ import yaml
 
 from charms.layer import caas_base, status
 from charms import reactive
-from charms.reactive import hook, when, when_any, when_none, tracer
+from charms.reactive import hook, when, when_any, when_none, trace
 from charmhelpers.core import hookenv
 
 
@@ -69,6 +69,8 @@ def setup_postgres():
 def config_container():
     status.maintenance('configuring container')
     spec = make_pod_spec()
+    if spec is None:
+        return  # status already set
     if caas_base.pod_spec_set(spec):
         reactive.set_flag('container.configured')
         status.active('pods active')
@@ -79,9 +81,11 @@ def config_container():
 def postgres_required():
     '''True if container config contains ${PGHOST} style vars'''
     c = full_container_config()
+    if c is None:
+        return False
     p = re.compile(r'\$\{?PG\w+\}?', re.I)
-    for k, v in c:
-        if p.search(v) is not None:
+    for k, v in c.items():
+        if p.search(str(v)) is not None:
             return True
     return False
 
@@ -89,19 +93,31 @@ def postgres_required():
 def sanitized_container_config():
     '''Uninterpolated container config without secrets'''
     config = hookenv.config()
-    return yaml.safe_load(config['container_config'])
+    container_config = yaml.safe_load(config['container_config'])
+    if not isinstance(container_config, dict):
+        status.blocked('container_config is not a YAML mapping')
+        return None
+    return container_config
 
 
 def full_container_config():
     '''Uninterpolated ontainer config with secrets'''
     config = hookenv.config()
-    container_config = yaml.safe_load(config['container_config'])
-    container_config.update(yaml.safe_load(config['container_secrets']))
+    container_config = sanitized_container_config()
+    if container_config is None:
+        return None
+    container_secrets = yaml.safe_load(config['container_secrets'])
+    if not isinstance(container_secrets, dict):
+        status.blocked('container_secrets is not a YAML mapping')
+        return None
+    container_config.update(container_secrets)
     return container_config
 
 
 def interpolate(container_config):
     '''Use string.Template to interpolate supported placeholders'''
+    if container_config is None:
+        return None
     context = {}
     pgsql = reactive.endpoint_from_name('postgres')
     if pgsql is not None and pgsql.master is not None:
@@ -113,15 +129,17 @@ def interpolate(container_config):
         context['PGPASSWORD'] = master.password
         context['PGURI'] = master.uri
     iconfig = {}
-    for k, v in container_config:
+    for k, v in container_config.items():
         t = string.Template(v)
-        iconfig[k] = t.safe_substitute(context)
+        iconfig[str(k)] = t.safe_substitute(context)
     return iconfig
 
 
 def make_pod_spec():
     config = hookenv.config()
     container_config = interpolate(sanitized_container_config())
+    if container_config is None:
+        return  # status already set
 
     ports = [
         {'name': name, 'containerPort': int(port), 'protocol': 'TCP'} for name, port in [
@@ -143,7 +161,10 @@ def make_pod_spec():
     hookenv.log("Container spec (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
     # Add the secrets after logging
-    container_config.update(interpolate(full_container_config()))
+    config_with_secrets = interpolate(full_container_config())
+    if config_with_secrets is None:
+        return None  # status already set
+    container_config.update(config_with_secrets)
 
     return spec
 
@@ -172,4 +193,4 @@ def resource_image_details(spec):
 
 
 # Magic. Add useful flag logging. Remove after next charms.reactive release.
-hookenv.atstart(tracer.install_tracer, tracer.LogTracer())
+hookenv.atstart(trace.install_tracer, trace.LogTracer())

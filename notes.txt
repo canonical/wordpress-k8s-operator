@@ -41,7 +41,7 @@ make docker-build TAG=trunk REGISTRY=localhost:32000  # Using enabled microk8s' 
 charm build -o $JUJU_REPOSITORY
 
 # Deploy the charm
-juju deploy $JUJU_REPOSITORY/builds/portal-caas --config=myconfig.yaml
+juju deploy cs:~stub/generik8s --channel=edge --config=directory-config.yaml  # Or local copy of the charm
 
 # 'juju debug-log' shows the operator pod log, but doesn't show the actual unit pod logs.
 # So use kubectl or the dashboard to see the unit logs.

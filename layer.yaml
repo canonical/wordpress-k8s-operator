@@ -1,5 +1,6 @@
 includes:
   - 'layer:caas-base'
+  - 'layer:status'
     
   # Don't need this, as we are not using resources.
   # - 'layer:docker-resource'

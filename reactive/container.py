@@ -51,7 +51,15 @@ reactive.register_trigger(when='config.changed.pgextensions', clear_flag='contai
 reactive.register_trigger(when='config.changed.pgroles', clear_flag='container.postgres.dbset')
 
 
-@when('postgresql.connected')
+@when('postgres.connected')
+def debug_pg():
+    for relid in hookenv.relation_ids('postgres'):
+        for unit in hookenv.related_units(relid) + [hookenv.local_unit()]:
+            reldata = hookenv.relation_get(unit=unit, rid=relid)
+            hookenv.log("relid: {} unit: {} data: {!r}".format(relid, unit, reldata))
+
+
+@when('postgres.connected')
 @when_none('container.postgres.dbset')
 def setup_postgres():
     pgsql = reactive.endpoint_from_name('postgres')
@@ -101,7 +109,7 @@ def sanitized_container_config():
 
 
 def full_container_config():
-    '''Uninterpolated ontainer config with secrets'''
+    '''Uninterpolated container config with secrets'''
     config = hookenv.config()
     container_config = sanitized_container_config()
     if container_config is None:
@@ -120,17 +128,17 @@ def interpolate(container_config):
         return None
     context = {}
     pgsql = reactive.endpoint_from_name('postgres')
-    if pgsql is not None and pgsql.master is not None:
+    if pgsql is not None and pgsql.master:
         master = pgsql.master
         context['PGHOST'] = master.host
         context['PGDATABASE'] = master.dbname
-        context['PGPORT'] = master.port
+        context['PGPORT'] = str(master.port)
         context['PGUSER'] = master.user
         context['PGPASSWORD'] = master.password
         context['PGURI'] = master.uri
     iconfig = {}
     for k, v in container_config.items():
-        t = string.Template(v)
+        t = string.Template(str(v))
         iconfig[str(k)] = t.safe_substitute(context)
     return iconfig
 

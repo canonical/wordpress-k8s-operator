@@ -14,11 +14,12 @@ sudo snap install microk8s --classic  --channel=edge
 sudo snap alias microk8s.kubectl kubectl  # optional, can use a different alias or none.
 sudo snap alias microk8s.docker docker # again, optional
 
-# Enable required microk8s features
+# Reset microk8s and enable required microk8s features
+microk8s.reset  # clean slate
 microk8s.enable dns storage registry
 
 # Want the dashboard too? You will need it unless you can drive kubectl well.
-microk8s.enable dashboard
+microk8s.enable dns storage registry dashboard
 kubectl get svc -n kube-system  # report the address & port
 kubectl get secret -n kube-system | grep kubernetes-dashboard-token # location of token
 kubectl get secret -n kube-system | grep kubernetes-dashboard-token | cut -f 1 -d ' '| xargs -n 1 kubectl describe secret -n kube-system # the token
@@ -30,7 +31,7 @@ microk8s.config | juju add-k8s microk8s  --cluster-name=microk8s-cluster
 juju show-cloud microk8s  # should show non-loopback IP address
 
 # Create a model on the newly created microk8s cloud. And the required storage pool with the magic name
-juju add-model modelname microk8s
+juju add-model k8smodel microk8s
 juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
 
 # Build a docker image
@@ -46,9 +47,9 @@ juju deploy cs:~stub/generik8s directory --channel=edge --config=directory-confi
 # 'juju debug-log' shows the operator pod log, but doesn't show the actual unit pod logs.
 # So use kubectl or the dashboard to see the unit logs.
 # Need to wait on the pod to exist before it works:
-kubectl get all -n modelname
-kubectl logs pod/juju-operator-portal-caas-0 -n modelname  # The operator pod log
-kubectl logs pod/juju-portal-caas-779b8df687-ndnw8 -n modelname  # A unit pod's log. No obvious mapping of unit# -> name.
+kubectl get all -n k8smodel
+kubectl logs pod/juju-operator-portal-caas-0 -n k8smodel  # The operator pod log
+kubectl logs pod/juju-portal-caas-779b8df687-ndnw8 -n k8smodel  # A unit pod's log. No obvious mapping of unit# -> name.
 
 
 # Offer the charm's PG relation
@@ -57,5 +58,6 @@ juju offer directory:postgres directory-db
 # Consume the charm's PG relation
 juju add-model pg
 juju deploy cs:postgresql
-juju consume lxd:admin/modelname.directory-db  # Failing here, https://bugs.launchpad.net/juju/+bug/1811058
+juju consume lxd:admin/k8smodel.directory-db
+juju add-relation postgresql:db directory-db
 

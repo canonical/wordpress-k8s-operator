@@ -2,6 +2,7 @@ import io
 from pprint import pprint
 import re
 import string
+import subprocess
 import yaml
 
 from charms.layer import caas_base, status
@@ -56,7 +57,30 @@ def debug_pg():
     for relid in hookenv.relation_ids("postgres"):
         for unit in hookenv.related_units(relid) + [hookenv.local_unit()]:
             reldata = hookenv.relation_get(unit=unit, rid=relid)
-            hookenv.log("relid: {} unit: {} data: {!r}".format(relid, unit, reldata))
+            hookenv.log("PostgreSQL relid: {} unit: {} data: {!r}".format(relid, unit, reldata))
+            hookenv.log("ingress == {!r}".format(hookenv.ingress_address(relid, unit)))
+            hookenv.log("egress == {!r}".format(hookenv.egress_subnets(relid, unit)))
+            hookenv.log(
+                "network-get:\n{}".format(subprocess.check_output(["network-get", "--format", "yaml", "-r", relid]))
+            )
+            hookenv.log(
+                "network-get egress:\n{}".format(
+                    subprocess.check_output(["network-get", "--format", "yaml", "-r", relid, "--egress_subnets"])
+                )
+            )
+
+    ep = reactive.endpoint_from_flag("postgres.connected")
+    if ep is None:
+        hookenv.log("No Endpoing found!!")
+        return
+    for i, css in enumerate(ep):
+        hookenv.log("ConnectionStrings {} == {!r}".format(i, css))
+        hookenv.log("Authorized is {}".format(css._authorized()))
+        hookenv.log("Keys == {!r}".format(list(css.keys())))
+        for name, unit in css.relation.joined_units.items():
+            hookenv.log("Found name=={} unit=={}".format(name, unit))
+            hookenv.log("css[{}] == {!r}".format(name, css[name]))
+            hookenv.log("unit master == {!r}".format(name, unit.received_raw.get("master")))
 
 
 @when("postgres.connected")

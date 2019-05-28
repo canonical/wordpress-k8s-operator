@@ -2,15 +2,15 @@
 
 
 # You need Juju 2.5 and charm-tools from edge (2.5)
-sudo snap refresh juju --edge --classic  # Already classic
-sudo snap refresh charm --edge --classic  # Switching to classic
+sudo snap refresh juju --classic  # Already classic
+sudo snap refresh charm --classic  # Switching to classic
 
 # Bootstrap a juju controller, or switch to one you want to use
 juju bootstrap --no-gui localhost lxd \
     --config automatically-retry-hooks=false --config apt-http-proxy=http://10.0.4.1:3142/
 
 # Install microk8s
-sudo snap install microk8s --classic  --channel=edge 
+sudo snap install microk8s --classic
 sudo snap alias microk8s.kubectl kubectl  # optional, can use a different alias or none.
 
 # Install docker, now missing from microk8s 1.14
@@ -20,9 +20,7 @@ su - ${USER}
 
 # Reset microk8s and enable required microk8s features
 microk8s.reset  # clean slate
-microk8s.enable dns dashboard registry
-microk8s.status --wait-ready
-microk8s.enable storage
+microk8s.enable dns dashboard registry storage  # Repeat until it works
 microk8s.status --wait-ready
 
 # Get creds and URL for the dashboard
@@ -37,12 +35,14 @@ microk8s.config | juju add-k8s myk8s
 juju show-cloud myk8s  # should show non-loopback IP address
 
 # Create a model on the newly created microk8s cloud. And the required storage pool with the magic name
+kubectl delete namespace k8smodel
 juju add-model k8smodel myk8s
 juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
 
 # Build a docker image
 cd ~/src/canonical-directory # bzr branch lp:canonical-directory
 make docker-build TAG=trunk REGISTRY=localhost:32000  # Using enabled microk8s' registry on localost:32000
+docker push localhost:32000/directory:trunk-r112
 
 # Build the charm
 charm build -o $JUJU_REPOSITORY
@@ -66,6 +66,6 @@ juju offer directory:postgres directory-db
 # Consume the charm's PG relation
 juju add-model pg localhost
 juju deploy cs:postgresql
-juju consume localhost:admin/k8smodel.directory-db
+juju consume lxd:admin/k8smodel.directory-db
 juju add-relation postgresql:db directory-db
 

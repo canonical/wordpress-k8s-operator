@@ -7,15 +7,12 @@ import yaml
 
 from charms.layer import caas_base, status
 from charms import reactive
-from charms.reactive import hook, when, when_any, when_none, trace
+from charms.reactive import hook, when, when_none, trace
 from charmhelpers.core import hookenv
 
 
 # Run the create_container handler again whenever the config or
 # database relation changes.
-reactive.register_trigger(when="config.changed", clear_flag="container.configured")
-reactive.register_trigger(when="postgres.master.changed", clear_flag="container.configured")
-
 reactive.register_trigger(when="config.changed.container_config", clear_flag="container.no-postgres")
 reactive.register_trigger(when="config.changed.container_secrets", clear_flag="container.no-postgres")
 
@@ -47,40 +44,23 @@ def wait_for_postgres():
     status.waiting("Waiting for postgres relation to complete")
 
 
+@when("postgres.master.changed")
+@when_none("container.no-postgres")
+def pg_reconfig():
+    status.maintenance("PostgreSQL connection details changed")
+    reactive.clear_flag("postgres.master.changed")
+    reactive.clear_flag("container.configured")
+
+
+@when("config.changed")
+def reconfig():
+    status.maintenance("charm configuration changed")
+    reactive.clear_flag("container.configured")
+
+
 reactive.register_trigger(when="config.changed.pgdatabase", clear_flag="container.postgres.dbset")
 reactive.register_trigger(when="config.changed.pgextensions", clear_flag="container.postgres.dbset")
 reactive.register_trigger(when="config.changed.pgroles", clear_flag="container.postgres.dbset")
-
-
-@when("postgres.connected")
-def debug_pg():
-    for relid in hookenv.relation_ids("postgres"):
-        for unit in hookenv.related_units(relid) + [hookenv.local_unit()]:
-            reldata = hookenv.relation_get(unit=unit, rid=relid)
-            hookenv.log("PostgreSQL relid: {} unit: {} data: {!r}".format(relid, unit, reldata))
-            hookenv.log("ingress == {!r}".format(hookenv.ingress_address(relid, unit)))
-            hookenv.log("egress == {!r}".format(hookenv.egress_subnets(relid, unit)))
-            hookenv.log(
-                "network-get:\n{}".format(subprocess.check_output(["network-get", "--format", "yaml", "-r", relid]))
-            )
-            hookenv.log(
-                "network-get egress:\n{}".format(
-                    subprocess.check_output(["network-get", "--format", "yaml", "-r", relid, "--egress_subnets"])
-                )
-            )
-
-    ep = reactive.endpoint_from_flag("postgres.connected")
-    if ep is None:
-        hookenv.log("No Endpoing found!!")
-        return
-    for i, css in enumerate(ep):
-        hookenv.log("ConnectionStrings {} == {!r}".format(i, css))
-        hookenv.log("Authorized is {}".format(css._authorized()))
-        hookenv.log("Keys == {!r}".format(list(css.keys())))
-        for name, unit in css.relation.joined_units.items():
-            hookenv.log("Found name=={} unit=={}".format(name, unit))
-            hookenv.log("css[{}] == {!r}".format(name, css[name]))
-            hookenv.log("unit master == {!r}".format(name, unit.received_raw.get("master")))
 
 
 @when("postgres.connected")
@@ -97,17 +77,21 @@ def setup_postgres():
 
 
 @when_none("container.configured", "config.default.image")
-@when_any("postgres.master.available", "container.no-postgres")
+# We can't block spinning up the pod until we have a working PG
+# connection string, because that isn't going to happen until we
+# publish our egress subnets, and that currently doesn't happen
+# until the pod is spun up. Juju team is looking at this problem,
+# as lp:1830252
+# @when_any("postgres.master.available", "container.no-postgres")
 def config_container():
     status.maintenance("configuring container")
     spec = make_pod_spec()
-    if spec is None:
-        return  # status already set
-    if caas_base.pod_spec_set(spec):
-        reactive.set_flag("container.configured")
-        status.active("pods active")
-    else:
-        status.blocked("k8s spec deployment failed. Check logs with kubectl")
+    if reactive.data_changed("generik8s.spec", spec):
+        if spec is None:
+            return  # status already set
+        caas_base.pod_spec_set(spec)
+    reactive.set_flag("container.configured")
+    # Success or fail? Who knows... its been handed off to k8s and juju will set the unit status.
 
 
 def postgres_required():
@@ -152,14 +136,27 @@ def interpolate(container_config):
         return None
     context = {}
     pgsql = reactive.endpoint_from_name("postgres")
-    if pgsql is not None and pgsql.master:
-        master = pgsql.master
-        context["PGHOST"] = master.host
-        context["PGDATABASE"] = master.dbname
-        context["PGPORT"] = str(master.port)
-        context["PGUSER"] = master.user
-        context["PGPASSWORD"] = master.password
-        context["PGURI"] = master.uri
+    if pgsql is not None:
+        if pgsql.master:
+            master = pgsql.master
+            context["PGHOST"] = master.host
+            context["PGDATABASE"] = master.dbname
+            context["PGPORT"] = str(master.port)
+            context["PGUSER"] = master.user
+            context["PGPASSWORD"] = master.password
+            context["PGURI"] = master.uri
+        else:
+            # We can't block spinning up the pod until we have a working PG
+            # connection string, because that isn't going to happen until we
+            # publish our egress subnets, and that currently doesn't happen
+            # until the pod is spun up. Juju team is looking at this problem,
+            # as lp:1830252
+            context["PGHOST"] = ""
+            context["PGDATABASE"] = ""
+            context["PGPORT"] = ""
+            context["PGUSER"] = ""
+            context["PGPASSWORD"] = ""
+            context["PGURI"] = ""
     iconfig = {}
     for k, v in container_config.items():
         t = string.Template(str(v))
@@ -218,6 +215,37 @@ def resource_image_details(spec):
         "username": docker_image_username,
         "password": docker_image_password,
     }
+
+
+@when("postgres.connected")
+def debug_pg():
+    for relid in hookenv.relation_ids("postgres"):
+        for unit in hookenv.related_units(relid) + [hookenv.local_unit()]:
+            reldata = hookenv.relation_get(unit=unit, rid=relid)
+            hookenv.log("PostgreSQL relid: {} unit: {} data: {!r}".format(relid, unit, reldata))
+            hookenv.log("unit {} ingress == {!r}".format(unit, hookenv.ingress_address(relid, unit)))
+            hookenv.log("unit {} egress == {!r}".format(unit, hookenv.egress_subnets(relid, unit)))
+            try:
+                hookenv.log(
+                    "network-get:\n{}".format(
+                        subprocess.check_output(["network-get", "--format", "yaml", "-r", relid, "postgres"])
+                    )
+                )
+            except subprocess.CalledProcessError as x:
+                hookenv.log("Whoops: {}".format(x))
+
+    ep = reactive.endpoint_from_flag("postgres.connected")
+    if ep is None:
+        hookenv.log("No Endpoing found!!")
+        return
+    for i, css in enumerate(ep):
+        hookenv.log("ConnectionStrings {} == {!r}".format(i, css))
+        hookenv.log("Authorized is {}".format(css._authorized()))
+        hookenv.log("Keys == {!r}".format(list(css.keys())))
+        for name, unit in css.relation.joined_units.items():
+            hookenv.log("Found name=={} unit=={}".format(name, unit))
+            hookenv.log("css[{}] == {!r}".format(name, css[name]))
+            hookenv.log("unit master == {!r}".format(name, unit.received_raw.get("master")))
 
 
 # Magic. Add useful flag logging. Remove after next charms.reactive release.

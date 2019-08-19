@@ -2,7 +2,9 @@ name: "generik8s"
 summary: "Generic k8s image deployment charm"
 description: "Deploy an arbitrary container image to k8s"
 maintainers:
-  - launchpad.net/~canonical-is-delta
+  - launchpad.net/~canonical-is-delta <invalid@example.com>
+tags:
+  - stuff
 series:
   - kubernetes
     

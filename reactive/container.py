@@ -84,14 +84,15 @@ def setup_postgres():
 # as lp:1830252
 # @when_any("postgres.master.available", "container.no-postgres")
 def config_container():
-    status.maintenance("configuring container")
     spec = make_pod_spec()
+    if spec is None:
+        return  # status already set
     if reactive.data_changed("generik8s.spec", spec):
-        if spec is None:
-            return  # status already set
-        caas_base.pod_spec_set(spec)
+        status.maintenance("configuring container")
+        caas_base.pod_spec_set(spec)  # Raises an exception on failure. Might change.
+    else:
+        hookenv.log("No changes to pod spec")
     reactive.set_flag("container.configured")
-    # Success or fail? Who knows... its been handed off to k8s and juju will set the unit status.
 
 
 def postgres_required():

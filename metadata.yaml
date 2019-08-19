@@ -7,11 +7,10 @@ series:
   - kubernetes
     
 # This is how we would declare the image if we want to attach it as a
-# juju resource. This is helpful if you are publishing to the charm
-# store and wish to tie the published charm to a particular image
-# revision. But for IS use cases, it seems better to specify the
-# image address as charm config, or hardcode or introspect the
-# registry to specify an image by tag. 
+# juju resource. We probably want to do this if we need to password
+# protect our registry. Note that the image is not stored on the
+# controller; the only thing the resource contains is the Docker
+# registry path and the authentication token needed to access it.
 #
 # resources:
 #   image:

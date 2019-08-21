@@ -1,25 +1,9 @@
-name: "generik8s"  
-summary: "Generic k8s image deployment charm"
-description: "Deploy an arbitrary container image to k8s"
+name: "wordpress"  
+summary: "Wordpress, using Docker official Wordpress image"
+description: "Wordpress, using Docker official Wordpress image"
 maintainers:
   - launchpad.net/~canonical-is-delta <invalid@example.com>
 tags:
   - stuff
 series:
   - kubernetes
-    
-# This is how we would declare the image if we want to attach it as a
-# juju resource. We probably want to do this if we need to password
-# protect our registry. Note that the image is not stored on the
-# controller; the only thing the resource contains is the Docker
-# registry path and the authentication token needed to access it.
-#
-# resources:
-#   image:
-#     type: oci-image
-#     description: Docker image, needs 'charm attach' or 'juju deploy --resource'.
-    
-# Most Django apps will need a PostgreSQL database relation or two.
-requires:
-  postgres:
-    interface: pgsql

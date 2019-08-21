@@ -1,50 +1,30 @@
 options:
   image:
     type: string
-    description: "The docker image to install. Required."
-    default: ""
-
-  ports:
+    description: "The docker image to install. Required. Defaults to Dockerhub wordpress:php7.3"
+    default: "wordpress:php7.3"
+  db_host:
     type: string
-    description: > 
-      Ports to expose, space separated list in name:8000 format. Names are alphanumeric + hyphen.
-      eg. "wsgi:32001 http:32002 stats:32003"
+    description: "MySQL database host"
+  db_user:
+    type: string
+    description: "MySQL database user"
+    default: "wordpress"
+  db_password:
+    type: string
+    description: "MySQL database user's password"
     default: ""
-
   container_config:
     type: string
     description: >
       YAML formatted map of container config keys & values. These are
       generally accessed from inside the image as environment variables.
-      PostgreSQL connection details are available using ${PGHOST},
-      ${PGPORT}, ${PGDATABASE} & ${PGUSER} placeholders. ${PGPASSWORD}
-      and ${PGURI} may be specified in container_secrets.
-    default: |
-      DJANGO_DEBUG: true
-
+      Use to configure customized Wordpress images. This configuration
+      gets logged; use container_secrets for secrets.
+    default: ""
   container_secrets:
     type: string
     description: >
-      YAML formatted map of secrets. Drop this in favor of sane secret
-      management.
-    default: |
-      SECRET_KEY: secret
-
-  pgdatabase:
-    type: string
-    description: PostgreSQL database name to request. Optional. 
-    default: ""
-
-  pgextensions:
-    type: string
-    description: >
-      Comma separated list of PostgreSQL extensions to install into
-      the database. Optional.
-    default: ""
-
-  pgroles:
-    type: string
-    description: >
-      Comma separated list of PostgreSQL roles to grant the PostgreSQL
-      user. Optional.
+      YAML formatted map of secrets. Works just like container_config,
+      except that values should not be logged.
     default: ""

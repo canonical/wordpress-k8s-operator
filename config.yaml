@@ -3,9 +3,16 @@ options:
     type: string
     description: "The docker image to install. Required. Defaults to Dockerhub wordpress:php7.3"
     default: "wordpress:php7.3"
+  ports:
+    type: string
+    description: >
+       Ports to expose, space separated list in name:8000 format. Names are alphanumeric + hyphen.
+       eg. "http:80 metrics:7127"
+    default: "http:80"
   db_host:
     type: string
     description: "MySQL database host"
+    default: ""
   db_user:
     type: string
     description: "MySQL database user"

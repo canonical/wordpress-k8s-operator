@@ -33,6 +33,7 @@ kubectl get secret -n kube-system | grep kubernetes-dashboard-token | cut -f 1 -
 # directly from kubectl or ~/.kubestuff files
 microk8s.config | juju add-k8s myk8s  
 juju show-cloud myk8s  # should show non-loopback IP address
+juju bootstrap myk8s
 
 # Create a model on the newly created microk8s cloud. And the required storage pool with the magic name
 kubectl delete namespace k8smodel

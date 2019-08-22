@@ -38,7 +38,11 @@ def config_container():
         return  # status already set
     if reactive.data_changed("wordpress.spec", spec):
         status.maintenance("configuring container")
-        caas_base.pod_spec_set(spec)  # Raises an exception on failure. Might change.
+        try:
+            caas_base.pod_spec_set(spec)
+        except Exception:
+            status.blocked("pod_spec_set failed! Check logs and k8s dashboard.")
+            return
     else:
         hookenv.log("No changes to pod spec")
     reactive.set_flag("wordpress.configured")
@@ -83,7 +87,10 @@ def make_pod_spec():
     if container_config is None:
         return  # status already set
 
-    ports = [{"name": "http", "containerPort": 80, "protocol": "TCP"}]
+    ports = [
+        {"name": name, "containerPort": int(port), "protocol": "TCP"}
+        for name, port in [addr.split(":", 1) for addr in config["ports"].split()]
+    ]
 
     # PodSpec v1? https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#podspec-v1-core
     spec = {

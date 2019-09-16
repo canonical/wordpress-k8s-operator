@@ -48,6 +48,11 @@ def config_container():
     reactive.set_flag("wordpress.configured")
 
 
+@when("wordpress.configured")
+def ready():
+    status.active("Ready")
+
+
 def sanitized_container_config():
     """Uninterpolated container config without secrets"""
     config = hookenv.config()

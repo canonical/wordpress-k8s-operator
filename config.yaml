@@ -13,6 +13,10 @@ options:
     type: string
     description: "MySQL database host"
     default: ""
+  db_name:
+    type: string
+    description: "MySQL database name"
+    default: "wordpress"
   db_user:
     type: string
     description: "MySQL database user"

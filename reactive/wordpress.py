@@ -22,7 +22,7 @@ def reconfig():
     valid = True
     config = hookenv.config()
     # Ensure required strings
-    for k in ["image", "db_host", "db_user", "db_password"]:
+    for k in ["image", "db_host", "db_name", "db_user", "db_password"]:
         if config[k].strip() == "":
             status.blocked("{!r} config is required".format(k))
             valid = False
@@ -64,6 +64,7 @@ def sanitized_container_config():
             status.blocked("container_config is not a YAML mapping")
             return None
     container_config["WORDPRESS_DB_HOST"] = config["db_host"]
+    container_config["WORDPRESS_DB_NAME"] = config["db_name"]
     container_config["WORDPRESS_DB_USER"] = config["db_user"]
     return container_config
 

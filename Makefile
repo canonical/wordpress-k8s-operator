@@ -3,4 +3,4 @@ lint:
 	flake8 reactive/
 
 build: lint
-	charm build --no-local-layers
+	charm build

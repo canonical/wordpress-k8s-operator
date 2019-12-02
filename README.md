@@ -11,7 +11,7 @@ attached to a controller using 'juju add-k8s'.
 The image to spin up is specified in the 'image' charm configuration
 option using standard docker notation (eg. 'localhost:32000/mywork-rev42').
 Images must be publicly accessible. Default is the Dockerhub
-`wordpress:php7.3` image
+`wordpress:php7.3` image.
 
 Standard configuration for the Wordpress image is in standard Juju config.
 In particular:
@@ -36,27 +36,19 @@ See config option descriptions in config.yaml.
 
 Notes for deploying a test setup locally using microk8s:
 
-```
-sudo snap install juju --classic
-sudo snap install juju-wait --classic
-sudo snap install microk8s --classic
-sudo snap alias microk8s.kubectl kubectl
+    sudo snap install juju --classic
+    sudo snap install juju-wait --classic
+    sudo snap install microk8s --classic
+    sudo snap alias microk8s.kubectl kubectl
 
-microk8s.reset  # Warning! Clean slate!
-microk8s.enable dns dashboard registry storage
-microk8s.status --wait-ready
-microk8s.config | juju add-k8s myk8s  
-juju bootstrap myk8s
-juju add-model wordpress-test
-juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
-juju deploy cs:~stub/wordpress-k8s --channel=edge wordpress
-juju config wordpress db_host=10.1.1.1 db_user=wp db_password=secret
-juju wait
-juju status # Shows IP address, and port is 80
-```
-
-== Future ==
-
-* mysql relation
-* Add mechanism for images to pull secrets from k8s secret stores.
-* Add heathchecks to container spec (confirm something is listening on the opened ports).
+    microk8s.reset  # Warning! Clean slate!
+    microk8s.enable dns dashboard registry storage
+    microk8s.status --wait-ready
+    microk8s.config | juju add-k8s myk8s
+    juju bootstrap myk8s
+    juju add-model wordpress-test
+    juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
+    juju deploy cs:~stub/wordpress-k8s --channel=edge wordpress
+    juju config wordpress db_host=10.1.1.1 db_user=wp db_password=secret
+    juju wait
+    juju status # Shows IP address, and port is 80

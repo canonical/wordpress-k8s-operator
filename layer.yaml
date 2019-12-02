@@ -1,4 +1,5 @@
 includes:
   - 'layer:caas-base'
+  - 'layer:osm-common'
   - 'layer:status'
 repo: git+ssh://git.launchpad.net/charm-k8s-wordpress

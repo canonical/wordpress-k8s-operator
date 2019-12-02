@@ -1,10 +1,13 @@
-name: "wordpress-k8s"  
-summary: "Wordpress, using Docker official Wordpress image"
-description: "Wordpress, using Docker official Wordpress image"
+name: "wordpress-k8s"
+summary: "Wordpress, uses official Docker Wordpress image by default"
+description: "Wordpress, uses official Docker Wordpress image by default"
 maintainers:
-  - launchpad.net/~canonical-is-delta <invalid@example.com>
+  - https://launchpad.net/~wordpress-charmers <wordpress-charmers@lists.launchpad.net>
 tags:
   - applications
   - blog
 series:
   - kubernetes
+provides:
+  website:
+    interface: http

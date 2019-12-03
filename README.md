@@ -48,7 +48,7 @@ Notes for deploying a test setup locally using microk8s:
     juju bootstrap myk8s
     juju add-model wordpress-test
     juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
-    juju deploy cs:~stub/wordpress-k8s --channel=edge wordpress
+    juju deploy cs:~wordpress-charmers/wordpress-k8s --channel=edge wordpress
     juju config wordpress db_host=10.1.1.1 db_user=wp db_password=secret
     juju wait
     juju status # Shows IP address, and port is 80

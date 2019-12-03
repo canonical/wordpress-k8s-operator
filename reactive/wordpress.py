@@ -157,14 +157,7 @@ def call_wordpress(uri, redirects=True, payload={}):
     service_ip = get_service_ip("website")
     if service_ip:
         headers = {"Host": config["blog_hostname"]}
-        url = urlunparse((
-            'http',
-            service_ip,
-            uri,
-            '',
-            '',
-            ''
-        ))
+        url = urlunparse(("http", service_ip, uri, "", "", ""))
         if payload:
             return requests.post(url, allow_redirects=redirects, headers=headers, data=payload)
         else:
@@ -209,8 +202,8 @@ def is_vhost_ready():
 def get_service_ip(endpoint):
     try:
         info = hookenv.network_get(endpoint, hookenv.relation_id())
-        if 'ingress-addresses' in info:
-            addr = info['ingress-addresses'][0]
+        if "ingress-addresses" in info:
+            addr = info["ingress-addresses"][0]
             if len(addr):
                 return addr
         else:
@@ -254,7 +247,7 @@ def is_pod_up(endpoint):
 
         # Check to see if the pod has been assigned it's internal and
         # external ips
-        for ingress in info['ingress-addresses']:
+        for ingress in info["ingress-addresses"]:
             if len(ingress) == 0:
                 return False
     except Exception:

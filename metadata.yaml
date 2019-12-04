@@ -1,0 +1,13 @@
+name: "wordpress-k8s"
+summary: "Wordpress, uses official Docker Wordpress image by default"
+description: "Wordpress, uses official Docker Wordpress image by default"
+maintainers:
+  - https://launchpad.net/~wordpress-charmers <wordpress-charmers@lists.launchpad.net>
+tags:
+  - applications
+  - blog
+series:
+  - kubernetes
+provides:
+  website:
+    interface: http

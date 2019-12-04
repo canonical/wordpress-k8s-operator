@@ -1,0 +1,7 @@
+requests
+charmhelpers
+charms.reactive
+freezegun
+mock
+pytest
+pytest-cov

@@ -1,6 +1,8 @@
 lint:
-	black -l 120 -t py37 reactive/
-	flake8 reactive/
+	@echo "Normalising python layout with black."
+	@tox -e black
+	@echo "Running flake8"
+	@tox -e lint
 
 unittest:
 	@tox -e unit

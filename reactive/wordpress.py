@@ -14,6 +14,7 @@ from charms.reactive import hook, when, when_not
 
 @hook("upgrade-charm")
 def upgrade_charm():
+    status.maintenance("maintenance", "Upgrading charm")
     reactive.clear_flag("wordpress.configured")
 
 
@@ -136,7 +137,6 @@ def first_install():
         hookenv.log("No initial_setting provided or wordpress already configured. Skipping first install.")
         return True
     hookenv.log("Starting wordpress initial configuration")
-    # TODO: more of the below ought to be configurable
     payload = {"admin_password": host.pwgen(24), "blog_public": "checked", "Submit": "submit"}
     payload.update(safe_load(config["initial_settings"]))
     payload["admin_password2"] = payload["admin_password"]

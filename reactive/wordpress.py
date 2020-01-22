@@ -3,7 +3,7 @@ import os
 import re
 import requests
 from pprint import pprint
-from urllib.parse import urlunparse
+from urllib.parse import urlparse, urlunparse
 from yaml import safe_load
 
 from charmhelpers.core import host, hookenv
@@ -14,7 +14,7 @@ from charms.reactive import hook, when, when_not
 
 @hook("upgrade-charm")
 def upgrade_charm():
-    status.maintenance("maintenance", "Upgrading charm")
+    status.maintenance("Upgrading charm")
     reactive.clear_flag("wordpress.configured")
 
 
@@ -108,12 +108,24 @@ def make_pod_spec():
     # PodSpec v1? https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#podspec-v1-core
     spec = {
         "containers": [
-            {"name": hookenv.charm_name(), "image": config["image"], "ports": ports, "config": container_config}
+            {
+                "name": hookenv.charm_name(),
+                "imageDetails": {"imagePath": config["image"]},
+                "ports": ports,
+                "config": container_config,
+            }
         ]
     }
+    if config.get("image_user") and config.get("image_pass"):
+        spec.get("containers")[0].get("imageDetails")["username"] = config["image_user"]
+        spec.get("containers")[0].get("imageDetails")["password"] = config["image_pass"]
     out = io.StringIO()
-    pprint(spec, out)
-    hookenv.log("Container spec (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
+    pprint(spec.get("containers")[0].get("config"), out)
+    hookenv.log(
+        "Container environment config (sans secrets) <<EOM\n{}\nEOM".format(
+            out.getvalue()
+        )
+    )
 
     # Add the secrets after logging
     config_with_secrets = full_container_config()
@@ -134,10 +146,16 @@ def first_install():
         hookenv.log("Wordpress vhost is not yet listening - retrying")
         return False
     elif wordpress_configured() or not config["initial_settings"]:
-        hookenv.log("No initial_setting provided or wordpress already configured. Skipping first install.")
+        hookenv.log(
+            "No initial_setting provided or wordpress already configured. Skipping first install."
+        )
         return True
     hookenv.log("Starting wordpress initial configuration")
-    payload = {"admin_password": host.pwgen(24), "blog_public": "checked", "Submit": "submit"}
+    payload = {
+        "admin_password": host.pwgen(24),
+        "blog_public": "checked",
+        "Submit": "submit",
+    }
     payload.update(safe_load(config["initial_settings"]))
     payload["admin_password2"] = payload["admin_password"]
     if not payload["blog_public"]:
@@ -147,8 +165,10 @@ def first_install():
     if missing:
         hookenv.log("Error: missing wordpress settings: {}".format(missing))
         return False
-    call_wordpress("/wp-admin/install.php?step=2", payload=payload)
-    host.write_file(os.path.join("/root/", "initial.passwd"), payload["admin_password"], perms=0o400)
+    call_wordpress("/wp-admin/install.php?step=2", redirects=True, payload=payload)
+    host.write_file(
+        os.path.join("/root/", "initial.passwd"), payload["admin_password"], perms=0o400
+    )
     return True
 
 
@@ -159,9 +179,17 @@ def call_wordpress(uri, redirects=True, payload={}):
         headers = {"Host": config["blog_hostname"]}
         url = urlunparse(("http", service_ip, uri, "", "", ""))
         if payload:
-            return requests.post(url, allow_redirects=redirects, headers=headers, data=payload)
+            r = requests.post(
+                url, allow_redirects=False, headers=headers, data=payload, timeout=30
+            )
         else:
-            return requests.get(url, allow_redirects=redirects, headers=headers)
+            r = requests.get(url, allow_redirects=False, headers=headers, timeout=30)
+        if redirects and r.is_redirect:
+            # recurse, but strip the scheme and host first, we need to connect over HTTP by bare IP
+            o = urlparse(r.headers.get("Location"))
+            return call_wordpress(o.path, redirects=redirects, payload=payload)
+        else:
+            return r
     else:
         hookenv.log("Error getting service IP")
         return False
@@ -180,7 +208,15 @@ def wordpress_configured():
         r = call_wordpress("/", redirects=False)
     except requests.exceptions.ConnectionError:
         return False
-    if r.status_code == 302 and re.match("^.*/wp-admin/install.php", r.headers.get("location", "")):
+    if r.status_code == 302 and re.match(
+        "^.*/wp-admin/install.php", r.headers.get("location", "")
+    ):
+        return False
+    elif r.status_code == 302 and re.match(
+        "^.*/wp-admin/setup-config.php", r.headers.get("location", "")
+    ):
+        hookenv.log("MySQL database setup failed, we likely have no wp-config.php")
+        status.blocked("MySQL database setup failed, we likely have no wp-config.php")
         return False
     else:
         return True
@@ -193,7 +229,9 @@ def is_vhost_ready():
         r = call_wordpress("/wp-login.php", redirects=False)
     except requests.exceptions.ConnectionError:
         return False
-    if r.status_code in (403, 404):
+    if r is None:
+        return False
+    if hasattr(r, "status_code") and r.status_code in (403, 404):
         return False
     else:
         return True

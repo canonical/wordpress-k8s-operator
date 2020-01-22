@@ -172,7 +172,11 @@ def first_install():
     return True
 
 
-def call_wordpress(uri, redirects=True, payload={}):
+def call_wordpress(uri, redirects=True, payload={}, _depth=1):
+    max_depth = 10
+    if _depth > max_depth:
+        hookenv.log("call_wordpress() got more than {} levels deep, aborting".format(max_depth))
+        return False
     config = hookenv.config()
     service_ip = get_service_ip("website")
     if service_ip:
@@ -187,7 +191,7 @@ def call_wordpress(uri, redirects=True, payload={}):
         if redirects and r.is_redirect:
             # recurse, but strip the scheme and host first, we need to connect over HTTP by bare IP
             o = urlparse(r.headers.get("Location"))
-            return call_wordpress(o.path, redirects=redirects, payload=payload)
+            return call_wordpress(o.path, redirects=redirects, payload=payload, _depth=_depth + 1)
         else:
             return r
     else:

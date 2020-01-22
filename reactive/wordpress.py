@@ -191,7 +191,9 @@ def call_wordpress(uri, redirects=True, payload={}, _depth=1):
         if redirects and r.is_redirect:
             # recurse, but strip the scheme and host first, we need to connect over HTTP by bare IP
             o = urlparse(r.headers.get("Location"))
-            return call_wordpress(o.path, redirects=redirects, payload=payload, _depth=_depth + 1)
+            return call_wordpress(
+                o.path, redirects=redirects, payload=payload, _depth=_depth + 1
+            )
         else:
             return r
     else:

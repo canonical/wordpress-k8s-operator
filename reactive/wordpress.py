@@ -175,8 +175,8 @@ def first_install():
 def call_wordpress(uri, redirects=True, payload={}, _depth=1):
     max_depth = 10
     if _depth > max_depth:
-        hookenv.log("call_wordpress() got more than {} levels deep, aborting".format(max_depth))
-        return False
+        hookenv.log("Redirect loop detected in call_worpress()")
+        raise RuntimeError("Redirect loop detected in call_worpress()")
     config = hookenv.config()
     service_ip = get_service_ip("website")
     if service_ip:

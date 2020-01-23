@@ -3,6 +3,14 @@ options:
     type: string
     description: "The docker image to install. Required. Defaults to Dockerhub wordpress:php7.3"
     default: "wordpress:php7.3"
+  image_user:
+    type: string
+    description: "Username to use for the configured image registry, if required"
+    default: ""
+  image_pass:
+    type: string
+    description: "Password to use for the configured image registry, if required"
+    default: ""
   ports:
     type: string
     description: >

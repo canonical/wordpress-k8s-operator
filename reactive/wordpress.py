@@ -116,18 +116,19 @@ def make_pod_spec():
             }
         ]
     }
-    if config.get("image_user") and config.get("image_pass"):
-        spec.get("containers")[0].get("imageDetails")["username"] = config["image_user"]
-        spec.get("containers")[0].get("imageDetails")["password"] = config["image_pass"]
     out = io.StringIO()
-    pprint(spec.get("containers")[0].get("config"), out)
+    pprint(spec, out)
     hookenv.log(
         "Container environment config (sans secrets) <<EOM\n{}\nEOM".format(
             out.getvalue()
         )
     )
 
-    # Add the secrets after logging
+    # if we need credentials (secrets) for our image, add them to the spec after logging
+    if config.get("image_user") and config.get("image_pass"):
+        spec.get("containers")[0].get("imageDetails")["username"] = config["image_user"]
+        spec.get("containers")[0].get("imageDetails")["password"] = config["image_pass"]
+
     config_with_secrets = full_container_config()
     if config_with_secrets is None:
         return None  # status already set
@@ -234,10 +235,13 @@ def is_vhost_ready():
     try:
         r = call_wordpress("/wp-login.php", redirects=False)
     except requests.exceptions.ConnectionError:
+        hookenv.log("call_wordpress() returned requests.exceptions.ConnectionError")
         return False
     if r is None:
+        hookenv.log("call_wordpress() returned None")
         return False
     if hasattr(r, "status_code") and r.status_code in (403, 404):
+        hookenv.log("call_wordpress() returned status {}".format(r.status_code))
         return False
     else:
         return True

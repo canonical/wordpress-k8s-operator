@@ -73,6 +73,8 @@ def sanitized_container_config():
     container_config["WORDPRESS_DB_HOST"] = config["db_host"]
     container_config["WORDPRESS_DB_NAME"] = config["db_name"]
     container_config["WORDPRESS_DB_USER"] = config["db_user"]
+    if config.get("wp_plugin_openid_team_map"):
+        container_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
     return container_config
 
 
@@ -90,7 +92,10 @@ def full_container_config():
             status.blocked("container_secrets is not a YAML mapping")
             return None
     container_config.update(container_secrets)
+    # add secrets from charm config
     container_config["WORDPRESS_DB_PASSWORD"] = config["db_password"]
+    if config.get("wp_plugin_akismet_key"):
+        container_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
     return container_config
 
 
@@ -118,11 +123,7 @@ def make_pod_spec():
     }
     out = io.StringIO()
     pprint(spec, out)
-    hookenv.log(
-        "Container environment config (sans secrets) <<EOM\n{}\nEOM".format(
-            out.getvalue()
-        )
-    )
+    hookenv.log("Container environment config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
     # if we need credentials (secrets) for our image, add them to the spec after logging
     if config.get("image_user") and config.get("image_pass"):
@@ -147,9 +148,7 @@ def first_install():
         hookenv.log("Wordpress vhost is not yet listening - retrying")
         return False
     elif wordpress_configured() or not config["initial_settings"]:
-        hookenv.log(
-            "No initial_setting provided or wordpress already configured. Skipping first install."
-        )
+        hookenv.log("No initial_setting provided or wordpress already configured. Skipping first install.")
         return True
     hookenv.log("Starting wordpress initial configuration")
     payload = {
@@ -167,9 +166,7 @@ def first_install():
         hookenv.log("Error: missing wordpress settings: {}".format(missing))
         return False
     call_wordpress("/wp-admin/install.php?step=2", redirects=True, payload=payload)
-    host.write_file(
-        os.path.join("/root/", "initial.passwd"), payload["admin_password"], perms=0o400
-    )
+    host.write_file(os.path.join("/root/", "initial.passwd"), payload["admin_password"], perms=0o400)
     return True
 
 
@@ -184,17 +181,13 @@ def call_wordpress(uri, redirects=True, payload={}, _depth=1):
         headers = {"Host": config["blog_hostname"]}
         url = urlunparse(("http", service_ip, uri, "", "", ""))
         if payload:
-            r = requests.post(
-                url, allow_redirects=False, headers=headers, data=payload, timeout=30
-            )
+            r = requests.post(url, allow_redirects=False, headers=headers, data=payload, timeout=30)
         else:
             r = requests.get(url, allow_redirects=False, headers=headers, timeout=30)
         if redirects and r.is_redirect:
             # recurse, but strip the scheme and host first, we need to connect over HTTP by bare IP
             o = urlparse(r.headers.get("Location"))
-            return call_wordpress(
-                o.path, redirects=redirects, payload=payload, _depth=_depth + 1
-            )
+            return call_wordpress(o.path, redirects=redirects, payload=payload, _depth=_depth + 1)
         else:
             return r
     else:
@@ -215,13 +208,9 @@ def wordpress_configured():
         r = call_wordpress("/", redirects=False)
     except requests.exceptions.ConnectionError:
         return False
-    if r.status_code == 302 and re.match(
-        "^.*/wp-admin/install.php", r.headers.get("location", "")
-    ):
+    if r.status_code == 302 and re.match("^.*/wp-admin/install.php", r.headers.get("location", "")):
         return False
-    elif r.status_code == 302 and re.match(
-        "^.*/wp-admin/setup-config.php", r.headers.get("location", "")
-    ):
+    elif r.status_code == 302 and re.match("^.*/wp-admin/setup-config.php", r.headers.get("location", "")):
         hookenv.log("MySQL database setup failed, we likely have no wp-config.php")
         status.blocked("MySQL database setup failed, we likely have no wp-config.php")
         return False

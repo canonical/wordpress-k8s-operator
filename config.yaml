@@ -70,7 +70,18 @@ options:
     type: string
     description: Blog hostname
     default: "myblog.example.com"
-  akismet_key:
+  wp_plugin_akismet_key:
     type: string
-    description: Akismet key. If empty akismet will not be automatically enabled
+    description: Akismet key. If empty, akismet will not be automatically enabled
+    default: ""
+  wp_plugin_openid_team_map:
+    type: string
+    description: >
+      OpenID teams to grant access levels to, in native format.
+
+      If empty, OpenID will not be enabled.
+
+      Example format:
+
+        a:4:{i:1;O:8:"stdClass":4:{s:2:"id";i:1;s:4:"team";s:19:"site-sysadmins";s:4:"role";s:13:"administrator";s:6:"server";s:1:"0";}i:2;O:8:"stdClass":4:{s:2:"id";i:2;s:4:"team";s:25:"site-editors";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}i:3;O:8:"stdClass":4:{s:2:"id";i:3;s:4:"team";s:24:"site-admins";s:4:"role";s:13:"administrator";s:6:"server";s:1:"0";}i:4;O:8:"stdClass":4:{s:2:"id";i:4;s:4:"team";s:9:"bloggers";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}}
     default: ""

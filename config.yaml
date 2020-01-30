@@ -83,9 +83,10 @@ options:
 
       If empty, OpenID will not be enabled.
 
-      Format is key=value pairs, commas separate multiple pairs
+      Format is key=value pairs (where key is the Launchpad team, and value is
+      the Wordpress role) - commas separate multiple pairs.
 
       Example format:
 
-          "site-sysadmins=administrator,site-editors=editor,site-authors=author"
+          "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
     default: ""

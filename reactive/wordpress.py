@@ -40,7 +40,7 @@ def reconfig():
 def deploy_container():
     spec = make_pod_spec()
     if spec is None:
-        return  # status already set
+        return  # Status already set
     if reactive.data_changed("wordpress.spec", spec):
         status.maintenance("configuring container")
         try:
@@ -92,7 +92,7 @@ def full_container_config():
             status.blocked("container_secrets is not a YAML mapping")
             return None
     container_config.update(container_secrets)
-    # add secrets from charm config
+    # Add secrets from charm config
     container_config["WORDPRESS_DB_PASSWORD"] = config["db_password"]
     if config.get("wp_plugin_akismet_key"):
         container_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
@@ -103,7 +103,7 @@ def make_pod_spec():
     config = hookenv.config()
     container_config = sanitized_container_config()
     if container_config is None:
-        return  # status already set
+        return  # Status already set
 
     ports = [
         {"name": name, "containerPort": int(port), "protocol": "TCP"}
@@ -125,14 +125,14 @@ def make_pod_spec():
     pprint(spec, out)
     hookenv.log("Container environment config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
-    # if we need credentials (secrets) for our image, add them to the spec after logging
+    # If we need credentials (secrets) for our image, add them to the spec after logging
     if config.get("image_user") and config.get("image_pass"):
         spec.get("containers")[0].get("imageDetails")["username"] = config["image_user"]
         spec.get("containers")[0].get("imageDetails")["password"] = config["image_pass"]
 
     config_with_secrets = full_container_config()
     if config_with_secrets is None:
-        return None  # status already set
+        return None  # Status already set
     container_config.update(config_with_secrets)
 
     return spec
@@ -185,7 +185,7 @@ def call_wordpress(uri, redirects=True, payload={}, _depth=1):
         else:
             r = requests.get(url, allow_redirects=False, headers=headers, timeout=30)
         if redirects and r.is_redirect:
-            # recurse, but strip the scheme and host first, we need to connect over HTTP by bare IP
+            # Recurse, but strip the scheme and host first, we need to connect over HTTP by bare IP
             o = urlparse(r.headers.get("Location"))
             return call_wordpress(o.path, redirects=redirects, payload=payload, _depth=_depth + 1)
         else:
@@ -282,8 +282,7 @@ def is_pod_up(endpoint):
     try:
         info = hookenv.network_get(endpoint, hookenv.relation_id())
 
-        # Check to see if the pod has been assigned it's internal and
-        # external ips
+        # Check to see if the pod has been assigned its internal and external ips
         for ingress in info["ingress-addresses"]:
             if len(ingress) == 0:
                 return False

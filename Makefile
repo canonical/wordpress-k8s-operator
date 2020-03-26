@@ -9,9 +9,6 @@ unittest:
 
 test: lint unittest
 
-build: lint
-	charm build
-
 clean:
 	@echo "Cleaning files"
 	@rm -rf ./.tox
@@ -20,4 +17,4 @@ clean:
 	@rm -rf ./.coverage ./.unit-state.db
 
 
-.PHONY: lint test unittest build clean
+.PHONY: lint test unittest clean

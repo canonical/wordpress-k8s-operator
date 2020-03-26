@@ -11,10 +11,6 @@ test: lint unittest
 
 clean:
 	@echo "Cleaning files"
-	@rm -rf ./.tox
-	@rm -rf ./.pytest_cache
-	@rm -rf ./tests/unit/__pycache__ ./reactive/__pycache__ ./lib/__pycache__
-	@rm -rf ./.coverage ./.unit-state.db
-
+	@git clean -fXd
 
 .PHONY: lint test unittest clean

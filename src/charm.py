@@ -2,7 +2,7 @@
 
 import io
 import re
-import requests
+import subprocess
 import sys
 from pprint import pprint
 from urllib.parse import urlparse, urlunparse
@@ -12,6 +12,11 @@ sys.path.append("lib")
 
 from ops.charm import CharmBase  # NoQA: E402
 from ops.framework import StoredState  # NoQA: E402
+
+# JujuLogHandler exists, but I've yet to find docs on how to use it
+# For now, all our logging lines are commented with TODO.log()
+# Once we get docs for JLH, let's fix and uncomment them
+# from ops.log import JujuLogHandler  # NoQA: E402
 from ops.main import main  # NoQA: E402
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus  # NoQA: E402
 
@@ -22,19 +27,17 @@ class Wordpress(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         for event in (
-            self.on.install,
             self.on.start,
-            self.on.upgrade_charm,
-            self.on.update_status,
             self.on.config_changed,
         ):
             self.framework.observe(event, self)
 
     def on_start(self, event):
+        # There may be a nicer way to do this!
+        # https://github.com/canonical/operator/issues/156
+        subprocess.check_call(['apt-get', 'update'])
+        subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
         self.state._started = True
-
-    def on_upgrade_charm(self, event):
-        self.on_config_changed(event)
 
     def on_config_changed(self, event):
         valid = True
@@ -102,6 +105,7 @@ class Wordpress(CharmBase):
                     "imageDetails": {"imagePath": config["image"]},
                     "ports": ports,
                     "config": container_config,
+                    "readinessProbe": {"exec": {"command": ["cat", "/srv/wordpress-helpers/.ready"]}},
                 }
             ]
         }
@@ -130,7 +134,7 @@ class Wordpress(CharmBase):
         elif not self.is_vhost_ready():
             # TODO.log("Wordpress vhost is not yet listening - retrying")
             return False
-        elif self.wordpress_configured() or not config["initial_settings"]:
+        elif self.state._configured() or not config["initial_settings"]:
             # TODO.log("No initial_setting provided or wordpress already configured. Skipping first install.")
             return True
         # TODO.log("Starting wordpress initial configuration")
@@ -155,6 +159,8 @@ class Wordpress(CharmBase):
         return True
 
     def call_wordpress(self, uri, redirects=True, payload={}, _depth=1):
+        import requests
+
         max_depth = 10
         if _depth > max_depth:
             # TODO.log("Redirect loop detected in call_worpress()")
@@ -180,6 +186,8 @@ class Wordpress(CharmBase):
 
     def wordpress_configured(self):
         """Check whether first install has been completed."""
+        import requests
+
         # Check whether pod is deployed
         if not self.is_pod_up("website"):
             return False
@@ -202,6 +210,8 @@ class Wordpress(CharmBase):
 
     def is_vhost_ready(self):
         """Check whether wordpress is available using http."""
+        import requests
+
         # Check if we have WP code deployed at all
         try:
             r = self.call_wordpress("/wp-login.php", redirects=False)
@@ -218,83 +228,44 @@ class Wordpress(CharmBase):
             return True
 
     def get_service_ip(self, endpoint):
-        try:
-            # TODO: replacement for network_get
-            # info = hookenv.network_get(endpoint, hookenv.relation_id())
-            info = ''  # BROKEN!
-            if "ingress-addresses" in info:
-                addr = info["ingress-addresses"][0]
-                if len(addr):
-                    return addr
-            else:
-                # TODO.log("No ingress-addresses: {}".format(info))
-                pass
-        except Exception as e:
-            # TODO.log("Caught exception checking for service IP: {}".format(e))
-            pass
-
-        return None
+        # This is currently crashing with:
+        # ops.model.ModelError: expected Relation instance, got str
+        # But get_binding() is supposed to accept a relation name:
+        # https://github.com/canonical/operator/issues/192
+        return self.model.get_binding(endpoint).network.ingress_address
 
     def is_pod_up(self, endpoint):
-        """Check to see if the pod of a relation is up.
-
-        application-vimdb: 19:29:10 INFO unit.vimdb/0.juju-log network info
-
-        In the example below:
-        - 10.1.1.105 is the address of the application pod.
-        - 10.152.183.199 is the service cluster ip
-
-        {
-            'bind-addresses': [{
-                'macaddress': '',
-                'interfacename': '',
-                'addresses': [{
-                    'hostname': '',
-                    'address': '10.1.1.105',
-                    'cidr': ''
-                }]
-            }],
-            'egress-subnets': [
-                '10.152.183.199/32'
-            ],
-            'ingress-addresses': [
-                '10.152.183.199',
-                '10.1.1.105'
-            ]
-        }
-        """
-        try:
-            # TODO: replacement for network_get
-            # info = hookenv.network_get(endpoint, hookenv.relation_id())
-            info = ''
-
-            # Check to see if the pod has been assigned its internal and external ips
-            for ingress in info["ingress-addresses"]:
-                if len(ingress) == 0:
-                    return False
-        except Exception:
+        """Check to see if the pod of a relation is up"""
+        ingress = self.get_service_ip(endpoint)
+        if len(ingress) == 0:
             return False
         return True
 
     def configure_pod(self, event):
-        if not self._started:
+        if not self.state._started:
             return
-        if not self._valid:
+        if not self.state._valid:
             return
         elif self.model.unit.is_leader():
             # only the leader can set_spec()
             spec = self.make_pod_spec()
             if spec is None:
                 return  # Status already set
-            # TODO: Figured out operator equivalent of reactive.data_changed()
+            # TODO: Figure out operator equivalent of reactive.data_changed()
+            # https://github.com/canonical/operator/issues/189
             # if reactive.data_changed("wordpress.spec", spec):
+            # "if True" works around it, but we'll respwan on every hook run,
+            # which is decidedly sub-optimal
             if True:
                 self.model.unit.status = MaintenanceStatus("Configuring container")
                 try:
                     self.model.pod.set_spec(spec)
                 except Exception as e:
                     # TODO.log("pod_spec_set failed: {}".format(e))
-                    self.model.unit.status = BlockedStatus("pod_spec_set failed! Check logs and k8s dashboard.")
+                    # self.model.unit.status = BlockedStatus("pod_spec_set failed! Check logs and k8s dashboard.")
+                    self.model.unit.status = BlockedStatus(
+                        "pod_spec_set failed! Check logs and k8s dashboard: {}".format(e)
+                    )
                     return
             else:
                 # TODO.log("No changes to pod spec")

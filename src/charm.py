@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 from pprint import pprint
+from time import sleep
 from urllib.parse import urlparse, urlunparse
 from yaml import safe_load
 
@@ -12,13 +13,12 @@ sys.path.append("lib")
 
 from ops.charm import CharmBase  # NoQA: E402
 from ops.framework import StoredState  # NoQA: E402
-
-# JujuLogHandler exists, but I've yet to find docs on how to use it
-# For now, all our logging lines are commented with TODO.log()
-# Once we get docs for JLH, let's fix and uncomment them
-# from ops.log import JujuLogHandler  # NoQA: E402
 from ops.main import main  # NoQA: E402
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus  # NoQA: E402
+
+import logging  # NoQA: E402
+
+logger = logging.getLogger()
 
 
 class Wordpress(CharmBase):
@@ -33,11 +33,15 @@ class Wordpress(CharmBase):
             self.framework.observe(event, self)
 
     def on_start(self, event):
+        logger.info("Here we go...")
         # There may be a nicer way to do this!
         # https://github.com/canonical/operator/issues/156
         subprocess.check_call(['apt-get', 'update'])
         subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
+        # Initialise states
         self.state._started = True
+        self.state._configured = False
+        self.state._valid = False
 
     def on_config_changed(self, event):
         valid = True
@@ -111,7 +115,7 @@ class Wordpress(CharmBase):
         }
         out = io.StringIO()
         pprint(spec, out)
-        # TODO.log("Container environment config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
+        logger.info("Container environment config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
         # If we need credentials (secrets) for our image, add them to the spec after logging
         if config.get("image_user") and config.get("image_pass"):
@@ -129,15 +133,15 @@ class Wordpress(CharmBase):
         """Perform initial configuration of wordpress if needed."""
         config = self.model.config
         if not self.is_pod_up("website"):
-            # TODO.log("Pod not yet ready - retrying")
+            logger.info("Pod not yet ready - retrying")
             return False
         elif not self.is_vhost_ready():
-            # TODO.log("Wordpress vhost is not yet listening - retrying")
+            logger.info("Wordpress vhost is not yet listening - retrying")
             return False
-        elif self.state._configured() or not config["initial_settings"]:
-            # TODO.log("No initial_setting provided or wordpress already configured. Skipping first install.")
+        elif self.state._configured or not config["initial_settings"]:
+            logger.info("No initial_setting provided or wordpress already configured. Skipping first install.")
             return True
-        # TODO.log("Starting wordpress initial configuration")
+        logger.info("Starting wordpress initial configuration")
         payload = {
             # "admin_password": host.pwgen(24), ## TODO: pwgen
             "admin_password": "letmein123",
@@ -151,7 +155,7 @@ class Wordpress(CharmBase):
         required_config = set(("user_name", "admin_email"))
         missing = required_config.difference(payload.keys())
         if missing:
-            # TODO.log("Error: missing wordpress settings: {}".format(missing))
+            logger.info("Error: missing wordpress settings: {}".format(missing))
             return False
         self.call_wordpress("/wp-admin/install.php?step=2", redirects=True, payload=payload)
         # TODO: write_file
@@ -163,7 +167,7 @@ class Wordpress(CharmBase):
 
         max_depth = 10
         if _depth > max_depth:
-            # TODO.log("Redirect loop detected in call_worpress()")
+            logger.info("Redirect loop detected in call_worpress()")
             raise RuntimeError("Redirect loop detected in call_worpress()")
         config = self.model.config
         service_ip = self.get_service_ip("website")
@@ -181,7 +185,7 @@ class Wordpress(CharmBase):
             else:
                 return r
         else:
-            # TODO.log("Error getting service IP")
+            logger.info("Error getting service IP")
             return False
 
     def wordpress_configured(self):
@@ -202,7 +206,7 @@ class Wordpress(CharmBase):
         if r.status_code == 302 and re.match("^.*/wp-admin/install.php", r.headers.get("location", "")):
             return False
         elif r.status_code == 302 and re.match("^.*/wp-admin/setup-config.php", r.headers.get("location", "")):
-            # TODO.log("MySQL database setup failed, we likely have no wp-config.php")
+            logger.info("MySQL database setup failed, we likely have no wp-config.php")
             self.model.unit.status = BlockedStatus("MySQL database setup failed, we likely have no wp-config.php")
             return False
         else:
@@ -216,23 +220,28 @@ class Wordpress(CharmBase):
         try:
             r = self.call_wordpress("/wp-login.php", redirects=False)
         except requests.exceptions.ConnectionError:
-            # TODO.log("call_wordpress() returned requests.exceptions.ConnectionError")
+            logger.info("call_wordpress() returned requests.exceptions.ConnectionError")
             return False
         if r is None:
-            # TODO.log("call_wordpress() returned None")
+            logger.info("call_wordpress() returned None")
             return False
         if hasattr(r, "status_code") and r.status_code in (403, 404):
-            # TODO.log("call_wordpress() returned status {}".format(r.status_code))
+            logger.info("call_wordpress() returned status {}".format(r.status_code))
             return False
         else:
             return True
 
     def get_service_ip(self, endpoint):
-        # This is currently crashing with:
-        # ops.model.ModelError: expected Relation instance, got str
-        # But get_binding() is supposed to accept a relation name:
-        # https://github.com/canonical/operator/issues/192
-        return self.model.get_binding(endpoint).network.ingress_address
+        try:
+            self.model.get_binding(endpoint).network is not False
+        except Exception:
+            logger.info("We don't have networking yet")
+            return ''
+        try:
+            return str(self.model.get_binding(endpoint).network.ingress_addresses[0])
+        except Exception:
+            logger.info("We don't have any ingress addresses yet")
+            return ''
 
     def is_pod_up(self, endpoint):
         """Check to see if the pod of a relation is up"""
@@ -241,7 +250,7 @@ class Wordpress(CharmBase):
             return False
         return True
 
-    def configure_pod(self, event):
+    def configure_pod(self, event):  # NoQA: C901
         if not self.state._started:
             return
         if not self.state._valid:
@@ -261,18 +270,24 @@ class Wordpress(CharmBase):
                 try:
                     self.model.pod.set_spec(spec)
                 except Exception as e:
-                    # TODO.log("pod_spec_set failed: {}".format(e))
-                    # self.model.unit.status = BlockedStatus("pod_spec_set failed! Check logs and k8s dashboard.")
-                    self.model.unit.status = BlockedStatus(
-                        "pod_spec_set failed! Check logs and k8s dashboard: {}".format(e)
-                    )
+                    logger.info("pod_spec_set failed: {}".format(e))
+                    self.model.unit.status = BlockedStatus("pod_spec_set failed! Check logs and k8s dashboard.")
                     return
             else:
-                # TODO.log("No changes to pod spec")
-                pass
-            if self.first_install():
-                self.state._configured = True
-                self.model.unit.status = ActiveStatus()
+                logger.info("No changes to pod spec")
+            if not self.state._configured:
+                tries = 0
+                max_tries = 20
+                while tries < max_tries:
+                    if self.first_install():
+                        self.state._configured = True
+                        self.model.unit.status = ActiveStatus()
+                    else:
+                        tries = tries + 1
+                        logger.info("Sleeping 30s after attempt {}/{}, will try again".format(tries, max_tries))
+                        sleep(30)
+                logger.error("Giving up on configuration after attempt {}/{}".format(tries, max_tries))
+                self.model.unit.status = BlockedStatus("first_install failed! Check logs")
 
 
 if __name__ == "__main__":

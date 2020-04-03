@@ -1,6 +1,6 @@
-import unittest
 import string
 import sys
+import unittest
 
 sys.path.append("src")
 

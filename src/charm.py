@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import io
 import re
 import secrets
-import subprocess
 import string
+import subprocess
 import sys
+from pprint import pprint
 from urllib.parse import urlparse, urlunparse
 from yaml import safe_load
 
@@ -20,41 +22,101 @@ import logging  # NoQA: E402
 logger = logging.getLogger()
 
 
+def import_requests():
+    # Workaround until https://github.com/canonical/operator/issues/156 is fixed.
+    try:
+        import requests
+    except ImportError:
+        subprocess.check_call(['apt-get', 'update'])
+        subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
+        import requests
+
+    return requests
+
+
 def password_generator():
     alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for i in range(8))
+    return ''.join(secrets.choice(alphabet) for i in range(24))
+
+
+def generate_pod_config(config, secured=True):
+    """Kubernetes pod config generator.
+
+    generate_pod_config generates Kubernetes deployment config.
+    If the secured keyword is set then it will return a sanitised copy
+    without exposing secrets.
+    """
+    pod_config = {}
+    if config["container_config"].strip():
+        pod_config = safe_load(config["container_config"])
+
+    pod_config["WORDPRESS_DB_HOST"] = config["db_host"]
+    pod_config["WORDPRESS_DB_NAME"] = config["db_name"]
+    pod_config["WORDPRESS_DB_USER"] = config["db_user"]
+    if config.get("wp_plugin_openid_team_map"):
+        pod_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
+
+    if not secured:
+        return pod_config
+
+    # Add secrets from charm config
+    pod_config["WORDPRESS_DB_PASSWORD"] = config["db_password"]
+    if config.get("wp_plugin_akismet_key"):
+        pod_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
+
+    return pod_config
 
 
 class WordpressInitialiseEvent(EventBase):
+    """Custom event for signalling Wordpress initialisation.
+
+    WordpressInitialiseEvent allows us to signal the handler for
+    the initial Wordpress setup logic.
+    """
+
     pass
 
 
 class WordpressCharmEvents(CharmEvents):
+    """Register custom charm events.
+
+    WordpressCharmEvents registeres the custom WordpressInitialiseEvent
+    event to the charm.
+    """
+
     wp_initialise = EventSource(WordpressInitialiseEvent)
 
 
 class WordpressK8sCharm(CharmBase):
     state = StoredState()
+    # Override the default list of event handlers with our WordpressCharmEvents subclass.
     on = WordpressCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
-        for event in (
-            self.on.start,
-            self.on.config_changed,
-            self.on.wp_initialise,
-        ):
-            self.framework.observe(event, self)
+
+        self.framework.observe(self.on.start, self.on_start)
+        self.framework.observe(self.on.config_changed, self.on_config_changed)
+        self.framework.observe(self.on.update_status, self.on_config_changed)
+        self.framework.observe(self.on.website_relation_changed, self.on_website_relation_changed)
+        self.framework.observe(self.on.wp_initialise, self.on_wp_initialise)
 
         self.state.set_default(_init=True)
         self.state.set_default(_started=False)
         self.state.set_default(_valid=False)
         self.state.set_default(_configured=False)
 
+    def on_website_relation_changed(self, event):
+        logger.info("on_website_relation_changed fired!!! {}".format(event))
+
     def on_start(self, event):
         self.state._started = True
 
     def on_config_changed(self, event):
+        if not self.state._started:
+            event.defer()
+            return
+
         if not self.state._valid:
             config = self.model.config
             want = ("image", "db_host", "db_name", "db_user", "db_password")
@@ -70,13 +132,15 @@ class WordpressK8sCharm(CharmBase):
 
         if not self.state._configured:
             logger.info("Configuring pod")
-            return self.configure_pod()
+            self.configure_pod()
+            return
 
         if self.model.unit.is_leader() and self.state._init:
             self.on.wp_initialise.emit()
 
     def on_wp_initialise(self, event):
         if not self.state._init:
+            event.defer()
             return
 
         ready = self.install_ready()
@@ -99,82 +163,45 @@ class WordpressK8sCharm(CharmBase):
         # only the leader can set_spec()
         if self.model.unit.is_leader():
             spec = self.make_pod_spec()
-            self.model.unit.status = MaintenanceStatus("Configuring container")
+            self.model.unit.status = MaintenanceStatus("Configuring pod")
             self.model.pod.set_spec(spec)
+            logger.info("Pod configured")
             self.state._configured = True
+            self.model.unit.status = MaintenanceStatus("Pod configured")
 
     def make_pod_spec(self):
         config = self.model.config
-        container_config = self.sanitized_container_config()
-        if container_config is None:
-            return  # Status already set
+        full_pod_config = generate_pod_config(config)
+        secure_pod_config = generate_pod_config(config, secured=False)
 
         ports = [
             {"name": name, "containerPort": int(port), "protocol": "TCP"}
             for name, port in [addr.split(":", 1) for addr in config["ports"].split()]
         ]
 
-        # PodSpec v1? https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#podspec-v1-core
         spec = {
             "containers": [
                 {
                     "name": self.app.name,
                     "imageDetails": {"imagePath": config["image"]},
                     "ports": ports,
-                    "config": container_config,
+                    "config": secure_pod_config,
                     "readinessProbe": {"exec": {"command": ["/bin/cat", "/srv/wordpress-helpers/.ready"]}},
                 }
             ]
         }
 
-        # If we need credentials (secrets) for our image, add them to the spec after logging
+        out = io.StringIO()
+        pprint(spec, out)
+        logger.info("Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
+
         if config.get("image_user") and config.get("image_pass"):
             spec.get("containers")[0].get("imageDetails")["username"] = config["image_user"]
             spec.get("containers")[0].get("imageDetails")["password"] = config["image_pass"]
 
-        config_with_secrets = self.full_container_config()
-        if config_with_secrets is None:
-            return None  # Status already set
-        container_config.update(config_with_secrets)
+        secure_pod_config.update(full_pod_config)
 
         return spec
-
-    def sanitized_container_config(self):
-        """Container config without secrets"""
-        config = self.model.config
-        if config["container_config"].strip() == "":
-            container_config = {}
-        else:
-            container_config = safe_load(config["container_config"])
-            if not isinstance(container_config, dict):
-                self.model.unit.status = BlockedStatus("container_config is not a YAML mapping")
-                return None
-        container_config["WORDPRESS_DB_HOST"] = config["db_host"]
-        container_config["WORDPRESS_DB_NAME"] = config["db_name"]
-        container_config["WORDPRESS_DB_USER"] = config["db_user"]
-        if config.get("wp_plugin_openid_team_map"):
-            container_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
-        return container_config
-
-    def full_container_config(self):
-        """Container config with secrets"""
-        config = self.model.config
-        container_config = self.sanitized_container_config()
-        if container_config is None:
-            return None
-        if config["container_secrets"].strip() == "":
-            container_secrets = {}
-        else:
-            container_secrets = safe_load(config["container_secrets"])
-            if not isinstance(container_secrets, dict):
-                self.model.unit.status = BlockedStatus("container_secrets is not a YAML mapping")
-                return None
-        container_config.update(container_secrets)
-        # Add secrets from charm config
-        container_config["WORDPRESS_DB_PASSWORD"] = config["db_password"]
-        if config.get("wp_plugin_akismet_key"):
-            container_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
-        return container_config
 
     def install_ready(self):
         ready = True
@@ -191,8 +218,7 @@ class WordpressK8sCharm(CharmBase):
             ready = False
 
         if not config["initial_settings"]:
-            logger.info("No initial_setting provided or wordpress already configured. Skipping first install.")
-            logger.info("{} {}".format(self.state._configured, config["initial_settings"]))
+            logger.info("No initial_setting provided. Skipping first install.")
             ready = False
 
         return ready
@@ -210,6 +236,8 @@ class WordpressK8sCharm(CharmBase):
         payload.update(safe_load(config["initial_settings"]))
         payload["admin_password2"] = payload["admin_password"]
 
+        # Until juju run-action supports operator pods we must drop the initial
+        # admin password as a file in the workload pod.
         with open("/root/initial.passwd", "w") as f:
             f.write(payload["admin_password"])
 
@@ -233,12 +261,7 @@ class WordpressK8sCharm(CharmBase):
         return True
 
     def call_wordpress(self, uri, redirects=True, payload={}, _depth=1):
-        try:
-            import requests
-        except ImportError:
-            subprocess.check_call(['apt-get', 'update'])
-            subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
-            import requests
+        requests = import_requests()
 
         max_depth = 10
         if _depth > max_depth:
@@ -265,12 +288,7 @@ class WordpressK8sCharm(CharmBase):
 
     def wordpress_configured(self):
         """Check whether first install has been completed."""
-        try:
-            import requests
-        except ImportError:
-            subprocess.check_call(['apt-get', 'update'])
-            subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
-            import requests
+        requests = import_requests()
 
         # Check whether pod is deployed
         if not self.is_pod_up("website"):
@@ -295,12 +313,7 @@ class WordpressK8sCharm(CharmBase):
 
     def is_vhost_ready(self):
         """Check whether wordpress is available using http."""
-        try:
-            import requests
-        except ImportError:
-            subprocess.check_call(['apt-get', 'update'])
-            subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
-            import requests
+        requests = import_requests()
 
         rv = True
         # Check if we have WP code deployed at all
@@ -313,7 +326,7 @@ class WordpressK8sCharm(CharmBase):
                 logger.info("Wordpress returned an unexpected status {}".format(r.status_code))
                 rv = False
         except requests.exceptions.ConnectionError:
-            logger.info("Apache vhost is not ready yet")
+            logger.info("HTTP vhost is not ready yet")
             rv = False
 
         return rv

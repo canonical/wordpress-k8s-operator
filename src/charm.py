@@ -56,7 +56,7 @@ def generate_pod_config(config, secured=True):
     if config.get("wp_plugin_openid_team_map"):
         pod_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
 
-    if not secured:
+    if secured:
         return pod_config
 
     # Add secrets from charm config
@@ -171,8 +171,8 @@ class WordpressK8sCharm(CharmBase):
 
     def make_pod_spec(self):
         config = self.model.config
-        full_pod_config = generate_pod_config(config)
-        secure_pod_config = generate_pod_config(config, secured=False)
+        full_pod_config = generate_pod_config(config, secured=False)
+        secure_pod_config = generate_pod_config(config, secured=True)
 
         ports = [
             {"name": name, "containerPort": int(port), "protocol": "TCP"}

@@ -110,14 +110,10 @@ class WordpressK8sCharm(CharmBase):
 
         self.configure_pod()
 
-        if self.model.unit.is_leader() and self.state.init:
+        if self.state.init and self.model.unit.is_leader() and not self.wordpress_configured():
             self.on.wp_initialise.emit()
 
     def on_wp_initialise(self, event):
-        if not self.state.init:
-            event.defer()
-            return
-
         ready = self.install_ready()
         if not ready:
             # Until k8s supports telling Juju our pod is available we need to defer initial

@@ -143,6 +143,7 @@ class WordpressK8sCharm(CharmBase):
         if not ready:
             # Until k8s supports telling Juju our pod is available we need to defer initial
             # site setup for a subsequent update-status or config-changed hook to complete.
+            # https://github.com/canonical/operator/issues/214
             self.model.unit.status = WaitingStatus("Waiting for pod to be ready")
             event.defer()
             return

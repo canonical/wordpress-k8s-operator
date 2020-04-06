@@ -98,16 +98,12 @@ class WordpressK8sCharm(CharmBase):
         self.framework.observe(self.on.start, self.on_start)
         self.framework.observe(self.on.config_changed, self.on_config_changed)
         self.framework.observe(self.on.update_status, self.on_config_changed)
-        self.framework.observe(self.on.website_relation_changed, self.on_website_relation_changed)
         self.framework.observe(self.on.wp_initialise, self.on_wp_initialise)
 
         self.state.set_default(_init=True)
         self.state.set_default(_started=False)
         self.state.set_default(_valid=False)
         self.state.set_default(_configured=False)
-
-    def on_website_relation_changed(self, event):
-        logger.info("on_website_relation_changed fired!!! {}".format(event))
 
     def on_start(self, event):
         self.state._started = True

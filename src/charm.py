@@ -108,10 +108,7 @@ class WordpressK8sCharm(CharmBase):
         if not is_valid:
             return event.defer()
 
-        if not self.state.configured:
-            logger.info("Configuring pod")
-            self.configure_pod()
-            return
+        self.configure_pod()
 
         if self.model.unit.is_leader() and self.state.init:
             self.on.wp_initialise.emit()
@@ -139,6 +136,7 @@ class WordpressK8sCharm(CharmBase):
         self.state.init = False
 
     def configure_pod(self):
+        logger.info("Configuring pod")
         # only the leader can set_spec()
         if self.model.unit.is_leader():
             spec = self.make_pod_spec()
@@ -172,7 +170,7 @@ class WordpressK8sCharm(CharmBase):
 
         out = io.StringIO()
         pprint(spec, out)
-        logger.info("Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
+        logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
         if config.get("image_user") and config.get("image_pass"):
             spec.get("containers")[0].get("imageDetails")["username"] = config["image_user"]

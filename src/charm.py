@@ -197,10 +197,6 @@ class WordpressK8sCharm(CharmBase):
             logger.info("Wordpress vhost is not yet listening: {}".format(e))
             ready = False
 
-        if not config["initial_settings"]:
-            logger.info("No initial_setting provided. Skipping first install.")
-            ready = False
-
         return ready
 
     def first_install(self):
@@ -245,6 +241,12 @@ class WordpressK8sCharm(CharmBase):
     def is_valid_config(self):
         is_valid = True
         config = self.model.config
+
+        if not config["initial_settings"]:
+            logger.info("No initial_setting provided. Skipping first install.")
+            self.model.unit.status = BlockedStatus("Missing initial_settings")
+            is_valid = False
+
         want = ("image", "db_host", "db_name", "db_user", "db_password")
         missing = [k for k in want if config[k].rstrip() == ""]
         if missing:

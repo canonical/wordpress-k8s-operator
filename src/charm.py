@@ -185,7 +185,6 @@ class WordpressK8sCharm(CharmBase):
 
     def install_ready(self):
         ready = True
-        config = self.model.config
         if not self.is_pod_up("website"):
             logger.info("Pod not yet ready")
             ready = False

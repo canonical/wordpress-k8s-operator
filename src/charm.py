@@ -101,7 +101,8 @@ class WordpressK8sCharm(CharmBase):
 
         self.state.set_default(init=True)
         self.state.set_default(valid=False)
-        self.state.set_default(configured=False)
+
+        self.state.set_default(_spec=None)
 
     def on_config_changed(self, event):
         is_valid = self.is_valid_config()
@@ -132,15 +133,23 @@ class WordpressK8sCharm(CharmBase):
         self.state.init = False
 
     def configure_pod(self):
-        logger.info("Configuring pod")
-        # only the leader can set_spec()
-        if self.model.unit.is_leader():
-            spec = self.make_pod_spec()
-            self.model.unit.status = MaintenanceStatus("Configuring pod")
-            self.model.pod.set_spec(spec)
-            logger.info("Pod configured")
-            self.state.configured = True
-            self.model.unit.status = MaintenanceStatus("Pod configured")
+        spec = self.make_pod_spec()
+        if spec != self.state._spec:
+            self.state._spec = spec
+            # only the leader can set_spec()
+            if self.model.unit.is_leader():
+                spec = self.make_pod_spec()
+
+                logger.info("Configuring pod")
+                self.model.unit.status = MaintenanceStatus("Configuring pod")
+                self.model.pod.set_spec(spec)
+
+                logger.info("Pod configured")
+                self.model.unit.status = MaintenanceStatus("Pod configured")
+            else:
+                logger.info("Spec changes ignored by non-leader")
+        else:
+            logger.info("Pod spec unchanged")
 
     def make_pod_spec(self):
         config = self.model.config

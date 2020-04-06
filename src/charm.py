@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import io
+import logging
 import re
 import secrets
 import string
@@ -16,8 +17,6 @@ from ops.charm import CharmBase, CharmEvents  # NoQA: E402
 from ops.framework import EventBase, EventSource, StoredState  # NoQA: E402
 from ops.main import main  # NoQA: E402
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus  # NoQA: E402
-
-import logging  # NoQA: E402
 
 logger = logging.getLogger()
 

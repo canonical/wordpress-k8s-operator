@@ -189,14 +189,14 @@ class WordpressK8sCharm(CharmBase):
         ready = True
         config = self.model.config
         if not self.is_pod_up("website"):
-            logger.info("Pod not yet ready - retrying")
+            logger.info("Pod not yet ready")
             ready = False
 
         try:
             if not self.is_vhost_ready():
                 ready = False
         except Exception as e:
-            logger.info("Wordpress vhost is not yet listening - retrying: {}".format(e))
+            logger.info("Wordpress vhost is not yet listening: {}".format(e))
             ready = False
 
         if not config["initial_settings"]:

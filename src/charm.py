@@ -100,20 +100,20 @@ class WordpressK8sCharm(CharmBase):
         self.framework.observe(self.on.update_status, self.on_config_changed)
         self.framework.observe(self.on.wp_initialise, self.on_wp_initialise)
 
-        self.state.set_default(_init=True)
-        self.state.set_default(_started=False)
-        self.state.set_default(_valid=False)
-        self.state.set_default(_configured=False)
+        self.state.set_default(init=True)
+        self.state.set_default(started=False)
+        self.state.set_default(valid=False)
+        self.state.set_default(configured=False)
 
     def on_start(self, event):
-        self.state._started = True
+        self.state.started = True
 
     def on_config_changed(self, event):
-        if not self.state._started:
+        if not self.state.started:
             event.defer()
             return
 
-        if not self.state._valid:
+        if not self.state.valid:
             config = self.model.config
             want = ("image", "db_host", "db_name", "db_user", "db_password")
             missing = [k for k in want if config[k].rstrip() == ""]
@@ -124,18 +124,18 @@ class WordpressK8sCharm(CharmBase):
                 event.defer()
                 return
 
-            self.state._valid = True
+            self.state.valid = True
 
-        if not self.state._configured:
+        if not self.state.configured:
             logger.info("Configuring pod")
             self.configure_pod()
             return
 
-        if self.model.unit.is_leader() and self.state._init:
+        if self.model.unit.is_leader() and self.state.init:
             self.on.wp_initialise.emit()
 
     def on_wp_initialise(self, event):
-        if not self.state._init:
+        if not self.state.init:
             event.defer()
             return
 
@@ -154,7 +154,7 @@ class WordpressK8sCharm(CharmBase):
             return
 
         logger.info("Wordpress installed and initialised")
-        self.state._init = False
+        self.state.init = False
 
     def configure_pod(self):
         # only the leader can set_spec()
@@ -163,7 +163,7 @@ class WordpressK8sCharm(CharmBase):
             self.model.unit.status = MaintenanceStatus("Configuring pod")
             self.model.pod.set_spec(spec)
             logger.info("Pod configured")
-            self.state._configured = True
+            self.state.configured = True
             self.model.unit.status = MaintenanceStatus("Pod configured")
 
     def make_pod_spec(self):

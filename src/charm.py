@@ -104,18 +104,9 @@ class WordpressK8sCharm(CharmBase):
         self.state.set_default(configured=False)
 
     def on_config_changed(self, event):
-        if not self.state.valid:
-            config = self.model.config
-            want = ("image", "db_host", "db_name", "db_user", "db_password")
-            missing = [k for k in want if config[k].rstrip() == ""]
-            if missing:
-                message = " ".join(missing)
-                logger.info("Missing required config: {}".format(message))
-                self.model.unit.status = BlockedStatus("{} config is required".format(message))
-                event.defer()
-                return
-
-            self.state.valid = True
+        is_valid = self.is_valid_config()
+        if not is_valid:
+            return event.defer()
 
         if not self.state.configured:
             logger.info("Configuring pod")
@@ -247,6 +238,19 @@ class WordpressK8sCharm(CharmBase):
 
         self.model.unit.status = ActiveStatus()
         return True
+
+    def is_valid_config(self):
+        is_valid = True
+        config = self.model.config
+        want = ("image", "db_host", "db_name", "db_user", "db_password")
+        missing = [k for k in want if config[k].rstrip() == ""]
+        if missing:
+            message = " ".join(missing)
+            logger.info("Missing required config: {}".format(message))
+            self.model.unit.status = BlockedStatus("{} config is required".format(message))
+            is_valid = False
+
+        return is_valid
 
     def call_wordpress(self, uri, redirects=True, payload={}, _depth=1):
         requests = import_requests()

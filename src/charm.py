@@ -94,6 +94,7 @@ class WordpressK8sCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
 
+        self.framework.observe(self.on.start, self.on_config_changed)
         self.framework.observe(self.on.config_changed, self.on_config_changed)
         self.framework.observe(self.on.update_status, self.on_config_changed)
         self.framework.observe(self.on.wp_initialise, self.on_wp_initialise)

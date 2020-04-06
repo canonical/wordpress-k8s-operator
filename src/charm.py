@@ -107,7 +107,7 @@ class WordpressK8sCharm(CharmBase):
     def on_config_changed(self, event):
         is_valid = self.is_valid_config()
         if not is_valid:
-            return event.defer()
+            return
 
         self.configure_pod()
 
@@ -121,12 +121,10 @@ class WordpressK8sCharm(CharmBase):
             # site setup for a subsequent update-status or config-changed hook to complete.
             # https://github.com/canonical/operator/issues/214
             self.model.unit.status = WaitingStatus("Waiting for pod to be ready")
-            event.defer()
             return
 
         installed = self.first_install()
         if not installed:
-            event.defer()
             return
 
         logger.info("Wordpress installed and initialised")

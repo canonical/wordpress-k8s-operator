@@ -2,11 +2,11 @@ import copy
 import string
 import sys
 import unittest
+import yaml
 
 sys.path.append("src")
 
 import charm  # noqa: E402
-import yaml
 
 
 TEST_MODEL_CONFIG = {
@@ -24,7 +24,7 @@ TEST_MODEL_CONFIG = {
     user_name: admin
     admin_email: root@admin.canonical.com
     weblog_title: Test Blog
-    blog_public: False"""
+    blog_public: False""",
 }
 
 

@@ -218,8 +218,10 @@ class WordpressK8sCharm(CharmBase):
         payload.update(safe_load(config["initial_settings"]))
         payload["admin_password2"] = payload["admin_password"]
 
-        # Until juju run-action supports operator pods we must drop the initial
-        # admin password as a file in the workload pod.
+        # Ideally we would store this in state however juju run-action does not
+        # currently support being run inside the operator pod which means the
+        # StorageState will be split between workload and operator.
+        # https://bugs.launchpad.net/juju/+bug/1870487
         with open("/root/initial.passwd", "w") as f:
             f.write(payload["admin_password"])
 

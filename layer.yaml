@@ -1,4 +1,0 @@
-includes:
-  - 'layer:caas-base'
-  - 'layer:status'
-repo: git+ssh://git.launchpad.net/charm-k8s-wordpress

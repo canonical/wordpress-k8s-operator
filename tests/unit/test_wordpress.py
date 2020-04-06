@@ -1,64 +1,64 @@
-import os
-import shutil
+import copy
+import string
 import sys
-import tempfile
 import unittest
-from unittest import mock
+import yaml
 
-# We also need to mock up charms.layer so we can run unit tests without having
-# to build the charm and pull in layers such as layer-status.
-sys.modules['charms.layer'] = mock.MagicMock()
+sys.path.append("src")
 
-from charms.layer import status  # NOQA: E402
-
-# Add path to where our reactive layer lives and import.
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-from reactive import wordpress  # NOQA: E402
+import charm  # noqa: E402
 
 
-class TestCharm(unittest.TestCase):
-    def setUp(self):
-        self.maxDiff = None
-        self.tmpdir = tempfile.mkdtemp(prefix='charm-unittests-')
-        self.addCleanup(shutil.rmtree, self.tmpdir)
+TEST_MODEL_CONFIG = {
+    "image": "testimageregistry/wordpress:bionic-latest",
+    "image_user": "test-image-user",
+    "image_pass": "dontleakme",
+    "db_host": "10.215.74.139",
+    "db_name": "wordpress",
+    "db_user": "admin",
+    "db_password": "letmein123",
+    "wp_plugin_openid_team_map": True,
+    "wp_plugin_akismet_key": "somerandomstring",
+    "container_config": "test-key: test",
+    "initial_settings": """\
+    user_name: admin
+    admin_email: root@admin.canonical.com
+    weblog_title: Test Blog
+    blog_public: False""",
+}
 
-        self.charm_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
-        patcher = mock.patch('charmhelpers.core.hookenv.log')
-        self.mock_log = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.mock_log.return_value = ''
+class HelperTest(unittest.TestCase):
 
-        patcher = mock.patch('charmhelpers.core.hookenv.charm_dir')
-        self.mock_charm_dir = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.mock_charm_dir.return_value = self.charm_dir
+    test_model_config = TEST_MODEL_CONFIG
 
-        patcher = mock.patch('charmhelpers.core.hookenv.local_unit')
-        self.mock_local_unit = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.mock_local_unit.return_value = 'mock-wordpress/0'
+    def test_password_generator(self):
+        password = charm.password_generator()
+        self.assertEqual(len(password), 24)
+        alphabet = string.ascii_letters + string.digits
+        for char in password:
+            self.assertTrue(char in alphabet)
 
-        patcher = mock.patch('charmhelpers.core.hookenv.config')
-        self.mock_config = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.mock_config.return_value = {'blog_hostname': 'myblog.example.com'}
+    def test_generate_pod_config(self):
+        # Ensure that secrets are stripped from config.
+        result = charm.generate_pod_config(self.test_model_config, secured=True)
+        secured_keys = ("WORDPRESS_DB_PASSWORD", "WP_PLUGIN_AKISMET_KEY")
+        [self.assertNotIn(key, result) for key in secured_keys]
+        self.assertIn("WP_PLUGIN_OPENID_TEAM_MAP", result)
 
-        patcher = mock.patch('charmhelpers.core.host.log')
-        self.mock_log = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.mock_log.return_value = ''
+        # Ensure that we receive the full pod config.
+        result = charm.generate_pod_config(self.test_model_config, secured=False)
+        [self.assertIn(key, result) for key in secured_keys]
+        self.assertIn("WP_PLUGIN_AKISMET_KEY", result)
 
-        status.active.reset_mock()
-        status.blocked.reset_mock()
-        status.maintenance.reset_mock()
+        # Test we don't break with missing non-essential config options.
+        non_essential_model_config = copy.deepcopy(self.test_model_config)
+        del non_essential_model_config["wp_plugin_openid_team_map"]
+        del non_essential_model_config["wp_plugin_akismet_key"]
+        result = charm.generate_pod_config(self.test_model_config, secured=False)
+        self.assertTrue(result)
 
-    @mock.patch('charms.reactive.clear_flag')
-    def test_hook_upgrade_charm_flags(self, clear_flag):
-        '''Test correct flags set via upgrade-charm hook'''
-        wordpress.upgrade_charm()
-        self.assertFalse(status.maintenance.assert_called())
-        want = [
-            mock.call('wordpress.configured'),
-        ]
-        self.assertFalse(clear_flag.assert_has_calls(want, any_order=True))
+        # Test for initial container config.
+        result = charm.generate_pod_config(self.test_model_config)
+        test_container_config = yaml.safe_load(self.test_model_config["container_config"])
+        self.assertEqual(test_container_config["test-key"], result["test-key"])

@@ -10,9 +10,9 @@ import yaml
 
 
 TEST_MODEL_CONFIG = {
-    "image": "prod-is-external.docker-registry.canonical.com/wordpress:bionic-latest",
-    "image_user": "prod-is-external",
-    "image_pass": "reidaophaejeisheiyingohsheitai",
+    "image": "testimageregistry/wordpress:bionic-latest",
+    "image_user": "test-image-user",
+    "image_pass": "dontleakme",
     "db_host": "10.215.74.139",
     "db_name": "wordpress",
     "db_user": "admin",

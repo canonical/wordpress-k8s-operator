@@ -9,6 +9,7 @@ import yaml
 sys.path.append("src")
 
 import charm  # noqa: E402
+import wordpress  # noqa: E402
 
 
 TEST_MODEL_CONFIG = {
@@ -53,7 +54,7 @@ class HelperTest(unittest.TestCase):
     test_model_config = TEST_MODEL_CONFIG
 
     def test_password_generator(self):
-        password = charm.password_generator()
+        password = wordpress.password_generator()
         self.assertEqual(len(password), 24)
         alphabet = string.ascii_letters + string.digits
         for char in password:

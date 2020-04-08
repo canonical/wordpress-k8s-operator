@@ -5,7 +5,7 @@ lint:
 	@tox -e lint
 
 unittest:
-	@tox -e unit -vvv
+	@tox -e unit
 
 test: lint unittest
 

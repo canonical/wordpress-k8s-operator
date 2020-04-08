@@ -2,14 +2,11 @@
 
 import io
 import logging
-import re
-import secrets
-import string
-import subprocess
 import sys
 from pprint import pprint
-from urllib.parse import urlparse, urlunparse
 from yaml import safe_load
+
+from wordpress import Wordpress
 
 sys.path.append("lib")
 
@@ -19,23 +16,6 @@ from ops.main import main  # NoQA: E402
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus  # NoQA: E402
 
 logger = logging.getLogger()
-
-
-def import_requests():
-    # Workaround until https://github.com/canonical/operator/issues/156 is fixed.
-    try:
-        import requests
-    except ImportError:
-        subprocess.check_call(['apt-get', 'update'])
-        subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
-        import requests
-
-    return requests
-
-
-def password_generator():
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for i in range(24))
 
 
 def generate_pod_config(config, secured=True):
@@ -83,7 +63,7 @@ class WordpressCharmEvents(CharmEvents):
     event to the charm.
     """
 
-    wp_initialise = EventSource(WordpressInitialiseEvent)
+    wordpress_initialise = EventSource(WordpressInitialiseEvent)
 
 
 class WordpressK8sCharm(CharmBase):
@@ -97,12 +77,14 @@ class WordpressK8sCharm(CharmBase):
         self.framework.observe(self.on.start, self.on_config_changed)
         self.framework.observe(self.on.config_changed, self.on_config_changed)
         self.framework.observe(self.on.update_status, self.on_config_changed)
-        self.framework.observe(self.on.wp_initialise, self.on_wp_initialise)
+        self.framework.observe(self.on.wordpress_initialise, self.on_wordpress_initialise)
 
-        self.state.set_default(init=True)
+        self.state.set_default(initialised=True)
         self.state.set_default(valid=False)
 
         self.state.set_default(_spec=None)
+
+        self.wordpress = Wordpress(self.model.config)
 
     def on_config_changed(self, event):
         is_valid = self.is_valid_config()
@@ -110,25 +92,39 @@ class WordpressK8sCharm(CharmBase):
             return
 
         self.configure_pod()
+        if self.state.initialised:
+            self.on.wordpress_initialise.emit()
 
-        if self.state.init and self.model.unit.is_leader() and not self.wordpress_configured():
-            self.on.wp_initialise.emit()
-
-    def on_wp_initialise(self, event):
-        ready = self.install_ready()
-        if not ready:
-            # Until k8s supports telling Juju our pod is available we need to defer initial
-            # site setup for a subsequent update-status or config-changed hook to complete.
-            # https://github.com/canonical/operator/issues/214
-            self.model.unit.status = WaitingStatus("Waiting for pod to be ready")
+    def on_wordpress_initialise(self, event):
+        wordpress_needs_configuring = False
+        pod_alive = self.model.unit.is_leader() and self.is_service_up()
+        if pod_alive:
+            wordpress_configured = self.wordpress.wordpress_configured(self.get_service_ip())
+            wordpress_needs_configuring = self.state.initialised and not wordpress_configured
+        else:
+            msg = "Workpress workload pod is not ready"
+            logger.info(msg)
+            self.model.unit.status = WaitingStatus(msg)
             return
 
-        installed = self.first_install()
-        if not installed:
-            return
+        if wordpress_needs_configuring:
+            msg = "Wordpress needs configuration"
+            logger.info(msg)
+            self.model.unit.status = MaintenanceStatus(msg)
+            installed = self.wordpress.first_install(self.get_service_ip())
+            if not installed:
+                msg = "Failed to configure wordpress"
+                logger.info(msg)
+                self.model.unit.status = BlockedStatus(msg)
+                return
 
-        logger.info("Wordpress installed and initialised")
-        self.state.init = False
+            self.state.initialised = False
+            logger.info("Wordpress configured and initialised")
+            self.model.unit.status = ActiveStatus()
+
+        else:
+            logger.info("Wordpress workload pod is ready and configured")
+            self.model.unit.status = ActiveStatus()
 
     def configure_pod(self):
         spec = self.make_pod_spec()
@@ -183,60 +179,6 @@ class WordpressK8sCharm(CharmBase):
 
         return spec
 
-    def install_ready(self):
-        ready = True
-        if not self.is_pod_up("website"):
-            logger.info("Pod not yet ready")
-            ready = False
-
-        try:
-            if not self.is_vhost_ready():
-                ready = False
-        except Exception as e:
-            logger.info("Wordpress vhost is not yet listening: {}".format(e))
-            ready = False
-
-        return ready
-
-    def first_install(self):
-        """Perform initial configuration of wordpress if needed."""
-        config = self.model.config
-        logger.info("Starting wordpress initial configuration")
-        admin_password = password_generator()
-        payload = {
-            "admin_password": admin_password,
-            "blog_public": "checked",
-            "Submit": "submit",
-        }
-        payload.update(safe_load(config["initial_settings"]))
-        payload["admin_password2"] = payload["admin_password"]
-
-        # Ideally we would store this in state however juju run-action does not
-        # currently support being run inside the operator pod which means the
-        # StorageState will be split between workload and operator.
-        # https://bugs.launchpad.net/juju/+bug/1870487
-        with open("/root/initial.passwd", "w") as f:
-            f.write(payload["admin_password"])
-
-        if not payload["blog_public"]:
-            payload["blog_public"] = "unchecked"
-        required_config = set(("user_name", "admin_email"))
-        missing = required_config.difference(payload.keys())
-        if missing:
-            logger.info("Error: missing wordpress settings: {}".format(missing))
-            return
-        try:
-            self.call_wordpress("/wp-admin/install.php?step=2", redirects=True, payload=payload)
-        except Exception as e:
-            logger.info("failed to call_wordpress: {}".format(e))
-            return
-
-        if not self.wordpress_configured():
-            self.model.unit.status = BlockedStatus("Failed to install wordpress")
-
-        self.model.unit.status = ActiveStatus()
-        return True
-
     def is_valid_config(self):
         is_valid = True
         config = self.model.config
@@ -256,86 +198,18 @@ class WordpressK8sCharm(CharmBase):
 
         return is_valid
 
-    def call_wordpress(self, uri, redirects=True, payload={}, _depth=1):
-        requests = import_requests()
-
-        max_depth = 10
-        if _depth > max_depth:
-            logger.info("Redirect loop detected in call_worpress()")
-            raise RuntimeError("Redirect loop detected in call_worpress()")
-        config = self.model.config
-        service_ip = self.get_service_ip("website")
-        if service_ip:
-            headers = {"Host": config["blog_hostname"]}
-            url = urlunparse(("http", service_ip, uri, "", "", ""))
-            if payload:
-                r = requests.post(url, allow_redirects=False, headers=headers, data=payload, timeout=30)
-            else:
-                r = requests.get(url, allow_redirects=False, headers=headers, timeout=30)
-            if redirects and r.is_redirect:
-                # Recurse, but strip the scheme and host first, we need to connect over HTTP by bare IP
-                o = urlparse(r.headers.get("Location"))
-                return self.call_wordpress(o.path, redirects=redirects, payload=payload, _depth=_depth + 1)
-            else:
-                return r
-        else:
-            logger.info("Error getting service IP")
-            return False
-
-    def wordpress_configured(self):
-        """Check whether first install has been completed."""
-        requests = import_requests()
-
-        # Check whether pod is deployed
-        if not self.is_pod_up("website"):
-            return False
-        # Check if we have WP code deployed at all
-        if not self.is_vhost_ready():
-            return False
-        # We have code on disk, check if configured
+    def get_service_ip(self):
         try:
-            r = self.call_wordpress("/", redirects=False)
-        except requests.exceptions.ConnectionError:
-            return False
-
-        if r.status_code == 302 and re.match("^.*/wp-admin/install.php", r.headers.get("location", "")):
-            return False
-        elif r.status_code == 302 and re.match("^.*/wp-admin/setup-config.php", r.headers.get("location", "")):
-            logger.info("MySQL database setup failed, we likely have no wp-config.php")
-            self.model.unit.status = BlockedStatus("MySQL database setup failed, we likely have no wp-config.php")
-            return False
-        else:
-            return True
-
-    def is_vhost_ready(self):
-        """Check whether wordpress is available using http."""
-        requests = import_requests()
-
-        rv = True
-        # Check if we have WP code deployed at all
-        try:
-            r = self.call_wordpress("/wp-login.php", redirects=False)
-            if r is None:
-                logger.error("call_wordpress() returned None")
-                rv = False
-            if hasattr(r, "status_code") and r.status_code in (403, 404):
-                logger.info("Wordpress returned an unexpected status {}".format(r.status_code))
-                rv = False
-        except requests.exceptions.ConnectionError:
-            logger.info("HTTP vhost is not ready yet")
-            rv = False
-
-        return rv
-
-    def get_service_ip(self, endpoint):
-        try:
-            return str(self.model.get_binding(endpoint).network.ingress_addresses[0])
+            return str(self.model.get_binding("website").network.ingress_addresses[0])
         except Exception:
             logger.info("We don't have any ingress addresses yet")
 
-    def is_pod_up(self, endpoint):
-        """Check to see if the pod of a relation is up"""
-        return self.get_service_ip(endpoint) or False
+    def is_service_up(self):
+        """Check to see if the HTTP service is up"""
+        service_ip = self.get_service_ip()
+        if service_ip:
+            return self.wordpress.is_vhost_ready(service_ip)
+        return False
 
 
 if __name__ == "__main__":

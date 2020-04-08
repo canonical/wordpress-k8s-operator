@@ -130,7 +130,7 @@ class WordpressTest(unittest.TestCase):
         self.test_wordpress.model_config["initial_settings"] = (
             "user_name: admin\n" "weblog_title: Test Blog\n" "blog_public: False"
         )
-        rv = self.test_wordpress.first_install(self.test_service_ip)
+        self.test_wordpress.first_install(self.test_service_ip)
         self.test_wordpress.call_wordpress.assert_not_called()
 
     def test_wordpress_configured(self):

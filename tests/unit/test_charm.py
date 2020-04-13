@@ -40,12 +40,14 @@ class TestWordpressK8sCharm(unittest.TestCase):
             self.harness.charm.model.config[wanted_key] = ""
             want_false = self.harness.charm.is_valid_config()
             self.assertFalse(want_false)
+            self.assertLogs("Missing required config: {}".format(wanted_key), level="INFO")
             self.harness.charm.model.config = copy.deepcopy(self.test_model_config)
 
         # Test for missing initial_settings in model config.
         self.harness.charm.model.config["initial_settings"] = ""
         want_false = self.harness.charm.is_valid_config()
         self.assertFalse(want_false)
+        self.assertLogs("No initial_setting provided. Skipping first install.", level="INFO")
         self.harness.charm.model.config = copy.deepcopy(self.test_model_config)
 
         # Test unit status msg.
@@ -55,3 +57,4 @@ class TestWordpressK8sCharm(unittest.TestCase):
         self.harness.charm.is_valid_config()
         self.assertIsInstance(self.harness.charm.unit.status, BlockedStatus)
         self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
+        self.assertLogs("Missing required config: image db_host db_name db_user db_password", level="INFO")

@@ -23,7 +23,7 @@ class TestWordpressK8sCharm(unittest.TestCase):
             WordpressK8sCharm,
             meta='''
             name: wordpress
-        ''',
+            ''',
         )
 
         self.harness.begin()

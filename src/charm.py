@@ -191,9 +191,9 @@ class WordpressK8sCharm(CharmBase):
         want = ("image", "db_host", "db_name", "db_user", "db_password")
         missing = [k for k in want if config[k].rstrip() == ""]
         if missing:
-            message = " ".join(missing)
-            logger.info("Missing required config: {}".format(message))
-            self.model.unit.status = BlockedStatus("{} config is required".format(message))
+            message = "Missing required config: {}".format(" ".join(missing))
+            logger.info(message)
+            self.model.unit.status = BlockedStatus(message)
             is_valid = False
 
         return is_valid

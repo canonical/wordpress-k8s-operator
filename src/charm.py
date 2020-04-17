@@ -79,7 +79,7 @@ class WordpressK8sCharm(CharmBase):
         self.framework.observe(self.on.update_status, self.on_config_changed)
         self.framework.observe(self.on.wordpress_initialise, self.on_wordpress_initialise)
 
-        self.state.set_default(initialised=True)
+        self.state.set_default(initialised=False)
         self.state.set_default(valid=False)
 
         self.state.set_default(_spec=None)
@@ -92,7 +92,7 @@ class WordpressK8sCharm(CharmBase):
             return
 
         self.configure_pod()
-        if self.state.initialised:
+        if not self.state.initialised:
             self.on.wordpress_initialise.emit()
 
     def on_wordpress_initialise(self, event):
@@ -100,7 +100,7 @@ class WordpressK8sCharm(CharmBase):
         pod_alive = self.model.unit.is_leader() and self.is_service_up()
         if pod_alive:
             wordpress_configured = self.wordpress.wordpress_configured(self.get_service_ip())
-            wordpress_needs_configuring = self.state.initialised and not wordpress_configured
+            wordpress_needs_configuring = not self.state.initialised and not wordpress_configured
         else:
             msg = "Workpress workload pod is not ready"
             logger.info(msg)
@@ -118,7 +118,7 @@ class WordpressK8sCharm(CharmBase):
                 self.model.unit.status = BlockedStatus(msg)
                 return
 
-            self.state.initialised = False
+            self.state.initialised = True
             logger.info("Wordpress configured and initialised")
             self.model.unit.status = ActiveStatus()
 

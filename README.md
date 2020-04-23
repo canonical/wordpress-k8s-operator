@@ -1,7 +1,7 @@
 # Wordpress k8s charm
 
 A Juju charm for a Kubernetes deployment of Wordpress, using the
-official Dockerhub Wordpress image or image built from this base.
+official Dockerhub Wordpress image or an image built from this base.
 
 ## Overview
 
@@ -10,11 +10,11 @@ attached to a controller using `juju add-k8s`.
 
 The image to spin up is specified in the `image` charm configuration
 option using standard docker notation (eg. 'localhost:32000/mywork-rev42').
-Images must be publicly accessible. Default is the Dockerhub
-`wordpress:php7.3` image.
+The default image is Dockerhub's `wordpress:php7.3` image, but you can also
+use private images by specifying `image_user` and `image_pass` charm
+configuration.
 
-Standard configuration for the Wordpress image is in standard Juju config.
-In particular:
+Configuration for the Wordpress image is in standard Juju config. In particular:
 
 * `db_host`, `db_user` & `db_password`. This charm may in future be relatable
    to a MySQL deployment, when the MySQL charm is updated to support cross
@@ -22,7 +22,7 @@ In particular:
 * `ports`. Custom images may require additional ports to be opened, such
    as those providing monitoring or metrics endpoints.
 
-Additional runtine configuration is specified as YAML snippets in the charm config.
+Additional runtime configuration is specified as YAML snippets in the charm config.
 Both `container_config` and `container_secrets` items are provided,
 and they are combined together. `container_config` gets logged,
 `container_secrets` does not. This allows you to configure customized

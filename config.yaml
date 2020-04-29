@@ -90,3 +90,9 @@ options:
 
           "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
     default: ""
+  wp_plugin_openstack-objectstorage_config:
+    type: string
+    description: |
+      YAML dictionary with keys named after wordpress settings and the desired values.
+      Please note that the settings will be reset to values provided every time hooks run
+    default: ""

@@ -42,6 +42,20 @@ def generate_pod_config(config, secured=True):
     pod_config["WORDPRESS_DB_PASSWORD"] = config["db_password"]
     if config.get("wp_plugin_akismet_key"):
         pod_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
+    if config.get("wp_plugin_openstack-objectstorage_config"):
+        # actual plugin name is 'openstack-objectstorage', but 'swift' will do us!
+        wp_plugin_swift_config = config.get("wp_plugin_openstack-objectstorage_config")
+        pod_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get('auth-url')
+        pod_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get('bucket')
+        pod_config["SWIFT_PASSWORD"] = wp_plugin_swift_config.get('password')
+        pod_config["SWIFT_PREFIX"] = wp_plugin_swift_config.get('prefix')
+        pod_config["SWIFT_REGION"] = wp_plugin_swift_config.get('region')
+        pod_config["SWIFT_TENANT"] = wp_plugin_swift_config.get('tenant')
+        pod_config["SWIFT_URL"] = wp_plugin_swift_config.get('url')
+        pod_config["SWIFT_USERNAME"] = wp_plugin_swift_config.get('username')
+        pod_config["SWIFT_COPY_TO_SWIFT"] = wp_plugin_swift_config.get('copy-to-swift')
+        pod_config["SWIFT_SERVE_FROM_SWIFT"] = wp_plugin_swift_config.get('serve-from-swift')
+        pod_config["SWIFT_REMOVE_LOCAL_FILE"] = wp_plugin_swift_config.get('remove-local-file')
 
     return pod_config
 

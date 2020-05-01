@@ -118,18 +118,17 @@ class Wordpress:
         """Check whether wordpress is available using http."""
         requests = import_requests()
 
-        rv = True
         # Check if we have WP code deployed at all
         try:
             r = self.call_wordpress(service_ip, "/wp-login.php", redirects=False)
             if r is None:
                 logger.error("call_wordpress() returned None")
-                rv = False
+                return False
             if hasattr(r, "status_code") and r.status_code in (403, 404):
                 logger.info("Wordpress returned an unexpected status {}".format(r.status_code))
-                rv = False
+                return False
         except requests.exceptions.ConnectionError:
             logger.info("HTTP vhost is not ready yet")
-            rv = False
+            return False
 
-        return rv
+        return True

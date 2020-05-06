@@ -94,8 +94,7 @@ class WordpressK8sCharm(CharmBase):
         self.framework.observe(self.on.wordpress_initialise, self.on_wordpress_initialise)
 
         self.state.set_default(
-            initialised=False,
-            valid=False,
+            initialised=False, valid=False,
         )
 
         self.wordpress = Wordpress(self.model.config)
@@ -141,7 +140,6 @@ class WordpressK8sCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
 
     def configure_pod(self):
-        spec = self.make_pod_spec()
         # only the leader can set_spec()
         if self.model.unit.is_leader():
             spec = self.make_pod_spec()

@@ -93,10 +93,9 @@ class WordpressK8sCharm(CharmBase):
         self.framework.observe(self.on.update_status, self.on_config_changed)
         self.framework.observe(self.on.wordpress_initialise, self.on_wordpress_initialise)
 
-        self.state.set_default(initialised=False)
-        self.state.set_default(valid=False)
-
-        self.state.set_default(_spec=None)
+        self.state.set_default(
+            initialised=False, valid=False,
+        )
 
         self.wordpress = Wordpress(self.model.config)
 
@@ -141,23 +140,18 @@ class WordpressK8sCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
 
     def configure_pod(self):
-        spec = self.make_pod_spec()
-        if spec != self.state._spec:
-            self.state._spec = spec
-            # only the leader can set_spec()
-            if self.model.unit.is_leader():
-                spec = self.make_pod_spec()
+        # only the leader can set_spec()
+        if self.model.unit.is_leader():
+            spec = self.make_pod_spec()
 
-                logger.info("Configuring pod")
-                self.model.unit.status = MaintenanceStatus("Configuring pod")
-                self.model.pod.set_spec(spec)
+            logger.info("Configuring pod")
+            self.model.unit.status = MaintenanceStatus("Configuring pod")
+            self.model.pod.set_spec(spec)
 
-                logger.info("Pod configured")
-                self.model.unit.status = MaintenanceStatus("Pod configured")
-            else:
-                logger.info("Spec changes ignored by non-leader")
+            logger.info("Pod configured")
+            self.model.unit.status = MaintenanceStatus("Pod configured")
         else:
-            logger.info("Pod spec unchanged")
+            logger.info("Spec changes ignored by non-leader")
 
     def make_pod_spec(self):
         config = self.model.config

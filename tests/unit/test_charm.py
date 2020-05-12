@@ -4,8 +4,8 @@ import copy
 import unittest
 import sys
 
-sys.path.append('lib')  # noqa
-sys.path.append('src')  # noqa
+sys.path.append('lib')  # noqa: E402
+sys.path.append('src')  # noqa: E402
 
 from charm import WordpressK8sCharm
 from ops import testing

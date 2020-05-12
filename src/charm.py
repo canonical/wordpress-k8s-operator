@@ -8,12 +8,12 @@ from yaml import safe_load
 
 from wordpress import Wordpress
 
-sys.path.append("lib")
+sys.path.append("lib")  # noqa: E402
 
-from ops.charm import CharmBase, CharmEvents  # NoQA: E402
-from ops.framework import EventBase, EventSource, StoredState  # NoQA: E402
-from ops.main import main  # NoQA: E402
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus  # NoQA: E402
+from ops.charm import CharmBase, CharmEvents
+from ops.framework import EventBase, EventSource, StoredState
+from ops.main import main
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
 logger = logging.getLogger()
 

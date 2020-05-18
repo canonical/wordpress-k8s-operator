@@ -44,7 +44,7 @@ def generate_pod_config(config, secured=True):
         pod_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
     if config.get("wp_plugin_openstack-objectstorage_config"):
         # actual plugin name is 'openstack-objectstorage', but 'swift' will do us!
-        wp_plugin_swift_config = config.get("wp_plugin_openstack-objectstorage_config")
+        wp_plugin_swift_config = safe_load(config.get("wp_plugin_openstack-objectstorage_config"))
         pod_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get('auth-url')
         pod_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get('bucket')
         pod_config["SWIFT_PASSWORD"] = wp_plugin_swift_config.get('password')

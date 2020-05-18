@@ -1,6 +1,7 @@
 name: "wordpress-k8s"
 summary: "Wordpress, uses official Docker Wordpress image by default"
 description: "Wordpress, uses official Docker Wordpress image by default"
+min-juju-version: 2.8.0
 maintainers:
   - https://launchpad.net/~wordpress-charmers <wordpress-charmers@lists.launchpad.net>
 tags:

@@ -6,10 +6,10 @@ import sys
 import unittest
 import yaml
 
-sys.path.append("src")
+sys.path.append("src")  # noqa: E402
 
-import charm  # noqa: E402
-import wordpress  # noqa: E402
+import charm
+import wordpress
 
 
 TEST_MODEL_CONFIG = {

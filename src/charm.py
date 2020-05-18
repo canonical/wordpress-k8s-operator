@@ -8,12 +8,12 @@ from yaml import safe_load
 
 from wordpress import Wordpress
 
-sys.path.append("lib")
+sys.path.append("lib")  # noqa: E402
 
-from ops.charm import CharmBase, CharmEvents  # NoQA: E402
-from ops.framework import EventBase, EventSource, StoredState  # NoQA: E402
-from ops.main import main  # NoQA: E402
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus  # NoQA: E402
+from ops.charm import CharmBase, CharmEvents
+from ops.framework import EventBase, EventSource, StoredState
+from ops.main import main
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
 logger = logging.getLogger()
 
@@ -45,7 +45,7 @@ def generate_pod_config(config, secured=True):
     if config.get("wp_plugin_openstack-objectstorage_config"):
         # Actual plugin name is 'openstack-objectstorage', but we're only
         # implementing the 'swift' portion of it.
-        wp_plugin_swift_config = config.get("wp_plugin_openstack-objectstorage_config")
+        wp_plugin_swift_config = safe_load(config.get("wp_plugin_openstack-objectstorage_config"))
         pod_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get('auth-url')
         pod_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get('bucket')
         pod_config["SWIFT_PASSWORD"] = wp_plugin_swift_config.get('password')

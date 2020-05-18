@@ -38,12 +38,13 @@ def generate_pod_config(config, secured=True):
     if secured:
         return pod_config
 
-    # Add secrets from charm config
+    # Add secrets from charm config.
     pod_config["WORDPRESS_DB_PASSWORD"] = config["db_password"]
     if config.get("wp_plugin_akismet_key"):
         pod_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
     if config.get("wp_plugin_openstack-objectstorage_config"):
-        # actual plugin name is 'openstack-objectstorage', but 'swift' will do us!
+        # Actual plugin name is 'openstack-objectstorage', but we're only
+        # implementing the 'swift' portion of it.
         wp_plugin_swift_config = safe_load(config.get("wp_plugin_openstack-objectstorage_config"))
         pod_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get('auth-url')
         pod_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get('bucket')
@@ -73,7 +74,7 @@ class WordpressInitialiseEvent(EventBase):
 class WordpressCharmEvents(CharmEvents):
     """Register custom charm events.
 
-    WordpressCharmEvents registeres the custom WordpressInitialiseEvent
+    WordpressCharmEvents registers the custom WordpressInitialiseEvent
     event to the charm.
     """
 
@@ -115,7 +116,7 @@ class WordpressK8sCharm(CharmBase):
             wordpress_configured = self.wordpress.wordpress_configured(self.get_service_ip())
             wordpress_needs_configuring = not self.state.initialised and not wordpress_configured
         else:
-            msg = "Workpress workload pod is not ready"
+            msg = "Wordpress workload pod is not ready"
             logger.info(msg)
             self.model.unit.status = WaitingStatus(msg)
             return
@@ -140,16 +141,18 @@ class WordpressK8sCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
 
     def configure_pod(self):
-        # only the leader can set_spec()
+        # Only the leader can set_spec().
         if self.model.unit.is_leader():
             spec = self.make_pod_spec()
 
-            logger.info("Configuring pod")
-            self.model.unit.status = MaintenanceStatus("Configuring pod")
+            msg = "Configuring pod"
+            logger.info(msg)
+            self.model.unit.status = MaintenanceStatus(msg)
             self.model.pod.set_spec(spec)
 
-            logger.info("Pod configured")
-            self.model.unit.status = MaintenanceStatus("Pod configured")
+            msg = "Pod configured"
+            logger.info(msg)
+            self.model.unit.status = MaintenanceStatus(msg)
         else:
             logger.info("Spec changes ignored by non-leader")
 

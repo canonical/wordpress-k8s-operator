@@ -173,7 +173,7 @@ class WordpressK8sCharm(CharmBase):
                     "imageDetails": {"imagePath": config["image"]},
                     "ports": ports,
                     "config": secure_pod_config,
-                    "readinessProbe": {"exec": {"command": ["/bin/cat", "/srv/wordpress-helpers/.ready"]}},
+                    "readinessProbe": {"exec": {"command": ["/srv/wordpress-helpers/ready.sh"]}},
                 }
             ]
         }

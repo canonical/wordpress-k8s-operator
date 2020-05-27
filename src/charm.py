@@ -143,7 +143,9 @@ class WordpressK8sCharm(CharmBase):
     def configure_pod(self):
         # Only the leader can set_spec().
         if self.model.unit.is_leader():
+            resources = self.make_pod_resources()
             spec = self.make_pod_spec()
+            spec.update(resources)
 
             msg = "Configuring pod"
             logger.info(msg)
@@ -156,6 +158,39 @@ class WordpressK8sCharm(CharmBase):
         else:
             logger.info("Spec changes ignored by non-leader")
 
+    def make_pod_resources(self):
+        resources = {
+            "kubernetesResources": {
+                "ingressResources": [{
+                    "name": self.app.name,
+                    "spec": {
+                        "rules": [{
+                            "host": self.model.config["blog_hostname"],
+                            "http": {
+                                "paths": [{
+                                    "path": "/",
+                                    "backend": {
+                                        "serviceName": self.app.name,
+                                        "servicePort": 80
+                                    }
+                                }]
+                            }
+                        }],
+                        "tls": [{
+                            "hosts": [self.model.config["blog_hostname"]],
+                            "secretName": self.model.config["tls_secret_name"],
+                        }],
+                    }
+                }]
+            }
+        }
+
+        out = io.StringIO()
+        pprint(resources, out)
+        logger.info("This is the Kubernetes Pod resources <<EOM\n{}\nEOM".format(out.getvalue()))
+
+        return resources
+
     def make_pod_spec(self):
         config = self.model.config
         full_pod_config = generate_pod_config(config, secured=False)
@@ -167,14 +202,16 @@ class WordpressK8sCharm(CharmBase):
         ]
 
         spec = {
+            "version": 2,
             "containers": [
                 {
                     "name": self.app.name,
                     "imageDetails": {"imagePath": config["image"]},
                     "ports": ports,
                     "config": secure_pod_config,
-                    "readinessProbe": {"exec": {"command": ["/srv/wordpress-helpers/ready.sh"]}},
-                }
+                    "kubernetes": {
+                        "readinessProbe": {"exec": {"command": ["/srv/wordpress-helpers/ready.sh"]}},
+                    }}
             ]
         }
 
@@ -199,7 +236,7 @@ class WordpressK8sCharm(CharmBase):
             self.model.unit.status = BlockedStatus("Missing initial_settings")
             is_valid = False
 
-        want = ("image", "db_host", "db_name", "db_user", "db_password")
+        want = ("image", "db_host", "db_name", "db_user", "db_password", "tls_secret_name")
         missing = [k for k in want if config[k].rstrip() == ""]
         if missing:
             message = "Missing required config: {}".format(" ".join(missing))

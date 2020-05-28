@@ -28,6 +28,7 @@ TEST_MODEL_CONFIG = {
     admin_email: root@admin.canonical.com
     weblog_title: Test Blog
     blog_public: False""",
+    "tls_secret_name": "wordpress-tls",
 }
 
 

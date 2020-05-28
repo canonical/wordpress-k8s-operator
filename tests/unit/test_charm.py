@@ -19,12 +19,7 @@ class TestWordpressK8sCharm(unittest.TestCase):
     test_model_config = TEST_MODEL_CONFIG
 
     def setUp(self):
-        self.harness = testing.Harness(
-            WordpressK8sCharm,
-            meta='''
-            name: wordpress
-            ''',
-        )
+        self.harness = testing.Harness(WordpressK8sCharm)
 
         self.harness.begin()
         self.harness.charm.model.config = copy.deepcopy(self.test_model_config)

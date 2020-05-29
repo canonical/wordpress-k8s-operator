@@ -6,7 +6,7 @@ import sys
 import unittest
 import yaml
 
-sys.path.append("src")  # noqa: E402
+sys.path.append("src")
 
 import charm
 import wordpress

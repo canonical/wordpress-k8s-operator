@@ -8,7 +8,7 @@ from yaml import safe_load
 
 from wordpress import Wordpress
 
-sys.path.append("lib")  # noqa: E402
+sys.path.append("lib")
 
 from ops.charm import CharmBase, CharmEvents
 from ops.framework import EventBase, EventSource, StoredState
@@ -161,27 +161,29 @@ class WordpressK8sCharm(CharmBase):
     def make_pod_resources(self):
         resources = {
             "kubernetesResources": {
-                "ingressResources": [{
-                    "name": self.app.name,
-                    "spec": {
-                        "rules": [{
-                            "host": self.model.config["blog_hostname"],
-                            "http": {
-                                "paths": [{
-                                    "path": "/",
-                                    "backend": {
-                                        "serviceName": self.app.name,
-                                        "servicePort": 80
-                                    }
-                                }]
-                            }
-                        }],
-                        "tls": [{
-                            "hosts": [self.model.config["blog_hostname"]],
-                            "secretName": self.model.config["tls_secret_name"],
-                        }],
+                "ingressResources": [
+                    {
+                        "name": self.app.name,
+                        "spec": {
+                            "rules": [
+                                {
+                                    "host": self.model.config["blog_hostname"],
+                                    "http": {
+                                        "paths": [
+                                            {"path": "/", "backend": {"serviceName": self.app.name, "servicePort": 80}}
+                                        ]
+                                    },
+                                }
+                            ],
+                            "tls": [
+                                {
+                                    "hosts": [self.model.config["blog_hostname"]],
+                                    "secretName": self.model.config["tls_secret_name"],
+                                }
+                            ],
+                        },
                     }
-                }]
+                ]
             }
         }
 
@@ -209,10 +211,9 @@ class WordpressK8sCharm(CharmBase):
                     "imageDetails": {"imagePath": config["image"]},
                     "ports": ports,
                     "config": secure_pod_config,
-                    "kubernetes": {
-                        "readinessProbe": {"exec": {"command": ["/srv/wordpress-helpers/ready.sh"]}},
-                    }}
-            ]
+                    "kubernetes": {"readinessProbe": {"exec": {"command": ["/srv/wordpress-helpers/ready.sh"]}}},
+                }
+            ],
         }
 
         out = io.StringIO()

@@ -4,8 +4,8 @@ import copy
 import unittest
 import sys
 
-sys.path.append('lib')  # noqa: E402
-sys.path.append('src')  # noqa: E402
+sys.path.append('lib')
+sys.path.append('src')
 
 from charm import WordpressK8sCharm
 from ops import testing
@@ -31,7 +31,7 @@ class TestWordpressK8sCharm(unittest.TestCase):
 
         # Test for invalid model config.
         want_msg_fmt = "Missing required config: {}"
-        want_keys = ("image", "db_host", "db_name", "db_user", "db_password")
+        want_keys = ("image", "db_host", "db_name", "db_user", "db_password", "tls_secret_name")
         for wanted_key in want_keys:
             self.harness.charm.model.config[wanted_key] = ""
             want_false = self.harness.charm.is_valid_config()

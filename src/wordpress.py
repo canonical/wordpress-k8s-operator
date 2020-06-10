@@ -11,6 +11,18 @@ from yaml import safe_load
 logger = logging.getLogger()
 
 
+WORDPRESS_SECRETS = [
+    "AUTH_KEY",
+    "SECURE_AUTH_KEY",
+    "LOGGED_IN_KEY",
+    "NONCE_KEY",
+    "AUTH_SALT",
+    "SECURE_AUTH_SALT",
+    "LOGGED_IN_SALT",
+    "NONCE_SALT",
+]
+
+
 def import_requests():
     # Workaround until https://github.com/canonical/operator/issues/156 is fixed.
     try:
@@ -23,9 +35,9 @@ def import_requests():
     return requests
 
 
-def password_generator():
+def password_generator(length=24):
     alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for i in range(24))
+    return ''.join(secrets.choice(alphabet) for i in range(length))
 
 
 class Wordpress:

@@ -1,17 +1,29 @@
 #!/usr/bin/env python3
 
 import copy
+import mock
 import unittest
 import sys
 
 sys.path.append('lib')
 sys.path.append('src')
 
-from charm import WordpressK8sCharm
+from charm import WordpressK8sCharm, create_wordpress_secrets, gather_wordpress_secrets
+from wordpress import WORDPRESS_SECRETS
 from ops import testing
 from ops.model import BlockedStatus
 
 from test_wordpress import TEST_MODEL_CONFIG
+
+
+class TestLeadershipData:
+    data = {}
+
+    def _leader_set(self, d):
+        self.data.update(d)
+
+    def _leader_get(self, k):
+        return self.data.get(k)
 
 
 class TestWordpressK8sCharm(unittest.TestCase):
@@ -54,3 +66,25 @@ class TestWordpressK8sCharm(unittest.TestCase):
         self.assertIsInstance(self.harness.charm.unit.status, BlockedStatus)
         self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
         self.assertLogs(expected_msg, level="INFO")
+
+    @mock.patch("charm._leader_set")
+    @mock.patch("charm._leader_get")
+    def test_create_wordpress_secrets(self, _leader_get_func, _leader_set_func):
+        leadership_data = TestLeadershipData()
+        _leader_set_func.side_effect = leadership_data._leader_set
+        _leader_get_func.side_effect = leadership_data._leader_get
+        create_wordpress_secrets()
+
+        self.assertEqual(list(leadership_data.data.keys()), WORDPRESS_SECRETS)
+
+    @mock.patch("charm._leader_set")
+    @mock.patch("charm._leader_get")
+    def test_gather_wordpress_secrets(self, _leader_get_func, _leader_set_func):
+        leadership_data = TestLeadershipData()
+        _leader_set_func.side_effect = leadership_data._leader_set
+        _leader_get_func.side_effect = leadership_data._leader_get
+        create_wordpress_secrets()
+        wp_secrets = gather_wordpress_secrets()
+        for key in WORDPRESS_SECRETS:
+            self.assertIsInstance(wp_secrets[key], str)
+            self.assertEqual(len(wp_secrets[key]), 64)

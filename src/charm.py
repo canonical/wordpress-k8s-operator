@@ -2,11 +2,12 @@
 
 import io
 import logging
+import subprocess
 import sys
 from pprint import pprint
 from yaml import safe_load
 
-from wordpress import Wordpress
+from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
 
 sys.path.append("lib")
 
@@ -59,6 +60,29 @@ def generate_pod_config(config, secured=True):
         pod_config["SWIFT_REMOVE_LOCAL_FILE"] = wp_plugin_swift_config.get('remove-local-file')
 
     return pod_config
+
+
+def _leader_get(attribute):
+    cmd = ['leader-get', '--format=yaml', attribute]
+    return safe_load(subprocess.check_output(cmd).decode('UTF-8'))
+
+
+def _leader_set(settings):
+    cmd = ['leader-set'] + ['{}={}'.format(k, v or '') for k, v in settings.items()]
+    subprocess.check_call(cmd)
+
+
+def create_wordpress_secrets():
+    for secret in WORDPRESS_SECRETS:
+        if not _leader_get(secret):
+            _leader_set({secret: password_generator(64)})
+
+
+def gather_wordpress_secrets():
+    rv = {}
+    for secret in WORDPRESS_SECRETS:
+        rv[secret] = _leader_get(secret)
+    return rv
 
 
 class WordpressInitialiseEvent(EventBase):
@@ -143,6 +167,7 @@ class WordpressK8sCharm(CharmBase):
     def configure_pod(self):
         # Only the leader can set_spec().
         if self.model.unit.is_leader():
+            create_wordpress_secrets()
             resources = self.make_pod_resources()
             spec = self.make_pod_spec()
             spec.update(resources)
@@ -184,7 +209,7 @@ class WordpressK8sCharm(CharmBase):
                         },
                     }
                 ]
-            }
+            },
         }
 
         out = io.StringIO()
@@ -196,6 +221,7 @@ class WordpressK8sCharm(CharmBase):
     def make_pod_spec(self):
         config = self.model.config
         full_pod_config = generate_pod_config(config, secured=False)
+        full_pod_config.update(gather_wordpress_secrets())
         secure_pod_config = generate_pod_config(config, secured=True)
 
         ports = [

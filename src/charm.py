@@ -188,6 +188,10 @@ class WordpressK8sCharm(CharmBase):
             "kubernetesResources": {
                 "ingressResources": [
                     {
+                        "annotations": {
+                            "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
+                            "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",
+                        },
                         "name": self.app.name,
                         "spec": {
                             "rules": [

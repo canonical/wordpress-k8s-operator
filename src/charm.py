@@ -138,7 +138,7 @@ class WordpressK8sCharm(CharmBase):
         pod_alive = self.model.unit.is_leader() and self.is_service_up()
         if pod_alive:
             wordpress_configured = self.wordpress.wordpress_configured(self.get_service_ip())
-            wordpress_needs_configuring = self.state.initialised and not wordpress_configured
+            wordpress_needs_configuring = not self.state.initialised and not wordpress_configured
         elif self.model.unit.is_leader():
             msg = "Wordpress workload pod is not ready"
             logger.info(msg)

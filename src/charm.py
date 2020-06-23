@@ -143,7 +143,7 @@ class WordpressK8sCharm(CharmBase):
             msg = "Wordpress workload pod is not ready"
             logger.info(msg)
             self.model.unit.status = WaitingStatus(msg)
-            return event.defer()
+            return
 
         if wordpress_needs_configuring:
             msg = "Wordpress needs configuration"

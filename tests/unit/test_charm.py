@@ -88,3 +88,41 @@ class TestWordpressK8sCharm(unittest.TestCase):
         for key in WORDPRESS_SECRETS:
             self.assertIsInstance(wp_secrets[key], str)
             self.assertEqual(len(wp_secrets[key]), 64)
+
+    def test_make_pod_resources(self):
+        self.harness.charm.model.config["blog_hostname"] = "blog.example.com"
+        self.harness.charm.model.config["tls_secret_name"] = "blog-example-com-tls"
+        # Test for https://bugs.launchpad.net/juju/+bug/1884674
+        ingress_name = 'wordpress-k8s-ingress'
+        self.assertNotEqual(ingress_name, self.harness.charm.app.name)
+
+        expected = {
+            'kubernetesResources': {
+                'ingressResources': [
+                    {
+                        "annotations": {
+                            "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
+                            "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",
+                        },
+                        'name': ingress_name,
+                        'spec': {
+                            'rules': [
+                                {
+                                    'host': 'blog.example.com',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress-k8s', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
+                                }
+                            ],
+                            'tls': [{'hosts': ['blog.example.com'], 'secretName': 'blog-example-com-tls'}],
+                        },
+                    }
+                ]
+            }
+        }
+        self.assertEqual(self.harness.charm.make_pod_resources(), expected)

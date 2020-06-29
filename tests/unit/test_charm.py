@@ -75,7 +75,7 @@ class TestWordpressK8sCharm(unittest.TestCase):
         _leader_get_func.side_effect = leadership_data._leader_get
         create_wordpress_secrets()
 
-        self.assertEqual(list(leadership_data.data.keys()), WORDPRESS_SECRETS)
+        self.assertEqual(sorted(list(leadership_data.data.keys())), sorted(WORDPRESS_SECRETS))
 
     @mock.patch("charm._leader_set")
     @mock.patch("charm._leader_get")

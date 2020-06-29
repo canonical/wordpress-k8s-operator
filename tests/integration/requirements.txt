@@ -1,0 +1,5 @@
+requests
+selenium
+pytest
+pytest-cov
+python2-secrets

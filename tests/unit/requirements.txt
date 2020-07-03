@@ -5,3 +5,4 @@ freezegun
 mock
 pytest
 pytest-cov
+python2-secrets

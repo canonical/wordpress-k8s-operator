@@ -3,13 +3,10 @@
 import io
 import logging
 import subprocess
-import sys
 from pprint import pprint
 from yaml import safe_load
 
 from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
-
-sys.path.append("lib")
 
 from ops.charm import CharmBase, CharmEvents
 from ops.framework import EventBase, EventSource, StoredState

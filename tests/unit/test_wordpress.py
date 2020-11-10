@@ -2,11 +2,8 @@ import copy
 import mock
 import requests
 import string
-import sys
 import unittest
 import yaml
-
-sys.path.append("src")
 
 import charm
 import wordpress

@@ -1,0 +1,5 @@
+/env
+/image
+*.py[cod]
+*.charm
+Makefile

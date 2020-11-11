@@ -4,7 +4,7 @@ import copy
 import mock
 import unittest
 
-from charm import WordpressK8sCharm, create_wordpress_secrets, gather_wordpress_secrets
+from charm import WordpressCharm, create_wordpress_secrets, gather_wordpress_secrets
 from wordpress import WORDPRESS_SECRETS
 from ops import testing
 from ops.model import BlockedStatus
@@ -22,12 +22,12 @@ class TestLeadershipData:
         return self.data.get(k)
 
 
-class TestWordpressK8sCharm(unittest.TestCase):
+class TestWordpressCharm(unittest.TestCase):
 
     test_model_config = TEST_MODEL_CONFIG
 
     def setUp(self):
-        self.harness = testing.Harness(WordpressK8sCharm)
+        self.harness = testing.Harness(WordpressCharm)
 
         self.harness.begin()
         self.harness.update_config(copy.deepcopy(self.test_model_config))
@@ -91,7 +91,7 @@ class TestWordpressK8sCharm(unittest.TestCase):
             "tls_secret_name": "blog-example-com-tls"
         })
         # Test for https://bugs.launchpad.net/juju/+bug/1884674
-        ingress_name = 'wordpress-k8s-ingress'
+        ingress_name = 'wordpress-ingress'
         self.assertNotEqual(ingress_name, self.harness.charm.app.name)
 
         expected = {
@@ -111,7 +111,7 @@ class TestWordpressK8sCharm(unittest.TestCase):
                                         'paths': [
                                             {
                                                 'path': '/',
-                                                'backend': {'serviceName': 'wordpress-k8s', 'servicePort': 80},
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
                                             }
                                         ]
                                     },

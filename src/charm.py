@@ -102,7 +102,7 @@ class WordpressCharmEvents(CharmEvents):
     wordpress_initialise = EventSource(WordpressInitialiseEvent)
 
 
-class WordpressK8sCharm(CharmBase):
+class WordpressCharm(CharmBase):
     state = StoredState()
     # Override the default list of event handlers with our WordpressCharmEvents subclass.
     on = WordpressCharmEvents()

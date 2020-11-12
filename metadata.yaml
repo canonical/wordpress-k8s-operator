@@ -1,4 +1,4 @@
-name: "wordpress-k8s"
+name: "wordpress"
 summary: "Wordpress, uses official Docker Wordpress image by default"
 description: "Wordpress, uses official Docker Wordpress image by default"
 min-juju-version: 2.8.0

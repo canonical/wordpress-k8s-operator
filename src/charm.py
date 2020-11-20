@@ -289,4 +289,4 @@ class WordpressCharm(CharmBase):
 
 
 if __name__ == "__main__":
-    main(WordpressK8sCharm)
+    main(WordpressCharm)

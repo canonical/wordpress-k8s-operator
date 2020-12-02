@@ -10,8 +10,8 @@ attached to a controller using `juju add-k8s`.
 
 The image to spin up is specified in the `image` charm configuration
 option using standard docker notation (eg. 'localhost:32000/mywork-rev42').
-The default image is Dockerhub's `wordpress:php7.3` image, but you can also
-use private images by specifying `image_user` and `image_pass` charm
+The default image is Dockerhub's `wordpresscharmers/wordpress:bionic-stable` image,
+but you can also use private images by specifying `image_user` and `image_pass` charm
 configuration.
 
 Configuration for the Wordpress image is in standard Juju config. In particular:
@@ -49,6 +49,14 @@ Notes for deploying a test setup locally using microk8s:
     juju add-model wordpress-test
     juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
     juju deploy cs:~wordpress-charmers/wordpress-k8s --channel=edge wordpress
-    juju config wordpress db_host=10.1.1.1 db_user=wp db_password=secret
+    # TLS certificates are required for the ingress to function properly, self-signed is okay
+    # for testing but make sure you use valid ones in production.
+    openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout server.key -out server.crt
+    kubectl create secret tls tls-wordpress --cert=server.crt --key=server.key
+    juju config wordpress db_host=10.1.1.1 db_user=wp db_password=secret tls_secret_name=tls-wordpress \
+        initial_settings="user_name: admin
+        admin_email: devnull@canonical.com
+        weblog_title: Test Blog
+        blog_public: False"
     juju wait
     juju status # Shows IP address, and port is 80

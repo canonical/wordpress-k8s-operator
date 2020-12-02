@@ -1,8 +1,8 @@
 options:
   image:
     type: string
-    description: "The docker image to install. Required. Defaults to Dockerhub wordpress:php7.3"
-    default: "wordpress:php7.3"
+    description: "The docker image to install. Required. Defaults to Dockerhub wordpresscharmers/wordpress:bionic-stable"
+    default: "wordpresscharmers/wordpress:bionic-stable"
   image_user:
     type: string
     description: "Username to use for the configured image registry, if required"

@@ -66,7 +66,7 @@ RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/latest.tar.gz" \
     && mv /usr/src/wordpress /var/www/html
 
 COPY ./image-builder/files/ /files/
-COPY ./image-builder/fetcher.py .
+COPY ./image-builder/src/fetcher.py .
 RUN mkdir -p /files/themes /files/plugins
 RUN ./fetcher.py
 # Copy our collected themes and plugins into the appropriate paths

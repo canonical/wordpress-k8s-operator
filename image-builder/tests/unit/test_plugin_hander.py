@@ -1,17 +1,14 @@
-import os
-import sys
 import unittest
 from unittest import mock
 
-sys.path.append(os.path.join("..", "..", os.path.dirname(__file__)))
-from files import plugin_handler  # NOQA: E402
+import plugin_handler
 
 
 class testWrapper(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-    @mock.patch("files.plugin_handler.logging")
+    @mock.patch("plugin_handler.logging")
     def test_team_mapper(self, foo):
         given = ",".join(
             [

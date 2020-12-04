@@ -46,24 +46,45 @@ zip_plugins_to_get = {
 
 branch_plugins_to_get = {
     # please keep these in alphabetical order
-    'launchpad-integration': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/wordpress-launchpad-integration'},
-    'openstack-objectstorage': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s'},
-    'teams-integration': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration'},
-    'xubuntu-team-members': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-plugin-xubuntu-team-members'},
+    'launchpad-integration': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/'
+               'wordpress-launchpad-integration'
+    },
+    'openstack-objectstorage': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s'
+    },
+    'teams-integration': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/'
+               'wordpress-teams-integration'
+    },
+    'xubuntu-team-members': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-plugin-xubuntu-team-members'
+    },
 }
 
 branch_themes_to_get = {
     # please keep these in alphabetical order
     'fruitful': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-fruitful'},
-    'light-wordpress-theme': {'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme'},
+    'light-wordpress-theme': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme'
+    },
     'mscom': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-mscom'},
     'twentyeleven': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-twentyeleven'},
-    'ubuntu-cloud-website': {'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-cloud-website/+git/ubuntu-cloud-website'},
-    'ubuntu-community': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-community'},
-    'ubuntu-community-wordpress-theme': {'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-wordpress-theme/+git/ubuntu-community-wordpress-theme'},
+    'ubuntu-cloud-website': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-cloud-website/+git/ubuntu-cloud-website'
+    },
+    'ubuntu-community': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-community'
+    },
+    'ubuntu-community-wordpress-theme': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-wordpress-theme/+git/'
+               'ubuntu-community-wordpress-theme'
+    },
     'ubuntu-fi-new': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-fi'},
     'ubuntu-light': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-light'},
-    'ubuntustudio-wp': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp'},
+    'ubuntustudio-wp': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp'
+    },
     'wordpress_launchpad': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-launchpad'},
     'xubuntu-theme': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-xubuntu-website'},
 }

@@ -69,6 +69,7 @@ branch_themes_to_get = {
         'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme'
     },
     'mscom': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-mscom'},
+    'thematic': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-thematic'},
     'twentyeleven': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-twentyeleven'},
     'ubuntu-cloud-website': {
         'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-cloud-website/+git/ubuntu-cloud-website'

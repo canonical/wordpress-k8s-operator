@@ -1,8 +1,10 @@
 ARG DIST_RELEASE
-
 FROM ubuntu:${DIST_RELEASE}
+ARG DIST_RELEASE
+ARG VERSION
 
 LABEL maintainer="wordpress-charmers@lists.launchpad.net"
+LABEL org.label-schema.version=${DIST_RELEASE}-${VERSION}
 
 # HTTPS_PROXY used when we RUN curl to download Wordpress itself
 ARG BUILD_DATE

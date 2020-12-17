@@ -7,6 +7,10 @@ LABEL maintainer="wordpress-charmers@lists.launchpad.net"
 # HTTPS_PROXY used when we RUN curl to download Wordpress itself
 ARG BUILD_DATE
 ARG HTTPS_PROXY
+ARG VERSION
+
+# Used by Launchpad OCI Recipe to tag version
+LABEL org.label-schema.version=${VERSION:-5.6}
 
 # Launchpad OCI image builds don't support dynamic arg parsing. Skip until
 # https://bugs.launchpad.net/launchpad/+bug/1902010 is resolved.
@@ -58,7 +62,7 @@ RUN a2enconf docker-php \
     && a2enmod rewrite
 
 # Install the main Wordpress code, this will be our only site so /var/www/html is fine
-RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/latest.tar.gz" \
+RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${VERSION}.tar.gz" \
     && tar -xzf wordpress.tar.gz -C /usr/src/ \
     && rm wordpress.tar.gz \
     && chown -R www-data:www-data /usr/src/wordpress \

@@ -2,6 +2,7 @@
 
 import io
 import logging
+import re
 import subprocess
 from pprint import pprint
 from yaml import safe_load
@@ -83,6 +84,10 @@ def gather_wordpress_secrets():
     for secret in WORDPRESS_SECRETS:
         rv[secret] = _leader_get(secret)
     return rv
+
+
+def split_additional_hostnames(hostnames):
+    return hostnames.split(" ")
 
 
 class WordpressInitialiseEvent(EventBase):
@@ -274,6 +279,20 @@ class WordpressCharm(CharmBase):
             },
         }
 
+        if self.model.config["additional_hostnames"]:
+            additional_hostnames = split_additional_hostnames(self.model.config["additional_hostnames"])
+            rules = resources["kubernetesResources"]["ingressResources"][0]["spec"]["rules"]
+            for hostname in additional_hostnames:
+                rule = {
+                    "host": hostname,
+                    "http": {
+                        "paths": [
+                            {"path": "/", "backend": {"serviceName": self.app.name, "servicePort": 80}}
+                        ]
+                    },
+                }
+                rules.append(rule)
+
         ingress = resources["kubernetesResources"]["ingressResources"][0]
         if self.model.config["tls_secret_name"]:
             ingress["spec"]["tls"] = [
@@ -332,7 +351,7 @@ class WordpressCharm(CharmBase):
 
         return spec
 
-    def is_valid_config(self):
+    def is_valid_config(self):  # If this grows anymore consider breaking up into smaller functions.
         is_valid = True
         config = self.model.config
 
@@ -357,6 +376,16 @@ class WordpressCharm(CharmBase):
             logger.info(message)
             self.model.unit.status = BlockedStatus(message)
             is_valid = False
+
+        if config["additional_hostnames"]:
+            split_hostnames = split_additional_hostnames(config["additional_hostnames"])
+            valid_domain_name_pattern = re.compile(r"^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$")
+            valid = [re.match(valid_domain_name_pattern, h) for h in split_hostnames]
+            if not all(valid):
+                message = "Invalid additional hostnames supplied: {}".format(config["additional_hostnames"])
+                logger.info(message)
+                self.model.unit.status = BlockedStatus(message)
+                is_valid = False
 
         return is_valid
 

@@ -17,6 +17,7 @@ TEST_MODEL_CONFIG = {
     "db_name": "wordpress",
     "db_user": "admin",
     "db_password": "letmein123",
+    "additional_hostnames": "cool-newsite.org blog.test.com",
     "wp_plugin_openid_team_map": True,
     "wp_plugin_akismet_key": "somerandomstring",
     "container_config": "test-key: test",

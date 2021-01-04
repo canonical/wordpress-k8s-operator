@@ -1,11 +1,12 @@
 DIST_RELEASE ?= bionic
-VERSION ?= latest
+VERSION ?= 5.6
 
 build-image:
 	@echo "Building the image."
 	@docker build \
 		--no-cache=true \
 		--build-arg DIST_RELEASE=$(DIST_RELEASE) \
+		--build-arg VERSION=$(VERSION) \
 		-t wordpress:$(DIST_RELEASE)-$(VERSION) \
 		.
 lint: clean

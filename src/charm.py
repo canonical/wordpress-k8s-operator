@@ -115,6 +115,9 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.update_status, self.on_config_changed)
         self.framework.observe(self.on.wordpress_initialise, self.on_wordpress_initialise)
 
+        # Actions.
+        self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
+
         self.state.set_default(
             initialised=False, valid=False,
         )
@@ -286,6 +289,14 @@ class WordpressCharm(CharmBase):
         if service_ip:
             return self.wordpress.is_vhost_ready(service_ip)
         return False
+
+    def _on_get_initial_password_action(self, event):
+        """Handle the get-initial-password action."""
+        passwd_file = '/root/initial.passwd'
+        try:
+            event.set_results({"initial_password": self.wordpress._read_initial_password(passwd_file)})
+        except FileNotFoundError:
+            event.fail("Unable to find '{}'.".format(passwd_file))
 
 
 if __name__ == "__main__":

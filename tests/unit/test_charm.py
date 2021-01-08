@@ -4,6 +4,8 @@ import copy
 import mock
 import unittest
 
+from unittest.mock import Mock
+
 from charm import WordpressCharm, create_wordpress_secrets, gather_wordpress_secrets
 from wordpress import WORDPRESS_SECRETS
 from ops import testing
@@ -124,3 +126,16 @@ class TestWordpressCharm(unittest.TestCase):
             }
         }
         self.assertEqual(self.harness.charm.make_pod_resources(), expected)
+
+    def test_on_get_initial_password_action(self):
+        action_event = Mock()
+        # First test finding the file contents fine.
+        with mock.patch.object(self.harness.charm.wordpress, "_read_initial_password") as _read_initial_password:
+            _read_initial_password.return_value = 'passwd'
+            self.harness.charm._on_get_initial_password_action(action_event)
+            self.assertEqual(action_event.set_results.call_args, mock.call({"initial_password": "passwd"}))
+        # Now test if we raise a FileNotFoundError.
+        with mock.patch.object(self.harness.charm.wordpress, "_read_initial_password") as _read_initial_password:
+            _read_initial_password.side_effect = FileNotFoundError
+            self.harness.charm._on_get_initial_password_action(action_event)
+            self.assertEqual(action_event.fail.call_args, mock.call("Unable to find '/root/initial.passwd'."))

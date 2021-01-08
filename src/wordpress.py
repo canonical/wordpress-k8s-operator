@@ -44,7 +44,13 @@ class Wordpress:
     def __init__(self, model_config):
         self.model_config = model_config
 
+    def _read_initial_password(self, filepath):
+        """Read contents of initial password file."""
+        with open(filepath, "r") as f:
+            return f.read()
+
     def _write_initial_password(self, password, filepath):
+        """Write contents of initial password file."""
         with open(filepath, "w") as f:
             f.write(password)
 

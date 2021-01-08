@@ -1,0 +1,2 @@
+get-initial-password:
+  description: Retrieve the auto-generated initial password.

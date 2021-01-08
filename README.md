@@ -1,7 +1,7 @@
-# Wordpress k8s charm
+# Wordpress Operator
 
-A Juju charm for a Kubernetes deployment of Wordpress, using the
-official Dockerhub Wordpress image or an image built from this base.
+A Juju charm for a Kubernetes deployment of Wordpress, configurable to use a
+MySQL backend.
 
 ## Overview
 
@@ -9,8 +9,9 @@ This is a k8s charm and can only be deployed to to a Juju k8s cloud,
 attached to a controller using `juju add-k8s`.
 
 The image to spin up is specified in the `image` charm configuration
-option using standard docker notation (eg. 'localhost:32000/mywork-rev42').
-The default image is Dockerhub's `wordpresscharmers/wordpress:bionic-stable` image,
+option using standard docker notation (e.g. 'localhost:32000/mywork-rev42').
+The default image is built using an OCI Recipe on Launchpad and pushed to
+[the 'wordpresscharmers/wordpress' namespace on Dockerhub](https://hub.docker.com/r/wordpresscharmers/wordpress),
 but you can also use private images by specifying `image_user` and `image_pass` charm
 configuration.
 
@@ -41,10 +42,6 @@ Initialise the database as follows:
     GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress'@'%';
     FLUSH PRIVILEGES;
 
-Deploy the charm into your Kubernetes Juju model:
-
-    juju deploy cs:~wordpress-charmers/wordpress
-
 The Wordpress k8s charm requires TLS secrets to be pre-configured to ensure
 logins are kept secure. Create a self-signed certificate and upload it as a
 Kubernetes secret (assuming you're using MicroK8s):
@@ -52,20 +49,18 @@ Kubernetes secret (assuming you're using MicroK8s):
     openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout server.key -out server.crt
     microk8s.kubectl create secret tls -n wordpress tls-wordpress --cert=server.crt --key=server.key
 
-Tell the charm where the database is and provide some initial setup:
+Deploy the charm into your Kubernetes Juju model:
 
     DB_HOST=$IP_OF_YOUR_MYSQL_DATABASE
-    juju config wordpress db_host=$DB_HOST db_user=wordpress db_password=wordpress tls_secret_name=tls-wordpress \
-            initial_settings="user_name: admin
-            admin_email: devnull@example.com
-            weblog_title: Test Blog
-            blog_public: False"
+    juju deploy cs:~wordpress-charmers/wordpress \
+        --config db_host=$DB_HOST \
+        --config tls_secret_name=tls-wordpress
 
 From there you can test the site by updating your `/etc/hosts` file and creating
 a static entry for the IP address of the Kubernetes ingress gateway:
 
-    App        Version                  Status   Scale  Charm      Store  Rev  OS          Address         Message
-    wordpress  wordpress:bionic-stable  waiting      1  wordpress  local    0  kubernetes  10.152.183.140 
+    App        Version        Status   Scale  Charm      Store  Rev  OS          Address         Message
+    wordpress  wordpress:5.6  waiting      1  wordpress  local    0  kubernetes  10.152.183.140
     
     echo '10.152.183.140 myblog.example.com' | sudo tee -a /etc/hosts
 

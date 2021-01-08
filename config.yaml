@@ -1,8 +1,8 @@
 options:
   image:
     type: string
-    description: "The docker image to install. Required. Defaults to Dockerhub wordpresscharmers/wordpress:bionic-stable"
-    default: "wordpresscharmers/wordpress:bionic-stable"
+    description: "The docker image to install. Required."
+    default: "wordpresscharmers/wordpress:5.6"
   image_user:
     type: string
     description: "Username to use for the configured image registry, if required"
@@ -36,7 +36,7 @@ options:
   db_password:
     type: string
     description: "MySQL database user's password"
-    default: ""
+    default: "wordpress"
   container_config:
     type: string
     description: >
@@ -54,7 +54,7 @@ options:
   initial_settings:
       type: string
       description: >
-        Optional, YAML formatted, Wordpress configuration. It is used only
+        YAML formatted Wordpress configuration. It is used only
         during initial deployment. Changing it at later stage has no effect.
         If set to non empty string required keys are:
 
@@ -68,8 +68,10 @@ options:
             blog_public: False        # by default blogs are public
 
         If admin_password is not provided it will be automatically generated
-        and stored on the operator pod in the /root directory
-      default: ""
+        and stored on the operator pod in the /root directory.
+      default: |
+        user_name: admin
+        admin_email: devnull@example.com
   blog_hostname:
     type: string
     description: Blog hostname

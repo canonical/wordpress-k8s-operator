@@ -70,7 +70,7 @@ options:
         If admin_password is not provided it will be automatically generated
         and stored on the operator pod in the /root directory.
       default: |
-        user_admin: admin
+        user_name: admin
         admin_email: devnull@example.com
   blog_hostname:
     type: string

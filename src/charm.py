@@ -119,7 +119,7 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
 
         self.state.set_default(
-            initialised=False, valid=False,
+            initialised=False, initial_password=None, valid=False,
         )
 
         self.wordpress = Wordpress(self.model.config)
@@ -149,7 +149,8 @@ class WordpressCharm(CharmBase):
             msg = "Wordpress needs configuration"
             logger.info(msg)
             self.model.unit.status = MaintenanceStatus(msg)
-            installed = self.wordpress.first_install(self.get_service_ip())
+            admin_password = password_generator()
+            installed = self.wordpress.first_install(self.get_service_ip(), admin_password)
             if not installed:
                 msg = "Failed to configure wordpress"
                 logger.info(msg)
@@ -157,6 +158,7 @@ class WordpressCharm(CharmBase):
                 return
 
             self.state.initialised = True
+            self.state.initial_password = admin_password
             logger.info("Wordpress configured and initialised")
             self.model.unit.status = ActiveStatus()
 
@@ -292,11 +294,10 @@ class WordpressCharm(CharmBase):
 
     def _on_get_initial_password_action(self, event):
         """Handle the get-initial-password action."""
-        passwd_file = '/root/initial.passwd'
-        try:
-            event.set_results({"initial_password": self.wordpress._read_initial_password(passwd_file)})
-        except FileNotFoundError:
-            event.fail("Unable to find '{}'.".format(passwd_file))
+        if self.state.initial_password:
+            event.set_results({"initial_password": self.state.initial_password})
+        else:
+            event.fail("Initial password has not been set yet.")
 
 
 if __name__ == "__main__":

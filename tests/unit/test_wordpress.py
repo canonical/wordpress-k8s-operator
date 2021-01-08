@@ -94,13 +94,10 @@ class WordpressTest(unittest.TestCase):
     def test__init__(self):
         self.assertEqual(self.test_wordpress.model_config, self.test_model_config)
 
-    @mock.patch("wordpress.password_generator", side_effect=dummy_password_generator)
-    def test_first_install(self, password_generator_func):
+    def test_first_install(self):
         mocked_call_wordpress = mock.MagicMock(name="call_wordpress", return_value=True)
-        mocked__write_initial_password = mock.MagicMock(name="_write_initial_password", return_value=None)
         mocked_wordpress_configured = mock.MagicMock(name="wordpress_configured", return_value=True)
         self.test_wordpress.call_wordpress = mocked_call_wordpress
-        self.test_wordpress._write_initial_password = mocked__write_initial_password
         self.test_wordpress.wordpress_configured = mocked_wordpress_configured
 
         test_payload = {
@@ -112,10 +109,7 @@ class WordpressTest(unittest.TestCase):
             'admin_email': 'root@admin.canonical.com',
             'weblog_title': 'Test Blog',
         }
-        self.test_wordpress.first_install(self.test_service_ip)
-
-        # Test that we wrote initial admin credentials inside the operator pod.
-        self.test_wordpress._write_initial_password.assert_called_with(TEST_GENERATED_PASSWORD, "/root/initial.passwd")
+        self.test_wordpress.first_install(self.test_service_ip, TEST_GENERATED_PASSWORD)
 
         # Test that we POST'd our initial configuration options to the wordpress API.
         self.test_wordpress.call_wordpress.assert_called_with(
@@ -128,7 +122,7 @@ class WordpressTest(unittest.TestCase):
         self.test_wordpress.model_config["initial_settings"] = (
             "user_name: admin\n" "weblog_title: Test Blog\n" "blog_public: False"
         )
-        self.test_wordpress.first_install(self.test_service_ip)
+        self.test_wordpress.first_install(self.test_service_ip, TEST_GENERATED_PASSWORD)
         self.test_wordpress.call_wordpress.assert_not_called()
 
     def test_wordpress_configured(self):

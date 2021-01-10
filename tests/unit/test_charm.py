@@ -136,4 +136,4 @@ class TestWordpressCharm(unittest.TestCase):
         # Now test with initial password set.
         self.harness.charm.state.initial_password = "passwd"
         self.harness.charm._on_get_initial_password_action(action_event)
-        self.assertEqual(action_event.set_results.call_args, mock.call({"initial_password": "passwd"}))
+        self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))

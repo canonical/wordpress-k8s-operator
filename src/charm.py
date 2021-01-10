@@ -295,7 +295,7 @@ class WordpressCharm(CharmBase):
     def _on_get_initial_password_action(self, event):
         """Handle the get-initial-password action."""
         if self.state.initial_password:
-            event.set_results({"initial_password": self.state.initial_password})
+            event.set_results({"password": self.state.initial_password})
         else:
             event.fail("Initial password has not been set yet.")
 

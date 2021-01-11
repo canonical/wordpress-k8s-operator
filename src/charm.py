@@ -12,6 +12,7 @@ from ops.charm import CharmBase, CharmEvents
 from ops.framework import EventBase, EventSource, StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+from leadership import LeadershipSettings
 
 logger = logging.getLogger()
 
@@ -110,6 +111,8 @@ class WordpressCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
 
+        self.leader_data = LeadershipSettings()
+
         self.framework.observe(self.on.start, self.on_config_changed)
         self.framework.observe(self.on.config_changed, self.on_config_changed)
         self.framework.observe(self.on.update_status, self.on_config_changed)
@@ -119,7 +122,7 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
 
         self.state.set_default(
-            initialised=False, initial_password=None, valid=False,
+            initialised=False, valid=False,
         )
 
         self.wordpress = Wordpress(self.model.config)
@@ -149,8 +152,8 @@ class WordpressCharm(CharmBase):
             msg = "Wordpress needs configuration"
             logger.info(msg)
             self.model.unit.status = MaintenanceStatus(msg)
-            admin_password = password_generator()
-            installed = self.wordpress.first_install(self.get_service_ip(), admin_password)
+            initial_password = self._get_initial_password()
+            installed = self.wordpress.first_install(self.get_service_ip(), initial_password)
             if not installed:
                 msg = "Failed to configure wordpress"
                 logger.info(msg)
@@ -158,7 +161,6 @@ class WordpressCharm(CharmBase):
                 return
 
             self.state.initialised = True
-            self.state.initial_password = admin_password
             logger.info("Wordpress configured and initialised")
             self.model.unit.status = ActiveStatus()
 
@@ -292,10 +294,23 @@ class WordpressCharm(CharmBase):
             return self.wordpress.is_vhost_ready(service_ip)
         return False
 
+    def _get_initial_password(self):
+        """Get the initial password.
+
+        If a password hasn't been set yet, create one if we're the leader,
+        or return an empty string if we're not."""
+        initial_password = self.leader_data["initial_password"]
+        if not initial_password:
+            if self.unit.is_leader:
+                initial_password = password_generator()
+                self.leader_data["initial_password"] = initial_password
+        return initial_password
+
     def _on_get_initial_password_action(self, event):
         """Handle the get-initial-password action."""
-        if self.state.initial_password:
-            event.set_results({"password": self.state.initial_password})
+        initial_password = self._get_initial_password()
+        if initial_password:
+            event.set_results({"password": initial_password})
         else:
             event.fail("Initial password has not been set yet.")
 

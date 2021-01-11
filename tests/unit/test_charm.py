@@ -130,10 +130,12 @@ class TestWordpressCharm(unittest.TestCase):
     def test_on_get_initial_password_action(self):
         action_event = Mock()
         # First test with no initial password set.
-        self.assertEqual(self.harness.charm.state.initial_password, None)
-        self.harness.charm._on_get_initial_password_action(action_event)
-        self.assertEqual(action_event.fail.call_args, mock.call("Initial password has not been set yet."))
+        with mock.patch.object(self.harness.charm, "_get_initial_password") as get_initial_password:
+            get_initial_password.return_value = ""
+            self.harness.charm._on_get_initial_password_action(action_event)
+            self.assertEqual(action_event.fail.call_args, mock.call("Initial password has not been set yet."))
         # Now test with initial password set.
-        self.harness.charm.state.initial_password = "passwd"
-        self.harness.charm._on_get_initial_password_action(action_event)
-        self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))
+        with mock.patch.object(self.harness.charm, "_get_initial_password") as get_initial_password:
+            get_initial_password.return_value = "passwd"
+            self.harness.charm._on_get_initial_password_action(action_event)
+            self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))

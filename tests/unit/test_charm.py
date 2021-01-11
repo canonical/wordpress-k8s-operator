@@ -7,7 +7,11 @@ import unittest
 from charm import WordpressCharm, create_wordpress_secrets, gather_wordpress_secrets
 from wordpress import WORDPRESS_SECRETS
 from ops import testing
-from ops.model import BlockedStatus
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    MaintenanceStatus,
+)
 
 from test_wordpress import TEST_MODEL_CONFIG
 
@@ -124,3 +128,31 @@ class TestWordpressCharm(unittest.TestCase):
             }
         }
         self.assertEqual(self.harness.charm.make_pod_resources(), expected)
+
+    @mock.patch("charm._leader_set")
+    @mock.patch("charm._leader_get")
+    def test_configure_pod(self, _leader_get_func, _leader_set_func):
+        leadership_data = TestLeadershipData()
+        _leader_set_func.side_effect = leadership_data._leader_set
+        _leader_get_func.side_effect = leadership_data._leader_get
+
+        # First of all, test with leader set, but not initialised.
+        self.harness.set_leader(True)
+        self.assertEqual(self.harness.charm.state.initialised, False)
+        self.harness.charm.configure_pod()
+        expected_msg = "Pod configured, but WordPress configuration pending"
+        self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
+        self.assertLogs(expected_msg, level="INFO")
+        self.assertIsInstance(self.harness.charm.unit.status, MaintenanceStatus)
+        # Now with state initialised.
+        self.harness.charm.state.initialised = True
+        self.harness.charm.configure_pod()
+        expected_msg = "Pod configured"
+        self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
+        self.assertLogs(expected_msg, level="INFO")
+        self.assertIsInstance(self.harness.charm.unit.status, ActiveStatus)
+        # And now test with non-leader.
+        self.harness.set_leader(False)
+        self.harness.charm.configure_pod()
+        expected_msg = "Spec changes ignored by non-leader"
+        self.assertLogs(expected_msg, level="INFO")

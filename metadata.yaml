@@ -12,3 +12,7 @@ series:
 provides:
   website:
     interface: http
+requires:
+  db:
+    interface: mysql
+    limit: 1

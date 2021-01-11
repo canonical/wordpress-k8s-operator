@@ -6,12 +6,14 @@ import subprocess
 from pprint import pprint
 from yaml import safe_load
 
-from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
-
 from ops.charm import CharmBase, CharmEvents
 from ops.framework import EventBase, EventSource, StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+
+from mysql import MySQLClient
+from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
+
 
 logger = logging.getLogger()
 
@@ -115,20 +117,20 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.update_status, self.on_config_changed)
         self.framework.observe(self.on.wordpress_initialise, self.on_wordpress_initialise)
 
-        self.state.set_default(
-            initialised=False, valid=False,
-        )
+        self.db = MySQLClient(self, 'db')
+        self.framework.observe(self.on.db_relation_created, self.on_db_relation_created)
+        self.framework.observe(self.on.db_relation_broken, self.on_db_relation_broken)
+        self.framework.observe(self.db.on.database_changed, self.on_database_changed)
 
-        self.wordpress = Wordpress(self.model.config)
+        c = self.model.config
+        self.state.set_default(
+            initialised=False, valid=False, has_db_relation=False,
+            db_host=c["db_host"], db_name=c["db_name"], db_user=c["db_user"], db_password=c["db_password"]
+        )
+        self.wordpress = Wordpress(c)
 
     def on_config_changed(self, event):
-        is_valid = self.is_valid_config()
-        if not is_valid:
-            return
-
-        self.configure_pod()
-        if not self.state.initialised:
-            self.on.wordpress_initialise.emit()
+        self.config_changed()
 
     def on_wordpress_initialise(self, event):
         wordpress_needs_configuring = False
@@ -160,6 +162,40 @@ class WordpressCharm(CharmBase):
         else:
             logger.info("Wordpress workload pod is ready and configured")
             self.model.unit.status = ActiveStatus()
+
+    def on_db_relation_created(self, event):
+        self.state.has_db_relation = True
+        self.state.db_host = None
+        self.state.db_name = None
+        self.state.db_user = None
+        self.state.db_password = None
+        self.config_changed()
+
+    def on_db_relation_broken(self, event):
+        self.state.has_db_relation = False
+        self.config_changed()
+
+    def on_database_changed(self, event):
+        self.state.db_host = event.host
+        self.state.db_name = event.database
+        self.state.db_user = event.user
+        self.state.db_password = event.password
+        self.config_changed()
+
+    def config_changed(self):
+        if not self.state.has_db_relation:
+            self.state.db_host = self.model.config["db_host"] or None
+            self.state.db_name = self.model.config["db_name"] or None
+            self.state.db_user = self.model.config["db_user"] or None
+            self.state.db_password = self.model.config["db_password"] or None
+
+        is_valid = self.is_valid_config()
+        if not is_valid:
+            return
+
+        self.configure_pod()
+        if not self.state.initialised:
+            self.on.wordpress_initialise.emit()
 
     def configure_pod(self):
         # Only the leader can set_spec().
@@ -225,7 +261,12 @@ class WordpressCharm(CharmBase):
         return resources
 
     def make_pod_spec(self):
-        config = self.model.config
+        config = dict(self.model.config)
+        config["db_host"] = self.state.db_host
+        config["db_name"] = self.state.db_name
+        config["db_user"] = self.state.db_user
+        config["db_password"] = self.state.db_password
+
         full_pod_config = generate_pod_config(config, secured=False)
         full_pod_config.update(gather_wordpress_secrets())
         secure_pod_config = generate_pod_config(config, secured=True)
@@ -269,10 +310,19 @@ class WordpressCharm(CharmBase):
             self.model.unit.status = BlockedStatus("Missing initial_settings")
             is_valid = False
 
-        want = ("image", "db_host", "db_name", "db_user", "db_password")
+        want = ["image"]
+
+        if self.state.has_db_relation:
+            if not (self.state.db_host and self.state.db_name and self.state.db_user and self.state.db_password):
+                logger.info("MySQL relation has not yet provided database credentials.")
+                self.model.unit.status = WaitingStatus("Waiting for MySQL relation to become available")
+                is_valid = False
+        else:
+            want.extend(["db_host", "db_name", "db_user", "db_password"])
+
         missing = [k for k in want if config[k].rstrip() == ""]
         if missing:
-            message = "Missing required config: {}".format(" ".join(missing))
+            message = "Missing required config or relation: {}".format(" ".join(missing))
             logger.info(message)
             self.model.unit.status = BlockedStatus(message)
             is_valid = False

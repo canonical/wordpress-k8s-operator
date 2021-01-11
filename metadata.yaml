@@ -1,6 +1,7 @@
 name: "wordpress"
-summary: "Wordpress, uses official Docker Wordpress image by default"
-description: "Wordpress, uses official Docker Wordpress image by default"
+summary: "WordPress is open source software you can use to create a beautiful website, blog, or app."
+description: "WordPress is open source software you can use to create a beautiful website, blog, or app. https://wordpress.org/"
+docs: https://discourse.charmhub.io/t/wordpress-documentation-overview/4052
 min-juju-version: 2.8.0
 maintainers:
   - https://launchpad.net/~wordpress-charmers <wordpress-charmers@lists.launchpad.net>

@@ -1,35 +1,20 @@
-# Wordpress Operator
+# WordPress Operator
 
-A Juju charm for a Kubernetes deployment of Wordpress, configurable to use a
+A Juju charm for a Kubernetes deployment of WordPress, configurable to use a
 MySQL backend.
 
 ## Overview
 
-This is a k8s charm and can only be deployed to to a Juju k8s cloud,
-attached to a controller using `juju add-k8s`.
+WordPress powers more than 39% of the web — a figure that rises every day.
+Everything from simple websites, to blogs, to complex portals and enterprise
+websites, and even applications, are built with WordPress. WordPress combines
+simplicity for users and publishers with under-the-hood complexity for
+developers. This makes it flexible while still being easy-to-use.
 
-The image to spin up is specified in the `image` charm configuration
-option using standard docker notation (e.g. 'localhost:32000/mywork-rev42').
-The default image is built using an OCI Recipe on Launchpad and pushed to
-[the 'wordpresscharmers/wordpress' namespace on Dockerhub](https://hub.docker.com/r/wordpresscharmers/wordpress),
-but you can also use private images by specifying `image_user` and `image_pass` charm
-configuration.
+## Usage
 
-Configuration for the Wordpress image is in standard Juju config. In particular:
-
-* `db_host`, `db_user` & `db_password`. This charm may in future be relatable
-   to a MySQL deployment, when the MySQL charm is updated to support cross
-   model relations.
-* `ports`. Custom images may require additional ports to be opened, such
-   as those providing monitoring or metrics endpoints.
-
-Additional runtime configuration is specified as YAML snippets in the charm config.
-Both `container_config` and `container_secrets` items are provided,
-and they are combined together. `container_config` gets logged,
-`container_secrets` does not. This allows you to configure customized
-Wordpress images.
-
-## Details
+For details on using Kubernetes with Juju [see here](https://juju.is/docs/kubernetes), and for
+details on using Juju with MicroK8s for easy local testing [see here](https://juju.is/docs/microk8s-cloud).
 
 To deploy in a test environment, first of all deploy MySQL into a IaaS model:
 
@@ -42,7 +27,7 @@ Initialise the database as follows:
     GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress'@'%';
     FLUSH PRIVILEGES;
 
-The Wordpress k8s charm requires TLS secrets to be pre-configured to ensure
+The WordPress k8s charm requires TLS secrets to be pre-configured to ensure
 logins are kept secure. Create a self-signed certificate and upload it as a
 Kubernetes secret (assuming you're using MicroK8s):
 
@@ -79,31 +64,4 @@ To retrieve the random admin password, run the following (until [LP#1907063](htt
 
 You should now be able to browse to https://myblog.example.com/wp-admin.
 
-## Quickstart
-
-Notes for deploying a test setup locally using microk8s:
-
-    sudo snap install juju --classic
-    sudo snap install juju-wait --classic
-    sudo snap install microk8s --classic
-    sudo snap alias microk8s.kubectl kubectl
-
-    microk8s.reset  # Warning! Clean slate!
-    microk8s.enable dns dashboard registry storage
-    microk8s.status --wait-ready
-    microk8s.config | juju add-k8s myk8s
-    juju bootstrap myk8s
-    juju add-model wordpress-test
-    juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
-    juju deploy cs:~wordpress-charmers/wordpress-k8s --channel=edge wordpress
-    # TLS certificates are required for the ingress to function properly, self-signed is okay
-    # for testing but make sure you use valid ones in production.
-    openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout server.key -out server.crt
-    kubectl create secret tls tls-wordpress --cert=server.crt --key=server.key
-    juju config wordpress db_host=10.1.1.1 db_user=wp db_password=secret tls_secret_name=tls-wordpress \
-        initial_settings="user_name: admin
-        admin_email: devnull@canonical.com
-        weblog_title: Test Blog
-        blog_public: False"
-    juju wait
-    juju status # Shows IP address, and port is 80
+For further details, [see here](https://charmhub.io/wordpress/docs).

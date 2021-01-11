@@ -4,15 +4,13 @@ ARG DIST_RELEASE
 ARG VERSION
 
 LABEL maintainer="wordpress-charmers@lists.launchpad.net"
-LABEL org.label-schema.version=${DIST_RELEASE}-${VERSION}
+# Used by Launchpad OCI Recipe to tag version
+LABEL org.label-schema.version=${VERSION:-5.6}
 
 # HTTPS_PROXY used when we RUN curl to download Wordpress itself
 ARG BUILD_DATE
 ARG HTTPS_PROXY
-ARG VERSION
 
-# Used by Launchpad OCI Recipe to tag version
-LABEL org.label-schema.version=${VERSION:-5.6}
 
 # Launchpad OCI image builds don't support dynamic arg parsing. Skip until
 # https://bugs.launchpad.net/launchpad/+bug/1902010 is resolved.

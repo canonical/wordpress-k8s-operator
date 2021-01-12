@@ -130,6 +130,7 @@ class WordpressCharm(CharmBase):
         self.wordpress = Wordpress(c)
 
     def on_config_changed(self, event):
+        """Handle the config-changed hook."""
         self.config_changed()
 
     def on_wordpress_initialise(self, event):
@@ -164,6 +165,12 @@ class WordpressCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
 
     def on_db_relation_created(self, event):
+        """Handle the db-relation-created hook.
+
+        We need to handle this hook to switch from database
+        credentials being specified in the charm configuration
+        to being provided by the relation.
+        """
         self.state.has_db_relation = True
         self.state.db_host = None
         self.state.db_name = None
@@ -172,10 +179,22 @@ class WordpressCharm(CharmBase):
         self.config_changed()
 
     def on_db_relation_broken(self, event):
+        """Handle the db-relation-broken hook.
+
+        We need to handle this hook to switch from database
+        credentials being provided by the relation to being
+        specified in the charm configuration.
+        """
         self.state.has_db_relation = False
         self.config_changed()
 
     def on_database_changed(self, event):
+        """Handle the MySQL endpoint database_changed event.
+
+        The MySQLClient (self.db) emits this event whenever the
+        database credentials have changed, which includes when
+        they disappear as part of relation tear down.
+        """
         self.state.db_host = event.host
         self.state.db_name = event.database
         self.state.db_user = event.user
@@ -183,6 +202,11 @@ class WordpressCharm(CharmBase):
         self.config_changed()
 
     def config_changed(self):
+        """Handle configuration changes.
+
+        Configuration changes are caused by both config-changed
+        and the various relation hooks.
+        """
         if not self.state.has_db_relation:
             self.state.db_host = self.model.config["db_host"] or None
             self.state.db_name = self.model.config["db_name"] or None

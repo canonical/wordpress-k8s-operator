@@ -4,6 +4,8 @@ import copy
 import mock
 import unittest
 
+from unittest.mock import Mock
+
 from charm import WordpressCharm, create_wordpress_secrets, gather_wordpress_secrets
 from wordpress import WORDPRESS_SECRETS
 from ops import testing
@@ -124,7 +126,6 @@ class TestWordpressCharm(unittest.TestCase):
             }
         }
         self.assertEqual(self.harness.charm.make_pod_resources(), expected)
-
         # And now test with no tls config.
         self.harness.update_config({"tls_secret_name": ""})
         expected = {
@@ -157,3 +158,16 @@ class TestWordpressCharm(unittest.TestCase):
             }
         }
         self.assertEqual(self.harness.charm.make_pod_resources(), expected)
+
+    def test_on_get_initial_password_action(self):
+        action_event = Mock()
+        # First test with no initial password set.
+        with mock.patch.object(self.harness.charm, "_get_initial_password") as get_initial_password:
+            get_initial_password.return_value = ""
+            self.harness.charm._on_get_initial_password_action(action_event)
+            self.assertEqual(action_event.fail.call_args, mock.call("Initial password has not been set yet."))
+        # Now test with initial password set.
+        with mock.patch.object(self.harness.charm, "_get_initial_password") as get_initial_password:
+            get_initial_password.return_value = "passwd"
+            self.harness.charm._on_get_initial_password_action(action_event)
+            self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))

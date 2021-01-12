@@ -73,9 +73,9 @@ and perform the initial setup for you. Look for this line in the output of
 This is due to [issue #166](https://github.com/canonical/operator/issues/166) and will be fixed once Juju supports a Kubernetes
 pod ready hook.
 
-To retrieve the random admin password, run the following (until [LP#1907063](https://bugs.launchpad.net/charm-k8s-wordpress/+bug/1907063) is addressed):
+To retrieve the auto-generated admin password, run the following:
 
-    microk8s.kubectl exec -ti -n wordpress wordpress-operator-0 -- cat /root/initial.passwd
+    juju run-action --wait wordpress/0 get-initial-password
 
 You should now be able to browse to https://myblog.example.com/wp-admin.
 

@@ -344,9 +344,9 @@ class WordpressCharm(CharmBase):
     def _get_wordpress_secrets(self):
         """Get secrets, creating them if they don't exist.
 
-        These are part of the pod spec, and so this function should only be
-        run on the leader. We can therefore safely generate them if they
-        don't already exist."""
+        These are part of the pod spec, and so this function can only be run
+        on the leader. We can therefore safely generate them if they don't
+        already exist."""
         secrets_dict = {}
         for secret in WORDPRESS_SECRETS:
             if secret not in self.leader_data:

@@ -31,15 +31,16 @@ To retrieve the auto-generated admin password, run the following:
 
     juju run-action --wait wordpress/0 get-initial-password
 
-You should now be able to browse to the IP address of the unit as follows:
+You should now be able to browse to the IP address of the unit. Here's some
+sample output from `juju status`:
 
     Unit            Workload     Agent  Address      Ports     Message
     mariadb-k8s/0*  active       idle   10.1.234.43  3306/TCP  ready
     wordpress/0*    active       idle   10.1.234.13  80/TCP    Pod configured
 
-In this case our UNIT_IP is 10.1.234.13. If we visit `http://${UNIT_IP}/`
+In this case our `UNIT_IP` is 10.1.234.13. If we visit `http://${UNIT_IP}/`
 you'll see the WordPress site itself, or you can log in to the admin site
-using a username of `admin` and the password value from the
-`get-initial-password` action above at `http://{$UNIT_IP}/wp-admin`.
+at `http://{$UNIT_IP}/wp-admin` using a username of `admin` and the password
+from the `get-initial-password` action above.
 
 For further details, [see here](https://charmhub.io/wordpress/docs).

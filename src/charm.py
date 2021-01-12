@@ -33,6 +33,8 @@ def generate_pod_config(config, secured=True):
     pod_config["WORDPRESS_DB_HOST"] = config["db_host"]
     pod_config["WORDPRESS_DB_NAME"] = config["db_name"]
     pod_config["WORDPRESS_DB_USER"] = config["db_user"]
+    if not config["tls_secret_name"]:
+        pod_config["WORDPRESS_TLS_DISABLED"] = "true"
     if config.get("wp_plugin_openid_team_map"):
         pod_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
 

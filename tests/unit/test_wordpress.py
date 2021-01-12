@@ -82,6 +82,15 @@ class HelperTest(unittest.TestCase):
         test_container_config = yaml.safe_load(self.test_model_config["container_config"])
         self.assertEqual(test_container_config["test-key"], result["test-key"])
 
+        # Test we pass set WORDPRESS_TLS_ENABLED if we have `tls_secret_name`.
+        result = charm.generate_pod_config(self.test_model_config)
+        self.assertNotIn("WORDPRESS_TLS_DISABLED", result)
+        # Remove `tls_secret_name` and test again.
+        non_tls_secret_config = copy.deepcopy(self.test_model_config)
+        non_tls_secret_config["tls_secret_name"] = ""
+        result = charm.generate_pod_config(non_tls_secret_config)
+        self.assertEqual(result["WORDPRESS_TLS_DISABLED"], "true")
+
 
 class WordpressTest(unittest.TestCase):
 

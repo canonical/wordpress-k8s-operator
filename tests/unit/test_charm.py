@@ -38,8 +38,8 @@ class TestWordpressCharm(unittest.TestCase):
         self.assertTrue(want_true)
 
         # Test for invalid model config.
-        want_msg_fmt = "Missing required config: {}"
-        want_keys = ("image", "db_host", "db_name", "db_user", "db_password")
+        want_msg_fmt = "Missing required config or relation: {}"
+        want_keys = ["image", "db_host", "db_name", "db_user", "db_password"]
         for wanted_key in want_keys:
             self.harness.update_config({wanted_key: ""})
             want_false = self.harness.charm.is_valid_config()

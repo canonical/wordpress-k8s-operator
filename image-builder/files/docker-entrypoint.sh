@@ -16,7 +16,8 @@ done
 
 nohup bash -c "/srv/wordpress-helpers/plugin_handler.py &"
 
-sed -i 's/max_execution_time = 30/max_execution_time = 300/' /etc/php/7.2/apache2/php.ini
-sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 10M/' /etc/php/7.2/apache2/php.ini
+# Match against either php 7.2 (bionic) or 7.4 (focal).
+sed -i 's/max_execution_time = 30/max_execution_time = 300/' /etc/php/7.[24]/apache2/php.ini
+sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 10M/' /etc/php/7.[24]/apache2/php.ini
 
 exec "$@"

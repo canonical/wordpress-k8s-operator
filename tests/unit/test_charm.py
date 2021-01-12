@@ -40,8 +40,8 @@ class TestWordpressCharm(unittest.TestCase):
         self.assertTrue(want_true)
 
         # Test for invalid model config.
-        want_msg_fmt = "Missing required config: {}"
-        want_keys = ("image", "db_host", "db_name", "db_user", "db_password", "tls_secret_name")
+        want_msg_fmt = "Missing required config or relation: {}"
+        want_keys = ["image", "db_host", "db_name", "db_user", "db_password"]
         for wanted_key in want_keys:
             self.harness.update_config({wanted_key: ""})
             want_false = self.harness.charm.is_valid_config()
@@ -120,6 +120,38 @@ class TestWordpressCharm(unittest.TestCase):
                                 }
                             ],
                             'tls': [{'hosts': ['blog.example.com'], 'secretName': 'blog-example-com-tls'}],
+                        },
+                    }
+                ]
+            }
+        }
+        self.assertEqual(self.harness.charm.make_pod_resources(), expected)
+        # And now test with no tls config.
+        self.harness.update_config({"tls_secret_name": ""})
+        expected = {
+            'kubernetesResources': {
+                'ingressResources': [
+                    {
+                        "annotations": {
+                            "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
+                            "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",
+                            "nginx.ingress.kubernetes.io/ssl-redirect": "false",
+                        },
+                        'name': ingress_name,
+                        'spec': {
+                            'rules': [
+                                {
+                                    'host': 'blog.example.com',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
+                                }
+                            ],
                         },
                     }
                 ]

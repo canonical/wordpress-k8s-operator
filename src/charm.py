@@ -347,12 +347,12 @@ class WordpressCharm(CharmBase):
         These are part of the pod spec, and so this function can only be run
         on the leader. We can therefore safely generate them if they don't
         already exist."""
-        secrets_dict = {}
+        wp_secrets = {}
         for secret in WORDPRESS_SECRETS:
             if secret not in self.leader_data:
                 self.leader_data[secret] = password_generator(64)
-            secrets_dict[secret] = self.leader_data[secret]
-        return secrets_dict
+            wp_secrets[secret] = self.leader_data[secret]
+        return wp_secrets
 
     def is_service_up(self):
         """Check to see if the HTTP service is up"""

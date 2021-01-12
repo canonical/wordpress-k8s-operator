@@ -201,17 +201,22 @@ class WordpressCharm(CharmBase):
                                     },
                                 }
                             ],
-                            "tls": [
-                                {
-                                    "hosts": [self.model.config["blog_hostname"]],
-                                    "secretName": self.model.config["tls_secret_name"],
-                                }
-                            ],
                         },
                     }
                 ]
             },
         }
+
+        ingress = resources["kubernetesResources"]["ingressResources"][0]
+        if self.model.config["tls_secret_name"]:
+            ingress["spec"]["tls"] = [
+                {
+                    "hosts": [self.model.config["blog_hostname"]],
+                    "secretName": self.model.config["tls_secret_name"],
+                }
+            ]
+        else:
+            ingress["annotations"]['nginx.ingress.kubernetes.io/ssl-redirect'] = 'false'
 
         out = io.StringIO()
         pprint(resources, out)
@@ -264,7 +269,7 @@ class WordpressCharm(CharmBase):
             self.model.unit.status = BlockedStatus("Missing initial_settings")
             is_valid = False
 
-        want = ("image", "db_host", "db_name", "db_user", "db_password", "tls_secret_name")
+        want = ("image", "db_host", "db_name", "db_user", "db_password")
         missing = [k for k in want if config[k].rstrip() == ""]
         if missing:
             message = "Missing required config: {}".format(" ".join(missing))

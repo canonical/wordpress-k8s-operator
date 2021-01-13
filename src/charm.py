@@ -243,9 +243,14 @@ class WordpressCharm(CharmBase):
             self.model.unit.status = MaintenanceStatus(msg)
             self.model.pod.set_spec(spec)
 
-            msg = "Pod configured"
-            logger.info(msg)
-            self.model.unit.status = MaintenanceStatus(msg)
+            if self.state.initialised:
+                msg = "Pod configured"
+                logger.info(msg)
+                self.model.unit.status = ActiveStatus(msg)
+            else:
+                msg = "Pod configured, but WordPress configuration pending"
+                logger.info(msg)
+                self.model.unit.status = MaintenanceStatus(msg)
         else:
             logger.info("Spec changes ignored by non-leader")
 

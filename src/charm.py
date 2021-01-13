@@ -356,7 +356,11 @@ class WordpressCharm(CharmBase):
         already exist."""
         wp_secrets = {}
         for secret in WORDPRESS_SECRETS:
-            if secret not in self.leader_data:
+            # `self.leader_data` itself will never return a KeyError, but
+            # checking for the presence of an item before setting it will make
+            # it easier to test, as we can simply set `self.leader_data` to
+            # be a dictionary.
+            if secret not in self.leader_data or not self.leader_data[secret]:
                 self.leader_data[secret] = password_generator(64)
             wp_secrets[secret] = self.leader_data[secret]
         return wp_secrets

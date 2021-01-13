@@ -90,6 +90,8 @@ class TestWordpressCharm(unittest.TestCase):
         self.assertLogs(expected_msg, level="INFO")
 
     def test_get_wordpress_secrets(self):
+        # Set leader_data to an empty dict to avoid subsequent calls to
+        # `leader-get` and `leader-set` in this test.
         self.harness.charm.leader_data = {}
         wp_secrets = self.harness.charm._get_wordpress_secrets()
         for key in WORDPRESS_SECRETS:

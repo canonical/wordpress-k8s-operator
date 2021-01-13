@@ -181,6 +181,28 @@ class TestWordpressCharm(unittest.TestCase):
                                             }
                                         ]
                                     },
+                                },
+                                {
+                                    'host': 'cool-newsite.org',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
+                                },
+                                {
+                                    'host': 'blog.test.com',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
                                 }
                             ],
                         },

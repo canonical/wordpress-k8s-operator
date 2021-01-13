@@ -182,13 +182,10 @@ class TestWordpressCharm(unittest.TestCase):
             self.harness.charm._on_get_initial_password_action(action_event)
             self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))
 
-    @mock.patch("charm._leader_set")
-    @mock.patch("charm._leader_get")
-    def test_configure_pod(self, _leader_get_func, _leader_set_func):
-        leadership_data = TestLeadershipData()
-        _leader_set_func.side_effect = leadership_data._leader_set
-        _leader_get_func.side_effect = leadership_data._leader_get
-
+    def test_configure_pod(self):
+        # Set leader_data to an empty dict to avoid subsequent calls to
+        # `leader-get` and `leader-set` in this test.
+        self.harness.charm.leader_data = {}
         # First of all, test with leader set, but not initialised.
         self.harness.set_leader(True)
         self.assertEqual(self.harness.charm.state.initialised, False)

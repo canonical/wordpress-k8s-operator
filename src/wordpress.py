@@ -44,15 +44,10 @@ class Wordpress:
     def __init__(self, model_config):
         self.model_config = model_config
 
-    def _write_initial_password(self, password, filepath):
-        with open(filepath, "w") as f:
-            f.write(password)
-
-    def first_install(self, service_ip):
+    def first_install(self, service_ip, admin_password):
         """Perform initial configuration of wordpress if needed."""
         config = self.model_config
         logger.info("Starting wordpress initial configuration")
-        admin_password = password_generator()
         payload = {
             "admin_password": admin_password,
             "blog_public": "checked",
@@ -60,12 +55,6 @@ class Wordpress:
         }
         payload.update(safe_load(config["initial_settings"]))
         payload["admin_password2"] = payload["admin_password"]
-
-        # Ideally we would store this in state however juju run-action does not
-        # currently support being run inside the operator pod which means the
-        # StorageState will be split between workload and operator.
-        # https://bugs.launchpad.net/juju/+bug/1870487
-        self._write_initial_password(payload["admin_password"], "/root/initial.passwd")
 
         if not payload["blog_public"]:
             payload["blog_public"] = "unchecked"

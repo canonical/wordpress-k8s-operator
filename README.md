@@ -16,7 +16,7 @@ developers. This makes it flexible while still being easy-to-use.
 For details on using Kubernetes with Juju [see here](https://juju.is/docs/kubernetes), and for
 details on using Juju with MicroK8s for easy local testing [see here](https://juju.is/docs/microk8s-cloud).
 
-To deploy the charm and relate it to the [Maria K8s charm](https://jaas.ai/u/charmed-osm/mariadb-k8s) within a Juju
+To deploy the charm and relate it to the [MariaDB K8s charm](https://jaas.ai/u/charmed-osm/mariadb-k8s) within a Juju
 Kubernetes model:
 
     juju deploy cs:~charmed-osm/mariadb-k8s

@@ -9,7 +9,11 @@ from unittest.mock import Mock
 from charm import WordpressCharm
 from wordpress import WORDPRESS_SECRETS
 from ops import testing
-from ops.model import BlockedStatus
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    MaintenanceStatus,
+)
 
 from test_wordpress import TEST_MODEL_CONFIG
 
@@ -20,9 +24,39 @@ class TestWordpressCharm(unittest.TestCase):
 
     def setUp(self):
         self.harness = testing.Harness(WordpressCharm)
+        self.addCleanup(self.harness.cleanup)
 
         self.harness.begin()
         self.harness.update_config(copy.deepcopy(self.test_model_config))
+
+    def test_db_relation(self):
+        # Charm starts with no relation, defaulting to using db
+        # connection details from the charm config.
+        charm = self.harness.charm
+        self.assertFalse(charm.state.has_db_relation)
+        self.assertEqual(charm.state.db_host, TEST_MODEL_CONFIG["db_host"])
+        self.assertEqual(charm.state.db_name, TEST_MODEL_CONFIG["db_name"])
+        self.assertEqual(charm.state.db_user, TEST_MODEL_CONFIG["db_user"])
+        self.assertEqual(charm.state.db_password, TEST_MODEL_CONFIG["db_password"])
+
+        # Add a relation and remote unit providing connection details.
+        # TODO: ops-lib-mysql should have a helper to set the relation data.
+        relid = self.harness.add_relation("db", "mysql")
+        self.harness.add_relation_unit(relid, "mysql/0")
+        self.harness.update_relation_data(relid, "mysql/0", {
+            "database": "wpdbname",
+            "host": "hostname.local",
+            "port": "3306",
+            "user": "wpuser",
+            "password": "s3cret",
+            "root_password": "sup3r_s3cret",
+        })
+        # charm.db.on.database_changed fires here and is handled, updating state.
+        self.assertTrue(charm.state.has_db_relation)
+        self.assertEqual(charm.state.db_host, "hostname.local")
+        self.assertEqual(charm.state.db_name, "wpdbname")
+        self.assertEqual(charm.state.db_user, "wpuser")
+        self.assertEqual(charm.state.db_password, "s3cret")
 
     def test_is_config_valid(self):
         # Test a valid model config.
@@ -101,6 +135,7 @@ class TestWordpressCharm(unittest.TestCase):
             }
         }
         self.assertEqual(self.harness.charm.make_pod_resources(), expected)
+
         # And now test with no tls config.
         self.harness.update_config({"tls_secret_name": ""})
         expected = {
@@ -146,3 +181,31 @@ class TestWordpressCharm(unittest.TestCase):
             get_initial_password.return_value = "passwd"
             self.harness.charm._on_get_initial_password_action(action_event)
             self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))
+
+    @mock.patch("charm._leader_set")
+    @mock.patch("charm._leader_get")
+    def test_configure_pod(self, _leader_get_func, _leader_set_func):
+        leadership_data = TestLeadershipData()
+        _leader_set_func.side_effect = leadership_data._leader_set
+        _leader_get_func.side_effect = leadership_data._leader_get
+
+        # First of all, test with leader set, but not initialised.
+        self.harness.set_leader(True)
+        self.assertEqual(self.harness.charm.state.initialised, False)
+        self.harness.charm.configure_pod()
+        expected_msg = "Pod configured, but WordPress configuration pending"
+        self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
+        self.assertLogs(expected_msg, level="INFO")
+        self.assertIsInstance(self.harness.charm.unit.status, MaintenanceStatus)
+        # Now with state initialised.
+        self.harness.charm.state.initialised = True
+        self.harness.charm.configure_pod()
+        expected_msg = "Pod configured"
+        self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
+        self.assertLogs(expected_msg, level="INFO")
+        self.assertIsInstance(self.harness.charm.unit.status, ActiveStatus)
+        # And now test with non-leader.
+        self.harness.set_leader(False)
+        self.harness.charm.configure_pod()
+        expected_msg = "Spec changes ignored by non-leader"
+        self.assertLogs(expected_msg, level="INFO")

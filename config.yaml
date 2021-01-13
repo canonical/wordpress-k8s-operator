@@ -42,7 +42,7 @@ options:
     description: >
       YAML formatted map of container config keys & values. These are
       generally accessed from inside the image as environment variables.
-      Use to configure customized Wordpress images. This configuration
+      Use to configure customized WordPress images. This configuration
       gets logged; use container_secrets for secrets.
     default: ""
   container_secrets:
@@ -54,7 +54,7 @@ options:
   initial_settings:
       type: string
       description: >
-        YAML formatted Wordpress configuration. It is used only
+        YAML formatted WordPress configuration. It is used only
         during initial deployment. Changing it at later stage has no effect.
         If set to non empty string required keys are:
 
@@ -85,12 +85,12 @@ options:
     description: >
       Launchpad teams and corresponding access levels, for use with the openid plugins.
 
-      Valid Wordpress access levels are: administrator, editor, author, contributor, subscriber
+      Valid WordPress access levels are: administrator, editor, author, contributor, subscriber
 
       If empty, OpenID will not be enabled.
 
       Format is key=value pairs (where key is the Launchpad team, and value is
-      the Wordpress role) - commas separate multiple pairs.
+      the WordPress role) - commas separate multiple pairs.
 
       Example format:
 

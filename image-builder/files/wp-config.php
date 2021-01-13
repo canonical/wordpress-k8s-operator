@@ -21,8 +21,15 @@ if ( getenv("WORDPRESS_DEBUG") ) {
 
 /** Fixes for mixed content when WordPress is behind nginx TLS reverse proxy.
  * https://ahenriksson.com/2020/01/27/how-to-set-up-wordpress-behind-a-reverse-proxy-when-using-nginx/
+ * Check if we have a WORDPRESS_TLS_DISABLED environment variable, and if so
+ * don't force logins to the admin site to be via TLS (this can be done to
+ * make local testing one step easier).
  * */
-define('FORCE_SSL_ADMIN', true);
+if ( getenv("WORDPRESS_TLS_DISABLED") ){
+    define('FORCE_SSL_ADMIN', false);
+} else {
+    define('FORCE_SSL_ADMIN', true);
+}
 if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
  $_SERVER['HTTPS']='on';
 

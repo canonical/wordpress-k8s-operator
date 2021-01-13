@@ -11,7 +11,7 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from leadership import LeadershipSettings
 
-from mysql import MySQLClient
+from opslib.mysql import MySQLClient
 from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
 
 
@@ -32,6 +32,8 @@ def generate_pod_config(config, secured=True):
     pod_config["WORDPRESS_DB_HOST"] = config["db_host"]
     pod_config["WORDPRESS_DB_NAME"] = config["db_name"]
     pod_config["WORDPRESS_DB_USER"] = config["db_user"]
+    if not config["tls_secret_name"]:
+        pod_config["WORDPRESS_TLS_DISABLED"] = "true"
     if config.get("wp_plugin_openid_team_map"):
         pod_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
 
@@ -216,9 +218,14 @@ class WordpressCharm(CharmBase):
             self.model.unit.status = MaintenanceStatus(msg)
             self.model.pod.set_spec(spec)
 
-            msg = "Pod configured"
-            logger.info(msg)
-            self.model.unit.status = MaintenanceStatus(msg)
+            if self.state.initialised:
+                msg = "Pod configured"
+                logger.info(msg)
+                self.model.unit.status = ActiveStatus(msg)
+            else:
+                msg = "Pod configured, but WordPress configuration pending"
+                logger.info(msg)
+                self.model.unit.status = MaintenanceStatus(msg)
         else:
             logger.info("Spec changes ignored by non-leader")
 

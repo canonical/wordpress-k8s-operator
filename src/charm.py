@@ -12,7 +12,7 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from leadership import LeadershipSettings
 
-from mysql import MySQLClient
+from opslib.mysql import MySQLClient
 from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
 
 

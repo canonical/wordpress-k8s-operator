@@ -30,9 +30,39 @@ class TestWordpressCharm(unittest.TestCase):
 
     def setUp(self):
         self.harness = testing.Harness(WordpressCharm)
+        self.addCleanup(self.harness.cleanup)
 
         self.harness.begin()
         self.harness.update_config(copy.deepcopy(self.test_model_config))
+
+    def test_db_relation(self):
+        # Charm starts with no relation, defaulting to using db
+        # connection details from the charm config.
+        charm = self.harness.charm
+        self.assertFalse(charm.state.has_db_relation)
+        self.assertEqual(charm.state.db_host, TEST_MODEL_CONFIG["db_host"])
+        self.assertEqual(charm.state.db_name, TEST_MODEL_CONFIG["db_name"])
+        self.assertEqual(charm.state.db_user, TEST_MODEL_CONFIG["db_user"])
+        self.assertEqual(charm.state.db_password, TEST_MODEL_CONFIG["db_password"])
+
+        # Add a relation and remote unit providing connection details.
+        # TODO: ops-lib-mysql should have a helper to set the relation data.
+        relid = self.harness.add_relation("db", "mysql")
+        self.harness.add_relation_unit(relid, "mysql/0")
+        self.harness.update_relation_data(relid, "mysql/0", {
+            "database": "wpdbname",
+            "host": "hostname.local",
+            "port": "3306",
+            "user": "wpuser",
+            "password": "s3cret",
+            "root_password": "sup3r_s3cret",
+        })
+        # charm.db.on.database_changed fires here and is handled, updating state.
+        self.assertTrue(charm.state.has_db_relation)
+        self.assertEqual(charm.state.db_host, "hostname.local")
+        self.assertEqual(charm.state.db_name, "wpdbname")
+        self.assertEqual(charm.state.db_user, "wpuser")
+        self.assertEqual(charm.state.db_password, "s3cret")
 
     def test_is_config_valid(self):
         # Test a valid model config.

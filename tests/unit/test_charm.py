@@ -64,6 +64,12 @@ class TestWordpressCharm(unittest.TestCase):
         self.assertIsInstance(self.harness.charm.unit.status, BlockedStatus)
         self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
         self.assertLogs(expected_msg, level="INFO")
+        self.harness.update_config(copy.deepcopy(self.test_model_config))
+
+        # Test for empty additional hostnames string.
+        self.harness.update_config({"additional_hostnames": ""})
+        want_true = self.harness.charm.is_valid_config()
+        self.assertTrue(want_true)
 
         # Test for invalid additional hostnames.
         invalid_additional_hostnames = "forgot-my-tld invalid+character.com"

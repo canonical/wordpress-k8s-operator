@@ -86,8 +86,9 @@ def gather_wordpress_secrets():
     return rv
 
 
-def split_additional_hostnames(hostnames):
-    return hostnames.split(" ")
+def juju_setting_to_list(config_string, split_char=" "):
+    "Transforms Juju setting strings into a list, defaults to splitting on whitespace."
+    return config_string.split(split_char)
 
 
 class WordpressInitialiseEvent(EventBase):
@@ -280,7 +281,7 @@ class WordpressCharm(CharmBase):
         }
 
         if self.model.config["additional_hostnames"]:
-            additional_hostnames = split_additional_hostnames(self.model.config["additional_hostnames"])
+            additional_hostnames = juju_setting_to_list(self.model.config["additional_hostnames"])
             rules = resources["kubernetesResources"]["ingressResources"][0]["spec"]["rules"]
             for hostname in additional_hostnames:
                 rule = {
@@ -351,7 +352,7 @@ class WordpressCharm(CharmBase):
 
         return spec
 
-    def is_valid_config(self):  # If this grows anymore consider breaking up into smaller functions.
+    def is_valid_config(self):
         is_valid = True
         config = self.model.config
 
@@ -378,9 +379,9 @@ class WordpressCharm(CharmBase):
             is_valid = False
 
         if config["additional_hostnames"]:
-            split_hostnames = split_additional_hostnames(config["additional_hostnames"])
+            additional_hostnames = juju_setting_to_list(config["additional_hostnames"])
             valid_domain_name_pattern = re.compile(r"^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$")
-            valid = [re.match(valid_domain_name_pattern, h) for h in split_hostnames]
+            valid = [re.match(valid_domain_name_pattern, h) for h in additional_hostnames]
             if not all(valid):
                 message = "Invalid additional hostnames supplied: {}".format(config["additional_hostnames"])
                 logger.info(message)

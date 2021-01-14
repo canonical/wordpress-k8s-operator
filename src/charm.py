@@ -409,7 +409,7 @@ class WordpressCharm(CharmBase):
         or return an empty string if we're not."""
         initial_password = self.leader_data["initial_password"]
         if not initial_password:
-            if self.unit.is_leader:
+            if self.unit.is_leader():
                 initial_password = password_generator()
                 self.leader_data["initial_password"] = initial_password
         return initial_password
@@ -423,5 +423,5 @@ class WordpressCharm(CharmBase):
             event.fail("Initial password has not been set yet.")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main(WordpressCharm)

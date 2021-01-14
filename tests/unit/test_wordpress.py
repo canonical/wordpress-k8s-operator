@@ -108,7 +108,6 @@ class HelperTest(unittest.TestCase):
 
         # Test we don't break with missing non-essential config options.
         result = charm.generate_pod_config(self.test_model_config_minimal, secured=False)
-        self.assertTrue(result)
         self.assertEqual(result["WORDPRESS_TLS_DISABLED"], "true")
 
 

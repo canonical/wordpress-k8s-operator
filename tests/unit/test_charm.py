@@ -303,7 +303,6 @@ class TestWordpressCharm(unittest.TestCase):
         }
         self.harness.charm.leader_data = {}
         actual = self.harness.charm.make_pod_spec()
-        self.maxDiff = None
         # Remove values that are auto-generated so hard to test.
         for secret in WORDPRESS_SECRETS:
             del actual["containers"][0]["config"][secret]

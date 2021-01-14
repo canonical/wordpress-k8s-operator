@@ -2,6 +2,7 @@
 
 import io
 import logging
+import re
 from pprint import pprint
 from yaml import safe_load
 
@@ -61,6 +62,11 @@ def generate_pod_config(config, secured=True):
         pod_config["SWIFT_REMOVE_LOCAL_FILE"] = wp_plugin_swift_config.get('remove-local-file')
 
     return pod_config
+
+
+def juju_setting_to_list(config_string, split_char=" "):
+    "Transforms Juju setting strings into a list, defaults to splitting on whitespace."
+    return config_string.split(split_char)
 
 
 class WordpressInitialiseEvent(EventBase):
@@ -256,6 +262,20 @@ class WordpressCharm(CharmBase):
             },
         }
 
+        if self.model.config["additional_hostnames"]:
+            additional_hostnames = juju_setting_to_list(self.model.config["additional_hostnames"])
+            rules = resources["kubernetesResources"]["ingressResources"][0]["spec"]["rules"]
+            for hostname in additional_hostnames:
+                rule = {
+                    "host": hostname,
+                    "http": {
+                        "paths": [
+                            {"path": "/", "backend": {"serviceName": self.app.name, "servicePort": 80}}
+                        ]
+                    },
+                }
+                rules.append(rule)
+
         ingress = resources["kubernetesResources"]["ingressResources"][0]
         if self.model.config["tls_secret_name"]:
             ingress["spec"]["tls"] = [
@@ -339,6 +359,16 @@ class WordpressCharm(CharmBase):
             logger.info(message)
             self.model.unit.status = BlockedStatus(message)
             is_valid = False
+
+        if config["additional_hostnames"]:
+            additional_hostnames = juju_setting_to_list(config["additional_hostnames"])
+            valid_domain_name_pattern = re.compile(r"^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$")
+            valid = [re.match(valid_domain_name_pattern, h) for h in additional_hostnames]
+            if not all(valid):
+                message = "Invalid additional hostnames supplied: {}".format(config["additional_hostnames"])
+                logger.info(message)
+                self.model.unit.status = BlockedStatus(message)
+                is_valid = False
 
         return is_valid
 

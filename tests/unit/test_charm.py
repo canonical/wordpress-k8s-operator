@@ -88,6 +88,21 @@ class TestWordpressCharm(unittest.TestCase):
         self.assertIsInstance(self.harness.charm.unit.status, BlockedStatus)
         self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
         self.assertLogs(expected_msg, level="INFO")
+        self.harness.update_config(copy.deepcopy(self.test_model_config))
+
+        # Test for empty additional hostnames string.
+        self.harness.update_config({"additional_hostnames": ""})
+        want_true = self.harness.charm.is_valid_config()
+        self.assertTrue(want_true)
+
+        # Test for invalid additional hostnames.
+        invalid_additional_hostnames = "forgot-my-tld invalid+character.com"
+        expected_msg = "Invalid additional hostnames supplied: {}".format(invalid_additional_hostnames)
+        self.harness.update_config({"additional_hostnames": invalid_additional_hostnames})
+        self.harness.charm.is_valid_config()
+        self.assertIsInstance(self.harness.charm.unit.status, BlockedStatus)
+        self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
+        self.assertLogs(expected_msg, level="INFO")
 
     def test_get_wordpress_secrets(self):
         # Set leader_data to an empty dict to avoid subsequent calls to
@@ -128,6 +143,28 @@ class TestWordpressCharm(unittest.TestCase):
                                             }
                                         ]
                                     },
+                                },
+                                {
+                                    'host': 'cool-newsite.org',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
+                                },
+                                {
+                                    'host': 'blog.test.com',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
                                 }
                             ],
                             'tls': [{'hosts': ['blog.example.com'], 'secretName': 'blog-example-com-tls'}],
@@ -154,6 +191,28 @@ class TestWordpressCharm(unittest.TestCase):
                             'rules': [
                                 {
                                     'host': 'blog.example.com',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
+                                },
+                                {
+                                    'host': 'cool-newsite.org',
+                                    'http': {
+                                        'paths': [
+                                            {
+                                                'path': '/',
+                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                            }
+                                        ]
+                                    },
+                                },
+                                {
+                                    'host': 'blog.test.com',
                                     'http': {
                                         'paths': [
                                             {

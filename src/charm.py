@@ -3,7 +3,6 @@
 import io
 import logging
 import re
-import subprocess
 from pprint import pprint
 from yaml import safe_load
 
@@ -63,29 +62,6 @@ def generate_pod_config(config, secured=True):
         pod_config["SWIFT_REMOVE_LOCAL_FILE"] = wp_plugin_swift_config.get('remove-local-file')
 
     return pod_config
-
-
-def _leader_get(attribute):
-    cmd = ['leader-get', '--format=yaml', attribute]
-    return safe_load(subprocess.check_output(cmd).decode('UTF-8'))
-
-
-def _leader_set(settings):
-    cmd = ['leader-set'] + ['{}={}'.format(k, v or '') for k, v in settings.items()]
-    subprocess.check_call(cmd)
-
-
-def create_wordpress_secrets():
-    for secret in WORDPRESS_SECRETS:
-        if not _leader_get(secret):
-            _leader_set({secret: password_generator(64)})
-
-
-def gather_wordpress_secrets():
-    rv = {}
-    for secret in WORDPRESS_SECRETS:
-        rv[secret] = _leader_get(secret)
-    return rv
 
 
 def juju_setting_to_list(config_string, split_char=" "):
@@ -239,7 +215,6 @@ class WordpressCharm(CharmBase):
     def configure_pod(self):
         # Only the leader can set_spec().
         if self.model.unit.is_leader():
-            create_wordpress_secrets()
             resources = self.make_pod_resources()
             spec = self.make_pod_spec()
             spec.update(resources)
@@ -326,7 +301,7 @@ class WordpressCharm(CharmBase):
         config["db_password"] = self.state.db_password
 
         full_pod_config = generate_pod_config(config, secured=False)
-        full_pod_config.update(gather_wordpress_secrets())
+        full_pod_config.update(self._get_wordpress_secrets())
         secure_pod_config = generate_pod_config(config, secured=True)
 
         ports = [
@@ -402,6 +377,23 @@ class WordpressCharm(CharmBase):
             return str(self.model.get_binding("website").network.ingress_addresses[0])
         except Exception:
             logger.info("We don't have any ingress addresses yet")
+
+    def _get_wordpress_secrets(self):
+        """Get secrets, creating them if they don't exist.
+
+        These are part of the pod spec, and so this function can only be run
+        on the leader. We can therefore safely generate them if they don't
+        already exist."""
+        wp_secrets = {}
+        for secret in WORDPRESS_SECRETS:
+            # `self.leader_data` itself will never return a KeyError, but
+            # checking for the presence of an item before setting it will make
+            # it easier to test, as we can simply set `self.leader_data` to
+            # be a dictionary.
+            if secret not in self.leader_data or not self.leader_data[secret]:
+                self.leader_data[secret] = password_generator(64)
+            wp_secrets[secret] = self.leader_data[secret]
+        return wp_secrets
 
     def is_service_up(self):
         """Check to see if the HTTP service is up"""

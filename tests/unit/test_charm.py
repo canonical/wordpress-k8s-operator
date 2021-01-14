@@ -6,7 +6,7 @@ import unittest
 
 from unittest.mock import Mock
 
-from charm import WordpressCharm, create_wordpress_secrets, gather_wordpress_secrets
+from charm import WordpressCharm
 from wordpress import WORDPRESS_SECRETS
 from ops import testing
 from ops.model import (
@@ -16,16 +16,6 @@ from ops.model import (
 )
 
 from test_wordpress import TEST_MODEL_CONFIG
-
-
-class TestLeadershipData:
-    data = {}
-
-    def _leader_set(self, d):
-        self.data.update(d)
-
-    def _leader_get(self, k):
-        return self.data.get(k)
 
 
 class TestWordpressCharm(unittest.TestCase):
@@ -114,24 +104,11 @@ class TestWordpressCharm(unittest.TestCase):
         self.assertEqual(self.harness.charm.unit.status.message, expected_msg)
         self.assertLogs(expected_msg, level="INFO")
 
-    @mock.patch("charm._leader_set")
-    @mock.patch("charm._leader_get")
-    def test_create_wordpress_secrets(self, _leader_get_func, _leader_set_func):
-        leadership_data = TestLeadershipData()
-        _leader_set_func.side_effect = leadership_data._leader_set
-        _leader_get_func.side_effect = leadership_data._leader_get
-        create_wordpress_secrets()
-
-        self.assertEqual(sorted(list(leadership_data.data.keys())), sorted(WORDPRESS_SECRETS))
-
-    @mock.patch("charm._leader_set")
-    @mock.patch("charm._leader_get")
-    def test_gather_wordpress_secrets(self, _leader_get_func, _leader_set_func):
-        leadership_data = TestLeadershipData()
-        _leader_set_func.side_effect = leadership_data._leader_set
-        _leader_get_func.side_effect = leadership_data._leader_get
-        create_wordpress_secrets()
-        wp_secrets = gather_wordpress_secrets()
+    def test_get_wordpress_secrets(self):
+        # Set leader_data to an empty dict to avoid subsequent calls to
+        # `leader-get` and `leader-set` in this test.
+        self.harness.charm.leader_data = {}
+        wp_secrets = self.harness.charm._get_wordpress_secrets()
         for key in WORDPRESS_SECRETS:
             self.assertIsInstance(wp_secrets[key], str)
             self.assertEqual(len(wp_secrets[key]), 64)
@@ -266,13 +243,10 @@ class TestWordpressCharm(unittest.TestCase):
             self.harness.charm._on_get_initial_password_action(action_event)
             self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))
 
-    @mock.patch("charm._leader_set")
-    @mock.patch("charm._leader_get")
-    def test_configure_pod(self, _leader_get_func, _leader_set_func):
-        leadership_data = TestLeadershipData()
-        _leader_set_func.side_effect = leadership_data._leader_set
-        _leader_get_func.side_effect = leadership_data._leader_get
-
+    def test_configure_pod(self):
+        # Set leader_data to an empty dict to avoid subsequent calls to
+        # `leader-get` and `leader-set` in this test.
+        self.harness.charm.leader_data = {}
         # First of all, test with leader set, but not initialised.
         self.harness.set_leader(True)
         self.assertEqual(self.harness.charm.state.initialised, False)

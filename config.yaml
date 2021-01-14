@@ -37,6 +37,10 @@ options:
     type: string
     description: "MySQL database user's password"
     default: "wordpress"
+  additional_hostnames:
+    type: string
+    description: "Space separated list of aditional hostnames for the site."
+    default: ""
   container_config:
     type: string
     description: >

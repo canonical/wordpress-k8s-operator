@@ -15,12 +15,16 @@ from ops.model import (
     MaintenanceStatus,
 )
 
-from test_wordpress import TEST_MODEL_CONFIG
+from test_wordpress import (
+    TEST_MODEL_CONFIG_MINIMAL,
+    TEST_MODEL_CONFIG_FULL,
+)
 
 
 class TestWordpressCharm(unittest.TestCase):
 
-    test_model_config = TEST_MODEL_CONFIG
+    test_model_config = TEST_MODEL_CONFIG_FULL
+    test_model_config_minimal = TEST_MODEL_CONFIG_MINIMAL
 
     def setUp(self):
         self.harness = testing.Harness(WordpressCharm)
@@ -34,10 +38,10 @@ class TestWordpressCharm(unittest.TestCase):
         # connection details from the charm config.
         charm = self.harness.charm
         self.assertFalse(charm.state.has_db_relation)
-        self.assertEqual(charm.state.db_host, TEST_MODEL_CONFIG["db_host"])
-        self.assertEqual(charm.state.db_name, TEST_MODEL_CONFIG["db_name"])
-        self.assertEqual(charm.state.db_user, TEST_MODEL_CONFIG["db_user"])
-        self.assertEqual(charm.state.db_password, TEST_MODEL_CONFIG["db_password"])
+        self.assertEqual(charm.state.db_host, TEST_MODEL_CONFIG_FULL["db_host"])
+        self.assertEqual(charm.state.db_name, TEST_MODEL_CONFIG_FULL["db_name"])
+        self.assertEqual(charm.state.db_user, TEST_MODEL_CONFIG_FULL["db_user"])
+        self.assertEqual(charm.state.db_password, TEST_MODEL_CONFIG_FULL["db_password"])
 
         # Add a relation and remote unit providing connection details.
         # TODO: ops-lib-mysql should have a helper to set the relation data.
@@ -175,8 +179,8 @@ class TestWordpressCharm(unittest.TestCase):
         }
         self.assertEqual(self.harness.charm.make_pod_resources(), expected)
 
-        # And now test with no tls config.
-        self.harness.update_config({"tls_secret_name": ""})
+        # And now test with minimal config.
+        self.harness.update_config(self.test_model_config_minimal)
         expected = {
             'kubernetesResources': {
                 'ingressResources': [
@@ -200,28 +204,6 @@ class TestWordpressCharm(unittest.TestCase):
                                         ]
                                     },
                                 },
-                                {
-                                    'host': 'cool-newsite.org',
-                                    'http': {
-                                        'paths': [
-                                            {
-                                                'path': '/',
-                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
-                                            }
-                                        ]
-                                    },
-                                },
-                                {
-                                    'host': 'blog.test.com',
-                                    'http': {
-                                        'paths': [
-                                            {
-                                                'path': '/',
-                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
-                                            }
-                                        ]
-                                    },
-                                }
                             ],
                         },
                     }
@@ -229,6 +211,114 @@ class TestWordpressCharm(unittest.TestCase):
             }
         }
         self.assertEqual(self.harness.charm.make_pod_resources(), expected)
+
+    def test_make_pod_spec(self):
+        expected = {
+            'version': 2,
+            'containers': [{
+                'config': {
+                    'SWIFT_AUTH_URL': 'auth-url',
+                    'SWIFT_BUCKET': 'bucket',
+                    'SWIFT_COPY_TO_SWIFT': None,
+                    'SWIFT_PASSWORD': 'password',
+                    'SWIFT_PREFIX': None,
+                    'SWIFT_REGION': None,
+                    'SWIFT_REMOVE_LOCAL_FILE': None,
+                    'SWIFT_SERVE_FROM_SWIFT': None,
+                    'SWIFT_TENANT': None,
+                    'SWIFT_URL': None,
+                    'SWIFT_USERNAME': None,
+                    'WORDPRESS_DB_HOST': '10.215.74.139',
+                    'WORDPRESS_DB_NAME': 'wordpress',
+                    'WORDPRESS_DB_PASSWORD': 'letmein123',
+                    'WORDPRESS_DB_USER': 'admin',
+                    'WP_PLUGIN_AKISMET_KEY': 'somerandomstring',
+                    'WP_PLUGIN_OPENID_TEAM_MAP': True,
+                    'test-key': 'test'
+                },
+                'imageDetails': {
+                    'imagePath': 'testimageregistry/wordpress:bionic-latest',
+                    'password': 'dontleakme',
+                    'username': 'test-image-user'
+                },
+                'kubernetes': {
+                    'readinessProbe': {
+                        'exec': {'command': ['/srv/wordpress-helpers/ready.sh']}
+                    }
+                },
+                'name': 'wordpress',
+                'ports': [{
+                    'containerPort': 80,
+                    'name': 'http',
+                    'protocol': 'TCP',
+                }]}
+            ],
+        }
+        self.harness.charm.leader_data = {}
+        actual = self.harness.charm.make_pod_spec()
+        # Remove values that are auto-generated so hard to test.
+        for secret in WORDPRESS_SECRETS:
+            del actual["containers"][0]["config"][secret]
+        self.assertEqual(actual, expected)
+
+        # And now test with minimal config.
+        self.harness.update_config(self.test_model_config_minimal, unset=['image_user', 'image_pass',
+                                                                          'wp_plugin_akismet_key'])
+        expected = {
+            'version': 2,
+            'containers': [{
+                'config': {
+                    'SWIFT_AUTH_URL': 'auth-url',
+                    'SWIFT_BUCKET': 'bucket',
+                    'SWIFT_COPY_TO_SWIFT': None,
+                    'SWIFT_PASSWORD': 'password',
+                    'SWIFT_PREFIX': None,
+                    'SWIFT_REGION': None,
+                    'SWIFT_REMOVE_LOCAL_FILE': None,
+                    'SWIFT_SERVE_FROM_SWIFT': None,
+                    'SWIFT_TENANT': None,
+                    'SWIFT_URL': None,
+                    'SWIFT_USERNAME': None,
+                    'WORDPRESS_DB_HOST': '10.215.74.139',
+                    'WORDPRESS_DB_NAME': 'wordpress',
+                    'WORDPRESS_DB_PASSWORD': 'letmein123',
+                    'WORDPRESS_DB_USER': 'admin',
+                    'WORDPRESS_TLS_DISABLED': 'true',
+                },
+                'imageDetails': {
+                    'imagePath': 'testimageregistry/wordpress:bionic-latest',
+                },
+                'kubernetes': {
+                    'readinessProbe': {
+                        'exec': {'command': ['/srv/wordpress-helpers/ready.sh']}
+                    }
+                },
+                'name': 'wordpress',
+                'ports': [{
+                    'containerPort': 80,
+                    'name': 'http',
+                    'protocol': 'TCP',
+                }]}
+            ],
+        }
+        self.harness.charm.leader_data = {}
+        actual = self.harness.charm.make_pod_spec()
+        # Remove values that are auto-generated so hard to test.
+        for secret in WORDPRESS_SECRETS:
+            del actual["containers"][0]["config"][secret]
+        self.assertEqual(actual, expected)
+
+    def test_get_initial_password(self):
+        self.harness.charm.leader_data = {"initial_password": "supersekrit"}
+        self.assertEqual(self.harness.charm._get_initial_password(), "supersekrit")
+        # Now test with no password, but not leader.
+        self.harness.charm.leader_data = {"initial_password": ""}
+        self.harness.set_leader(False)
+        self.assertEqual(self.harness.charm._get_initial_password(), "")
+        # And with no password, but is leader.
+        self.harness.charm.leader_data = {"initial_password": ""}
+        self.harness.set_leader(True)
+        self.assertEqual(len(self.harness.charm._get_initial_password()), 24)
 
     def test_on_get_initial_password_action(self):
         action_event = Mock()

@@ -9,7 +9,24 @@ import charm
 import wordpress
 
 
-TEST_MODEL_CONFIG = {
+TEST_MODEL_CONFIG_MINIMAL = {
+    "image": "testimageregistry/wordpress:bionic-latest",
+    "db_host": "10.215.74.139",
+    "db_name": "wordpress",
+    "db_user": "admin",
+    "db_password": "letmein123",
+    "additional_hostnames": "",
+    "wp_plugin_openid_team_map": False,
+    "container_config": "",
+    "initial_settings": """\
+    user_name: admin
+    admin_email: root@admin.canonical.com
+    weblog_title: Test Blog
+    blog_public: False""",
+    "tls_secret_name": "",
+}
+
+TEST_MODEL_CONFIG_FULL = {
     "image": "testimageregistry/wordpress:bionic-latest",
     "image_user": "test-image-user",
     "image_pass": "dontleakme",
@@ -27,6 +44,7 @@ TEST_MODEL_CONFIG = {
     weblog_title: Test Blog
     blog_public: False""",
     "tls_secret_name": "wordpress-tls",
+    "wp_plugin_openstack-objectstorage_config": "auth-url: auth-url\nbucket: bucket\npassword: password",
 }
 
 
@@ -50,7 +68,8 @@ class RequestsResult:
 
 class HelperTest(unittest.TestCase):
 
-    test_model_config = TEST_MODEL_CONFIG
+    test_model_config_full = TEST_MODEL_CONFIG_FULL
+    test_model_config_minimal = TEST_MODEL_CONFIG_MINIMAL
 
     def test_password_generator(self):
         password = wordpress.password_generator()
@@ -61,41 +80,40 @@ class HelperTest(unittest.TestCase):
 
     def test_generate_pod_config(self):
         # Ensure that secrets are stripped from config.
-        result = charm.generate_pod_config(self.test_model_config, secured=True)
+        result = charm.generate_pod_config(self.test_model_config_full, secured=True)
         secured_keys = ("WORDPRESS_DB_PASSWORD", "WP_PLUGIN_AKISMET_KEY")
         [self.assertNotIn(key, result) for key in secured_keys]
         self.assertIn("WP_PLUGIN_OPENID_TEAM_MAP", result)
 
         # Ensure that we receive the full pod config.
-        result = charm.generate_pod_config(self.test_model_config, secured=False)
+        result = charm.generate_pod_config(self.test_model_config_full, secured=False)
         [self.assertIn(key, result) for key in secured_keys]
         self.assertIn("WP_PLUGIN_AKISMET_KEY", result)
 
-        # Test we don't break with missing non-essential config options.
-        non_essential_model_config = copy.deepcopy(self.test_model_config)
-        del non_essential_model_config["wp_plugin_openid_team_map"]
-        del non_essential_model_config["wp_plugin_akismet_key"]
-        result = charm.generate_pod_config(self.test_model_config, secured=False)
-        self.assertTrue(result)
-
         # Test for initial container config.
-        result = charm.generate_pod_config(self.test_model_config)
-        test_container_config = yaml.safe_load(self.test_model_config["container_config"])
+        result = charm.generate_pod_config(self.test_model_config_full)
+        test_container_config = yaml.safe_load(self.test_model_config_full["container_config"])
         self.assertEqual(test_container_config["test-key"], result["test-key"])
 
         # Test we pass set WORDPRESS_TLS_ENABLED if we have `tls_secret_name`.
-        result = charm.generate_pod_config(self.test_model_config)
+        result = charm.generate_pod_config(self.test_model_config_full)
         self.assertNotIn("WORDPRESS_TLS_DISABLED", result)
-        # Remove `tls_secret_name` and test again.
-        non_tls_secret_config = copy.deepcopy(self.test_model_config)
-        non_tls_secret_config["tls_secret_name"] = ""
-        result = charm.generate_pod_config(non_tls_secret_config)
+
+        # Test `wp_plugin_openstack-objectstorage_config`.
+        result = charm.generate_pod_config(self.test_model_config_full, secured=False)
+        self.assertEqual(result["SWIFT_AUTH_URL"], "auth-url")
+        self.assertEqual(result["SWIFT_BUCKET"], "bucket")
+        self.assertEqual(result["SWIFT_PASSWORD"], "password")
+        self.assertEqual(result["SWIFT_PREFIX"], None)
+
+        # Test we don't break with missing non-essential config options.
+        result = charm.generate_pod_config(self.test_model_config_minimal, secured=False)
         self.assertEqual(result["WORDPRESS_TLS_DISABLED"], "true")
 
 
 class WordpressTest(unittest.TestCase):
 
-    test_model_config = TEST_MODEL_CONFIG
+    test_model_config = TEST_MODEL_CONFIG_FULL
 
     def setUp(self):
         self.test_wordpress = wordpress.Wordpress(copy.deepcopy(self.test_model_config))

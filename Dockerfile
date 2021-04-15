@@ -59,7 +59,8 @@ RUN a2enconf docker-php \
     && a2enmod mpm_prefork \
     && a2enmod proxy \
     && a2enmod proxy_http \
-    && a2enmod rewrite
+    && a2enmod rewrite \
+    && a2enmod ssl
 
 # Install the main Wordpress code, this will be our only site so /var/www/html is fine
 RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${VERSION}.tar.gz" \

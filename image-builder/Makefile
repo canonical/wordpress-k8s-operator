@@ -1,5 +1,5 @@
 DIST_RELEASE ?= bionic
-VERSION ?= 5.6
+VERSION ?= 5.7
 
 build-image:
 	@echo "Building the image."

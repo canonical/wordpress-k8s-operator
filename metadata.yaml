@@ -1,4 +1,5 @@
-name: "wordpress"
+name: wordpress-k8s
+display-name: WordPress
 summary: "WordPress is open source software you can use to create a beautiful website, blog, or app."
 description: "WordPress is open source software you can use to create a beautiful website, blog, or app. https://wordpress.org/"
 docs: https://discourse.charmhub.io/t/wordpress-documentation-overview/4052

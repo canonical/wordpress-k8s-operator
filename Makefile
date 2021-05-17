@@ -1,4 +1,4 @@
-wordpress.charm: src/*.py requirements.txt
+wordpress-k8s.charm: src/*.py requirements.txt
 	@echo "Building Kubernetes WordPress Charm."
 	@charmcraft build
 

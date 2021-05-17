@@ -123,7 +123,7 @@ class TestWordpressCharm(unittest.TestCase):
             "tls_secret_name": "blog-example-com-tls"
         })
         # Test for https://bugs.launchpad.net/juju/+bug/1884674
-        ingress_name = 'wordpress-ingress'
+        ingress_name = 'wordpress-k8s-ingress'
         self.assertNotEqual(ingress_name, self.harness.charm.app.name)
 
         expected = {
@@ -143,7 +143,7 @@ class TestWordpressCharm(unittest.TestCase):
                                         'paths': [
                                             {
                                                 'path': '/',
-                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                                'backend': {'serviceName': 'wordpress-k8s', 'servicePort': 80},
                                             }
                                         ]
                                     },
@@ -154,7 +154,7 @@ class TestWordpressCharm(unittest.TestCase):
                                         'paths': [
                                             {
                                                 'path': '/',
-                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                                'backend': {'serviceName': 'wordpress-k8s', 'servicePort': 80},
                                             }
                                         ]
                                     },
@@ -165,7 +165,7 @@ class TestWordpressCharm(unittest.TestCase):
                                         'paths': [
                                             {
                                                 'path': '/',
-                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                                'backend': {'serviceName': 'wordpress-k8s', 'servicePort': 80},
                                             }
                                         ]
                                     },
@@ -199,7 +199,7 @@ class TestWordpressCharm(unittest.TestCase):
                                         'paths': [
                                             {
                                                 'path': '/',
-                                                'backend': {'serviceName': 'wordpress', 'servicePort': 80},
+                                                'backend': {'serviceName': 'wordpress-k8s', 'servicePort': 80},
                                             }
                                         ]
                                     },
@@ -246,7 +246,7 @@ class TestWordpressCharm(unittest.TestCase):
                         'exec': {'command': ['/srv/wordpress-helpers/ready.sh']}
                     }
                 },
-                'name': 'wordpress',
+                'name': 'wordpress-k8s',
                 'ports': [{
                     'containerPort': 80,
                     'name': 'http',
@@ -293,7 +293,7 @@ class TestWordpressCharm(unittest.TestCase):
                         'exec': {'command': ['/srv/wordpress-helpers/ready.sh']}
                     }
                 },
-                'name': 'wordpress',
+                'name': 'wordpress-k8s',
                 'ports': [{
                     'containerPort': 80,
                     'name': 'http',

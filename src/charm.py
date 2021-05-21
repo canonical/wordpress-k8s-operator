@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-
-import io
 import logging
 import re
-from pprint import pprint
+import os
 from yaml import safe_load
 
 from ops.charm import CharmBase, CharmEvents
 from ops.framework import EventBase, EventSource, StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
-from leadership import LeadershipSettings
 
+from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
+from leadership import LeadershipSettings
 from opslib.mysql import MySQLClient
+
 from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
 
 
@@ -20,48 +20,7 @@ logger = logging.getLogger()
 
 
 def generate_pod_config(config, secured=True):
-    """Kubernetes pod config generator.
-
-    generate_pod_config generates Kubernetes deployment config.
-    If the secured keyword is set then it will return a sanitised copy
-    without exposing secrets.
-    """
-    pod_config = {}
-    if config["container_config"].strip():
-        pod_config = safe_load(config["container_config"])
-
-    pod_config["WORDPRESS_DB_HOST"] = config["db_host"]
-    pod_config["WORDPRESS_DB_NAME"] = config["db_name"]
-    pod_config["WORDPRESS_DB_USER"] = config["db_user"]
-    if not config["tls_secret_name"]:
-        pod_config["WORDPRESS_TLS_DISABLED"] = "true"
-    if config.get("wp_plugin_openid_team_map"):
-        pod_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
-
-    if secured:
-        return pod_config
-
-    # Add secrets from charm config.
-    pod_config["WORDPRESS_DB_PASSWORD"] = config["db_password"]
-    if config.get("wp_plugin_akismet_key"):
-        pod_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
-    if config.get("wp_plugin_openstack-objectstorage_config"):
-        # Actual plugin name is 'openstack-objectstorage', but we're only
-        # implementing the 'swift' portion of it.
-        wp_plugin_swift_config = safe_load(config.get("wp_plugin_openstack-objectstorage_config"))
-        pod_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get('auth-url')
-        pod_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get('bucket')
-        pod_config["SWIFT_PASSWORD"] = wp_plugin_swift_config.get('password')
-        pod_config["SWIFT_PREFIX"] = wp_plugin_swift_config.get('prefix')
-        pod_config["SWIFT_REGION"] = wp_plugin_swift_config.get('region')
-        pod_config["SWIFT_TENANT"] = wp_plugin_swift_config.get('tenant')
-        pod_config["SWIFT_URL"] = wp_plugin_swift_config.get('url')
-        pod_config["SWIFT_USERNAME"] = wp_plugin_swift_config.get('username')
-        pod_config["SWIFT_COPY_TO_SWIFT"] = wp_plugin_swift_config.get('copy-to-swift')
-        pod_config["SWIFT_SERVE_FROM_SWIFT"] = wp_plugin_swift_config.get('serve-from-swift')
-        pod_config["SWIFT_REMOVE_LOCAL_FILE"] = wp_plugin_swift_config.get('remove-local-file')
-
-    return pod_config
+    print("NOT IMPLEMENTED")
 
 
 def juju_setting_to_list(config_string, split_char=" "):
@@ -69,91 +28,322 @@ def juju_setting_to_list(config_string, split_char=" "):
     return config_string.split(split_char)
 
 
-class WordpressInitialiseEvent(EventBase):
+class WordpressFirstInstallEvent(EventBase):
     """Custom event for signalling Wordpress initialisation.
 
     WordpressInitialiseEvent allows us to signal the handler for
     the initial Wordpress setup logic.
     """
-
     pass
-
 
 class WordpressCharmEvents(CharmEvents):
     """Register custom charm events.
 
-    WordpressCharmEvents registers the custom WordpressInitialiseEvent
+    WordpressCharmEvents registers the custom WordpressFirstInstallEvent
     event to the charm.
     """
 
-    wordpress_initialise = EventSource(WordpressInitialiseEvent)
-
+    wordpress_initial_setup = EventSource(WordpressFirstInstallEvent)
 
 class WordpressCharm(CharmBase):
+
+    _container_name = "wordpress"
+    _default_service_port = 80
+
     state = StoredState()
-    # Override the default list of event handlers with our WordpressCharmEvents subclass.
     on = WordpressCharmEvents()
+
 
     def __init__(self, *args):
         super().__init__(*args)
 
         self.leader_data = LeadershipSettings()
 
-        self.framework.observe(self.on.start, self.on_config_changed)
+        logger.debug("registering Framework handlers...")
+
+        self.framework.observe(self.on.wordpress_pebble_ready, self.on_config_changed)
         self.framework.observe(self.on.config_changed, self.on_config_changed)
-        self.framework.observe(self.on.update_status, self.on_config_changed)
-        self.framework.observe(self.on.wordpress_initialise, self.on_wordpress_initialise)
+        self.framework.observe(self.on.leader_elected, self.on_leader_elected)
 
         # Actions.
         self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
 
-        self.db = MySQLClient(self, 'db')
+        self.db = MySQLClient(self, "db")
         self.framework.observe(self.on.db_relation_created, self.on_db_relation_created)
         self.framework.observe(self.on.db_relation_broken, self.on_db_relation_broken)
         self.framework.observe(self.db.on.database_changed, self.on_database_changed)
 
         c = self.model.config
         self.state.set_default(
-            initialised=False, valid=False, has_db_relation=False,
-            db_host=c["db_host"], db_name=c["db_name"], db_user=c["db_user"], db_password=c["db_password"]
+            attempted_install=False,
+            installed_successfully=False,
+            install_state=set(),
+            has_db_relation=False,
+            has_ingress_relation=False,
+            service_ip_address=None,
+            db_host=c["db_host"] or None,
+            db_name=c["db_name"] or None,
+            db_user=c["db_user"] or None,
+            db_password=c["db_password"] or None,
         )
+
         self.wordpress = Wordpress(c)
 
-    def on_config_changed(self, event):
-        """Handle the config-changed hook."""
-        self.config_changed()
+        self.ingress = IngressRequires(self, self.ingress_config)
 
-    def on_wordpress_initialise(self, event):
-        wordpress_needs_configuring = False
-        pod_alive = self.model.unit.is_leader() and self.is_service_up()
-        if pod_alive:
-            wordpress_configured = self.wordpress.wordpress_configured(self.get_service_ip())
-            wordpress_needs_configuring = not self.state.initialised and not wordpress_configured
-        elif self.model.unit.is_leader():
-            msg = "Wordpress workload pod is not ready"
-            logger.info(msg)
-            self.model.unit.status = WaitingStatus(msg)
+        self.framework.observe(self.on.ingress_relation_changed, self.on_ingress_relation_changed)
+        self.framework.observe(self.on.ingress_relation_broken, self.on_ingress_relation_broken)
+        self.framework.observe(self.on.ingress_relation_changed, self.on_ingress_relation_changed)
+
+        if self.state.installed_successfully is False:
+            self.framework.observe(self.on.config_changed, self.on_wordpress_uninitialised)
+            self.framework.observe(self.on.wordpress_initial_setup, self.on_wordpress_initial_setup)
+
+        logger.debug("all observe hooks registered...")
+
+    def on_wordpress_uninitialised(self, event):
+        self.ingress.update_config(self.ingress_config)
+        if self.state.installed_successfully is True or self.unit.is_leader() is False:
+            logger.warning("already installed, nothing to do...")
             return
 
-        if wordpress_needs_configuring:
-            msg = "Wordpress needs configuration"
-            logger.info(msg)
-            self.model.unit.status = MaintenanceStatus(msg)
-            initial_password = self._get_initial_password()
-            installed = self.wordpress.first_install(self.get_service_ip(), initial_password)
-            if not installed:
-                msg = "Failed to configure wordpress"
-                logger.info(msg)
-                self.model.unit.status = BlockedStatus(msg)
-                return
+        first_time_ready = {"leader", "db", "ingress"}
+        install_running = {'attempted', 'ingress', 'db', 'leader'}
+        
+        logger.debug(f"DEBUG: install ready state is {self.state.install_state} != {first_time_ready}")
 
-            self.state.initialised = True
-            logger.info("Wordpress configured and initialised")
-            self.model.unit.status = ActiveStatus()
+        if self.state.install_state == install_running:
+            logger.info("Install phase currently running...")
+            BlockedStatus("WordPress installing...")
 
-        else:
-            logger.info("Wordpress workload pod is ready and configured")
-            self.model.unit.status = ActiveStatus()
+        elif self.state.install_state == first_time_ready:
+            # TODO:
+            # Check if WordPress is already installed.
+            # Would be something like
+            #   if self.wordpress.wordpress_configured(self.service_ip_address): return
+            WaitingStatus("WordPress not installed yet...")
+            self.state.attempted_install = True
+            self.state.install_state.add("attempted")
+            logger.info("Attempting WordPress install...")
+            self.on.config_changed.emit()
+            self.on.wordpress_initial_setup.emit()
+
+    @property
+    def container_name(self):
+        return self._container_name
+
+    @property
+    def service_ip_address(self):
+        return os.environ.get("WORDPRESS_SERVICE_SERVICE_HOST")
+
+    @property
+    def service_port(self):
+        return self._default_service_port
+
+    # TODO: rename this to something more coherent for its purpose.
+    @property
+    def wordpress_setup_workload(self):
+        """Returns the initial WordPress pebble workload configuration."""
+        return {
+            "summary": "WordPress layer",
+            "description": "pebble config layer for WordPress",
+            "services": {
+                "wordpress-ready": {
+                    "override": "replace",
+                    "summary": "WordPress setup",
+                    "command": "bash -c '/srv/wordpress-helpers/plugin_handler.py && stat /srv/wordpress-helpers/.ready && sleep infinity'",
+                    "startup": "false",
+                    "requires": [self._container_name],
+                    "after": [self._container_name],
+                    "environment": self._env_config,
+                },
+                self._container_name: {
+                    "override": "replace",
+                    "summary": "WordPress setup",
+                    "command": "bash -c '/charm/bin/wordpressInit.sh >> /wordpressInit.log 2>&1'",
+                    "startup": "false",
+                    "requires": [],
+                    "before": ["wordpress-ready"],
+                    "environment": self._env_config,
+                },
+            },
+        }
+
+    @property
+    def wordpress_workload(self):
+        """Returns the WordPress pebble workload configuration."""
+        return {
+            "summary": "WordPress layer",
+            "description": "pebble config layer for WordPress",
+            "services": {
+                self._container_name: {
+                    "override": "replace",
+                    "summary": "WordPress production workload",
+                    "command": "apache2ctl -D FOREGROUND",
+                    "startup": "enabled",
+                    "requires": [],
+                    "before": [],
+                    "environment": self._env_config,
+                },
+                "wordpress-ready": {
+                    "override": "replace",
+                    "summary": "Remove the WordPress initialiser",
+                    "command": "/bin/true",
+                    "startup": "false",
+                    "requires": [],
+                    "after": [],
+                    "environment": {},
+                },
+            },
+        }
+
+    @property
+    def ingress_config(self):
+        config = self.model.config
+        ingress_config = {
+            "service-hostname": self._container_name,
+            "service-name": self._container_name,
+            "service-port": self.service_port,
+            "tls-secret-name": self.config["tls_secret_name"],
+        }
+        if config["additional_hostnames"]:
+            additional_hostnames = juju_setting_to_list(config["additional_hostnames"])
+            rules = []
+            for hostname in additional_hostnames:
+                rule = {
+                    "host": hostname,
+                    "http": {
+                        "paths": [
+                            {
+                                "path": "/",
+                                "backend": {"serviceName": self._container_name, "servicePort": self.service_port},
+                            }
+                        ]
+                    },
+                }
+                rules.append(rule)
+            ingress_config["rules"] = rules
+        return ingress_config
+
+    @property
+    def _env_config(self):
+        """Kubernetes Pod environment variables."""
+        config = dict(self.model.config)
+        env_config = {}
+        if config["container_config"].strip():
+            env_config = safe_load(config["container_config"])
+
+        env_config.update(self._get_wordpress_secrets())
+
+        if not config["tls_secret_name"]:
+            env_config["WORDPRESS_TLS_DISABLED"] = "true"
+        if config.get("wp_plugin_openid_team_map"):
+            env_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
+
+        # Add secrets from charm config.
+        if config.get("wp_plugin_akismet_key"):
+            env_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
+        if config.get("wp_plugin_openstack-objectstorage_config"):
+            # Actual plugin name is 'openstack-objectstorage', but we're only
+            # implementing the 'swift' portion of it.
+            wp_plugin_swift_config = safe_load(config.get("wp_plugin_openstack-objectstorage_config"))
+            env_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get("auth-url")
+            env_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get("bucket")
+            env_config["SWIFT_PASSWORD"] = wp_plugin_swift_config.get("password")
+            env_config["SWIFT_PREFIX"] = wp_plugin_swift_config.get("prefix")
+            env_config["SWIFT_REGION"] = wp_plugin_swift_config.get("region")
+            env_config["SWIFT_TENANT"] = wp_plugin_swift_config.get("tenant")
+            env_config["SWIFT_URL"] = wp_plugin_swift_config.get("url")
+            env_config["SWIFT_USERNAME"] = wp_plugin_swift_config.get("username")
+            env_config["SWIFT_COPY_TO_SWIFT"] = wp_plugin_swift_config.get("copy-to-swift")
+            env_config["SWIFT_SERVE_FROM_SWIFT"] = wp_plugin_swift_config.get("serve-from-swift")
+            env_config["SWIFT_REMOVE_LOCAL_FILE"] = wp_plugin_swift_config.get("remove-local-file")
+
+        env_config.update(self._db_config)
+        return env_config
+
+    @property
+    def _db_config(self):
+        """Kubernetes Pod environment variables."""
+        return {
+            "WORDPRESS_DB_HOST": self.state.db_host,
+            "WORDPRESS_DB_NAME": self.state.db_name,
+            "WORDPRESS_DB_USER": self.state.db_user,
+            "WORDPRESS_DB_PASSWORD": self.state.db_password,
+        }
+
+    def on_wordpress_initial_setup(self, event):
+        container = self.unit.get_container(self._container_name)
+        setup_service = "wordpressInit"
+        src_path = f"src/{setup_service}.sh"
+        charm_bin = "/charm/bin"
+        dst_path = f"{charm_bin}/{setup_service}.sh"
+        self.unit.status = MaintenanceStatus("Initialising WordPress")
+        with open(src_path, "r", encoding="utf-8") as f:
+            container.push(dst_path, f, permissions=0o755)
+
+        with open("src/wp-info.php", "r", encoding="utf-8") as f:
+            container.push("/var/www/html/wp-info.php", f, permissions=0o755)
+
+        logger.info("Adding WordPress setup layer to container...")
+        container.add_layer(self._container_name, self.wordpress_setup_workload, combine=True)
+        logger.info("Beginning WordPress setup process...")
+        pebble = container.pebble
+        wait_on = pebble.start_services(["wordpress-ready", self._container_name])
+        pebble.wait_change(wait_on)
+
+        install_outcome = self.wordpress.first_install(self.service_ip_address, self._get_initial_password())
+        if install_outcome is False:
+            logger.error("Failed to setup WordPress with the HTTP installer...")
+
+            return
+
+        logger.info("Stopping WordPress setup layer...")
+        container = self.unit.get_container(self._container_name)
+        pebble = container.pebble
+        wait_on = pebble.stop_services([self._container_name, "wordpress-ready"])
+        pebble.wait_change(wait_on)
+        self.unit.status = MaintenanceStatus("WordPress Initialised")
+        logger.info("Replacing WordPress setup layer with production workload...")
+        container.add_layer(self._container_name, self.wordpress_workload, combine=True)
+
+        self.leader_data["installed"] = True
+        self.state.installed_successfully = True
+        self.on.config_changed.emit()
+
+    def on_config_changed(self, event):
+        """Merge charm configuration transitions."""
+        if self.state.has_db_relation is False:
+            self.state.db_host = self.model.config["db_host"] or None
+            self.state.db_name = self.model.config["db_name"] or None
+            self.state.db_user = self.model.config["db_user"] or None
+            self.state.db_password = self.model.config["db_password"] or None
+
+        logger.warning(f"Current install ready state is {self.state.install_state}")
+
+        is_valid = self.is_valid_config()
+        if not is_valid:
+            return
+
+        container = self.unit.get_container(self._container_name)
+        services = container.get_plan().to_dict().get("services", {})
+        if services != self.wordpress_workload["services"]:
+            logger.info("WordPress configuration transition detected...")
+            self.unit.status = MaintenanceStatus('Transitioning WordPress configuration')
+            container.add_layer(self._container_name, self.wordpress_workload, combine=True)
+
+            self.unit.status = MaintenanceStatus('Restarting WordPress')
+            service = container.get_service(self._container_name)
+            if service.is_running():
+                container.stop(self._container_name)
+
+        if not container.get_service(self._container_name).is_running():
+            logger.info("WordPress is not running, starting it now...")
+            container.autostart()
+
+        self.ingress.update_config(self.ingress_config)
+
+        self.unit.status = ActiveStatus()
 
     def on_db_relation_created(self, event):
         """Handle the db-relation-created hook.
@@ -162,12 +352,13 @@ class WordpressCharm(CharmBase):
         credentials being specified in the charm configuration
         to being provided by the relation.
         """
-        self.state.has_db_relation = True
+
         self.state.db_host = None
         self.state.db_name = None
         self.state.db_user = None
         self.state.db_password = None
-        self.config_changed()
+        self.state.has_db_relation = True
+        self.on.config_changed.emit()
 
     def on_db_relation_broken(self, event):
         """Handle the db-relation-broken hook.
@@ -176,8 +367,13 @@ class WordpressCharm(CharmBase):
         credentials being provided by the relation to being
         specified in the charm configuration.
         """
+        self.state.db_host = None
+        self.state.db_name = None
+        self.state.db_user = None
+        self.state.db_password = None
         self.state.has_db_relation = False
-        self.config_changed()
+        self.state.install_state.add("db")
+        self.on.config_changed.emit()
 
     def on_database_changed(self, event):
         """Handle the MySQL endpoint database_changed event.
@@ -190,160 +386,62 @@ class WordpressCharm(CharmBase):
         self.state.db_name = event.database
         self.state.db_user = event.user
         self.state.db_password = event.password
-        self.config_changed()
+        self.state.has_db_relation = True
+        self.state.install_state.add("db")
+        self.on.config_changed.emit()
 
-    def config_changed(self):
-        """Handle configuration changes.
+    def on_ingress_relation_broken(self, event):
+        """Handle the ingress-relation-broken hook.
 
-        Configuration changes are caused by both config-changed
-        and the various relation hooks.
+        ingress service IP is used else where in the charm
+        to define current state. Ensure the state is wiped when a relation
+        is removed.
         """
-        if not self.state.has_db_relation:
-            self.state.db_host = self.model.config["db_host"] or None
-            self.state.db_name = self.model.config["db_name"] or None
-            self.state.db_user = self.model.config["db_user"] or None
-            self.state.db_password = self.model.config["db_password"] or None
+        self.state.has_ingress_relation = False
+        self.on.config_changed.emit()
 
-        is_valid = self.is_valid_config()
-        if not is_valid:
-            return
+    def on_ingress_relation_created(self, event):
+        """Clear any previous ingress relation data."""
+        self.state.has_ingress_relation = True
+        self.state.install_state.add("ingress")
+        self.on.config_changed.emit()
 
-        self.configure_pod()
-        if not self.state.initialised:
-            self.on.wordpress_initialise.emit()
+    def on_ingress_relation_changed(self, event):
+        """Store the current ingress IP address on relation changed."""
+        self.state.has_ingress_relation = True
+        self.state.install_state.add("ingress")
+        self.on.config_changed.emit()
 
-    def configure_pod(self):
-        # Only the leader can set_spec().
-        if self.model.unit.is_leader():
-            resources = self.make_pod_resources()
-            spec = self.make_pod_spec()
-            spec.update(resources)
+    def on_leader_elected(self, event):
+        if self.unit.is_leader() is True:
+            self.state.install_state.add("leader")
 
-            msg = "Configuring pod"
-            logger.info(msg)
-            self.model.unit.status = MaintenanceStatus(msg)
-            self.model.pod.set_spec(spec)
-
-            if self.state.initialised:
-                msg = "Pod configured"
-                logger.info(msg)
-                self.model.unit.status = ActiveStatus(msg)
-            else:
-                msg = "Pod configured, but WordPress configuration pending"
-                logger.info(msg)
-                self.model.unit.status = MaintenanceStatus(msg)
-        else:
-            logger.info("Spec changes ignored by non-leader")
-
-    def make_pod_resources(self):
-        resources = {
-            "kubernetesResources": {
-                "ingressResources": [
-                    {
-                        "annotations": {
-                            "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
-                            "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",
-                        },
-                        "name": self.app.name + "-ingress",
-                        "spec": {
-                            "rules": [
-                                {
-                                    "host": self.model.config["blog_hostname"],
-                                    "http": {
-                                        "paths": [
-                                            {"path": "/", "backend": {"serviceName": self.app.name, "servicePort": 80}}
-                                        ]
-                                    },
-                                }
-                            ],
-                        },
-                    }
-                ]
-            },
-        }
-
-        if self.model.config["additional_hostnames"]:
-            additional_hostnames = juju_setting_to_list(self.model.config["additional_hostnames"])
-            rules = resources["kubernetesResources"]["ingressResources"][0]["spec"]["rules"]
-            for hostname in additional_hostnames:
-                rule = {
-                    "host": hostname,
-                    "http": {
-                        "paths": [
-                            {"path": "/", "backend": {"serviceName": self.app.name, "servicePort": 80}}
-                        ]
-                    },
-                }
-                rules.append(rule)
-
-        ingress = resources["kubernetesResources"]["ingressResources"][0]
-        if self.model.config["tls_secret_name"]:
-            ingress["spec"]["tls"] = [
-                {
-                    "hosts": [self.model.config["blog_hostname"]],
-                    "secretName": self.model.config["tls_secret_name"],
-                }
-            ]
-        else:
-            ingress["annotations"]['nginx.ingress.kubernetes.io/ssl-redirect'] = 'false'
-
-        out = io.StringIO()
-        pprint(resources, out)
-        logger.info("This is the Kubernetes Pod resources <<EOM\n{}\nEOM".format(out.getvalue()))
-
-        return resources
-
-    def make_pod_spec(self):
-        config = dict(self.model.config)
-        config["db_host"] = self.state.db_host
-        config["db_name"] = self.state.db_name
-        config["db_user"] = self.state.db_user
-        config["db_password"] = self.state.db_password
-
-        full_pod_config = generate_pod_config(config, secured=False)
-        full_pod_config.update(self._get_wordpress_secrets())
-        secure_pod_config = generate_pod_config(config, secured=True)
-
-        ports = [
-            {"name": name, "containerPort": int(port), "protocol": "TCP"}
-            for name, port in [addr.split(":", 1) for addr in config["ports"].split()]
-        ]
-
-        spec = {
-            "version": 2,
-            "containers": [
-                {
-                    "name": self.app.name,
-                    "imageDetails": {"imagePath": config["image"]},
-                    "ports": ports,
-                    "config": secure_pod_config,
-                    "kubernetes": {"readinessProbe": {"exec": {"command": ["/srv/wordpress-helpers/ready.sh"]}}},
-                }
-            ],
-        }
-
-        out = io.StringIO()
-        pprint(spec, out)
-        logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
-
-        if config.get("image_user") and config.get("image_pass"):
-            spec.get("containers")[0].get("imageDetails")["username"] = config["image_user"]
-            spec.get("containers")[0].get("imageDetails")["password"] = config["image_pass"]
-
-        secure_pod_config.update(full_pod_config)
-
-        return spec
+        self.on.config_changed.emit()
 
     def is_valid_config(self):
         is_valid = True
-        config = self.model.config
+        config = dict(self.model.config)
 
-        if not config["initial_settings"]:
+        if self.state.installed_successfully is False:
+            logger.info("WordPress has not been setup yet...")
+            is_valid = False
+
+        if not self.unit.get_container(self._container_name).get_plan().services:
+            logger.info("No pebble plan seen yet")
+            is_valid = False
+
+        if not config.get("initial_settings"):
             logger.info("No initial_setting provided. Skipping first install.")
             self.model.unit.status = BlockedStatus("Missing initial_settings")
             is_valid = False
 
         want = ["image"]
+
+        if not self.service_ip_address:
+            message = "Ingress relation missing."
+            logger.info(message)
+            self.model.unit.status = WaitingStatus(message)
+            is_valid = False
 
         if self.state.has_db_relation:
             if not (self.state.db_host and self.state.db_name and self.state.db_user and self.state.db_password):
@@ -373,10 +471,7 @@ class WordpressCharm(CharmBase):
         return is_valid
 
     def get_service_ip(self):
-        try:
-            return str(self.model.get_binding("website").network.ingress_addresses[0])
-        except Exception:
-            logger.info("We don't have any ingress addresses yet")
+        return self.service_ip_address
 
     def _get_wordpress_secrets(self):
         """Get secrets, creating them if they don't exist.

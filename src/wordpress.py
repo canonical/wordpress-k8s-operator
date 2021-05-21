@@ -2,6 +2,7 @@
 
 import logging
 import re
+import requests
 import secrets
 import string
 import subprocess
@@ -23,28 +24,17 @@ WORDPRESS_SECRETS = [
 ]
 
 
-def import_requests():
-    # Workaround until https://github.com/canonical/operator/issues/156 is fixed.
-    try:
-        import requests
-    except ImportError:
-        subprocess.check_call(['apt-get', 'update'])
-        subprocess.check_call(['apt-get', '-y', 'install', 'python3-requests'])
-        import requests
-
-    return requests
-
-
-def password_generator(length=24):
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for i in range(length))
+def password_generator(length=24, characters=None):
+    if characters is None:
+        characters = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(characters) for i in range(length))
 
 
 class Wordpress:
     def __init__(self, model_config):
         self.model_config = model_config
 
-    def first_install(self, service_ip, admin_password):
+    def first_install(self, admin_password, service_ip="127.0.0.1"):
         """Perform initial configuration of wordpress if needed."""
         config = self.model_config
         logger.info("Starting wordpress initial configuration")
@@ -75,7 +65,6 @@ class Wordpress:
         return True
 
     def call_wordpress(self, service_ip, uri, redirects=True, payload={}, _depth=1):
-        requests = import_requests()
 
         max_depth = 10
         if _depth > max_depth:
@@ -97,8 +86,6 @@ class Wordpress:
 
     def wordpress_configured(self, service_ip):
         """Check whether first install has been completed."""
-        requests = import_requests()
-
         # We have code on disk, check if configured
         try:
             r = self.call_wordpress(service_ip, "/", redirects=False)
@@ -111,14 +98,13 @@ class Wordpress:
             logger.info("MySQL database setup failed, we likely have no wp-config.php")
             return False
         elif r.status_code in (500, 403, 404):
-            raise RuntimeError("unexpected status_code returned from Wordpress")
+            logger.info("Unexpected status_code returned from Wordpress")
+            return False
 
         return True
 
     def is_vhost_ready(self, service_ip):
         """Check whether wordpress is available using http."""
-        requests = import_requests()
-
         # Check if we have WP code deployed at all
         try:
             r = self.call_wordpress(service_ip, "/wp-login.php", redirects=False)

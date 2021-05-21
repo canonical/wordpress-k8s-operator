@@ -28,15 +28,15 @@ options:
   db_name:
     type: string
     description: "MySQL database name"
-    default: "wordpress"
+    default: ""
   db_user:
     type: string
     description: "MySQL database user"
-    default: "wordpress"
+    default: ""
   db_password:
     type: string
     description: "MySQL database user's password"
-    default: "wordpress"
+    default: ""
   additional_hostnames:
     type: string
     description: "Space separated list of aditional hostnames for the site."

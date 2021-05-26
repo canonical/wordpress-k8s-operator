@@ -19,11 +19,14 @@ details on using Juju with MicroK8s for easy local testing [see here](https://ju
 To deploy the charm and relate it to the [MariaDB K8s charm](https://charmhub.io/mariadb) within a Juju
 Kubernetes model:
 
+    juju deploy nginx-ingress-integrator ingress
     juju deploy charmed-osm-mariadb-k8s mariadb
-    juju deploy wordpress-k8s
+    juju deploy wordpress-k8s --resource wordpress-image=wordpresscharmers/wordpress:bionic-5.7 \
+        --config blog_hostname="myblog.example.com"
     juju relate wordpress-k8s mariadb:mysql
+    juju relate wordpress-k8s ingress:website
 
-It will take about 5 to 10 minutes for Juju hooks to discover the site is live
+It will take about 2 to 5 minutes for Juju hooks to discover the site is live
 and perform the initial setup for you. Once the "Workload" status is "active",
 your WordPress site is configured.
 
@@ -31,7 +34,7 @@ To retrieve the auto-generated admin password, run the following:
 
     juju run-action --wait wordpress-k8s/0 get-initial-password
 
-You should now be able to browse to the IP address of the unit. Here's some
+You should now be able to browse to the site hostname. Here's some
 sample output from `juju status`:
 
     Unit                Workload     Agent  Address      Ports     Message

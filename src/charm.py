@@ -37,9 +37,10 @@ class WordpressFirstInstallEvent(EventBase):
 class WordpressStaticDatabaseChanged(EventBase):
     """Custom event for static Database configuration changed.
 
-    WordpressStaticDatabaseChanged provides the same interface as the db.on.database_changed
-    event which enables the WordPressCharm's on_database_changed handler to update state
-    for both relation and static database configuration events.
+    WordpressStaticDatabaseChanged provides the same interface as the
+    db.on.database_changed event which enables the WordPressCharm's
+    on_database_changed handler to update state for both relation and static
+    database configuration events.
     """
 
     @property
@@ -67,7 +68,7 @@ class WordpressCharmEvents(CharmEvents):
     """Register custom charm events.
 
     WordpressCharmEvents registers the custom WordpressFirstInstallEvent
-    event to the charm.
+    and WordpressStaticDatabaseChanged event to the charm.
     """
 
     wordpress_initial_setup = EventSource(WordpressFirstInstallEvent)
@@ -160,11 +161,11 @@ class WordpressCharm(CharmBase):
                         "sleep infinity'"
                     ),
                     "startup": "enabled",
-                    "requires": [self._container_name],
-                    "after": [self._container_name],
+                    "requires": [self.container_name],
+                    "after": [self.container_name],
                     "environment": self._env_config,
                 },
-                self._container_name: {
+                self.container_name: {
                     "override": "replace",
                     "summary": "WordPress service",
                     "command": "bash -c '/charm/bin/wordpressInit.sh >> /wordpressInit.log 2>&1'",
@@ -250,13 +251,12 @@ class WordpressCharm(CharmBase):
         WordPress will expose the setup page to the user to manually
         configure with their browser. This isn't ideal from a security
         perspective so the charm will initialise the site for you and
-        expose the admin password via the `TODO: name of the action`
-        action.
+        expose the admin password via `get_initial_password_action`.
 
         This method observes all changes to the system by registering
         to the .on.config_changed event. This avoids current state split
         brain issues because all changes to the system sink into
-        .on_config_changed.
+        `on.config_changed`.
 
         It defines the state of the install ready state as:
           - We aren't leader, so check leader_data install state for the installed state answer.
@@ -306,7 +306,7 @@ class WordpressCharm(CharmBase):
 
     def on_wordpress_initial_setup(self, event):
         logger.info("Beginning WordPress setup process...")
-        container = self.unit.get_container(self._container_name)
+        container = self.unit.get_container(self.container_name)
 
         # Temporary workaround until the init script is baked into the Dockerimage.
         setup_service = "wordpressInit"
@@ -317,11 +317,11 @@ class WordpressCharm(CharmBase):
             container.push(dst_path, f, permissions=0o755)
 
         logger.info("Adding WordPress layer to container...")
-        container.add_layer(self._container_name, self.wordpress_workload, combine=True)
+        container.add_layer(self.container_name, self.wordpress_workload, combine=True)
         self.ingress.update_config(self.ingress_config)
-        container = self.unit.get_container(self._container_name)
+        container = self.unit.get_container(self.container_name)
         pebble = container.pebble
-        wait_on = pebble.start_services(["wordpress-ready", self._container_name])
+        wait_on = pebble.start_services(["wordpress-ready", self.container_name])
         pebble.wait_change(wait_on)
         self.on.config_changed.emit()
 
@@ -348,18 +348,18 @@ class WordpressCharm(CharmBase):
         if not is_valid:
             return
 
-        container = self.unit.get_container(self._container_name)
+        container = self.unit.get_container(self.container_name)
         services = container.get_plan().to_dict().get("services", {})
 
         if services != self.wordpress_workload["services"]:
             logger.info("WordPress configuration transition detected...")
             self.unit.status = MaintenanceStatus("Transitioning WordPress configuration")
-            container.add_layer(self._container_name, self.wordpress_workload, combine=True)
+            container.add_layer(self.container_name, self.wordpress_workload, combine=True)
 
             self.unit.status = MaintenanceStatus("Restarting WordPress")
-            service = container.get_service(self._container_name)
+            service = container.get_service(self.container_name)
             if service.is_running():
-                container.stop(self._container_name)
+                container.stop(self.container_name)
 
             # Temporary workaround until the init script is baked into the Dockerimage.
             setup_service = "wordpressInit"
@@ -477,7 +477,7 @@ class WordpressCharm(CharmBase):
         self.on.config_changed.emit()
 
     def is_valid_config(self):
-        """Validate that we the current configuration is valid.
+        """Validate that the current configuration is valid.
 
         Before the workload can start we must ensure all prerequisite state
         is present, the config_changed handler uses the return value here.

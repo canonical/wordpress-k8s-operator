@@ -1,11 +1,5 @@
 ARG DIST_RELEASE
-FROM ubuntu:${DIST_RELEASE}
-ARG DIST_RELEASE
-ARG VERSION
-
-LABEL maintainer="wordpress-charmers@lists.launchpad.net"
-# Used by Launchpad OCI Recipe to tag version
-LABEL org.label-schema.version=${VERSION:-5.6}
+FROM ubuntu:${DIST_RELEASE} as base
 
 # HTTPS_PROXY used when we RUN curl to download Wordpress itself
 ARG BUILD_DATE
@@ -42,6 +36,7 @@ RUN apt-get update && apt-get -y dist-upgrade \
             python3 \
             python3-yaml \
             ssl-cert \
+            wget \
         && sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' "$APACHE_ENVVARS" \
         && . "$APACHE_ENVVARS" \
         && for dir in "$APACHE_LOCK_DIR" "$APACHE_RUN_DIR" "$APACHE_LOG_DIR"; do rm -rvf "$dir"; mkdir -p "$dir"; chown "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$dir"; chmod 777 "$dir";  done \
@@ -62,8 +57,23 @@ RUN a2enconf docker-php \
     && a2enmod rewrite \
     && a2enmod ssl
 
+
+FROM base as plugins
+
+# Download themes and plugins. This will eventually be separated into new container.
+COPY ./image-builder/src/fetcher.py /
+WORKDIR /files
+RUN mkdir themes plugins && /fetcher.py
+VOLUME /files/plugins
+
+FROM base As install
+ARG VERSION
+
+# TODO: replace downloading the source wordpress code with copying it from the upstream wordpress container,
+# which should speed builds up:
+#   COPY --from=wordpress-${VERSION}:fpm /usr/src/wordpress /usr/src/wordpress
 # Install the main Wordpress code, this will be our only site so /var/www/html is fine
-RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${VERSION}.tar.gz" \
+RUN wget -O wordpress.tar.gz -t 3 -r "https://wordpress.org/wordpress-${VERSION}.tar.gz" \
     && tar -xzf wordpress.tar.gz -C /usr/src/ \
     && rm wordpress.tar.gz \
     && chown -R www-data:www-data /usr/src/wordpress \
@@ -71,13 +81,6 @@ RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${VERSION}.ta
     && mv /usr/src/wordpress /var/www/html
 
 COPY ./image-builder/files/ /files/
-COPY ./image-builder/src/fetcher.py .
-RUN mkdir -p /files/themes /files/plugins
-RUN ./fetcher.py
-# Copy our collected themes and plugins into the appropriate paths
-RUN cp -r /files/plugins/* /var/www/html/wp-content/plugins/
-RUN cp -r /files/themes/* /var/www/html/wp-content/themes/
-
 # wp-info.php contains template variables which our ENTRYPOINT script will populate
 RUN install -D /files/wp-info.php /var/www/html/wp-info.php
 RUN install -D /files/wp-config.php /var/www/html/wp-config.php
@@ -97,10 +100,19 @@ RUN chmod 0755 /srv/wordpress-helpers/plugin_handler.py
 RUN chmod 0755 /srv/wordpress-helpers/ready.sh
 RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh
 
-RUN rm -r /files
+FROM install as wordpress
+ARG VERSION
+
+LABEL maintainer="wordpress-charmers@lists.launchpad.net"
+# Used by Launchpad OCI Recipe to tag version
+LABEL org.label-schema.version=${VERSION:-5.7}
 
 # Port 80 only, TLS will terminate elsewhere
 EXPOSE 80
 
+# Copy plugins from the plugin stage into the WordPress content directory.
+COPY ./image-builder/src/fetcher.py /
+COPY --chown=www-data:www-data --from=plugins /files/plugins/ /var/www/html/wp-content/plugins/
+COPY --chown=www-data:www-data --from=plugins /files/themes/ /var/www/html/wp-content/themes/
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD apachectl -D FOREGROUND

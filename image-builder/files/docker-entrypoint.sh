@@ -14,6 +14,9 @@ done
 # If we have passed in SWIFT_URL, then append swift proxy config.
 [ -z "${SWIFT_URL-}" ] || a2enconf docker-php-swift-proxy
 
+# TODO: this will eventually be called directly by the charm.
+nohup bash -c "(cd /var/www/html/wp-content/ && /fetcher.py && chown -R www-data:www-data /var/www/html/wp-content/) &"
+
 nohup bash -c "/srv/wordpress-helpers/plugin_handler.py &"
 
 # Match against either php 7.2 (bionic) or 7.4 (focal).

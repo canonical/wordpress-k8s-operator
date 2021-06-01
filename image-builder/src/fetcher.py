@@ -3,8 +3,12 @@
 import os
 import shutil
 import subprocess
+import sys
 import urllib.request
 import zipfile
+from typing import Mapping, List
+from urllib.parse import urlparse
+from yaml import safe_load
 
 
 zip_plugins_to_get = {
@@ -98,11 +102,11 @@ def get_plugins(zip_plugins, branch_plugins):
         current_zip = current_zip + 1
         print('Downloading {} of {} zipped plugins: {} ...'.format(current_zip, total_zips, zip_plugin))
         url = 'https://downloads.wordpress.org/plugin/{}.latest-stable.zip'.format(zip_plugin)
-        file_name = os.path.join(os.getcwd(), 'files/plugins', os.path.basename(url))
+        file_name = os.path.join(os.getcwd(), 'plugins', os.path.basename(url))
         with urllib.request.urlopen(url) as response, open(file_name, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
         with zipfile.ZipFile(file_name, 'r') as zip_ref:
-            zip_ref.extractall(os.path.join(os.getcwd(), 'files/plugins'))
+            zip_ref.extractall(os.path.join(os.getcwd(), 'plugins'))
         os.remove(file_name)
 
     total_branches = len(branch_plugins)
@@ -116,7 +120,7 @@ def get_plugins(zip_plugins, branch_plugins):
             basename = basename[3:]
         if basename.startswith('wp-plugin-'):
             basename = basename[10:]
-        dest = os.path.join(os.getcwd(), 'files/plugins', basename)
+        dest = os.path.join(os.getcwd(), 'plugins', basename)
         if url.startswith('lp:'):
             cmd = ['bzr', 'branch', url, dest]
         elif url.startswith('https://git'):
@@ -139,7 +143,7 @@ def get_themes(branch_themes):
             basename = basename[3:]
         if basename.startswith('wp-theme-'):
             basename = basename[9:]
-        dest = os.path.join(os.getcwd(), 'files/themes/', basename)
+        dest = os.path.join(os.getcwd(), 'themes/', basename)
         if url.startswith('lp:'):
             cmd = ['bzr', 'branch', url, dest]
         elif url.startswith('https://git'):
@@ -150,6 +154,93 @@ def get_themes(branch_themes):
         _ = subprocess.check_output(cmd, universal_newlines=True, stderr=subprocess.STDOUT)
 
 
-if __name__ == '__main__':
+class Plugin:
+    name: str
+    _protocol: str
+    _url: str
+
+    def __init__(self, name: str, url: str):
+        self.name = name
+        self.url = url
+
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        kwargs = {"name": self.name, "url": self.url}
+        return "<Plugin>(name={name}, url={url})".format(**kwargs)
+
+    @property
+    def url(self):
+        return self._url
+
+    @url.setter
+    def url(self, url: str):
+        u = urlparse(url)
+        self._url = u.geturl()
+        self._protocol = u.scheme.split("+")[0]
+        self._protocol = self._protocol.replace("https", "git")
+
+    def is_available(self):
+        print("NOT IMPLEMENTED")
+
+    def is_bzr(self):
+        return self._protocol == "lp"
+
+    def is_git(self):
+        return self._protocol == "git"
+
+    def sync(self, dest: str):
+        self.__make_dest(dest)
+        failed = self.__call_sync(os.path.join(dest, self.name))
+        if failed:
+            raise RuntimeError("failed to sync plugin: {0}".format(self))
+
+    def __make_dest(self, dest: str):
+        os.makedirs(dest, mode=0o755, exist_ok=True)
+
+    def __build_cmd(self, dest: str) -> List[str]:
+        cmds = {
+            "git": ["git", "clone", self.url, dest],
+            "lp": ["bzr", "branch", self.url, dest],
+        }
+        return cmds[self._protocol]
+
+    def __call_sync(self, dest: str, verbose=True):
+        subprocess_kwargs = {}
+        subprocess_kwargs["universal_newlines"] = True
+        if verbose:
+            subprocess_kwargs["stderr"] = subprocess.STDOUT
+
+        rv = subprocess.run(self.__build_cmd(dest), **subprocess_kwargs)
+        return rv.returncode
+
+
+def sync_additional_plugins(additional_plugins: Mapping[str, str]):
+    """
+    Sync any additional WordPress plugins specified from the Container
+    environment variable: WORDPRESS_ADDITIONAL_PLUGINS.
+
+    WORDPRESS_ADDITIONAL_PLUGINS must be a valid YAML formatted map string.
+    """
+    dest_path = os.path.join(os.getcwd(), "plugins")
+    total_plugins = len(additional_plugins)
+    count = 0
+    for name, url in additional_plugins.items():
+        count += 1
+        plugin = Plugin(name, url)
+        print("Syncing {0} of {1} WordPress plugins: {2} ...".format(count, total_plugins, plugin))
+        plugin.sync(dest_path)
+
+
+if __name__ == "__main__":
+    if "WORDPRESS_ADDITIONAL_PLUGINS" in os.environ.keys():
+        additional_plugins = os.environ["WORDPRESS_ADDITIONAL_PLUGINS"]
+        if additional_plugins:
+            plugins = safe_load(additional_plugins.encode("utf-8"))
+            sync_additional_plugins(plugins)
+            # TODO: Script should have command-line flags instead of this.
+            print("DEBUG: we are running inside a container, no need to sync base plugins")
+        sys.exit(0)
     get_plugins(zip_plugins_to_get, branch_plugins_to_get)
     get_themes(branch_themes_to_get)

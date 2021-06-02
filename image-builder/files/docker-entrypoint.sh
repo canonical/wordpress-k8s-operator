@@ -15,7 +15,13 @@ done
 [ -z "${SWIFT_URL-}" ] || a2enconf docker-php-swift-proxy
 
 # TODO: this will eventually be called directly by the charm.
-nohup bash -c "(cd /var/www/html/wp-content/ && /fetcher.py && chown -R www-data:www-data /var/www/html/wp-content/) &"
+(
+    cd /tmp
+    /fetcher.py
+    find /tmp -type f \( -path '/tmp/plugins/*' -o -path '/tmp/themes/*' \) -printf "%p\0/var/www/html/wp-content/%P\0" |
+        xargs -rn2 -0 install -DT && rm -fr /tmp/* &&
+        rm -fr /tmp/*
+)
 
 nohup bash -c "/srv/wordpress-helpers/plugin_handler.py &"
 

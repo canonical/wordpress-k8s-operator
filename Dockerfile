@@ -62,9 +62,9 @@ FROM base as plugins
 
 # Download themes and plugins. This will eventually be separated into new container.
 COPY ./image-builder/src/fetcher.py /
-WORKDIR /files
+WORKDIR /var/www/html/wp-content/
 RUN mkdir themes plugins && /fetcher.py
-VOLUME /files/plugins
+VOLUME /var/www/html/wp-content
 
 FROM base As install
 ARG VERSION
@@ -112,7 +112,7 @@ EXPOSE 80
 
 # Copy plugins from the plugin stage into the WordPress content directory.
 COPY ./image-builder/src/fetcher.py /
-COPY --chown=www-data:www-data --from=plugins /files/plugins/ /var/www/html/wp-content/plugins/
-COPY --chown=www-data:www-data --from=plugins /files/themes/ /var/www/html/wp-content/themes/
+COPY --chown=www-data:www-data --from=plugins /var/www/html/wp-content/plugins/ /var/www/html/wp-content/plugins/
+COPY --chown=www-data:www-data --from=plugins /var/www/html/wp-content/themes/ /var/www/html/wp-content/themes/
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD apachectl -D FOREGROUND

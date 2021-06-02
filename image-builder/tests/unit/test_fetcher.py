@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import unittest
+from subprocess import CalledProcessError
 from unittest.mock import patch
 
 from fetcher import Plugin
@@ -33,17 +34,17 @@ class TestPlugin(unittest.TestCase):
     def test_is_git(self):
         self.assertFalse(self.plugin.is_git())
 
-    @patch.object(Plugin, "_Plugin__make_dest")
+    @patch.object(Plugin, "_Plugin__make_path")
     @patch.object(Plugin, "_Plugin__call_sync")
-    def test_sync(self, mock_call_sync, mock_make_dest):
+    def test_sync(self, mock_call_sync, mock_make_path):
 
         mock_call_sync.return_value = None
         self.plugin.sync("test/path")
 
-        assert mock_call_sync.called
-        assert mock_make_dest.called
+        self.assertTrue(mock_call_sync.called)
+        self.assertFalse(mock_make_path.called)
 
-        mock_call_sync.return_value = True
         with self.assertRaises(RuntimeError) as cm:
+            mock_call_sync.side_effect = RuntimeError()
             self.plugin.sync("test/path")
             self.assertTrue("failed to sync plugin" in str(cm.exception))

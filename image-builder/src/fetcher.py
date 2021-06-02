@@ -158,6 +158,8 @@ class Plugin:
     name: str
     _protocol: str
     _url: str
+    _owner = "www-data"
+    _group = "www-data"
 
     def __init__(self, name: str, url: str):
         self.name = name
@@ -190,30 +192,47 @@ class Plugin:
     def is_git(self):
         return self._protocol == "git"
 
-    def sync(self, dest: str):
-        self.__make_dest(dest)
-        failed = self.__call_sync(os.path.join(dest, self.name))
-        if failed:
-            raise RuntimeError("failed to sync plugin: {0}".format(self))
+    def sync(self, dest_dir: str):
+        plugin_path = os.path.join(dest_dir, self.name)
+        try:
+            self.__call_sync(plugin_path)
+        except subprocess.CalledProcessError as ce:
+            shutil.rmtree(plugin_path)
+            print("ERROR: {0}: failed to sync plugin: {1}, cleaning up plugin dir: {2}".format(str(ce), self,
+                                                                                               plugin_path))
+        else:
+            self.__chown_path(plugin_path)
 
-    def __make_dest(self, dest: str):
-        os.makedirs(dest, mode=0o755, exist_ok=True)
-
-    def __build_cmd(self, dest: str) -> List[str]:
+    def __build_cmd(self, dest_dir: str) -> List[str]:
         cmds = {
-            "git": ["git", "clone", self.url, dest],
-            "lp": ["bzr", "branch", self.url, dest],
+            "git": ["git", "clone", self.url, dest_dir],
+            "lp": ["bzr", "branch", self.url, dest_dir],
         }
         return cmds[self._protocol]
 
-    def __call_sync(self, dest: str, verbose=True):
+    def __call_sync(self, plugin_path: str, verbose=True):
         subprocess_kwargs = {}
+        subprocess_kwargs["check"] = True
         subprocess_kwargs["universal_newlines"] = True
         if verbose:
             subprocess_kwargs["stderr"] = subprocess.STDOUT
 
-        rv = subprocess.run(self.__build_cmd(dest), **subprocess_kwargs)
+        dirname = os.path.dirname(plugin_path)
+        if not os.path.exists(dirname):
+            self.__make_path(dirname)
+        print("DEBUG: syncing plugin at path: {0}".format(plugin_path))
+        rv = subprocess.run(self.__build_cmd(plugin_path), **subprocess_kwargs)
         return rv.returncode
+
+    def __chown_path(self, path: str):
+        for dirpath, _, filenames in os.walk(path):
+            shutil.chown(dirpath, "www-data", "www-data")
+            for filename in filenames:
+                shutil.chown(os.path.join(dirpath, filename), self._owner, self._group)
+
+    def __make_path(self, path: str):
+        print("DEBUG: creating directory: {0}".format(path))
+        os.makedirs(path, mode=0o755)
 
 
 def sync_additional_plugins(additional_plugins: Mapping[str, str]):
@@ -234,13 +253,13 @@ def sync_additional_plugins(additional_plugins: Mapping[str, str]):
 
 
 if __name__ == "__main__":
-    if "WORDPRESS_ADDITIONAL_PLUGINS" in os.environ.keys():
-        additional_plugins = os.environ["WORDPRESS_ADDITIONAL_PLUGINS"]
-        if additional_plugins:
-            plugins = safe_load(additional_plugins.encode("utf-8"))
-            sync_additional_plugins(plugins)
-            # TODO: Script should have command-line flags instead of this.
-            print("DEBUG: we are running inside a container, no need to sync base plugins")
+    additional_plugins = os.environ.get("WORDPRESS_ADDITIONAL_PLUGINS")
+    if additional_plugins:
+        plugins = safe_load(additional_plugins.encode("utf-8"))
+        sync_additional_plugins(plugins)
+    # TODO: Script should have command-line flags instead of this.
+    if any([e for e in os.environ.keys() if e.startswith("WORDPRESS")]):
+        print("DEBUG: we are running inside a container, no need to sync base plugins")
         sys.exit(0)
     get_plugins(zip_plugins_to_get, branch_plugins_to_get)
     get_themes(branch_themes_to_get)

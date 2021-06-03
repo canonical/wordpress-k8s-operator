@@ -14,6 +14,15 @@ done
 # If we have passed in SWIFT_URL, then append swift proxy config.
 [ -z "${SWIFT_URL-}" ] || a2enconf docker-php-swift-proxy
 
+# TODO: this will eventually be called directly by the charm.
+(
+    cd /tmp
+    /fetcher.py
+    find /tmp -type f \( -path '/tmp/plugins/*' -o -path '/tmp/themes/*' \) -printf "%p\0/var/www/html/wp-content/%P\0" |
+        xargs -rn2 -0 install -DT && rm -fr /tmp/* &&
+        rm -fr /tmp/*
+)
+
 nohup bash -c "/srv/wordpress-helpers/plugin_handler.py &"
 
 # Match against either php 7.2 (bionic) or 7.4 (focal).

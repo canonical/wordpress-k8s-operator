@@ -108,6 +108,7 @@ class WordpressCharm(CharmBase):
 
         c = self.model.config
         self.state.set_default(
+            blog_hostname=c["blog_hostname"] or self.app.name,
             installed_successfully=False,
             install_state=set(),
             has_db_relation=False,
@@ -152,7 +153,7 @@ class WordpressCharm(CharmBase):
             "summary": "WordPress layer",
             "description": "pebble config layer for WordPress",
             "services": {
-                "wordpress-ready": {
+                "wordpress-plugins": {
                     "override": "replace",
                     "summary": "WordPress plugin updater",
                     "command": (
@@ -160,18 +161,36 @@ class WordpressCharm(CharmBase):
                         "stat /srv/wordpress-helpers/.ready && "
                         "sleep infinity'"
                     ),
-                    "startup": "enabled",
-                    "requires": [self.container_name],
-                    "after": [self.container_name],
+                    "after": ["apache2"],
+                    "environment": self._env_config,
+                },
+                "wordpress-init": {
+                    "override": "replace",
+                    "summary": "WordPress initialiser",
+                    "command": (
+                        "bash -c '"
+                        "/charm/bin/wordpressInit.sh >> /wordpressInit.log 2>&1"
+                        "'"
+                    ),
+                    "environment": self._env_config,
+                },
+                "apache2": {
+                    "override": "replace",
+                    "summary": "Apache2 service",
+                    "command": (
+                        "bash -c '"
+                        "apache2ctl -D FOREGROUND -E /apache-error.log -e debug >>/apache-sout.log 2>&1"
+                        "'"
+                    ),
+                    "requires": ["wordpress-init"],
+                    "after": ["wordpress-init"],
                     "environment": self._env_config,
                 },
                 self.container_name: {
                     "override": "replace",
                     "summary": "WordPress service",
-                    "command": "bash -c '/charm/bin/wordpressInit.sh >> /wordpressInit.log 2>&1'",
-                    "startup": "enabled",
-                    "requires": [],
-                    "before": ["wordpress-ready"],
+                    "command": "sleep infinity",
+                    "requires": ["apache2", "wordpress-plugins"],
                     "environment": self._env_config,
                 },
             },
@@ -179,8 +198,9 @@ class WordpressCharm(CharmBase):
 
     @property
     def ingress_config(self):
+        blog_hostname = self.state.blog_hostname
         ingress_config = {
-            "service-hostname": self.model.config["blog_hostname"],
+            "service-hostname": blog_hostname,
             "service-name": self.app.name,
             "service-port": self.service_port,
         }
@@ -216,6 +236,15 @@ class WordpressCharm(CharmBase):
         if config["container_config"].strip():
             env_config = safe_load(config["container_config"])
 
+        env_config["WORDPRESS_BLOG_HOSTNAME"] = self.state.blog_hostname
+        initial_settings = {}
+        if config["initial_settings"].strip():
+            initial_settings.update(safe_load(config["initial_settings"]))
+        # TODO: make these class default attributes
+        env_config["WORDPRESS_ADMIN_USER"] = initial_settings.get("user_name", "admin")
+        env_config["WORDPRESS_ADMIN_EMAIL"] = initial_settings.get("admin_email", "nobody@localhost")
+
+        env_config["WORDPRESS_INSTALLED"] = self.state.installed_successfully
         env_config.update(self._wordpress_secrets)
 
         if not config["tls_secret_name"]:
@@ -307,6 +336,7 @@ class WordpressCharm(CharmBase):
     def on_wordpress_initial_setup(self, event):
         logger.info("Beginning WordPress setup process...")
         container = self.unit.get_container(self.container_name)
+        container.add_layer(self.container_name, self.wordpress_workload, combine=True)
 
         # Temporary workaround until the init script is baked into the Dockerimage.
         setup_service = "wordpressInit"
@@ -316,26 +346,22 @@ class WordpressCharm(CharmBase):
         with open(src_path, "r", encoding="utf-8") as f:
             container.push(dst_path, f, permissions=0o755)
 
+        admin_password = "/admin_password"
+        config = self._get_initial_password()
+        container.push(admin_password, config, permissions=0o400)
+
         logger.info("Adding WordPress layer to container...")
-        container.add_layer(self.container_name, self.wordpress_workload, combine=True)
         self.ingress.update_config(self.ingress_config)
         container = self.unit.get_container(self.container_name)
         pebble = container.pebble
-        wait_on = pebble.start_services(["wordpress-ready", self.container_name])
+        wait_on = pebble.start_services([self.container_name])
         pebble.wait_change(wait_on)
-        self.on.config_changed.emit()
-
-        logger.info("Generating WordPress secrets...")
-        self.state.installed_successfully = self.wordpress.first_install(self._get_initial_password())
-        if self.state.installed_successfully is False:
-            logger.error("Failed to setup WordPress with the HTTP installer...")
-
-            # TODO: We could defer the install and try again.
-            return
 
         logger.info("first time WordPress install was successful...")
+        container.remove_path(admin_password)
         self.unit.status = MaintenanceStatus("WordPress Initialised")
 
+        wait_on = pebble.stop_services([s for s in self.wordpress_workload["services"]])
         self.leader_data["installed"] = True
         self.state.installed_successfully = True
         self.on.config_changed.emit()
@@ -357,9 +383,9 @@ class WordpressCharm(CharmBase):
             container.add_layer(self.container_name, self.wordpress_workload, combine=True)
 
             self.unit.status = MaintenanceStatus("Restarting WordPress")
-            service = container.get_service(self.container_name)
-            if service.is_running():
-                container.stop(self.container_name)
+            running_services = [s for s in self.wordpress_workload["services"] if container.get_service(s).is_running()]
+            if running_services:
+                container.pebble.stop_services(running_services)
 
             # Temporary workaround until the init script is baked into the Dockerimage.
             setup_service = "wordpressInit"
@@ -369,11 +395,10 @@ class WordpressCharm(CharmBase):
             with open(src_path, "r", encoding="utf-8") as f:
                 container.push(dst_path, f, permissions=0o755)
 
-            container.autostart()
+            container.start(self.container_name)
 
-        self.unit.status = ActiveStatus("WordPress service is live!")
-
-        self.ingress.update_config(self.ingress_config)
+            self.unit.status = ActiveStatus("WordPress service is live!")
+            self.ingress.update_config(self.ingress_config)
 
     def on_database_config_changed(self, event):
         """Handle when the user supplies database details via charm config.

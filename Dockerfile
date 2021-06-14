@@ -80,6 +80,10 @@ RUN wget -O wordpress.tar.gz -t 3 -r "https://wordpress.org/wordpress-${VERSION}
     && rm -rf /var/www/html \
     && mv /usr/src/wordpress /var/www/html
 
+RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x wp-cli.phar \
+    && mv wp-cli.phar /usr/local/bin/wp
+
 COPY ./image-builder/files/ /files/
 # wp-info.php contains template variables which our ENTRYPOINT script will populate
 RUN install -D /files/wp-info.php /var/www/html/wp-info.php

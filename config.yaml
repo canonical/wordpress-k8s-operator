@@ -78,8 +78,9 @@ options:
         admin_email: devnull@example.com
   blog_hostname:
     type: string
-    description: Blog hostname
-    default: "myblog.example.com"
+    description: >
+      The blog hostname. If left unset, defaults to wordpress-k8s.
+    default: ""
   wp_plugin_akismet_key:
     type: string
     description: Akismet key. If empty, akismet will not be automatically enabled

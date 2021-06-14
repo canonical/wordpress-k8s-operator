@@ -24,7 +24,7 @@ Kubernetes model:
     juju deploy wordpress-k8s --resource wordpress-image=wordpresscharmers/wordpress:bionic-5.7 \
         --config blog_hostname="myblog.example.com"
     juju relate wordpress-k8s mariadb:mysql
-    juju relate wordpress-k8s ingress:website
+    juju relate wordpress-k8s ingress
 
 It will take about 2 to 5 minutes for Juju hooks to discover the site is live
 and perform the initial setup for you. Once the "Workload" status is "active",

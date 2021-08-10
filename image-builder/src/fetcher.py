@@ -68,6 +68,8 @@ branch_plugins_to_get = {
 
 branch_themes_to_get = {
     # please keep these in alphabetical order
+    'advertica-lite': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-advertica-lite'},
+    'advertica-lite-child': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-advertica-lite-child'},
     'fruitful': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-fruitful'},
     'light-wordpress-theme': {
         'url': 'https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme'

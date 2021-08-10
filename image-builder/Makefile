@@ -1,5 +1,5 @@
-DIST_RELEASE ?= bionic
-VERSION ?= 5.7
+DIST_RELEASE ?= focal
+VERSION ?= 5.8
 
 build-image:
 	@echo "Building the image."

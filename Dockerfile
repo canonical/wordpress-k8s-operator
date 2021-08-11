@@ -29,6 +29,7 @@ RUN apt-get update && apt-get -y dist-upgrade \
             php-curl \
             php-gd \
             php-gmp \
+            php-mbstring \
             php-mysql \
             php-symfony-yaml \
             php-xml \

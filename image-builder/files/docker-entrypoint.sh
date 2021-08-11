@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eu
 
+printf "remove_filter('template_redirect', 'redirect_canonical');" >> /var/www/html/wp-includes/functions.php
+
 sed -i -e "s/%%%WORDPRESS_DB_HOST%%%/$WORDPRESS_DB_HOST/" /var/www/html/wp-info.php
 sed -i -e "s/%%%WORDPRESS_DB_NAME%%%/$WORDPRESS_DB_NAME/" /var/www/html/wp-info.php
 sed -i -e "s/%%%WORDPRESS_DB_USER%%%/$WORDPRESS_DB_USER/" /var/www/html/wp-info.php

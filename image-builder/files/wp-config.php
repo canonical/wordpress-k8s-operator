@@ -56,4 +56,3 @@ $http_host = $_SERVER['HTTP_HOST'];
 define('WP_HOME',"https://$http_host");
 define('WP_SITEURL',"https://$http_host");
 
-remove_filter('template_redirect', 'redirect_canonical');

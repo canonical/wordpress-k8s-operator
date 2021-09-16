@@ -89,6 +89,9 @@ branch_themes_to_get = {
     },
     'ubuntu-fi-new': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-fi'},
     'ubuntu-light': {'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-light'},
+    'ubuntustudio-website': {
+        'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-website'
+    },
     'ubuntustudio-wp': {
         'url': 'https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp'
     },

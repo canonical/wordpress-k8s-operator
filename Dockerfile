@@ -47,7 +47,7 @@ RUN apt-get update && apt-get -y dist-upgrade \
         && ln -sfT /dev/stdout "$APACHE_LOG_DIR/other_vhosts_access.log" \
         && chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
 
-# Install apache2-modsec, activate the engine, and allow wordpress exclusions to avoid faolse positives
+# Install apache2-modsec, activate the engine, and allow wordpress exclusions to avoid false positives
 RUN if [ -n "$MODSEC" ] ; then apt-get -y install modsecurity-crs \
         && cp -p /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
         && sed -i -e 's/^SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/modsecurity/modsecurity.conf \

@@ -1,11 +1,13 @@
 DIST_RELEASE ?= focal
 VERSION ?= 5.8.3
+MODSEC ?= ""
 
 build-image:
 	@echo "Building the image."
 	@docker build \
 		--no-cache=true \
 		--build-arg DIST_RELEASE=$(DIST_RELEASE) \
+		--build-arg MODSEC=$(MODSEC) \
 		--build-arg VERSION=$(VERSION) \
 		-t wordpress:$(DIST_RELEASE)-$(VERSION) \
 		.

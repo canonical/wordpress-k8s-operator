@@ -4,6 +4,7 @@ FROM ubuntu:${DIST_RELEASE} as base
 # HTTPS_PROXY used when we RUN curl to download Wordpress itself
 ARG BUILD_DATE
 ARG HTTPS_PROXY
+ARG MODSEC
 
 
 # Launchpad OCI image builds don't support dynamic arg parsing. Skip until
@@ -25,7 +26,6 @@ RUN apt-get update && apt-get -y dist-upgrade \
             git \
             libapache2-mod-php \
             libgmp-dev \
-            modsecurity-crs \
             php \
             php-curl \
             php-gd \
@@ -45,9 +45,11 @@ RUN apt-get update && apt-get -y dist-upgrade \
         && ln -sfT /dev/stderr "$APACHE_LOG_DIR/error.log" \
         && ln -sfT /dev/stdout "$APACHE_LOG_DIR/access.log" \
         && ln -sfT /dev/stdout "$APACHE_LOG_DIR/other_vhosts_access.log" \
-        && chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR" \
+        && chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
+
+RUN if [ -n "$MODSEC" ] ; then apt-get -y install modsecurity-crs \
         && cp -p /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
-        && sed -i -e 's/^SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/modsecurity/modsecurity.conf
+        && sed -i -e 's/^SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/modsecurity/modsecurity.conf ; fi
 
 # Configure PHP and apache2 - mod_php requires us to use mpm_prefork
 COPY ./image-builder/files/docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf

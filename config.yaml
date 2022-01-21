@@ -106,3 +106,8 @@ options:
       YAML dictionary with keys named after WordPress settings and the desired values.
       Please note that the settings will be reset to values provided every time hooks run.
     default: ""
+  use_nginx_ingress_modsec:
+    type: boolean
+    default: true
+    description: >
+      When set to true, the charm will configure the k8s ingress with modsec enabled.

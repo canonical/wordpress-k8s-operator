@@ -4,7 +4,6 @@ FROM ubuntu:${DIST_RELEASE} as base
 # HTTPS_PROXY used when we RUN curl to download Wordpress itself
 ARG BUILD_DATE
 ARG HTTPS_PROXY
-ARG MODSEC
 
 
 # Launchpad OCI image builds don't support dynamic arg parsing. Skip until
@@ -46,12 +45,6 @@ RUN apt-get update && apt-get -y dist-upgrade \
         && ln -sfT /dev/stdout "$APACHE_LOG_DIR/access.log" \
         && ln -sfT /dev/stdout "$APACHE_LOG_DIR/other_vhosts_access.log" \
         && chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
-
-# Install apache2-modsec, activate the engine, and allow wordpress exclusions to avoid false positives
-RUN if [ -n "$MODSEC" ] ; then apt-get -y install modsecurity-crs \
-        && cp -p /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
-        && sed -i -e 's/^SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/modsecurity/modsecurity.conf \
-        && sed -i -e '/setvar:tx.crs_exclusions_xenforo/a SecAction \\\n  "id:900130,\\\n  phase:1,\\\n  nolog,\\\n  pass,\\\n  t:none,\\\n  setvar:tx.crs_exclusions_wordpress=1"' /etc/modsecurity/crs/crs-setup.conf ; fi
 
 # Configure PHP and apache2 - mod_php requires us to use mpm_prefork
 COPY ./image-builder/files/docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf

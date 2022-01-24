@@ -261,6 +261,15 @@ class WordpressCharm(CharmBase):
                 ]
             },
         }
+        if self.model.config["use_nginx_ingress_modsec"]:
+            modsec_annotations = {
+                "nginx.ingress.kubernetes.io/enable-modsecurity": "true",
+                "nginx.ingress.kubernetes.io/enable-owasp-modsecurity-crs": "true",
+                "nginx.ingress.kubernetes.io/modsecurity-snippet":
+                    ("SecRuleEngine On\n"
+                     "Include /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf"),
+            }
+            resources["kubernetesResources"]["ingressResources"][0]["annotations"].update(modsec_annotations)
 
         if self.model.config["additional_hostnames"]:
             additional_hostnames = juju_setting_to_list(self.model.config["additional_hostnames"])

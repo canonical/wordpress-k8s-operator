@@ -131,6 +131,11 @@ class TestWordpressCharm(unittest.TestCase):
                 'ingressResources': [
                     {
                         "annotations": {
+                            "nginx.ingress.kubernetes.io/enable-modsecurity": "true",
+                            "nginx.ingress.kubernetes.io/enable-owasp-modsecurity-crs": "true",
+                            "nginx.ingress.kubernetes.io/modsecurity-snippet":
+                                ("SecRuleEngine On\n"
+                                 "Include /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf"),
                             "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
                             "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",
                         },
@@ -186,6 +191,11 @@ class TestWordpressCharm(unittest.TestCase):
                 'ingressResources': [
                     {
                         "annotations": {
+                            "nginx.ingress.kubernetes.io/enable-modsecurity": "true",
+                            "nginx.ingress.kubernetes.io/enable-owasp-modsecurity-crs": "true",
+                            "nginx.ingress.kubernetes.io/modsecurity-snippet":
+                                ("SecRuleEngine On\n"
+                                 "Include /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf"),
                             "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
                             "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",
                             "nginx.ingress.kubernetes.io/ssl-redirect": "false",

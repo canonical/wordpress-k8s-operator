@@ -2,7 +2,7 @@ options:
   image:
     type: string
     description: "The docker image to install. Required."
-    default: "wordpresscharmers/wordpress:focal-5.8.3"
+    default: "wordpresscharmers/wordpress:v5.8.3-20.04"
   image_user:
     type: string
     description: "Username to use for the configured image registry, if required"
@@ -106,3 +106,8 @@ options:
       YAML dictionary with keys named after WordPress settings and the desired values.
       Please note that the settings will be reset to values provided every time hooks run.
     default: ""
+  use_nginx_ingress_modsec:
+    type: boolean
+    default: true
+    description: >
+      When set to true, the charm will configure the k8s ingress with modsec enabled.

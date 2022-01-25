@@ -135,6 +135,8 @@ class TestWordpressCharm(unittest.TestCase):
                             "nginx.ingress.kubernetes.io/enable-owasp-modsecurity-crs": "true",
                             "nginx.ingress.kubernetes.io/modsecurity-snippet":
                                 ("SecRuleEngine On\n"
+                                 "SecAction "
+                                 "\"id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1\"\n"
                                  "Include /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf"),
                             "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
                             "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",
@@ -195,6 +197,8 @@ class TestWordpressCharm(unittest.TestCase):
                             "nginx.ingress.kubernetes.io/enable-owasp-modsecurity-crs": "true",
                             "nginx.ingress.kubernetes.io/modsecurity-snippet":
                                 ("SecRuleEngine On\n"
+                                 "SecAction "
+                                 "\"id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1\"\n"
                                  "Include /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf"),
                             "nginx.ingress.kubernetes.io/proxy-body-size": "10m",
                             "nginx.ingress.kubernetes.io/proxy-send-timeout": "300s",

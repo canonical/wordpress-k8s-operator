@@ -334,6 +334,19 @@ class TestWordpressCharm(unittest.TestCase):
         self.harness.set_leader(True)
         self.assertEqual(len(self.harness.charm._get_initial_password()), 24)
 
+    def test_rotate_wordpress_secrets(self):
+        self.harness.charm.leader_data = {"AUTH_KEY": "supersekrit", "LOGGED_IN_KEY": "changemeplease"}
+        # Confirm that running against non-leader doesn't take any action
+        self.harness.set_leader(False)
+        self.harness.charm._rotate_wordpress_secrets()
+        self.assertEqual(self.harness.charm.leader_data.get("AUTH_KEY"), "supersekrit")
+        self.assertEqual(self.harness.charm.leader_data.get("LOGGED_IN_KEY"), "changemeplease")
+        # Confirm that passwords are regenerated when run against leader
+        self.harness.set_leader(True)
+        self.harness.charm._rotate_wordpress_secrets()
+        self.assertEqual(len(self.harness.charm.leader_data.get("AUTH_KEY")), 64)
+        self.assertEqual(len(self.harness.charm.leader_data.get("LOGGED_IN_KEY")), 64)
+
     def test_on_get_initial_password_action(self):
         action_event = Mock()
         # First test with no initial password set.
@@ -346,6 +359,31 @@ class TestWordpressCharm(unittest.TestCase):
             get_initial_password.return_value = "passwd"
             self.harness.charm._on_get_initial_password_action(action_event)
             self.assertEqual(action_event.set_results.call_args, mock.call({"password": "passwd"}))
+
+    def test_on_rotate_wordpress_secrets_action(self):
+        action_event = Mock()
+        # Test against non-leader
+        self.harness.set_leader(False)
+        self.harness.charm._on_rotate_wordpress_secrets_action(action_event)
+        self.assertEqual(action_event.fail.call_args, mock.call("Only the leader can rotate wordpress secrets."))
+        # Now test against leader
+        with mock.patch.object(self.harness.charm, "configure_pod") as configure_pod:
+            configure_pod.return_value = None
+            self.harness.set_leader(True)
+            # Make sure secrets are set initially
+            self.harness.charm.leader_data = {}
+            wp_secrets = self.harness.charm._get_wordpress_secrets()
+            for key in WORDPRESS_SECRETS:
+                self.assertIsInstance(wp_secrets[key], str)
+                self.assertEqual(len(wp_secrets[key]), 64)
+            # Now rotate keys and make sure they've all changed
+            self.harness.charm._on_rotate_wordpress_secrets_action(action_event)
+            rotated_wp_secrets = self.harness.charm._get_wordpress_secrets()
+            for key in WORDPRESS_SECRETS:
+                self.assertIsInstance(rotated_wp_secrets[key], str)
+                self.assertEqual(len(rotated_wp_secrets[key]), 64)
+                self.assertNotEqual(wp_secrets[key], rotated_wp_secrets[key])
+            self.assertEqual(action_event.set_results.call_args, mock.call({"result": "complete"}))
 
     def test_configure_pod(self):
         # Set leader_data to an empty dict to avoid subsequent calls to

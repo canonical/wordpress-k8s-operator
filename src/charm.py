@@ -405,6 +405,15 @@ class WordpressCharm(CharmBase):
             wp_secrets[secret] = self.leader_data[secret]
         return wp_secrets
 
+    def _rotate_wordpress_secrets(self):
+        """Regenerate and overwrite currently configured wordpress secrets.
+        This action should only be run against the leader, and the pod spec will
+        need to be regenerated afterwards.
+        """
+        if self.unit.is_leader():
+            for secret in WORDPRESS_SECRETS:
+                self.leader_data[secret] = password_generator(64)
+
     def is_service_up(self):
         """Check to see if the HTTP service is up"""
         service_ip = self.get_service_ip()
@@ -431,6 +440,17 @@ class WordpressCharm(CharmBase):
             event.set_results({"password": initial_password})
         else:
             event.fail("Initial password has not been set yet.")
+
+    def _on_rotate_wordpress_secrets_action(self, event):
+        """Handle the rotate-wordpress-secrets action."""
+        if self.model.unit.is_leader():
+            event.log("Generating new secrets")
+            self._rotate_wordpress_secrets()
+            event.log("Updating pod configuration")
+            self.configure_pod()
+            event.set_results({"result": "complete"})
+        else:
+            event.fail("Only the leader can rotate wordpress secrets.")
 
 
 if __name__ == "__main__":  # pragma: no cover

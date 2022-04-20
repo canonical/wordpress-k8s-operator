@@ -447,7 +447,7 @@ class WordpressCharm(CharmBase):
             event.log("Generating new secrets")
             self._rotate_wordpress_secrets()
             event.log("Updating pod configuration")
-            self.configure_pod()
+            self.on.config_changed.emit()
             event.set_results({"result": "complete"})
         else:
             event.fail("Only the leader can rotate wordpress secrets.")

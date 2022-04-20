@@ -367,23 +367,21 @@ class TestWordpressCharm(unittest.TestCase):
         self.harness.charm._on_rotate_wordpress_secrets_action(action_event)
         self.assertEqual(action_event.fail.call_args, mock.call("Only the leader can rotate wordpress secrets."))
         # Now test against leader
-        with mock.patch.object(self.harness.charm, "configure_pod") as configure_pod:
-            configure_pod.return_value = None
-            self.harness.set_leader(True)
-            # Make sure secrets are set initially
-            self.harness.charm.leader_data = {}
-            wp_secrets = self.harness.charm._get_wordpress_secrets()
-            for key in WORDPRESS_SECRETS:
-                self.assertIsInstance(wp_secrets[key], str)
-                self.assertEqual(len(wp_secrets[key]), 64)
-            # Now rotate keys and make sure they've all changed
-            self.harness.charm._on_rotate_wordpress_secrets_action(action_event)
-            rotated_wp_secrets = self.harness.charm._get_wordpress_secrets()
-            for key in WORDPRESS_SECRETS:
-                self.assertIsInstance(rotated_wp_secrets[key], str)
-                self.assertEqual(len(rotated_wp_secrets[key]), 64)
-                self.assertNotEqual(wp_secrets[key], rotated_wp_secrets[key])
-            self.assertEqual(action_event.set_results.call_args, mock.call({"result": "complete"}))
+        self.harness.set_leader(True)
+        # Make sure secrets are set initially
+        self.harness.charm.leader_data = {}
+        wp_secrets = self.harness.charm._get_wordpress_secrets()
+        for key in WORDPRESS_SECRETS:
+            self.assertIsInstance(wp_secrets[key], str)
+            self.assertEqual(len(wp_secrets[key]), 64)
+        # Now rotate keys and make sure they've all changed
+        self.harness.charm._on_rotate_wordpress_secrets_action(action_event)
+        rotated_wp_secrets = self.harness.charm._get_wordpress_secrets()
+        for key in WORDPRESS_SECRETS:
+            self.assertIsInstance(rotated_wp_secrets[key], str)
+            self.assertEqual(len(rotated_wp_secrets[key]), 64)
+            self.assertNotEqual(wp_secrets[key], rotated_wp_secrets[key])
+        self.assertEqual(action_event.set_results.call_args, mock.call({"result": "complete"}))
 
     def test_configure_pod(self):
         # Set leader_data to an empty dict to avoid subsequent calls to

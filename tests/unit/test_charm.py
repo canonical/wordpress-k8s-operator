@@ -381,7 +381,8 @@ class TestWordpressCharm(unittest.TestCase):
             self.assertIsInstance(rotated_wp_secrets[key], str)
             self.assertEqual(len(rotated_wp_secrets[key]), 64)
             self.assertNotEqual(wp_secrets[key], rotated_wp_secrets[key])
-        self.assertEqual(action_event.set_results.call_args, mock.call({"result": "complete"}))
+        self.assertEqual(action_event.set_results.call_args, mock.call({
+            "result": "Secrets rotated. New secrets will become active after the next update-status hook."}))
 
     def test_configure_pod(self):
         # Set leader_data to an empty dict to avoid subsequent calls to

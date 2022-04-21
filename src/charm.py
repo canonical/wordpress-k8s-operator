@@ -106,6 +106,7 @@ class WordpressCharm(CharmBase):
 
         # Actions.
         self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
+        self.framework.observe(self.on.rotate_wordpress_secrets_action, self._on_rotate_wordpress_secrets_action)
 
         self.db = MySQLClient(self, 'db')
         self.framework.observe(self.on.db_relation_created, self.on_db_relation_created)
@@ -405,6 +406,15 @@ class WordpressCharm(CharmBase):
             wp_secrets[secret] = self.leader_data[secret]
         return wp_secrets
 
+    def _rotate_wordpress_secrets(self):
+        """Regenerate and overwrite currently configured wordpress secrets.
+        This action should only be run against the leader, and the pod spec will
+        need to be regenerated afterwards.
+        """
+        if self.unit.is_leader():
+            for secret in WORDPRESS_SECRETS:
+                self.leader_data[secret] = password_generator(64)
+
     def is_service_up(self):
         """Check to see if the HTTP service is up"""
         service_ip = self.get_service_ip()
@@ -431,6 +441,21 @@ class WordpressCharm(CharmBase):
             event.set_results({"password": initial_password})
         else:
             event.fail("Initial password has not been set yet.")
+
+    def _on_rotate_wordpress_secrets_action(self, event):
+        """Handle the rotate-wordpress-secrets action."""
+        if self.model.unit.is_leader():
+            event.log("Generating new secrets")
+            self._rotate_wordpress_secrets()
+            # 2022-04-21: The below is not correctly triggering a config_changed action at this time
+            # and has been commented out pending further investigation. In the mean time, an
+            # `update-status` hook will have the desired effect.
+            # event.log("Updating pod configuration")
+            # self.on.config_changed.emit()
+            event.set_results({
+                "result": "Secrets rotated. New secrets will become active after the next update-status hook."})
+        else:
+            event.fail("Only the leader can rotate wordpress secrets.")
 
 
 if __name__ == "__main__":  # pragma: no cover

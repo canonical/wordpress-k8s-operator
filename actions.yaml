@@ -1,2 +1,4 @@
 get-initial-password:
   description: Retrieve the auto-generated initial password.
+rotate-wordpress-secrets:
+  description: Rotate all wordpress secrets.

@@ -106,7 +106,7 @@ ARG VERSION
 
 LABEL maintainer="wordpress-charmers@lists.launchpad.net"
 # Used by Launchpad OCI Recipe to tag version
-LABEL org.label-schema.version=${VERSION:-5.8.3}
+LABEL org.label-schema.version=${VERSION:-5.9.3}
 
 # Port 80 only, TLS will terminate elsewhere
 EXPOSE 80

@@ -1,5 +1,5 @@
 DIST_RELEASE ?= focal
-VERSION ?= 5.8.3
+VERSION ?= 5.9.3
 
 build-image:
 	@echo "Building the image."

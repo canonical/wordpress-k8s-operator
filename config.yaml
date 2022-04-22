@@ -2,7 +2,7 @@ options:
   image:
     type: string
     description: "The docker image to install. Required."
-    default: "wordpresscharmers/wordpress:focal-5.9.3"
+    default: "wordpresscharmers/wordpress:v5.9.3-20.04_edge"
   image_user:
     type: string
     description: "Username to use for the configured image registry, if required"

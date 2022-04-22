@@ -1,4 +1,5 @@
 DIST_RELEASE ?= focal
+DIST_DATE ?= 20.04
 VERSION ?= 5.9.3
 
 build-image:
@@ -7,7 +8,7 @@ build-image:
 		--no-cache=true \
 		--build-arg DIST_RELEASE=$(DIST_RELEASE) \
 		--build-arg VERSION=$(VERSION) \
-		-t wordpress:$(DIST_RELEASE)-$(VERSION) \
+		-t wordpress:v$(VERSION)-$(DIST_DATE) \
 		.
 lint: clean
 	@echo "Running flake8"

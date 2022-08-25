@@ -78,38 +78,6 @@ class HelperTest(unittest.TestCase):
         for char in password:
             self.assertTrue(char in alphabet)
 
-    def test_generate_pod_config(self):
-        # Ensure that secrets are stripped from config.
-        result = charm.generate_pod_config(self.test_model_config_full, secured=True)
-        secured_keys = ("WORDPRESS_DB_PASSWORD", "WP_PLUGIN_AKISMET_KEY")
-        [self.assertNotIn(key, result) for key in secured_keys]
-        self.assertIn("WP_PLUGIN_OPENID_TEAM_MAP", result)
-
-        # Ensure that we receive the full pod config.
-        result = charm.generate_pod_config(self.test_model_config_full, secured=False)
-        [self.assertIn(key, result) for key in secured_keys]
-        self.assertIn("WP_PLUGIN_AKISMET_KEY", result)
-
-        # Test for initial container config.
-        result = charm.generate_pod_config(self.test_model_config_full)
-        test_container_config = yaml.safe_load(self.test_model_config_full["container_config"])
-        self.assertEqual(test_container_config["test-key"], result["test-key"])
-
-        # Test we pass set WORDPRESS_TLS_ENABLED if we have `tls_secret_name`.
-        result = charm.generate_pod_config(self.test_model_config_full)
-        self.assertNotIn("WORDPRESS_TLS_DISABLED", result)
-
-        # Test `wp_plugin_openstack-objectstorage_config`.
-        result = charm.generate_pod_config(self.test_model_config_full, secured=False)
-        self.assertEqual(result["SWIFT_AUTH_URL"], "auth-url")
-        self.assertEqual(result["SWIFT_BUCKET"], "bucket")
-        self.assertEqual(result["SWIFT_PASSWORD"], "password")
-        self.assertEqual(result["SWIFT_PREFIX"], None)
-
-        # Test we don't break with missing non-essential config options.
-        result = charm.generate_pod_config(self.test_model_config_minimal, secured=False)
-        self.assertEqual(result["WORDPRESS_TLS_DISABLED"], "true")
-
 
 class WordpressTest(unittest.TestCase):
 
@@ -137,7 +105,7 @@ class WordpressTest(unittest.TestCase):
             'admin_email': 'root@admin.canonical.com',
             'weblog_title': 'Test Blog',
         }
-        self.test_wordpress.first_install(self.test_service_ip, TEST_GENERATED_PASSWORD)
+        self.test_wordpress.first_install(TEST_GENERATED_PASSWORD, self.test_service_ip)
 
         # Test that we POST'd our initial configuration options to the wordpress API.
         self.test_wordpress.call_wordpress.assert_called_with(
@@ -174,8 +142,13 @@ class WordpressTest(unittest.TestCase):
             failure = RequestsResult(sc)
             mocked_call_wordpress = mock.MagicMock(name="call_wordpress", return_value=failure)
             self.test_wordpress.call_wordpress = mocked_call_wordpress
-            with self.assertRaises(RuntimeError, msg="unexpected status_code returned from Wordpress"):
+            with self.assertLogs() as log:
                 self.test_wordpress.wordpress_configured(self.test_service_ip)
+            self.assertIn(
+                "unexpected status_code returned from Wordpress".lower(),
+                log.output[0].lower()
+            )
+
 
     def test_is_vhost_ready(self):
         # Test vhost not ready yet and called with expected args.

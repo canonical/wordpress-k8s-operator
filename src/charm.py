@@ -122,7 +122,11 @@ class WordpressCharm(CharmBase):
             db_host=c["db_host"] or None,
             db_name=c["db_name"] or None,
             db_user=c["db_user"] or None,
-            db_password=c["db_password"] or None,
+            db_password=None,
+            relation_db_host=None,
+            relation_db_name=None,
+            relation_db_user=None,
+            relation_db_password=None,
         )
 
         self.wordpress = Wordpress(c)
@@ -133,6 +137,7 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.ingress_relation_created, self.on_ingress_relation_changed)
 
         self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
+        self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
 
         # TODO: It would be nice if there was a way to unregister an observer at runtime.
         # Once the site is installed there is no need for self.on_wordpress_uninitialised to continue to observe
@@ -655,6 +660,17 @@ class WordpressCharm(CharmBase):
             new_replica_data = self._generate_wp_secret_keys()
             for secret_key, secret_value in new_replica_data.items():
                 replica_relation_data[secret_key] = secret_value
+
+    def _on_relation_database_changed(self, event):
+        """ Callback function to handle db relation changes (data changes/relation breaks)
+
+        This method will set all db relation related states ``relation_db_*`` when db relation
+        changes and will reset all that to ``None`` after db relation is broken.
+        """
+        self.state.relation_db_host = event.host
+        self.state.relation_db_name = event.database
+        self.state.relation_db_user = event.user
+        self.state.relation_db_password = event.password
 
 
 if __name__ == "__main__":  # pragma: no cover

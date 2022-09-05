@@ -29,9 +29,9 @@ class TestWordpressK8s(unittest.TestCase):
         """
         self.harness.begin()
         secrets = self.harness.charm._generate_wp_secret_keys()
-        key_values = list(secrets.keys())
+        key_values = list(secrets.values())
         self.assertSetEqual(
-            set(key_values),
+            set(secrets.keys()),
             set(self.harness.charm._wordpress_secret_key_fields()),
             "generated wordpress secrets should contain all required fields"
         )
@@ -90,3 +90,56 @@ class TestWordpressK8s(unittest.TestCase):
             self.harness.get_relation_data(replica_relation_id, self.app_name),
             "consensus once established should not change after leadership changed"
         )
+
+    def _setup_db_relation(self, db_info):
+        db_relation_id = self.harness.add_relation("db", "mysql")
+        self.harness.add_relation_unit(db_relation_id, "mysql/0")
+        self.harness.update_relation_data(db_relation_id, "mysql/0", db_info)
+        return db_relation_id
+
+    def test_mysql_relation(self):
+        """
+        act: add and remove the database relation between WordPress application and mysql
+        assert: database info in charm state should change accordingly
+        """
+
+        def get_db_info_from_state():
+            return {
+                "host": self.harness.charm.state.relation_db_host,
+                "database": self.harness.charm.state.relation_db_name,
+                "user": self.harness.charm.state.relation_db_user,
+                "password": self.harness.charm.state.relation_db_password
+            }
+
+        self.harness.begin_with_initial_hooks()
+        self.assertSetEqual(
+            {None},
+            set(get_db_info_from_state().values()),
+            "database info in charm state should not exist before database relation created"
+        )
+
+        db_info = {
+            "host": "test_database_host",
+            "database": "test_database_name",
+            "user": "test_database_user",
+            "password": "test_database_password",
+            "port": "3306",
+            "root_password": "test_root_password",
+        }
+        db_relation_id = self._setup_db_relation(db_info)
+        db_info_in_state = get_db_info_from_state()
+        for db_info_key in db_info_in_state:
+            self.assertEqual(
+                db_info_in_state[db_info_key],
+                db_info[db_info_key],
+                "database info {} in charm state should be updated after database relation changed"
+                .format(db_info_key)
+            )
+        self.harness.remove_relation(db_relation_id)
+        db_info_in_state = get_db_info_from_state()
+        for db_info_key in db_info_in_state:
+            self.assertIsNone(
+                db_info_in_state[db_info_key],
+                "database info {} should be reset to None after database relation broken"
+                .format(db_info_key)
+            )

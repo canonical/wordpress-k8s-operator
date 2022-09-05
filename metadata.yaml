@@ -13,6 +13,10 @@ containers:
   wordpress:
     resource: wordpress-image
 
+peers:
+  wordpress-replica:
+    interface: wordpress-replica
+
 resources:
   wordpress-image:
     type: oci-image
@@ -21,6 +25,7 @@ resources:
 provides:
   website:
     interface: http
+
 requires:
   db:
     interface: mysql

@@ -2,6 +2,12 @@
 import logging
 import re
 import os
+import secrets
+import string
+
+import ops.charm
+
+import charm
 from yaml import safe_load
 
 from ops.charm import CharmBase, CharmEvents
@@ -125,6 +131,8 @@ class WordpressCharm(CharmBase):
 
         self.framework.observe(self.on.ingress_relation_changed, self.on_ingress_relation_changed)
         self.framework.observe(self.on.ingress_relation_created, self.on_ingress_relation_changed)
+
+        self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
 
         # TODO: It would be nice if there was a way to unregister an observer at runtime.
         # Once the site is installed there is no need for self.on_wordpress_uninitialised to continue to observe
@@ -602,6 +610,51 @@ class WordpressCharm(CharmBase):
             event.set_results({"password": initial_password})
         else:
             event.fail("Initial password has not been set yet.")
+
+    @staticmethod
+    def _wordpress_secret_key_fields():
+        return [
+            'auth_key',
+            'secure_auth_key',
+            'logged_in_key',
+            'nonce_key',
+            'auth_salt',
+            'secure_auth_salt',
+            'logged_in_salt',
+            'nonce_salt'
+        ]
+
+    def _generate_wp_secret_keys(self):
+        def _wp_generate_password(length=64):
+            characters = string.ascii_letters + "!@#$%^&*()" + "-_ []{}<>~`+=,.;:/?|"
+            return "".join(secrets.choice(characters) for _ in range(length))
+
+        return {
+            field: _wp_generate_password()
+            for field in self._wordpress_secret_key_fields()
+        }
+
+    def _replica_relation_data(self):
+        return self.model.get_relation("wordpress_replica").data[self.app]
+
+    def _replica_consensus_reached(self):
+        """Test if the synchronized data required for WordPress replication are initialized."""
+        fields = self._wordpress_secret_key_fields()
+        replica_data = self._replica_relation_data()
+        return all(replica_data.get(f) for f in fields)
+
+    def _on_leader_elected_replica_data_handler(self, event):
+        """Initialize the synchronized data required for WordPress replication
+
+        Only the leader can update the data shared with all replicas. Leader should check if
+        the data exist when leadership is established, generate required data and set it in
+        the peer relation if not.
+        """
+        if not self._replica_consensus_reached() and self.unit.is_leader():
+            replica_relation_data = self._replica_relation_data()
+            new_replica_data = self._generate_wp_secret_keys()
+            for secret_key, secret_value in new_replica_data.items():
+                replica_relation_data[secret_key] = secret_value
 
 
 if __name__ == "__main__":  # pragma: no cover

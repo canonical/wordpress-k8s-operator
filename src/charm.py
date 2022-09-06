@@ -4,6 +4,7 @@ import re
 import os
 import secrets
 import string
+import textwrap
 
 import ops.charm
 
@@ -671,6 +672,73 @@ class WordpressCharm(CharmBase):
         self.state.relation_db_name = event.database
         self.state.relation_db_user = event.user
         self.state.relation_db_password = event.password
+
+    def _gen_wp_config(self):
+        """Generate the wp-config.php file WordPress needs based on charm config and relations
+
+        This method will not check the validity of the configuration or current state,
+        unless they are security related, in that case, an exception will be raised.
+        """
+        wp_config = [
+            textwrap.dedent("""\
+            <?php
+            # This file is managed by Juju. Do not make local changes.
+            if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) {
+                $_SERVER['HTTPS']='on';
+            }
+            $_w_p_http_protocol = 'http://';
+            if (!empty($_SERVER['HTTPS']) && 'off' != $_SERVER['HTTPS']) {
+                $_w_p_http_protocol = 'https://';
+            }
+            define( 'WP_PLUGIN_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] . '/wp-content/plugins' );
+            define( 'WP_CONTENT_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] . '/wp-content' );
+            define( 'WP_SITEURL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
+            define( 'WP_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
+            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );""")
+        ]
+
+        # database info in config takes precedence over database info provided by relations
+        database_info = {
+            key.upper(): self.model.config[key] for key in
+            ["db_host", "db_name", "db_user", "db_password"]
+        }
+        if any(not value for value in database_info.values()):
+            database_info = {
+                key.upper(): getattr(self.state, "relation_" + key) for key in
+                ["db_host", "db_name", "db_user", "db_password"]
+            }
+        for db_key, db_value in database_info.items():
+            wp_config.append("define( '{}', '{}' );".format(db_key, db_value))
+
+        replica_relation_data = self._replica_relation_data()
+        for secret_key in self._wordpress_secret_key_fields():
+            secret_value = replica_relation_data.get(secret_key)
+            if not secret_value:
+                raise ValueError("{} value is empty".format(secret_key))
+            wp_config.append("define( '{secret_key}', '{secret_value}' );".format(
+                secret_key=secret_key.upper(),
+                secret_value=secret_value
+            ))
+
+        # make WordPress immutable, user can not install or update any plugins or themes from
+        # admin panel and all updates are disabled
+        wp_config.append("define( 'DISALLOW_FILE_MODS', true );")
+        wp_config.append("define( 'AUTOMATIC_UPDATER_DISABLED', true );")
+
+        wp_config.append("define( 'WP_CACHE', true );")
+        wp_config.append(
+            textwrap.dedent(
+                """\
+                if ( ! defined( 'ABSPATH' ) ) {
+                    define( 'ABSPATH', __DIR__ . '/' );
+                }
+
+                /** Sets up WordPress vars and included files. */
+                require_once ABSPATH . 'wp-settings.php';
+                """
+            )
+        )
+        return "\n".join(wp_config)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -46,15 +46,20 @@ class TestWordpressK8s(unittest.TestCase):
                 "secret values should not be too simple"
             )
 
+    def _setup_replica_consensus(self):
+        replica_relation_id = self.harness.add_relation("wordpress_replica", self.app_name)
+        self.harness.set_leader()
+        self.harness.begin_with_initial_hooks()
+        consensus = self.harness.get_relation_data(replica_relation_id, self.app_name)
+        return consensus
+
     def test_replica_consensus(self):
         """
         arrange: deploy a new wordpress-k8s application
         act: simulate peer relation creating and leader electing during the start of deployment
         assert: units should reach consensus after leader elected
         """
-        self.harness.add_relation("wordpress_replica", self.app_name)
-        self.harness.set_leader()
-        self.harness.begin_with_initial_hooks()
+        self._setup_replica_consensus()
         self.assertTrue(
             self.harness.charm._replica_consensus_reached(),
             "units in application should reach consensus once leadership established"
@@ -91,6 +96,17 @@ class TestWordpressK8s(unittest.TestCase):
             "consensus once established should not change after leadership changed"
         )
 
+    @staticmethod
+    def _example_db_info():
+        return {
+            "host": "test_database_host",
+            "database": "test_database_name",
+            "user": "test_database_user",
+            "password": "test_database_password",
+            "port": "3306",
+            "root_password": "test_root_password",
+        }
+
     def _setup_db_relation(self, db_info):
         db_relation_id = self.harness.add_relation("db", "mysql")
         self.harness.add_relation_unit(db_relation_id, "mysql/0")
@@ -118,14 +134,7 @@ class TestWordpressK8s(unittest.TestCase):
             "database info in charm state should not exist before database relation created"
         )
 
-        db_info = {
-            "host": "test_database_host",
-            "database": "test_database_name",
-            "user": "test_database_user",
-            "password": "test_database_password",
-            "port": "3306",
-            "root_password": "test_root_password",
-        }
+        db_info = self._example_db_info()
         db_relation_id = self._setup_db_relation(db_info)
         db_info_in_state = get_db_info_from_state()
         for db_info_key in db_info_in_state:
@@ -142,4 +151,67 @@ class TestWordpressK8s(unittest.TestCase):
                 db_info_in_state[db_info_key],
                 "database info {} should be reset to None after database relation broken"
                 .format(db_info_key)
+            )
+
+    def test_wp_config(self):
+        """
+        arrange: after WordPress application unit consensus has been reached
+        act: generate wp-config.php
+        assert: generated wp-config.php should be valid
+        """
+
+        def in_same_line(content, *matches):
+            for line in content.splitlines():
+                if all(match in line for match in matches):
+                    return True
+            return False
+
+        self.assertRaises(
+            Exception,
+            lambda _: self.harness.charm._gen_wp_config(),
+            "generating a config before consensus should raise an exception for security reasons"
+        )
+        replica_consensus = self._setup_replica_consensus()
+        wp_config = self.harness.charm._gen_wp_config()
+        for secret_key in self.harness.charm._wordpress_secret_key_fields():
+            secret_value = replica_consensus[secret_key]
+            self.assertTrue(
+                in_same_line(wp_config, "define(", secret_key.upper(), secret_value),
+                "wp-config.php should contain a valid {}".format(secret_key)
+            )
+
+        db_info = self._example_db_info()
+        self._setup_db_relation(db_info)
+        wp_config = self.harness.charm._gen_wp_config()
+        db_field_conversion = {
+            "db_host": "host",
+            "db_name": "database",
+            "db_user": "user",
+            "db_password": "password",
+        }
+        for db_info_field in ["db_host", "db_name", "db_user", "db_password"]:
+            self.assertTrue(
+                in_same_line(
+                    wp_config,
+                    "define(", db_info_field.upper(), db_info[db_field_conversion[db_info_field]]
+                ),
+                "wp-config.php should contain database setting {} from the db relation"
+                .format(db_info_field)
+            )
+
+        db_info_in_config = {
+            "db_host": "config_db_host",
+            "db_name": "config_db_name",
+            "db_user": "config_db_user",
+            "db_password": "config_db_password",
+        }
+        self.harness.update_config(db_info_in_config)
+        wp_config = self.harness.charm._gen_wp_config()
+        for db_info_field in db_info_in_config.keys():
+            self.assertTrue(
+                in_same_line(
+                    wp_config,
+                    "define(", db_info_field.upper(), db_info_in_config[db_info_field]
+                ),
+                "db info in config should takes precedence over the db relation"
             )

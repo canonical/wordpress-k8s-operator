@@ -7,6 +7,8 @@ import string
 import textwrap
 
 import ops.charm
+import ops.pebble
+import yaml
 
 import charm
 from yaml import safe_load
@@ -83,6 +85,12 @@ class WordpressCharmEvents(CharmEvents):
 
 
 class WordpressCharm(CharmBase):
+    class _ReplicaRelationNotReady(Exception):
+        pass
+
+    _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
+    _CONTAINER_NAME = "wordpress"
+    _SERVICE_NAME = "wordpress"
 
     _container_name = "wordpress"
     _default_service_port = 80
@@ -95,23 +103,7 @@ class WordpressCharm(CharmBase):
 
         self.leader_data = LeadershipSettings()
 
-        logger.debug("registering framework handlers...")
-
-        self.framework.observe(self.on.wordpress_pebble_ready, self.on_config_changed)
-        self.framework.observe(self.on.config_changed, self.on_config_changed)
-        self.framework.observe(self.on.leader_elected, self.on_leader_elected)
-
-        # Actions.
-        self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
-
         self.db = MySQLClient(self, "db")
-        self.framework.observe(self.on.db_relation_created, self.on_db_relation_created)
-        self.framework.observe(self.on.db_relation_broken, self.on_db_relation_broken)
-
-        # Handlers for if user supplies database connection details or a charm relation.
-        self.framework.observe(self.on.config_changed, self.on_database_config_changed)
-        for db_changed_handler in [self.db.on.database_changed, self.on.wordpress_static_database_changed]:
-            self.framework.observe(db_changed_handler, self.on_database_changed)
 
         c = self.model.config
         self.state.set_default(
@@ -133,20 +125,9 @@ class WordpressCharm(CharmBase):
         self.wordpress = Wordpress(c)
 
         self.ingress = IngressRequires(self, self.ingress_config)
-
-        self.framework.observe(self.on.ingress_relation_changed, self.on_ingress_relation_changed)
-        self.framework.observe(self.on.ingress_relation_created, self.on_ingress_relation_changed)
-
         self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
         self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
-
-        # TODO: It would be nice if there was a way to unregister an observer at runtime.
-        # Once the site is installed there is no need for self.on_wordpress_uninitialised to continue to observe
-        # config-changed hooks.
-        if self.state.installed_successfully is False:
-            self.framework.observe(self.on.config_changed, self.on_wordpress_uninitialised)
-            self.framework.observe(self.on.wordpress_initial_setup, self.on_wordpress_initial_setup)
-        logger.debug("all observe hooks registered...")
+        self.framework.observe(self.on.config_changed, self._reconciliation)
 
     @property
     def container_name(self):
@@ -635,18 +616,29 @@ class WordpressCharm(CharmBase):
             characters = string.ascii_letters + "!@#$%^&*()" + "-_ []{}<>~`+=,.;:/?|"
             return "".join(secrets.choice(characters) for _ in range(length))
 
-        return {
+        wp_secrets = {
             field: _wp_generate_password()
             for field in self._wordpress_secret_key_fields()
         }
+        wp_secrets["default_admin_password"] = secrets.token_urlsafe(32)
+        return wp_secrets
 
     def _replica_relation_data(self):
-        return self.model.get_relation("wordpress_replica").data[self.app]
+        relation = self.model.get_relation("wordpress-replica")
+        if relation is None:
+            raise self._ReplicaRelationNotReady(
+                "Access replica peer relation data before relation established"
+            )
+        else:
+            return relation.data[self.app]
 
     def _replica_consensus_reached(self):
         """Test if the synchronized data required for WordPress replication are initialized."""
         fields = self._wordpress_secret_key_fields()
-        replica_data = self._replica_relation_data()
+        try:
+            replica_data = self._replica_relation_data()
+        except self._ReplicaRelationNotReady:
+            return False
         return all(replica_data.get(f) for f in fields)
 
     def _on_leader_elected_replica_data_handler(self, event):
@@ -739,6 +731,152 @@ class WordpressCharm(CharmBase):
             )
         )
         return "\n".join(wp_config)
+
+    def _container(self):
+        """Get the WordPress workload container"""
+        return self.unit.get_container(self._CONTAINER_NAME)
+
+    def _wordpress_service_exists(self):
+        return self._SERVICE_NAME in self._container().get_plan().services
+
+    def _stop_server(self):
+        """Stop WordPress (apache) server
+
+        This operation is idempotence.
+        """
+        if self._wordpress_service_exists():
+            self._container().stop(self._SERVICE_NAME)
+
+    def _wp_is_installed(self):
+        """Check if WordPress is installed (check if WordPress related tables exist in database)"""
+        process = self._container().exec(["wp", "core", "is-installed"], timeout=60)
+        try:
+            process.wait()
+            return True
+        except ops.pebble.ExecError:
+            return False
+
+    def _wp_install_cmd(self):
+        """Generate wp-cli command used to install WordPress on database"""
+        initial_settings = yaml.safe_load(self.model.config["initial_settings"])
+        admin_user = initial_settings.get("user_name", "admin_username")
+        admin_email = initial_settings.get("admin_email", "name@example.com")
+        default_admin_password = self._replica_relation_data()["default_admin_password"]
+        admin_password = initial_settings.get("admin_password", default_admin_password)
+        return [
+            "wp",
+            "core",
+            "install",
+            "--url=localhost",
+            f"--title=The {self.model.config['blog_hostname'] or self.app.name} Blog",
+            f"--admin_user={admin_user}",
+            f"--admin_email={admin_email}",
+            f"--admin_password={admin_password}"
+        ]
+
+    def _wp_install(self):
+        """Install WordPress (create WordPress required tables in DB)"""
+        process = self._container().exec(self._wp_install_cmd(), timeout=60)
+        process.wait()
+
+    def _init_pebble_layer(self):
+        layer = {
+            "summary": "WordPress layer",
+            "description": "WordPress server",
+            "services": {
+                self._SERVICE_NAME: {
+                    "override": "replace",
+                    "summary": "WordPress server (apache)",
+                    "command": "apache2ctl -D FOREGROUND",
+                }
+            },
+        }
+        self._container().add_layer("wordpress", layer, combine=True)
+
+    def _start_server(self):
+        """Start WordPress (apache) server. On leader unit, also make sure WordPress is installed
+
+        Check if the pebble layer has been added, then check the installation status of WordPress,
+        finally start the server. The installation process only run on the leader unit. This
+        operation is idempotence.
+        """
+        self._init_pebble_layer()
+        if self.unit.is_leader():
+            if not self._wp_is_installed():
+                self._wp_install()
+            if self._current_wp_config() is None:
+                # For security reasons, never start WordPress server if wp-config.php not exists
+                raise FileNotFoundError(
+                    "required file (wp-config.php) for starting WordPress server not exists"
+                )
+        self._container().start(self._SERVICE_NAME)
+
+    def _current_wp_config(self):
+        """Retrieve the current version of wp-config.php from server, return None if not exists"""
+        wp_config_path = self._WP_CONFIG_PATH
+        container = self._container()
+        if container.exists(wp_config_path):
+            return self._container().pull(wp_config_path).read()
+        return None
+
+    def _remove_wp_config(self):
+        """Remove wp-config.php file on server"""
+        container = self._container()
+        if container.get_service(self._SERVICE_NAME).is_running():
+            # For security reasons, prevent removing wp-config.php while WordPress server running
+            raise RuntimeError("trying to delete wp-config.php while WordPress server is running")
+        self._container().remove_path(self._WP_CONFIG_PATH, recursive=True)
+
+    def _push_wp_config(self, wp_config):
+        """Update the content of wp-config.php on server"""
+        self._container().push(self._WP_CONFIG_PATH, wp_config)
+
+    def _core_reconciliation(self):
+        """Reconciliation process for the WordPress core services, returns True if successful.
+
+        It will fail under the following two circumstances:
+          - Peer relation data not ready
+          - Config doesn't provide valid database information and db relation hasn't
+            been established
+
+        It will check if the current wp-config.php file matches the desired config.
+        If not, update the wp-config.php file.
+
+        It will also check if WordPress is installed (WordPress-related tables exist in db).
+        If not, install WordPress (create WordPress required tables in db).
+
+        If any update is needed, it will stop the apache server first to prevent any requests
+        during the update for security reasons.
+        """
+        if not self._replica_consensus_reached():
+            self.unit.status = WaitingStatus("Waiting for unit consensus")
+            self._stop_server()
+            return
+        db_config_ready = all(
+            self.model.config[key] for key in
+            ("db_host", "db_name", "db_user", "db_password")
+        )
+        db_relation_ready = all(
+            getattr(self.state, "relation_" + key) for key in
+            ("db_host", "db_name", "db_user", "db_password")
+        )
+        if not db_config_ready and not db_relation_ready:
+            self.unit.status = WaitingStatus("Waiting for db relation")
+            self._stop_server()
+            return
+        wp_config = self._gen_wp_config()
+        if wp_config != self._current_wp_config():
+            self._stop_server()
+            self._push_wp_config(wp_config)
+        if self._current_wp_config() is not None:
+            self._start_server()
+        return
+
+    def _reconciliation(self, _event):
+        if not self._container().can_connect():
+            self.unit.status = WaitingStatus("Waiting for pebble")
+            return
+        self._core_reconciliation()
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -85,6 +85,10 @@ class WordpressCharmEvents(CharmEvents):
 
 
 class WordpressCharm(CharmBase):
+    class _ReplicaRelationNotReady(Exception):
+        pass
+
+    _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
 
     _container_name = "wordpress"
     _default_service_port = 80
@@ -620,14 +624,19 @@ class WordpressCharm(CharmBase):
     def _replica_relation_data(self):
         relation = self.model.get_relation("wordpress-replica")
         if relation is None:
-            return {}
+            raise self._ReplicaRelationNotReady(
+                "Access replica peer relation data before relation established"
+            )
         else:
             return relation.data[self.app]
 
     def _replica_consensus_reached(self):
         """Test if the synchronized data required for WordPress replication are initialized."""
         fields = self._wordpress_secret_key_fields()
-        replica_data = self._replica_relation_data()
+        try:
+            replica_data = self._replica_relation_data()
+        except self._ReplicaRelationNotReady:
+            return False
         return all(replica_data.get(f) for f in fields)
 
     def _on_leader_elected_replica_data_handler(self, event):
@@ -722,6 +731,7 @@ class WordpressCharm(CharmBase):
         return "\n".join(wp_config)
 
     def _container(self):
+        """Get the WordPress workload container"""
         return self.unit.get_container("wordpress")
 
     def _wordpress_service_exists(self):
@@ -737,7 +747,7 @@ class WordpressCharm(CharmBase):
 
     def _wp_is_installed(self):
         """Check if WordPress is installed (check if WordPress related tables exist in database)"""
-        process = self._container().exec(["wp", "core", "is-installed"])
+        process = self._container().exec(["wp", "core", "is-installed"], timeout=60)
         try:
             process.wait()
             return True
@@ -756,15 +766,15 @@ class WordpressCharm(CharmBase):
             "core",
             "install",
             "--url=localhost",
-            "--title=The {} Blog".format(self.model.config["blog_hostname"] or self.app.name),
-            "--admin_user={}".format(admin_user),
-            "--admin_email={}".format(admin_email),
-            "--admin_password={}".format(admin_password)
+            f"--title=The {self.model.config['blog_hostname'] or self.app.name} Blog",
+            f"--admin_user={admin_user}",
+            f"--admin_email={admin_email}",
+            f"--admin_password={admin_password}"
         ]
 
     def _wp_install(self):
         """Install WordPress (create WordPress required tables in DB)"""
-        process = self._container().exec(self._wp_install_cmd())
+        process = self._container().exec(self._wp_install_cmd(), timeout=60)
         process.wait()
 
     def _init_pebble_layer(self):
@@ -793,23 +803,32 @@ class WordpressCharm(CharmBase):
         if self.unit.is_leader():
             if not self._wp_is_installed():
                 self._wp_install()
+            if self._current_wp_config() is None:
+                # For security reasons, never start WordPress server if wp-config.php not exists
+                raise FileNotFoundError(
+                    "required file (wp-config.php) for starting WordPress server not exists"
+                )
         self._container().start("wordpress")
-
-    @staticmethod
-    def _wp_config_path():
-        return "/var/www/html/wp-config.php"
 
     def _current_wp_config(self):
         """Retrieve the current version of wp-config.php from server, return None if not exists"""
-        wp_config_path = self._wp_config_path()
+        wp_config_path = self._WP_CONFIG_PATH
         container = self._container()
         if container.exists(wp_config_path):
             return self._container().pull(wp_config_path).read()
         return None
 
+    def _remove_wp_config(self):
+        """Remove wp-config.php file on server"""
+        container = self._container()
+        if container.get_service("wordpress").is_running():
+            # For security reasons, prevent removing wp-config.php while WordPress server running
+            raise RuntimeError("trying to delete wp-config.php while WordPress server is running")
+        self._container().remove_path(self._WP_CONFIG_PATH, recursive=True)
+
     def _push_wp_config(self, wp_config):
         """Update the content of wp-config.php on server"""
-        self._container().push(self._wp_config_path(), wp_config)
+        self._container().push(self._WP_CONFIG_PATH, wp_config)
 
     def _core_reconciliation(self):
         """Reconciliation process for the WordPress core services, returns True if successful.
@@ -831,7 +850,7 @@ class WordpressCharm(CharmBase):
         if not self._replica_consensus_reached():
             self.unit.status = WaitingStatus("Waiting for unit consensus")
             self._stop_server()
-            return False
+            return
         db_config_ready = all(
             self.model.config[key] for key in
             ("db_host", "db_name", "db_user", "db_password")
@@ -843,21 +862,20 @@ class WordpressCharm(CharmBase):
         if not db_config_ready and not db_relation_ready:
             self.unit.status = WaitingStatus("Waiting for db relation")
             self._stop_server()
-            return False
+            return
         wp_config = self._gen_wp_config()
-        current_wp_config = self._current_wp_config()
-        if wp_config != current_wp_config:
+        if wp_config != self._current_wp_config():
             self._stop_server()
             self._push_wp_config(wp_config)
-        self._start_server()
-        return True
+        if self._current_wp_config() is not None:
+            self._start_server()
+        return
 
     def _reconciliation(self, _event):
         if not self._container().can_connect():
             self.unit.status = WaitingStatus("Waiting for pebble")
             return
-        if not self._core_reconciliation():
-            return
+        self._core_reconciliation()
 
 
 if __name__ == "__main__":  # pragma: no cover

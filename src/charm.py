@@ -89,6 +89,8 @@ class WordpressCharm(CharmBase):
         pass
 
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
+    _CONTAINER_NAME = "wordpress"
+    _SERVICE_NAME = "wordpress"
 
     _container_name = "wordpress"
     _default_service_port = 80
@@ -732,10 +734,10 @@ class WordpressCharm(CharmBase):
 
     def _container(self):
         """Get the WordPress workload container"""
-        return self.unit.get_container("wordpress")
+        return self.unit.get_container(self._CONTAINER_NAME)
 
     def _wordpress_service_exists(self):
-        return "wordpress" in self._container().get_plan().services
+        return self._SERVICE_NAME in self._container().get_plan().services
 
     def _stop_server(self):
         """Stop WordPress (apache) server
@@ -743,7 +745,7 @@ class WordpressCharm(CharmBase):
         This operation is idempotence.
         """
         if self._wordpress_service_exists():
-            self._container().stop("wordpress")
+            self._container().stop(self._SERVICE_NAME)
 
     def _wp_is_installed(self):
         """Check if WordPress is installed (check if WordPress related tables exist in database)"""
@@ -782,15 +784,14 @@ class WordpressCharm(CharmBase):
             "summary": "WordPress layer",
             "description": "WordPress server",
             "services": {
-                "wordpress": {
+                self._SERVICE_NAME: {
                     "override": "replace",
                     "summary": "WordPress server (apache)",
                     "command": "apache2ctl -D FOREGROUND",
                 }
             },
         }
-        if not self._wordpress_service_exists():
-            self._container().add_layer("wordpress", layer, combine=True)
+        self._container().add_layer("wordpress", layer, combine=True)
 
     def _start_server(self):
         """Start WordPress (apache) server. On leader unit, also make sure WordPress is installed
@@ -808,7 +809,7 @@ class WordpressCharm(CharmBase):
                 raise FileNotFoundError(
                     "required file (wp-config.php) for starting WordPress server not exists"
                 )
-        self._container().start("wordpress")
+        self._container().start(self._SERVICE_NAME)
 
     def _current_wp_config(self):
         """Retrieve the current version of wp-config.php from server, return None if not exists"""
@@ -821,7 +822,7 @@ class WordpressCharm(CharmBase):
     def _remove_wp_config(self):
         """Remove wp-config.php file on server"""
         container = self._container()
-        if container.get_service("wordpress").is_running():
+        if container.get_service(self._SERVICE_NAME).is_running():
             # For security reasons, prevent removing wp-config.php while WordPress server running
             raise RuntimeError("trying to delete wp-config.php while WordPress server is running")
         self._container().remove_path(self._WP_CONFIG_PATH, recursive=True)

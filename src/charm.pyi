@@ -10,6 +10,8 @@ class WordpressCharm(ops.charm.CharmBase):
 
     state: ops.framework.StoredState
     _WP_CONFIG_PATH: str
+    _CONTAINER_NAME: str
+    _SERVICE_NAME: str
 
     @staticmethod
     def _wordpress_secret_key_fields() -> List[str]: ...

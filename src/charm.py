@@ -728,7 +728,10 @@ class WordpressCharm(CharmBase):
         return "wordpress" in self._container().get_plan().services
 
     def _stop_server(self):
-        """Stop WordPress (apache) server"""
+        """Stop WordPress (apache) server
+
+        This operation is idempotence.
+        """
         if self._wordpress_service_exists():
             self._container().stop("wordpress")
 
@@ -742,6 +745,7 @@ class WordpressCharm(CharmBase):
             return False
 
     def _wp_install_cmd(self):
+        """Generate wp-cli command used to install WordPress on database"""
         initial_settings = yaml.safe_load(self.model.config["initial_settings"])
         admin_user = initial_settings.get("user_name", "admin_username")
         admin_email = initial_settings.get("admin_email", "name@example.com")
@@ -782,7 +786,8 @@ class WordpressCharm(CharmBase):
         """Start WordPress (apache) server. On leader unit, also make sure WordPress is installed
 
         Check if the pebble layer has been added, then check the installation status of WordPress,
-        finally start the server. The installation process only run on the leader unit.
+        finally start the server. The installation process only run on the leader unit. This
+        operation is idempotence.
         """
         self._init_pebble_layer()
         if self.unit.is_leader():
@@ -844,7 +849,7 @@ class WordpressCharm(CharmBase):
         if wp_config != current_wp_config:
             self._stop_server()
             self._push_wp_config(wp_config)
-            self._start_server()
+        self._start_server()
         return True
 
     def _reconciliation(self, _event):

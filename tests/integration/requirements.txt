@@ -1,5 +1,5 @@
-requests
-selenium
+juju
 pytest
+requests
 pytest-cov
-python2-secrets
+pytest-operator

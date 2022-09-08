@@ -1,8 +1,16 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple, TypedDict
 
 import ops
+import ops.model
 import ops.framework
 import opslib.mysql
+
+
+class DBInfoDict(TypedDict):
+    DB_HOST: str
+    DB_NAME: str
+    DB_USER: str
+    DB_PASSWORD: str
 
 
 class WordpressCharm(ops.charm.CharmBase):
@@ -41,6 +49,10 @@ class WordpressCharm(ops.charm.CharmBase):
     def _stop_server(self) -> None: ...
 
     def _wp_is_installed(self) -> None: ...
+
+    def _current_effective_db_info(self) -> DBInfoDict: ...
+
+    def _test_database_connectivity(self) -> Tuple[bool, str]: ...
 
     def _wp_install_cmd(self) -> List[str]: ...
 

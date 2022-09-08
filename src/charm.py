@@ -12,6 +12,7 @@ import yaml
 
 import charm
 from yaml import safe_load
+import mysql.connector
 
 from ops.charm import CharmBase, CharmEvents
 from ops.framework import EventBase, EventSource, StoredState
@@ -20,6 +21,7 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 from leadership import LeadershipSettings
+from exceptions import *
 from opslib.mysql import MySQLClient
 
 from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
@@ -125,9 +127,14 @@ class WordpressCharm(CharmBase):
         self.wordpress = Wordpress(c)
 
         self.ingress = IngressRequires(self, self.ingress_config)
+
         self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
         self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
+
         self.framework.observe(self.on.config_changed, self._reconciliation)
+        self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
+        self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
+        self.framework.observe(self.db.on.database_changed, self._reconciliation)
 
     @property
     def container_name(self):
@@ -678,6 +685,7 @@ class WordpressCharm(CharmBase):
             if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) {
                 $_SERVER['HTTPS']='on';
             }
+            $table_prefix = 'wp_';
             $_w_p_http_protocol = 'http://';
             if (!empty($_SERVER['HTTPS']) && 'off' != $_SERVER['HTTPS']) {
                 $_w_p_http_protocol = 'https://';
@@ -690,17 +698,10 @@ class WordpressCharm(CharmBase):
         ]
 
         # database info in config takes precedence over database info provided by relations
-        database_info = {
-            key.upper(): self.model.config[key] for key in
-            ["db_host", "db_name", "db_user", "db_password"]
-        }
-        if any(not value for value in database_info.values()):
-            database_info = {
-                key.upper(): getattr(self.state, "relation_" + key) for key in
-                ["db_host", "db_name", "db_user", "db_password"]
-            }
+        database_info = self._current_effective_db_info()
         for db_key, db_value in database_info.items():
-            wp_config.append("define( '{}', '{}' );".format(db_key, db_value))
+            wp_config.append("define( '{}', '{}' );".format(db_key.upper(), db_value))
+        wp_config.append("define( 'DB_CHARSET',  'utf8mb4' );")
 
         replica_relation_data = self._replica_relation_data()
         for secret_key in self._wordpress_secret_key_fields():
@@ -744,17 +745,59 @@ class WordpressCharm(CharmBase):
 
         This operation is idempotence.
         """
+        logger.debug("Ensure WordPress (apache) server is down")
         if self._wordpress_service_exists():
             self._container().stop(self._SERVICE_NAME)
 
     def _wp_is_installed(self):
         """Check if WordPress is installed (check if WordPress related tables exist in database)"""
-        process = self._container().exec(["wp", "core", "is-installed"], timeout=60)
+        logger.debug("Check if WordPress is installed")
+        process = self._container().exec(
+            ["wp", "core", "is-installed"],
+            user="www-data",
+            group="www-data",
+            working_dir="/var/www/html",
+            timeout=60)
         try:
             process.wait()
             return True
         except ops.pebble.ExecError:
             return False
+
+    def _current_effective_db_info(self):
+        """Get the current effective db connection information
+
+        Database info in config takes precedence over database info provided by relations
+        """
+        database_info = {
+            key.upper(): self.model.config[key] for key in
+            ["db_host", "db_name", "db_user", "db_password"]
+        }
+        if any(not value for value in database_info.values()):
+            database_info = {
+                key.upper(): getattr(self.state, "relation_" + key) for key in
+                ["db_host", "db_name", "db_user", "db_password"]
+            }
+        return database_info
+
+    def _test_database_connectivity(self):
+        """Test the connectivity of the current database config/relation
+
+        Return a tuple of connectivity as bool and error message as str, error message will be
+        an empty string is charm can connect to connected.
+        """
+        db_info = self._current_effective_db_info()
+        try:
+            cnx = mysql.connector.connect(
+                host=db_info["DB_HOST"],
+                database=db_info["DB_NAME"],
+                user=db_info["DB_USER"],
+                password=db_info["DB_PASSWORD"],
+            )
+            cnx.close()
+            return True, ""
+        except mysql.connector.Error as err:
+            return False, f"MySQL error {err.errno}"
 
     def _wp_install_cmd(self):
         """Generate wp-cli command used to install WordPress on database"""
@@ -776,10 +819,33 @@ class WordpressCharm(CharmBase):
 
     def _wp_install(self):
         """Install WordPress (create WordPress required tables in DB)"""
-        process = self._container().exec(self._wp_install_cmd(), timeout=60)
-        process.wait()
+        logger.debug("Install WordPress, create WordPress related table in the database")
+        msg = ""
+        for i in range(60):
+            success, msg = self._test_database_connectivity()
+            if success:
+                break
+        # if _test_database_connectivity returns success even for a single time, msg will
+        # be set to "", use this property to test if connection can be established or just timeout
+        if msg:
+            raise WordPressInstallError(msg)
+        self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
+        process = self._container().exec(
+            self._wp_install_cmd(),
+            user="www-data",
+            group="www-data",
+            working_dir="/var/www/html",
+            combine_stderr=True,
+            timeout=60,
+        )
+        try:
+            process.wait_output()
+        except ops.pebble.ExecError as e:
+            logger.error(f"WordPress installation failed: {e.stdout}")
+            raise WordPressInstallError("check logs for more information")
 
     def _init_pebble_layer(self):
+        logger.debug("Ensure WordPress layer exists in pebble")
         layer = {
             "summary": "WordPress layer",
             "description": "WordPress server",
@@ -800,6 +866,7 @@ class WordpressCharm(CharmBase):
         finally start the server. The installation process only run on the leader unit. This
         operation is idempotence.
         """
+        logger.debug("Ensure WordPress server is up")
         self._init_pebble_layer()
         if self.unit.is_leader():
             if not self._wp_is_installed():
@@ -821,6 +888,7 @@ class WordpressCharm(CharmBase):
 
     def _remove_wp_config(self):
         """Remove wp-config.php file on server"""
+        logger.debug("Remove wp-config.php in container")
         container = self._container()
         if container.get_service(self._SERVICE_NAME).is_running():
             # For security reasons, prevent removing wp-config.php while WordPress server running
@@ -829,7 +897,14 @@ class WordpressCharm(CharmBase):
 
     def _push_wp_config(self, wp_config):
         """Update the content of wp-config.php on server"""
-        self._container().push(self._WP_CONFIG_PATH, wp_config)
+        logger.debug("Update wp-config.php content in container")
+        self._container().push(
+            self._WP_CONFIG_PATH,
+            wp_config,
+            user="www-data",
+            group="www-data",
+            permissions=0o600,
+        )
 
     def _core_reconciliation(self):
         """Reconciliation process for the WordPress core services, returns True if successful.
@@ -848,10 +923,11 @@ class WordpressCharm(CharmBase):
         If any update is needed, it will stop the apache server first to prevent any requests
         during the update for security reasons.
         """
+        logger.info("Start core reconciliation process")
         if not self._replica_consensus_reached():
-            self.unit.status = WaitingStatus("Waiting for unit consensus")
+            logger.info("core reconciliation terminates early, replica consensus is not ready")
             self._stop_server()
-            return
+            raise WordPressWaitingStatusException("Waiting for unit consensus")
         db_config_ready = all(
             self.model.config[key] for key in
             ("db_host", "db_name", "db_user", "db_password")
@@ -861,23 +937,32 @@ class WordpressCharm(CharmBase):
             ("db_host", "db_name", "db_user", "db_password")
         )
         if not db_config_ready and not db_relation_ready:
-            self.unit.status = WaitingStatus("Waiting for db relation")
+            logger.info("core reconciliation terminates early, db info is missing")
             self._stop_server()
-            return
+            raise WordPressBlockedStatusException("Waiting for db relation/config")
         wp_config = self._gen_wp_config()
         if wp_config != self._current_wp_config():
+            logger.info("Changes detected in wp-config.php, updating")
             self._stop_server()
             self._push_wp_config(wp_config)
         if self._current_wp_config() is not None:
-            self._start_server()
-        return
+            try:
+                self._start_server()
+            except WordPressInstallError as e:
+                raise WordPressBlockedStatusException(
+                    f"WordPress installation failed, {e}"
+                )
 
     def _reconciliation(self, _event):
+        logger.info("Start reconciliation process")
         if not self._container().can_connect():
             self.unit.status = WaitingStatus("Waiting for pebble")
             return
-        self._core_reconciliation()
-
+        try:
+            self._core_reconciliation()
+            self.unit.status = ops.model.ActiveStatus()
+        except WordPressStatusException as status_exception:
+            self.unit.status = status_exception.status
 
 if __name__ == "__main__":  # pragma: no cover
     main(WordpressCharm)

@@ -1,9 +1,11 @@
 import os
 import unittest
 import unittest.mock
-
+import ops.pebble
 import ops.testing
+
 from charm import WordpressCharm
+from exceptions import *
 
 
 class TestWordpressK8s(unittest.TestCase):
@@ -43,6 +45,11 @@ class TestWordpressK8s(unittest.TestCase):
             _remove_wp_config=mock_remove_wp_config,
             _wp_is_installed=mock_wp_is_installed,
             _wp_install=mock_wp_install
+        )
+
+        self.database_patch = unittest.mock.patch.multiple(
+            WordpressCharm,
+            _test_database_connectivity=unittest.mock.MagicMock(return_value=(True, ""))
         )
         self.container_patch.start()
         self.harness = ops.testing.Harness(WordpressCharm)
@@ -315,8 +322,9 @@ class TestWordpressK8s(unittest.TestCase):
         """
         self.harness.begin_with_initial_hooks()
 
-        self.assertFalse(
-            self.harness.charm._core_reconciliation(),
+        self.assertRaises(
+            WordPressWaitingStatusException,
+            lambda _: self.harness.charm._core_reconciliation(),
             "core reconciliation should fail"
         )
         self.assertIsInstance(
@@ -338,13 +346,14 @@ class TestWordpressK8s(unittest.TestCase):
         """
         self._setup_replica_consensus()
 
-        self.assertFalse(
-            self.harness.charm._core_reconciliation(),
+        self.assertRaises(
+            WordPressBlockedStatusException,
+            lambda _: self.harness.charm._core_reconciliation(),
             "core reconciliation should fail"
         )
         self.assertIsInstance(
             self.harness.model.unit.status,
-            ops.charm.model.WaitingStatus,
+            ops.charm.model.BlockedStatus,
             "unit should be in WaitingStatus"
         )
         self.assertIn(

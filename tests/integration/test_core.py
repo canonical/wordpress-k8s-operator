@@ -4,7 +4,6 @@ import juju.application
 import pytest_operator.plugin
 
 
-
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest):
@@ -33,9 +32,19 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest):
             "status message should contain the reason why it's blocked"
         )
 
+
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_incorrect_db_info(ops_test: pytest_operator.plugin.OpsTest):
+@pytest.mark.parametrize("app_config", [{
+    "db_host": "test_db_host",
+    "db_name": "test_db_name",
+    "db_user": "test_db_user",
+    "db_password": "test_db_password"
+}], indirect=True, scope="function")
+async def test_incorrect_db_config(
+        ops_test: pytest_operator.plugin.OpsTest,
+        app_config: dict
+):
     """
     arrange: after WordPress charm has been deployed
     act: provide incorrect database info via config
@@ -43,14 +52,6 @@ async def test_incorrect_db_info(ops_test: pytest_operator.plugin.OpsTest):
     of database connection info
     """
     application: juju.application.Application = ops_test.model.applications["wordpress"]
-    await application.set_config({
-        "db_host": "test_db_host",
-        "db_name": "test_db_name",
-        "db_user": "test_db_user",
-        "db_password": "test_db_password"
-    })
-    await ops_test.model.wait_for_idle()
-
     for unit in application.units:
         assert (
             unit.workload_status == ops.model.BlockedStatus.name,
@@ -66,14 +67,6 @@ async def test_incorrect_db_info(ops_test: pytest_operator.plugin.OpsTest):
             "CR_UNKNOWN_HOST"
         )
 
-    # resume database config for following test cases
-    await application.set_config({
-        "db_host": "",
-        "db_name": "",
-        "db_user": "",
-        "db_password": ""
-    })
-    await ops_test.model.wait_for_idle()
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail

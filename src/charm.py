@@ -5,6 +5,7 @@ import os
 import secrets
 import string
 import textwrap
+import time
 
 import ops.charm
 import ops.pebble
@@ -21,7 +22,7 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 from leadership import LeadershipSettings
-from exceptions import *
+import exceptions
 from opslib.mysql import MySQLClient
 
 from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
@@ -95,6 +96,7 @@ class WordpressCharm(CharmBase):
     _SERVICE_NAME = "wordpress"
     _WORDPRESS_USER = "www-data"
     _WORDPRESS_GROUP = "www-data"
+    _DB_CHECK_INTERVAL = 1
 
     _container_name = "wordpress"
     _default_service_port = 80
@@ -821,12 +823,13 @@ class WordpressCharm(CharmBase):
         """Install WordPress (create WordPress required tables in DB)"""
         logger.debug("Install WordPress, create WordPress related table in the database")
         msg = ""
-        for _ in range(60):
+        for _ in range(30):
             success, msg = self._test_database_connectivity()
             if success:
                 break
+            time.sleep(self._DB_CHECK_INTERVAL)
         else:
-            raise WordPressInstallError(msg)
+            raise exceptions.WordPressInstallError(msg)
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
         process = self._container().exec(
             self._wp_install_cmd(),
@@ -840,7 +843,7 @@ class WordpressCharm(CharmBase):
             process.wait_output()
         except ops.pebble.ExecError as e:
             logger.error(f"WordPress installation failed: %s", e.stdout)
-            raise WordPressInstallError("check logs for more information")
+            raise exceptions.WordPressInstallError("check logs for more information")
 
     def _init_pebble_layer(self):
         logger.debug("Ensure WordPress layer exists in pebble")
@@ -925,7 +928,7 @@ class WordpressCharm(CharmBase):
         if not self._replica_consensus_reached():
             logger.info("core reconciliation terminates early, replica consensus is not ready")
             self._stop_server()
-            raise WordPressWaitingStatusException("Waiting for unit consensus")
+            raise exceptions.WordPressWaitingStatusException("Waiting for unit consensus")
         db_config_ready = all(
             self.model.config[key] for key in
             ("db_host", "db_name", "db_user", "db_password")
@@ -937,7 +940,7 @@ class WordpressCharm(CharmBase):
         if not db_config_ready and not db_relation_ready:
             logger.info("core reconciliation terminates early, db info is missing")
             self._stop_server()
-            raise WordPressBlockedStatusException("Waiting for db relation/config")
+            raise exceptions.WordPressBlockedStatusException("Waiting for db relation/config")
         wp_config = self._gen_wp_config()
         if wp_config != self._current_wp_config():
             logger.info("Changes detected in wp-config.php, updating")
@@ -946,8 +949,8 @@ class WordpressCharm(CharmBase):
         if self._current_wp_config() is not None:
             try:
                 self._start_server()
-            except WordPressInstallError as e:
-                raise WordPressBlockedStatusException(
+            except exceptions.WordPressInstallError as e:
+                raise exceptions.WordPressBlockedStatusException(
                     f"WordPress installation failed, {e}"
                 )
 
@@ -959,7 +962,7 @@ class WordpressCharm(CharmBase):
         try:
             self._core_reconciliation()
             self.unit.status = ops.model.ActiveStatus()
-        except WordPressStatusException as status_exception:
+        except exceptions.WordPressStatusException as status_exception:
             self.unit.status = status_exception.status
 
 if __name__ == "__main__":  # pragma: no cover

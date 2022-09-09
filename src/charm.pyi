@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Tuple, TypedDict
+from typing import Optional, Union, List, Dict, Tuple, TypedDict
 
 import ops
 import ops.model
@@ -22,6 +22,7 @@ class WordpressCharm(ops.charm.CharmBase):
     _SERVICE_NAME: str
     _WORDPRESS_USER: str
     _WORDPRESS_GROUP: str
+    _DB_CHECK_INTERVAL: Union[float, int]
 
     @staticmethod
     def _wordpress_secret_key_fields() -> List[str]: ...

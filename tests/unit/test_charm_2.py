@@ -49,6 +49,7 @@ class TestWordpressK8s(unittest.TestCase):
 
         self.database_patch = unittest.mock.patch.multiple(
             WordpressCharm,
+            _DB_CHECK_INTERVAL=0,
             _test_database_connectivity=unittest.mock.MagicMock(return_value=(True, ""))
         )
         self.container_patch.start()

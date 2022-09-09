@@ -5,7 +5,7 @@ import pytest_operator.plugin
 
 @pytest_asyncio.fixture(scope="function", name="app_config")
 async def fixture_app_config(request, ops_test: pytest_operator.plugin.OpsTest):
-    """Change the charm database config db_* to incorrect values and revert that after test"""
+    """Change the charm config to specific values and revert that after test"""
     config = request.param
     application: juju.application.Application = ops_test.model.applications["wordpress"]
     original_config: dict = await application.get_config()

@@ -93,6 +93,8 @@ class WordpressCharm(CharmBase):
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
     _CONTAINER_NAME = "wordpress"
     _SERVICE_NAME = "wordpress"
+    _WORDPRESS_USER = "www-data"
+    _WORDPRESS_GROUP = "www-data"
 
     _container_name = "wordpress"
     _default_service_port = 80
@@ -700,18 +702,15 @@ class WordpressCharm(CharmBase):
         # database info in config takes precedence over database info provided by relations
         database_info = self._current_effective_db_info()
         for db_key, db_value in database_info.items():
-            wp_config.append("define( '{}', '{}' );".format(db_key.upper(), db_value))
+            wp_config.append(f"define( '{db_key.upper()}', '{db_value}' );")
         wp_config.append("define( 'DB_CHARSET',  'utf8mb4' );")
 
         replica_relation_data = self._replica_relation_data()
         for secret_key in self._wordpress_secret_key_fields():
             secret_value = replica_relation_data.get(secret_key)
             if not secret_value:
-                raise ValueError("{} value is empty".format(secret_key))
-            wp_config.append("define( '{secret_key}', '{secret_value}' );".format(
-                secret_key=secret_key.upper(),
-                secret_value=secret_value
-            ))
+                raise ValueError(f"{secret_key} value is empty")
+            wp_config.append(f"define( '{secret_key.upper()}', '{secret_value}' );")
 
         # make WordPress immutable, user can not install or update any plugins or themes from
         # admin panel and all updates are disabled
@@ -754,8 +753,8 @@ class WordpressCharm(CharmBase):
         logger.debug("Check if WordPress is installed")
         process = self._container().exec(
             ["wp", "core", "is-installed"],
-            user="www-data",
-            group="www-data",
+            user=self._WORDPRESS_USER,
+            group=self._WORDPRESS_GROUP,
             working_dir="/var/www/html",
             timeout=60)
         try:
@@ -767,7 +766,8 @@ class WordpressCharm(CharmBase):
     def _current_effective_db_info(self):
         """Get the current effective db connection information
 
-        Database info in config takes precedence over database info provided by relations
+        Database info in config takes precedence over database info provided by relations.
+        Return value is a dict containing four keys (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD)
         """
         database_info = {
             key.upper(): self.model.config[key] for key in
@@ -775,7 +775,7 @@ class WordpressCharm(CharmBase):
         }
         if any(not value for value in database_info.values()):
             database_info = {
-                key.upper(): getattr(self.state, "relation_" + key) for key in
+                key.upper(): getattr(self.state, f"relation_{key}") for key in
                 ["db_host", "db_name", "db_user", "db_password"]
             }
         return database_info
@@ -784,7 +784,7 @@ class WordpressCharm(CharmBase):
         """Test the connectivity of the current database config/relation
 
         Return a tuple of connectivity as bool and error message as str, error message will be
-        an empty string is charm can connect to connected.
+        an empty string if charm can connect to the database.
         """
         db_info = self._current_effective_db_info()
         try:
@@ -821,19 +821,17 @@ class WordpressCharm(CharmBase):
         """Install WordPress (create WordPress required tables in DB)"""
         logger.debug("Install WordPress, create WordPress related table in the database")
         msg = ""
-        for i in range(60):
+        for _ in range(60):
             success, msg = self._test_database_connectivity()
             if success:
                 break
-        # if _test_database_connectivity returns success even for a single time, msg will
-        # be set to "", use this property to test if connection can be established or just timeout
-        if msg:
+        else:
             raise WordPressInstallError(msg)
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
         process = self._container().exec(
             self._wp_install_cmd(),
-            user="www-data",
-            group="www-data",
+            user=self._WORDPRESS_USER,
+            group=self._WORDPRESS_GROUP,
             working_dir="/var/www/html",
             combine_stderr=True,
             timeout=60,
@@ -841,7 +839,7 @@ class WordpressCharm(CharmBase):
         try:
             process.wait_output()
         except ops.pebble.ExecError as e:
-            logger.error(f"WordPress installation failed: {e.stdout}")
+            logger.error(f"WordPress installation failed: %s", e.stdout)
             raise WordPressInstallError("check logs for more information")
 
     def _init_pebble_layer(self):
@@ -901,8 +899,8 @@ class WordpressCharm(CharmBase):
         self._container().push(
             self._WP_CONFIG_PATH,
             wp_config,
-            user="www-data",
-            group="www-data",
+            user=self._WORDPRESS_USER,
+            group=self._WORDPRESS_GROUP,
             permissions=0o600,
         )
 
@@ -933,7 +931,7 @@ class WordpressCharm(CharmBase):
             ("db_host", "db_name", "db_user", "db_password")
         )
         db_relation_ready = all(
-            getattr(self.state, "relation_" + key) for key in
+            getattr(self.state, f"relation_{key}") for key in
             ("db_host", "db_name", "db_user", "db_password")
         )
         if not db_config_ready and not db_relation_ready:

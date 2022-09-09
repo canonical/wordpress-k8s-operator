@@ -1,8 +1,12 @@
+import pytest
 import ops.model
 import juju.application
 import pytest_operator.plugin
 
 
+
+@pytest.mark.asyncio
+@pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest):
     """
     arrange: no pre-condition
@@ -29,7 +33,8 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest):
             "status message should contain the reason why it's blocked"
         )
 
-
+@pytest.mark.asyncio
+@pytest.mark.abort_on_fail
 async def test_incorrect_db_info(ops_test: pytest_operator.plugin.OpsTest):
     """
     arrange: after WordPress charm has been deployed
@@ -70,7 +75,8 @@ async def test_incorrect_db_info(ops_test: pytest_operator.plugin.OpsTest):
     })
     await ops_test.model.wait_for_idle()
 
-
+@pytest.mark.asyncio
+@pytest.mark.abort_on_fail
 async def test_mysql_relation(ops_test: pytest_operator.plugin.OpsTest):
     """
     arrange: after WordPress charm has been deployed

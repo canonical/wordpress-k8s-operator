@@ -20,6 +20,8 @@ class WordpressCharm(ops.charm.CharmBase):
     _WP_CONFIG_PATH: str
     _CONTAINER_NAME: str
     _SERVICE_NAME: str
+    _WORDPRESS_USER: str
+    _WORDPRESS_GROUP: str
 
     @staticmethod
     def _wordpress_secret_key_fields() -> List[str]: ...

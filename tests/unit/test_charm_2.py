@@ -322,11 +322,11 @@ class TestWordpressK8s(unittest.TestCase):
         """
         self.harness.begin_with_initial_hooks()
 
-        self.assertRaises(
-            WordPressWaitingStatusException,
-            lambda _: self.harness.charm._core_reconciliation(),
-            "core reconciliation should fail"
-        )
+        with self.assertRaises(
+                WordPressWaitingStatusException,
+                msg="core reconciliation should fail"
+        ):
+            self.harness.charm._core_reconciliation()
         self.assertIsInstance(
             self.harness.model.unit.status,
             ops.charm.model.WaitingStatus,
@@ -346,11 +346,11 @@ class TestWordpressK8s(unittest.TestCase):
         """
         self._setup_replica_consensus()
 
-        self.assertRaises(
-            WordPressBlockedStatusException,
-            lambda _: self.harness.charm._core_reconciliation(),
-            "core reconciliation should fail"
-        )
+        with self.assertRaises(
+                WordPressBlockedStatusException,
+                msg="core reconciliation should fail"
+        ):
+            self.harness.charm._core_reconciliation()
         self.assertIsInstance(
             self.harness.model.unit.status,
             ops.charm.model.BlockedStatus,

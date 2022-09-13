@@ -22,6 +22,7 @@ class WordpressCharm(ops.charm.CharmBase):
     _SERVICE_NAME: str
     _WORDPRESS_USER: str
     _WORDPRESS_GROUP: str
+    _WORDPRESS_DB_CHARSET: str
     _DB_CHECK_INTERVAL: Union[float, int]
 
     @staticmethod

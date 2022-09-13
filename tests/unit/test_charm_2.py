@@ -1,4 +1,3 @@
-import os
 import unittest
 import unittest.mock
 import ops.pebble
@@ -52,6 +51,7 @@ class TestWordpressK8s(unittest.TestCase):
             _DB_CHECK_INTERVAL=0,
             _test_database_connectivity=unittest.mock.MagicMock(return_value=(True, ""))
         )
+        self.database_patch.start()
         self.container_patch.start()
         self.harness = ops.testing.Harness(WordpressCharm)
         self.addCleanup(self.harness.cleanup)
@@ -66,6 +66,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.app_name = "wordpress-k8s"
 
     def tearDown(self) -> None:
+        self.database_patch.stop()
         self.container_patch.stop()
         self.leadership_patch.stop()
 

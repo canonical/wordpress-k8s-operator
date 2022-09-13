@@ -6,6 +6,7 @@ import secrets
 import string
 import textwrap
 import time
+import traceback
 
 import ops.charm
 import ops.pebble
@@ -27,7 +28,8 @@ from opslib.mysql import MySQLClient
 
 from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
 
-
+# MySQL logger prints database credentials on debug level, silence it
+logging.getLogger(mysql.connector.__name__).setLevel(logging.WARNING)
 logger = logging.getLogger()
 
 
@@ -96,6 +98,7 @@ class WordpressCharm(CharmBase):
     _SERVICE_NAME = "wordpress"
     _WORDPRESS_USER = "www-data"
     _WORDPRESS_GROUP = "www-data"
+    _WORDPRESS_DB_CHARSET = "utf8mb4"
     _DB_CHECK_INTERVAL = 1
 
     _container_name = "wordpress"
@@ -705,7 +708,8 @@ class WordpressCharm(CharmBase):
         database_info = self._current_effective_db_info()
         for db_key, db_value in database_info.items():
             wp_config.append(f"define( '{db_key.upper()}', '{db_value}' );")
-        wp_config.append("define( 'DB_CHARSET',  'utf8mb4' );")
+
+        wp_config.append(f"define( 'DB_CHARSET',  '{self._WORDPRESS_DB_CHARSET}' );")
 
         replica_relation_data = self._replica_relation_data()
         for secret_key in self._wordpress_secret_key_fields():
@@ -790,15 +794,19 @@ class WordpressCharm(CharmBase):
         """
         db_info = self._current_effective_db_info()
         try:
+            # TODO: add database charset check later
             cnx = mysql.connector.connect(
                 host=db_info["DB_HOST"],
                 database=db_info["DB_NAME"],
                 user=db_info["DB_USER"],
                 password=db_info["DB_PASSWORD"],
+                charset="latin1",
             )
             cnx.close()
             return True, ""
         except mysql.connector.Error as err:
+            if err.errno < 0:
+                logger.debug("MySQL connection test failed, traceback: %s", traceback.format_exc())
             return False, f"MySQL error {err.errno}"
 
     def _wp_install_cmd(self):
@@ -822,14 +830,6 @@ class WordpressCharm(CharmBase):
     def _wp_install(self):
         """Install WordPress (create WordPress required tables in DB)"""
         logger.debug("Install WordPress, create WordPress related table in the database")
-        msg = ""
-        for _ in range(30):
-            success, msg = self._test_database_connectivity()
-            if success:
-                break
-            time.sleep(self._DB_CHECK_INTERVAL)
-        else:
-            raise exceptions.WordPressInstallError(msg)
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
         process = self._container().exec(
             self._wp_install_cmd(),
@@ -870,6 +870,15 @@ class WordpressCharm(CharmBase):
         logger.debug("Ensure WordPress server is up")
         self._init_pebble_layer()
         if self.unit.is_leader():
+            msg = ""
+            for _ in range(30):
+                success, msg = self._test_database_connectivity()
+                if success:
+                    break
+                time.sleep(self._DB_CHECK_INTERVAL)
+            else:
+                raise exceptions.WordPressBlockedStatusException(msg)
+
             if not self._wp_is_installed():
                 self._wp_install()
             if self._current_wp_config() is None:
@@ -926,19 +935,25 @@ class WordpressCharm(CharmBase):
         """
         logger.info("Start core reconciliation process")
         if not self._replica_consensus_reached():
-            logger.info("core reconciliation terminates early, replica consensus is not ready")
+            logger.info("Core reconciliation terminates early, replica consensus is not ready")
             self._stop_server()
             raise exceptions.WordPressWaitingStatusException("Waiting for unit consensus")
-        db_config_ready = all(
-            self.model.config[key] for key in
+        available_db_config = tuple(
+            key for key in
             ("db_host", "db_name", "db_user", "db_password")
+            if self.model.config[key]
         )
-        db_relation_ready = all(
-            getattr(self.state, f"relation_{key}") for key in
+        available_db_relation = tuple(
+            key for key in
             ("db_host", "db_name", "db_user", "db_password")
+            if getattr(self.state, f"relation_{key}")
         )
-        if not db_config_ready and not db_relation_ready:
-            logger.info("core reconciliation terminates early, db info is missing")
+        if len(available_db_config) != 4 and len(available_db_relation) != 4:
+            logger.info(
+                "Core reconciliation terminated early due to db info missing, "
+                f"available from config: {available_db_config}, "
+                f"available from relation: {available_db_relation}"
+            )
             self._stop_server()
             raise exceptions.WordPressBlockedStatusException("Waiting for db relation/config")
         wp_config = self._gen_wp_config()
@@ -947,23 +962,22 @@ class WordpressCharm(CharmBase):
             self._stop_server()
             self._push_wp_config(wp_config)
         if self._current_wp_config() is not None:
-            try:
-                self._start_server()
-            except exceptions.WordPressInstallError as e:
-                raise exceptions.WordPressBlockedStatusException(
-                    f"WordPress installation failed, {e}"
-                )
+            self._start_server()
 
     def _reconciliation(self, _event):
-        logger.info("Start reconciliation process")
+        logger.info(f"Start reconciliation process, triggered by {_event}")
         if not self._container().can_connect():
+            logger.info(f"Reconciliation process terminated early, pebble is not ready")
             self.unit.status = WaitingStatus("Waiting for pebble")
             return
         try:
             self._core_reconciliation()
+            logger.info("Reconciliation process finished successfully.")
             self.unit.status = ops.model.ActiveStatus()
         except exceptions.WordPressStatusException as status_exception:
+            logger.info(f"Reconciliation process terminated early, reason: {status_exception}")
             self.unit.status = status_exception.status
+
 
 if __name__ == "__main__":  # pragma: no cover
     main(WordpressCharm)

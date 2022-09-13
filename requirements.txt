@@ -1,4 +1,5 @@
 # Include python requirements here
 ops
-ops-lib-mysql
 requests
+ops-lib-mysql
+mysql-connector-python

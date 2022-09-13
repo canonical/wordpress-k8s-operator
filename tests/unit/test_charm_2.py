@@ -1,9 +1,10 @@
-import os
 import unittest
 import unittest.mock
-
+import ops.pebble
 import ops.testing
+
 from charm import WordpressCharm
+from exceptions import *
 
 
 class TestWordpressK8s(unittest.TestCase):
@@ -44,6 +45,13 @@ class TestWordpressK8s(unittest.TestCase):
             _wp_is_installed=mock_wp_is_installed,
             _wp_install=mock_wp_install
         )
+
+        self.database_patch = unittest.mock.patch.multiple(
+            WordpressCharm,
+            _DB_CHECK_INTERVAL=0,
+            _test_database_connectivity=unittest.mock.MagicMock(return_value=(True, ""))
+        )
+        self.database_patch.start()
         self.container_patch.start()
         self.harness = ops.testing.Harness(WordpressCharm)
         self.addCleanup(self.harness.cleanup)
@@ -58,6 +66,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.app_name = "wordpress-k8s"
 
     def tearDown(self) -> None:
+        self.database_patch.stop()
         self.container_patch.stop()
         self.leadership_patch.stop()
 
@@ -315,10 +324,11 @@ class TestWordpressK8s(unittest.TestCase):
         """
         self.harness.begin_with_initial_hooks()
 
-        self.assertFalse(
-            self.harness.charm._core_reconciliation(),
-            "core reconciliation should fail"
-        )
+        with self.assertRaises(
+                WordPressWaitingStatusException,
+                msg="core reconciliation should fail"
+        ):
+            self.harness.charm._core_reconciliation()
         self.assertIsInstance(
             self.harness.model.unit.status,
             ops.charm.model.WaitingStatus,
@@ -338,13 +348,14 @@ class TestWordpressK8s(unittest.TestCase):
         """
         self._setup_replica_consensus()
 
-        self.assertFalse(
-            self.harness.charm._core_reconciliation(),
-            "core reconciliation should fail"
-        )
+        with self.assertRaises(
+                WordPressBlockedStatusException,
+                msg="core reconciliation should fail"
+        ):
+            self.harness.charm._core_reconciliation()
         self.assertIsInstance(
             self.harness.model.unit.status,
-            ops.charm.model.WaitingStatus,
+            ops.charm.model.BlockedStatus,
             "unit should be in WaitingStatus"
         )
         self.assertIn(

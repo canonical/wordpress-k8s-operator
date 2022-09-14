@@ -1,9 +1,10 @@
-import json
 import asyncio
+import secrets
+
+from wordpress_client import WordpressClient
 
 import pytest
 import ops.model
-import juju.application
 import pytest_operator.plugin
 
 
@@ -99,28 +100,54 @@ async def test_mysql_relation(
 
 
 @pytest.mark.asyncio
-async def test_get_initial_password_action(ops_test: pytest_operator.plugin.OpsTest):
+async def test_get_initial_password_action(default_admin_password):
     """
     arrange: after WordPress charm has been deployed
     act: run get-initial-password action
     assert: get-initial-password action should return default admin password
     """
-    return_code, stdout, stderr = await ops_test.juju(
-        "run-action",
-        "wordpress/0",
-        "get-initial-password",
-        "--wait",
-        "--format",
-        "json"
-    )
     assert (
-            return_code == 0 and not stderr
-    ), "juju run-action get-initial-password should not fail"
-    result = json.loads(stdout)["unit-wordpress-0"]
-    print(result)
-    assert (
-            result["status"] == "completed"
-    ), "get-initial-password action should have a status of completed"
-    assert (
-            len(result["results"]["password"]) > 8
+            len(default_admin_password) > 8
     ), "get-initial-password action should return the default password"
+
+
+@pytest.mark.asyncio
+async def test_wordpress_functionality(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name,
+        default_admin_password
+):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: test WordPress basic functionality (login, post, comment)
+    assert: WordPress works normally as a blog site
+    """
+    units = (await ops_test.model.get_status()).applications[application_name].units.values()
+    for unit in units:
+        unit_ip = unit.address
+        wp_client = WordpressClient(
+            host=unit_ip,
+            username="admin",
+            password=default_admin_password,
+            is_admin=True
+        )
+        post_title = secrets.token_hex(16)
+        post_content = secrets.token_hex(16)
+        post = wp_client.create_post(
+            title=post_title,
+            content=post_content,
+        )
+        homepage = wp_client.get_homepage()
+        assert (
+                post_title in homepage and post_content in homepage
+        ), "admin user should be able to create a new post"
+        comment = secrets.token_hex(16)
+        post_link = post["link"]
+        wp_client.create_comment(
+            post_id=post["id"],
+            post_link=post_link,
+            content=comment,
+        )
+        assert (
+                comment in wp_client.get_post(post_link)
+        ), "admin user should be able to create a comment"

@@ -91,6 +91,7 @@ async def test_mysql_relation(
     await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
     await ops_test.model.wait_for_idle()
+
     assert (
             await get_app_status("wordpress") == ops.model.ActiveStatus.name
     ), (

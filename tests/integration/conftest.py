@@ -99,6 +99,7 @@ async def fixture_get_unit_status_msg_list(ops_test: pytest_operator.plugin.OpsT
 def fixture_application_name():
     return "wordpress"
 
+
 @pytest_asyncio.fixture(scope="function", name="default_admin_password")
 async def fixture_default_admin_password(ops_test: pytest_operator.plugin.OpsTest):
     return_code, stdout, stderr = await ops_test.juju(
@@ -116,4 +117,5 @@ async def fixture_default_admin_password(ops_test: pytest_operator.plugin.OpsTes
     assert (
             result["status"] == "completed"
     ), "get-initial-password action should have a status of completed"
+
     yield result["results"]["password"]

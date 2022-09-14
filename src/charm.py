@@ -135,6 +135,8 @@ class WordpressCharm(CharmBase):
 
         self.ingress = IngressRequires(self, self.ingress_config)
 
+        self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
+
         self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
         self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
 
@@ -590,27 +592,15 @@ class WordpressCharm(CharmBase):
             return self.wordpress.is_vhost_ready(service_ip)
         return False
 
-    # TODO: If a non leader unit invokes this method and the data
-    # doesn't exist, it will raise an exception. It needs to be refactored.
-    def _get_initial_password(self):
-        """Get the initial password.
-
-        If a password hasn't been set yet, create one if we're the leader,
-        or return an empty string if we're not."""
-        initial_password = self.leader_data["initial_password"]
-        if not initial_password:
-            if self.unit.is_leader():
-                initial_password = password_generator()
-                self.leader_data["initial_password"] = initial_password
-        return initial_password
-
     def _on_get_initial_password_action(self, event):
         """Handle the get-initial-password action."""
-        initial_password = self._get_initial_password()
-        if initial_password:
-            event.set_results({"password": initial_password})
+        if self._replica_consensus_reached():
+            default_admin_password = self._replica_relation_data().get("default_admin_password")
+            event.set_results({"password": default_admin_password})
         else:
-            event.fail("Initial password has not been set yet.")
+            logger.error("Action get-initial-password failed. Replica consensus not exists")
+            event.fail("Default admin password has not been generated yet.")
+
 
     @staticmethod
     def _wordpress_secret_key_fields():

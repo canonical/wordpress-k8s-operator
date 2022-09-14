@@ -393,3 +393,43 @@ class TestWordpressK8s(unittest.TestCase):
             self.installed_database_hosts,
             "wordpress should be installed after database config changed"
         )
+
+    @staticmethod
+    def _gen_action_event_mock():
+        event_mock = unittest.mock.MagicMock()
+        event_mock.set_results = unittest.mock.MagicMock()
+        event_mock.fail = unittest.mock.MagicMock()
+        return event_mock
+
+    def test_get_initial_password_action_before_replica_consensus(self):
+        """
+        arrange: before peer relation established but after charm created
+        act: run get-initial-password action
+        assert: get-initial-password action should fail
+        """
+        self.harness.begin_with_initial_hooks()
+        event = self._gen_action_event_mock()
+        self.harness.charm._on_get_initial_password_action(event)
+        self.assertEqual(
+            len(event.set_results.mock_calls), 0
+        )
+        self.assertEqual(
+            len(event.fail.mock_calls), 1
+        )
+
+    def test_get_initial_password_action(self):
+        """
+        arrange: after peer relation established
+        act: run get-initial-password action
+        assert: get-initial-password action should success and return default admin password
+        """
+        consensus = self._setup_replica_consensus()
+        event = self._gen_action_event_mock()
+        self.harness.charm._on_get_initial_password_action(event)
+        self.assertEqual(
+            len(event.fail.mock_calls), 0
+        )
+        self.assertSequenceEqual(
+            event.set_results.mock_calls,
+            [unittest.mock.call({"password": consensus["default_admin_password"]})]
+        )

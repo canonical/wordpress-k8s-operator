@@ -111,3 +111,21 @@ async def fixture_default_admin_password(
     await action.wait()
 
     yield action.results["password"]
+
+
+@pytest_asyncio.fixture(scope="function", name="get_unit_ip_list")
+async def fixture_get_unit_ip_list(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name
+):
+    """Helper function to retrieve unit ip addresses, similar to fixture_get_unit_status_list"""
+
+    async def _get_unit_ip_list():
+        status = await ops_test.model.get_status()
+        units = status.applications[application_name].units
+        ip_list = []
+        for key in sorted(units.keys(), key=lambda n: int(n.split("/")[-1])):
+            ip_list.append(units[key].address)
+        return ip_list
+
+    return _get_unit_ip_list

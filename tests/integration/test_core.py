@@ -1,6 +1,6 @@
 import asyncio
 import secrets
-
+import juju.unit
 from wordpress_client import WordpressClient
 
 import pytest
@@ -28,7 +28,6 @@ async def test_build_and_deploy(
         application_name="wordpress",
     )
     await ops_test.model.wait_for_idle()
-
     status_list_msg_list = await asyncio.gather(get_unit_status_list(), get_unit_status_msg_list())
     for status, msg in zip(*status_list_msg_list):
         assert (
@@ -127,8 +126,7 @@ async def test_get_initial_password_action(
 
 @pytest.mark.asyncio
 async def test_wordpress_functionality(
-        ops_test: pytest_operator.plugin.OpsTest,
-        application_name,
+        get_unit_ip_list,
         default_admin_password
 ):
     """
@@ -136,9 +134,7 @@ async def test_wordpress_functionality(
     act: test WordPress basic functionality (login, post, comment)
     assert: WordPress works normally as a blog site
     """
-    units = (await ops_test.model.get_status()).applications[application_name].units.values()
-    for unit in units:
-        unit_ip = unit.address
+    for unit_ip in (await get_unit_ip_list()):
         WordpressClient.run_wordpress_functionality_test(
             host=unit_ip,
             admin_username="admin",

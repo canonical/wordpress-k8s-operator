@@ -139,29 +139,8 @@ async def test_wordpress_functionality(
     units = (await ops_test.model.get_status()).applications[application_name].units.values()
     for unit in units:
         unit_ip = unit.address
-        wp_client = WordpressClient(
+        WordpressClient.run_wordpress_functionality_test(
             host=unit_ip,
-            username="admin",
-            password=default_admin_password,
-            is_admin=True
+            admin_username="admin",
+            admin_password=default_admin_password
         )
-        post_title = secrets.token_hex(16)
-        post_content = secrets.token_hex(16)
-        post = wp_client.create_post(
-            title=post_title,
-            content=post_content,
-        )
-        homepage = wp_client.get_homepage()
-        assert (
-                post_title in homepage and post_content in homepage
-        ), "admin user should be able to create a new post"
-        comment = secrets.token_hex(16)
-        post_link = post["link"]
-        wp_client.create_comment(
-            post_id=post["id"],
-            post_link=post_link,
-            content=comment,
-        )
-        assert (
-                comment in wp_client.get_post(post_link)
-        ), "admin user should be able to create a comment"

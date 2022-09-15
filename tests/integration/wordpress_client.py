@@ -1,5 +1,6 @@
 import re
 import json
+import secrets
 
 import requests
 
@@ -7,32 +8,81 @@ import requests
 class WordpressClient:
     """A very simple WordPress client for test purpose only"""
 
+    @classmethod
+    def run_wordpress_functionality_test(cls, host: str, admin_username: str, admin_password: str):
+        """Run standard WordPress functionality test suite"""
+        wp_client = cls(
+            host=host,
+            username=admin_username,
+            password=admin_password,
+            is_admin=True
+        )
+        post_title = secrets.token_hex(16)
+        post_content = secrets.token_hex(16)
+        post = wp_client._create_post(
+            title=post_title,
+            content=post_content,
+        )
+        homepage = wp_client.get_homepage()
+        assert (
+                post_title in homepage and post_content in homepage
+        ), "admin user should be able to create a new post"
+        comment = secrets.token_hex(16)
+        post_link = post["link"]
+        comment_link = wp_client._create_comment(
+            post_id=post["id"],
+            post_link=post_link,
+            content=comment,
+        )
+        assert (
+                comment_link.startswith(post_link) and
+                comment in wp_client.get_post(post_link)
+        ), "admin user should be able to create a comment"
+
     def __init__(self, host: str, username: str, password: str, is_admin: bool):
         self.host = host
         self.username = username
         self.password = password
         self._session = requests.session()
         self.timeout = 10
-        self._login()
+        if not self._login():
+            raise RuntimeError(f"login failed with username {username}")
         # By default, WordPress does not expose the /wp-json/ endpoint test if /wp-json
         # is exposed, and expose that with a permalink setting if not
         try:
-            self._session.get(
-                f"http://{self.host}/wp-json/",
-                timeout=self.timeout
-            ).json()
+            self._get(f"http://{self.host}/wp-json/").json()
         except requests.exceptions.JSONDecodeError:
             if not is_admin:
                 raise ValueError("set options-permalink manually or login with an admin account")
             self._set_options_permalink()
 
-    def _login(self):
-        """Login WordPress with current username and password, set session cookies"""
-        self._session.get(
-            f"http://{self.host}/wp-login.php",
+    def _get(self, url: str, except_status_code=None):
+        """HTTP GET using the instance session"""
+        response = self._session.get(
+            url,
             timeout=self.timeout
         )
+        if except_status_code is not None and response.status_code != except_status_code:
+            raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
+        return response
+
+    def _post(self, url: str, json=None, data=None, headers=None, except_status_code=None):
+        """HTTP GET using the instance session"""
         response = self._session.post(
+            url,
+            json=json,
+            data=data,
+            headers=headers,
+            timeout=self.timeout
+        )
+        if except_status_code is not None and response.status_code != except_status_code:
+            raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
+        return response
+
+    def _login(self):
+        """Login WordPress with current username and password, set session cookies"""
+        self._get(f"http://{self.host}/wp-login.php")
+        response = self._post(
             f"http://{self.host}/wp-login.php",
             data={
                 "log": self.username,
@@ -41,21 +91,18 @@ class WordpressClient:
                 "redirect_to": f"http://{self.host}/wp-admin/",
                 "testcookie": 1
             },
-            timeout=self.timeout
+            except_status_code=200
         )
-        assert (
-                response.status_code == 200 and response.url == f"http://{self.host}/wp-admin/"
-        ), f"user {self.username} should be able to login WordPress"
+        return response.url == f"http://{self.host}/wp-admin/"
 
     def _set_options_permalink(self):
         """Set WordPress permalink option to /%postname%/"""
-        options_permalink_page = self._session.get(
-            f"http://{self.host}/wp-admin/options-permalink.php",
-            timeout=self.timeout
+        options_permalink_page = self._get(
+            f"http://{self.host}/wp-admin/options-permalink.php"
         )
         options_permalink_page = options_permalink_page.text
         wp_nonce = re.findall('name="_wpnonce" value="([a-zA-Z0-9]+)"', options_permalink_page)[0]
-        response = self._session.post(
+        self._post(
             f"http://{self.host}/wp-admin/options-permalink.php",
             data={
                 '_wpnonce': wp_nonce,
@@ -64,22 +111,15 @@ class WordpressClient:
                 'permalink_structure': '/%postname%/',
                 'submit': 'Save Changes'
             },
-            timeout=self.timeout
+            except_status_code=200
         )
 
-        assert (
-                response.status_code == 200
-        ), "admin user should able to set WordPress options-permalink to /%postname%/"
-
-    def create_post(self, title: str, content: str):
-        """Create a WordPress post"""
-        new_post_page = self._session.get(
-            f"http://{self.host}/wp-admin/post-new.php",
-            timeout=self.timeout
-        )
+    def _create_post(self, title: str, content: str):
+        """Create a WordPress post using wp-json API, return post object"""
+        new_post_page = self._get(f"http://{self.host}/wp-admin/post-new.php")
         new_post_page = new_post_page.text
         nonce = json.loads(re.findall('var wpApiSettings = ([^;]+);', new_post_page)[0])["nonce"]
-        response = self._session.post(
+        response = self._post(
             f"http://{self.host}/wp-json/wp/v2/posts/",
             json={
                 "status": "publish",
@@ -87,22 +127,19 @@ class WordpressClient:
                 "content": content
             },
             headers={"X-WP-Nonce": nonce},
-            timeout=self.timeout
+            except_status_code=201
         )
-        assert (
-                response.status_code == 201
-        ), f"User {self.username} should be able to create a post"
         return response.json()
 
-    def create_comment(self, post_id: int, post_link: str, content: str):
-        """Add a comment to a WordPress post"""
-        post_page = self._session.get(post_link)
+    def _create_comment(self, post_id: int, post_link: str, content: str):
+        """Add a comment to a WordPress post using HTML form, return url link of the new comment"""
+        post_page = self._get(post_link)
         nonce = re.findall(
             'name="_wp_unfiltered_html_comment_disabled" value="([a-zA-Z0-9]+)"',
             post_page.text
         )[0]
 
-        response = self._session.post(
+        response = self._post(
             f"http://{self.host}/wp-comments-post.php",
             data={
                 'comment': content,
@@ -111,20 +148,16 @@ class WordpressClient:
                 'comment_parent': '0',
                 '_wp_unfiltered_html_comment': nonce
             },
-            timeout=self.timeout
+            except_status_code=200
         )
         if "Duplicate comment detected" in response.text:
             raise ValueError(f"Duplicate comment detected: {repr(content)}")
-        assert (
-                response.status_code == 200 and
-                response.url.startswith(post_link)
-        ), f"user {self.username} should be able to create comments"
-        return response.text
+        return response.url
 
     def get_homepage(self):
         """Get the WordPress homepage source (HTML) as string"""
-        return self._session.get(f"http://{self.host}", timeout=self.timeout).text
+        return self._get(f"http://{self.host}").text
 
     def get_post(self, post_link: str):
         """Get the WordPress blog post page source (HTML) as string"""
-        return self._session.get(post_link, timeout=self.timeout).text
+        return self._get(post_link).text

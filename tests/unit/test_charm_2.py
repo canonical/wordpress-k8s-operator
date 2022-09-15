@@ -410,6 +410,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.begin_with_initial_hooks()
         event = self._gen_action_event_mock()
         self.harness.charm._on_get_initial_password_action(event)
+
         self.assertEqual(
             len(event.set_results.mock_calls), 0
         )
@@ -426,6 +427,7 @@ class TestWordpressK8s(unittest.TestCase):
         consensus = self._setup_replica_consensus()
         event = self._gen_action_event_mock()
         self.harness.charm._on_get_initial_password_action(event)
+
         self.assertEqual(
             len(event.fail.mock_calls), 0
         )

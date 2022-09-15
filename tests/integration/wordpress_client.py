@@ -14,6 +14,8 @@ class WordpressClient:
         self._session = requests.session()
         self.timeout = 10
         self._login()
+        # By default, WordPress does not expose the /wp-json/ endpoint test if /wp-json
+        # is exposed, and expose that with a permalink setting if not
         try:
             self._session.get(
                 f"http://{self.host}/wp-json/",
@@ -25,6 +27,7 @@ class WordpressClient:
             self._set_options_permalink()
 
     def _login(self):
+        """Login WordPress with current username and password, set session cookies"""
         self._session.get(
             f"http://{self.host}/wp-login.php",
             timeout=self.timeout
@@ -45,6 +48,7 @@ class WordpressClient:
         ), f"user {self.username} should be able to login WordPress"
 
     def _set_options_permalink(self):
+        """Set WordPress permalink option to /%postname%/"""
         options_permalink_page = self._session.get(
             f"http://{self.host}/wp-admin/options-permalink.php",
             timeout=self.timeout
@@ -68,6 +72,7 @@ class WordpressClient:
         ), "admin user should able to set WordPress options-permalink to /%postname%/"
 
     def create_post(self, title: str, content: str):
+        """Create a WordPress post"""
         new_post_page = self._session.get(
             f"http://{self.host}/wp-admin/post-new.php",
             timeout=self.timeout
@@ -90,6 +95,7 @@ class WordpressClient:
         return response.json()
 
     def create_comment(self, post_id: int, post_link: str, content: str):
+        """Add a comment to a WordPress post"""
         post_page = self._session.get(post_link)
         nonce = re.findall(
             'name="_wp_unfiltered_html_comment_disabled" value="([a-zA-Z0-9]+)"',
@@ -116,7 +122,9 @@ class WordpressClient:
         return response.text
 
     def get_homepage(self):
+        """Get the WordPress homepage source (HTML) as string"""
         return self._session.get(f"http://{self.host}", timeout=self.timeout).text
 
     def get_post(self, post_link: str):
+        """Get the WordPress blog post page source (HTML) as string"""
         return self._session.get(post_link, timeout=self.timeout).text

@@ -1,6 +1,7 @@
 import json
 
 import pytest
+import juju.action
 import pytest_asyncio
 import juju.application
 import pytest_operator.plugin
@@ -101,21 +102,12 @@ def fixture_application_name():
 
 
 @pytest_asyncio.fixture(scope="function", name="default_admin_password")
-async def fixture_default_admin_password(ops_test: pytest_operator.plugin.OpsTest):
-    return_code, stdout, stderr = await ops_test.juju(
-        "run-action",
-        "wordpress/0",
-        "get-initial-password",
-        "--wait",
-        "--format",
-        "json"
-    )
-    assert (
-            return_code == 0 and not stderr
-    ), "juju run-action get-initial-password should not fail"
-    result = json.loads(stdout)["unit-wordpress-0"]
-    assert (
-            result["status"] == "completed"
-    ), "get-initial-password action should have a status of completed"
+async def fixture_default_admin_password(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name
+):
+    application: juju.application = ops_test.model.applications[application_name]
+    action: juju.action.Action = await application.units[0].run_action("get-initial-password")
+    await action.wait()
 
-    yield result["results"]["password"]
+    yield action.results["password"]

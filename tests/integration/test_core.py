@@ -1,8 +1,7 @@
-import asyncio
+from wordpress_client import WordpressClient
 
 import pytest
 import ops.model
-import juju.application
 import pytest_operator.plugin
 
 
@@ -10,8 +9,7 @@ import pytest_operator.plugin
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(
         ops_test: pytest_operator.plugin.OpsTest,
-        get_unit_status_list,
-        get_unit_status_msg_list
+        application_name
 ):
     """
     arrange: no pre-condition
@@ -26,15 +24,13 @@ async def test_build_and_deploy(
         application_name="wordpress",
     )
     await ops_test.model.wait_for_idle()
-
-    status_list_msg_list = await asyncio.gather(get_unit_status_list(), get_unit_status_msg_list())
-    for status, msg in zip(*status_list_msg_list):
+    for unit in ops_test.model.applications[application_name].units:
         assert (
-                status == ops.model.BlockedStatus.name
+                unit.workload_status == ops.model.BlockedStatus.name
         ), "status should be 'blocked' since the default database info is empty"
 
         assert (
-                "Waiting for db" in msg
+                "Waiting for db" in unit.workload_status_message
         ), "status message should contain the reason why it's blocked"
 
 
@@ -49,8 +45,7 @@ async def test_build_and_deploy(
 async def test_incorrect_db_config(
         ops_test: pytest_operator.plugin.OpsTest,
         app_config: dict,
-        get_unit_status_list,
-        get_unit_status_msg_list,
+        application_name
 ):
     """
     arrange: after WordPress charm has been deployed
@@ -63,11 +58,11 @@ async def test_incorrect_db_config(
     # db config.
     await ops_test.model.wait_for_idle(idle_period=30)
 
-    status_list_msg_list = await asyncio.gather(get_unit_status_list(), get_unit_status_msg_list())
-    for status, msg in zip(*status_list_msg_list):
+    for unit in ops_test.model.applications[application_name].units:
         assert (
-                status == ops.model.BlockedStatus.name
+                unit.workload_status == ops.model.BlockedStatus.name
         ), "unit status should be blocked"
+        msg = unit.workload_status_message
         assert (
                 "MySQL error" in msg and
                 ("2003" in msg or "2005" in msg)
@@ -78,7 +73,6 @@ async def test_incorrect_db_config(
 @pytest.mark.abort_on_fail
 async def test_mysql_relation(
         ops_test: pytest_operator.plugin.OpsTest,
-        get_app_status,
         application_name
 ):
     """
@@ -89,9 +83,53 @@ async def test_mysql_relation(
     await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
     await ops_test.model.wait_for_idle()
+    app_status = ops_test.model.applications[application_name].status
     assert (
-            await get_app_status("wordpress") == ops.model.ActiveStatus.name
+            app_status == ops.model.ActiveStatus.name
     ), (
         "application status should be active once correct database connection info "
         "being provided via relation"
     )
+
+
+@pytest.mark.asyncio
+async def test_get_initial_password_action(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name
+):
+    """
+    arrange: after WordPress charm has been deployed
+    act: run get-initial-password action
+    assert: get-initial-password action should return the same default admin password on every unit
+    """
+    default_admin_password_from_all_units = set()
+    for unit in ops_test.model.applications[application_name].units:
+        action = await unit.run_action("get-initial-password")
+        await action.wait()
+        default_admin_password = action.results["password"]
+        assert (
+                len(default_admin_password) > 8
+        ), "get-initial-password action should return the default password"
+        default_admin_password_from_all_units.add(default_admin_password)
+
+    assert (
+            len(default_admin_password_from_all_units) == 1
+    ), "get-initial-password action should return the same default admin password on every unit"
+
+
+@pytest.mark.asyncio
+async def test_wordpress_functionality(
+        unit_ip_list,
+        default_admin_password
+):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: test WordPress basic functionality (login, post, comment)
+    assert: WordPress works normally as a blog site
+    """
+    for unit_ip in unit_ip_list:
+        WordpressClient.run_wordpress_functionality_test(
+            host=unit_ip,
+            admin_username="admin",
+            admin_password=default_admin_password
+        )

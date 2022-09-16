@@ -128,4 +128,12 @@ async def fixture_get_unit_ip_list(
             ip_list.append(units[key].address)
         return ip_list
 
-    return _get_unit_ip_list
+    yield _get_unit_ip_list
+
+
+@pytest_asyncio.fixture(scope="function", name="unit_ip_list")
+async def fixture_unit_ip_list(
+        get_unit_ip_list
+):
+    """A fixture containing ip addresses of current units"""
+    yield await get_unit_ip_list()

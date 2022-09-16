@@ -126,7 +126,7 @@ async def test_get_initial_password_action(
 
 @pytest.mark.asyncio
 async def test_wordpress_functionality(
-        get_unit_ip_list,
+        unit_ip_list,
         default_admin_password
 ):
     """
@@ -134,7 +134,7 @@ async def test_wordpress_functionality(
     act: test WordPress basic functionality (login, post, comment)
     assert: WordPress works normally as a blog site
     """
-    for unit_ip in (await get_unit_ip_list()):
+    for unit_ip in unit_ip_list:
         WordpressClient.run_wordpress_functionality_test(
             host=unit_ip,
             admin_username="admin",

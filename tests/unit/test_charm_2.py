@@ -63,9 +63,29 @@ class TestWordpressK8s(unittest.TestCase):
             setdefault=self._leadership_data.setdefault
         )
         self.leadership_patch.start()
+        installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
+        self.installed_themes = installed_themes
+
+        def mock_wp_theme_list(_self):
+            return [{"name": t} for t in installed_themes]
+
+        def mock_wp_theme_install(_self, theme):
+            installed_themes.add(theme)
+
+        def mock_wp_theme_delete(_self, theme):
+            installed_themes.remove(theme)
+
+        self.theme_patch = unittest.mock.patch.multiple(
+            WordpressCharm,
+            _wp_theme_list=mock_wp_theme_list,
+            _wp_theme_install=mock_wp_theme_install,
+            _wp_theme_delete=mock_wp_theme_delete
+        )
+        self.theme_patch.start()
         self.app_name = "wordpress-k8s"
 
     def tearDown(self) -> None:
+        self.theme_patch.stop()
         self.database_patch.stop()
         self.container_patch.stop()
         self.leadership_patch.stop()
@@ -434,4 +454,51 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertSequenceEqual(
             event.set_results.mock_calls,
             [unittest.mock.call({"password": consensus["default_admin_password"]})]
+        )
+
+    def test_theme_reconciliation(self):
+        """
+        arrange: after peer relation established and database ready
+        act: update themes configuration
+        assert: themes installed in WordPress should update according to the themes config
+        """
+        self._setup_replica_consensus()
+        self.harness.update_config({
+            "db_host": "config_db_host",
+            "db_name": "config_db_name",
+            "db_user": "config_db_user",
+            "db_password": "config_db_password",
+        })
+
+        self.assertEqual(
+            self.installed_themes,
+            set(self.harness.charm._WORDPRESS_DEFAULT_THEMES),
+            "installed themes should match the default installed themes "
+            "with the default themes config"
+        )
+
+        # Currently, Ops test framework has a bug preventing starting an already
+        # started service (starting an already started service is allowed in pebble),
+        # insert a service stop here to bypass this problem
+        self.harness.charm._stop_server()
+        self.harness.update_config({
+            "themes": "123, abc"
+        })
+
+        self.assertEqual(
+            self.installed_themes,
+            set(self.harness.charm._WORDPRESS_DEFAULT_THEMES + ["abc", "123"]),
+            "adding themes to themes config should install trigger theme installation"
+        )
+
+        # Same as above
+        self.harness.charm._stop_server()
+        self.harness.update_config({
+            "themes": "123"
+        })
+
+        self.assertEqual(
+            self.installed_themes,
+            set(self.harness.charm._WORDPRESS_DEFAULT_THEMES + ["123"]),
+            "removing themes from themes config should trigger theme deletion"
         )

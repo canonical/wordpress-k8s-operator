@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import collections
+import itertools
+import json
 import logging
 import re
 import os
@@ -99,6 +102,29 @@ class WordpressCharm(CharmBase):
     _WORDPRESS_USER = "www-data"
     _WORDPRESS_GROUP = "www-data"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
+
+    _WORDPRESS_DEFAULT_THEMES = [
+        'fruitful',
+        'launchpad',
+        'light-wordpress-theme',
+        'mscom',
+        'thematic',
+        'twentyeleven',
+        'twentynineteen',
+        'twentytwenty',
+        'twentytwentyone',
+        'ubuntu-cloud-website',
+        'ubuntu-community-wordpress-theme/ubuntu-community',
+        'ubuntu-community/ubuntu-community',
+        'ubuntu-fi',
+        'ubuntu-light',
+        'ubuntustudio-wp/ubuntustudio-wp',
+        'xubuntu-website/xubuntu-eighteen',
+        'xubuntu-website/xubuntu-fifteen',
+        'xubuntu-website/xubuntu-fourteen',
+        'xubuntu-website/xubuntu-thirteen'
+    ]
+
     _DB_CHECK_INTERVAL = 1
 
     _container_name = "wordpress"
@@ -744,20 +770,25 @@ class WordpressCharm(CharmBase):
         if self._wordpress_service_exists():
             self._container().stop(self._SERVICE_NAME)
 
-    def _wp_is_installed(self):
-        """Check if WordPress is installed (check if WordPress related tables exist in database)"""
-        logger.debug("Check if WordPress is installed")
+    def _run_wp_cli(self, cmd, timeout=60, combine_stderr=False):
+        Result = collections.namedtuple("WordpressCliExecResult", "return_code stdout stderr")
         process = self._container().exec(
-            ["wp", "core", "is-installed"],
+            cmd,
             user=self._WORDPRESS_USER,
             group=self._WORDPRESS_GROUP,
             working_dir="/var/www/html",
-            timeout=60)
+            combine_stderr=combine_stderr,
+            timeout=timeout)
         try:
-            process.wait()
-            return True
-        except ops.pebble.ExecError:
-            return False
+            stdout, stderr = process.wait_output()
+            return Result(0, stdout, stderr)
+        except ops.pebble.ExecError as e:
+            return Result(e.exit_code, e.stdout, e.stderr)
+
+    def _wp_is_installed(self):
+        """Check if WordPress is installed (check if WordPress related tables exist in database)"""
+        logger.debug("Check if WordPress is installed")
+        return self._run_wp_cli(["wp", "core", "is-installed"]).return_code == 0
 
     def _current_effective_db_info(self):
         """Get the current effective db connection information
@@ -821,17 +852,8 @@ class WordpressCharm(CharmBase):
         """Install WordPress (create WordPress required tables in DB)"""
         logger.debug("Install WordPress, create WordPress related table in the database")
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
-        process = self._container().exec(
-            self._wp_install_cmd(),
-            user=self._WORDPRESS_USER,
-            group=self._WORDPRESS_GROUP,
-            working_dir="/var/www/html",
-            combine_stderr=True,
-            timeout=60,
-        )
-        try:
-            process.wait_output()
-        except ops.pebble.ExecError as e:
+        process = self._run_wp_cli(self._wp_install_cmd(), combine_stderr=True, timeout=60)
+        if process.return_code != 0:
             logger.error(f"WordPress installation failed: %s", e.stdout)
             raise exceptions.WordPressInstallError("check logs for more information")
 
@@ -954,6 +976,62 @@ class WordpressCharm(CharmBase):
         if self._current_wp_config() is not None:
             self._start_server()
 
+    def _wp_theme_list(self):
+        """List all installed WordPress themes"""
+        process = self._run_wp_cli(["wp", "theme", "list", "--format=json"], timeout=600)
+        if process.return_code != 0:
+            raise RuntimeError("wp theme list command failed: " + process.stderr)
+        try:
+            return json.loads(process.stdout)
+        except json.decoder.JSONDecodeError:
+            raise RuntimeError(
+                "wp theme list command failed, stdout is not json: " + repr(process.stdout)
+            )
+
+    def _wp_theme_install(self, theme):
+        """Install WordPress theme"""
+        process = self._run_wp_cli(
+            # --force will overwrite any installed version of the theme,
+            # without prompting for confirmation
+            ["wp", "theme", "install", theme, "--force"],
+            timeout=600,
+            combine_stderr=True
+        )
+        if process.return_code != 0:
+            raise RuntimeError("wp theme list command failed: " + process.stdout)
+
+    def _wp_theme_delete(self, theme):
+        """Uninstall WordPress theme"""
+        process = self._run_wp_cli(
+            ["wp", "theme", "delete", theme, "--force"],
+            combine_stderr=True
+        )
+        if process.return_code != 0:
+            raise RuntimeError("wp theme list command failed: " + process.stdout)
+
+    def _theme_reconciliation(self):
+        current_installed_themes = set(t["name"] for t in self._wp_theme_list())
+        themes_in_config = [t.strip() for t in self.model.config["themes"].split(",")]
+        if themes_in_config == [""]:
+            themes_in_config = []
+        desired_themes = set(
+            itertools.chain(
+                themes_in_config,
+                self._WORDPRESS_DEFAULT_THEMES
+            )
+        )
+        install_themes = desired_themes - current_installed_themes
+        uninstall_themes = current_installed_themes - desired_themes
+        for theme in install_themes:
+            try:
+                self._wp_theme_install(theme)
+            except RuntimeError:
+                raise exceptions.WordPressBlockedStatusException(
+                    f"failed to install theme {repr(theme)}"
+                )
+        for theme in uninstall_themes:
+            self._wp_theme_delete(theme)
+
     def _reconciliation(self, _event):
         logger.info(f"Start reconciliation process, triggered by {_event}")
         if not self._container().can_connect():
@@ -962,6 +1040,7 @@ class WordpressCharm(CharmBase):
             return
         try:
             self._core_reconciliation()
+            self._theme_reconciliation()
             logger.info("Reconciliation process finished successfully.")
             self.unit.status = ops.model.ActiveStatus()
         except exceptions.WordPressStatusException as status_exception:

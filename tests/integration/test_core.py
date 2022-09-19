@@ -157,3 +157,30 @@ async def test_wordpress_install_uninstall_themes(
         assert (
                 theme not in get_theme_list_from_ip(unit_ip)
         ), "theme should be uninstalled after removing from the themes setting in config"
+
+
+@pytest.mark.asyncio
+async def test_wordpress_theme_installation_error(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name
+):
+    invalid_theme = "sgkeahrgalejr"
+    await ops_test.model.applications[application_name].set_config({"themes": invalid_theme})
+    await ops_test.model.wait_for_idle()
+
+    for unit in ops_test.model.applications[application_name].units:
+        assert (
+                unit.workload_status == ops.model.BlockedStatus.name
+        ), "status should be 'blocked' since the theme in themes config does not exist"
+
+        assert (
+                invalid_theme in unit.workload_status_message
+        ), "status message should contain the reason why it's blocked"
+
+    await ops_test.model.applications[application_name].set_config({"themes": ""})
+    await ops_test.model.wait_for_idle()
+
+    for unit in ops_test.model.applications[application_name].units:
+        assert (
+                unit.workload_status == ops.model.ActiveStatus.name
+        ), "status should back to active after invalid theme removed from config"

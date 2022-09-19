@@ -1010,7 +1010,13 @@ class WordpressCharm(CharmBase):
             raise RuntimeError("wp theme list command failed: " + process.stdout)
 
     def _theme_reconciliation(self):
+        """Reconciliation process for WordPress themes
+
+        Install and uninstall themes to match the themes setting in config
+        """
+        logger.debug("Start theme reconciliation process")
         current_installed_themes = set(t["name"] for t in self._wp_theme_list())
+        logger.debug("Currently installed themes %s", current_installed_themes)
         themes_in_config = [t.strip() for t in self.model.config["themes"].split(",")]
         if themes_in_config == [""]:
             themes_in_config = []
@@ -1024,12 +1030,14 @@ class WordpressCharm(CharmBase):
         uninstall_themes = current_installed_themes - desired_themes
         for theme in install_themes:
             try:
+                logger.debug("Install theme: %s", repr(theme))
                 self._wp_theme_install(theme)
             except RuntimeError:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to install theme {repr(theme)}"
                 )
         for theme in uninstall_themes:
+            logger.debug("Uninstall theme: %s", repr(theme))
             self._wp_theme_delete(theme)
 
     def _reconciliation(self, _event):

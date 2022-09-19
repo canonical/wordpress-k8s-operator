@@ -4,6 +4,8 @@ import pytest_asyncio
 import juju.application
 import pytest_operator.plugin
 
+from wordpress_client import WordpressClient
+
 
 @pytest_asyncio.fixture(scope="function", name="app_config")
 async def fixture_app_config(request, ops_test: pytest_operator.plugin.OpsTest):
@@ -65,3 +67,21 @@ async def fixture_unit_ip_list(
 ):
     """A fixture containing ip addresses of current units"""
     yield await get_unit_ip_list()
+
+
+@pytest_asyncio.fixture(scope="function", name="get_theme_list_from_ip")
+async def fixture_get_theme_list_from_ip(
+        default_admin_password
+):
+    """Retrieve installed themes from the WordPress instance"""
+
+    def _get_theme_list_from_ip(unit_ip):
+        wordpress_client = WordpressClient(
+            host=unit_ip,
+            username="admin",
+            password=default_admin_password,
+            is_admin=True
+        )
+        return wordpress_client.list_themes()
+
+    return _get_theme_list_from_ip

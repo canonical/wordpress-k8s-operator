@@ -1,8 +1,9 @@
-from wordpress_client import WordpressClient
-
 import pytest
 import ops.model
 import pytest_operator.plugin
+
+from charm import WordpressCharm
+from wordpress_client import WordpressClient
 
 
 @pytest.mark.asyncio
@@ -93,31 +94,6 @@ async def test_mysql_relation(
 
 
 @pytest.mark.asyncio
-async def test_get_initial_password_action(
-        ops_test: pytest_operator.plugin.OpsTest,
-        application_name
-):
-    """
-    arrange: after WordPress charm has been deployed
-    act: run get-initial-password action
-    assert: get-initial-password action should return the same default admin password on every unit
-    """
-    default_admin_password_from_all_units = set()
-    for unit in ops_test.model.applications[application_name].units:
-        action = await unit.run_action("get-initial-password")
-        await action.wait()
-        default_admin_password = action.results["password"]
-        assert (
-                len(default_admin_password) > 8
-        ), "get-initial-password action should return the default password"
-        default_admin_password_from_all_units.add(default_admin_password)
-
-    assert (
-            len(default_admin_password_from_all_units) == 1
-    ), "get-initial-password action should return the same default admin password on every unit"
-
-
-@pytest.mark.asyncio
 async def test_wordpress_functionality(
         unit_ip_list,
         default_admin_password
@@ -133,3 +109,51 @@ async def test_wordpress_functionality(
             admin_username="admin",
             admin_password=default_admin_password
         )
+
+
+@pytest.mark.asyncio
+async def test_wordpress_default_themes(
+        unit_ip_list,
+        get_theme_list_from_ip
+):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: check installed WordPress themes
+    assert: All default themes should be installed
+    """
+    for unit_ip in unit_ip_list:
+        assert (
+                set(WordpressCharm._WORDPRESS_DEFAULT_THEMES) ==
+                set(get_theme_list_from_ip(unit_ip))
+        ), "default themes installed should match default themes defined in WordpressCharm"
+
+
+@pytest.mark.asyncio
+async def test_wordpress_install_uninstall_themes(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name,
+        unit_ip_list,
+        get_theme_list_from_ip
+):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: change themes setting in config
+    assert: themes should be installed and uninstalled accordingly
+    """
+    theme = "twentyfifteen"
+    application = ops_test.model.applications[application_name]
+    await application.set_config({"themes": theme})
+    await ops_test.model.wait_for_idle()
+
+    for unit_ip in unit_ip_list:
+        assert (
+                theme in get_theme_list_from_ip(unit_ip)
+        ), "theme should be installed after adding to the themes setting in config"
+
+    await application.set_config({"themes": ""})
+    await ops_test.model.wait_for_idle()
+
+    for unit_ip in unit_ip_list:
+        assert (
+                theme not in get_theme_list_from_ip(unit_ip)
+        ), "theme should be uninstalled after removing from the themes setting in config"

@@ -980,12 +980,12 @@ class WordpressCharm(CharmBase):
         """List all installed WordPress themes"""
         process = self._run_wp_cli(["wp", "theme", "list", "--format=json"], timeout=600)
         if process.return_code != 0:
-            raise RuntimeError("wp theme list command failed: " + process.stderr)
+            raise RuntimeError(f"wp theme list command failed: {process.stderr}")
         try:
             return json.loads(process.stdout)
         except json.decoder.JSONDecodeError:
             raise RuntimeError(
-                "wp theme list command failed, stdout is not json: " + repr(process.stdout)
+                f"wp theme list command failed, stdout is not json: {repr(process.stdout)}"
             )
 
     def _wp_theme_install(self, theme):
@@ -1017,9 +1017,10 @@ class WordpressCharm(CharmBase):
         logger.debug("Start theme reconciliation process")
         current_installed_themes = set(t["name"] for t in self._wp_theme_list())
         logger.debug("Currently installed themes %s", current_installed_themes)
-        themes_in_config = [t.strip() for t in self.model.config["themes"].split(",")]
-        if themes_in_config == [""]:
-            themes_in_config = []
+        themes_in_config = [
+            t.strip() for t in self.model.config["themes"].split(",")
+            if t.strip()
+        ]
         desired_themes = set(
             itertools.chain(
                 themes_in_config,

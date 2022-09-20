@@ -119,7 +119,7 @@ async def test_wordpress_default_themes(
     """
     arrange: after WordPress charm has been deployed and db relation established
     act: check installed WordPress themes
-    assert: All default themes should be installed
+    assert: all default themes should be installed
     """
     for unit_ip in unit_ip_list:
         assert (
@@ -140,23 +140,24 @@ async def test_wordpress_install_uninstall_themes(
     act: change themes setting in config
     assert: themes should be installed and uninstalled accordingly
     """
-    theme = "twentyfifteen"
-    application = ops_test.model.applications[application_name]
-    await application.set_config({"themes": theme})
-    await ops_test.model.wait_for_idle()
+    theme_change_list = [
+        ["twentyfifteen", "classic"],
+        ["tt1-blocks", "twentyfifteen"],
+        ["tt1-blocks"],
+        ["twentyeleven"],
+        []
+    ]
+    for themes in theme_change_list:
+        application = ops_test.model.applications[application_name]
+        await application.set_config({"themes": ",".join(themes)})
+        await ops_test.model.wait_for_idle()
 
-    for unit_ip in unit_ip_list:
-        assert (
-                theme in get_theme_list_from_ip(unit_ip)
-        ), "theme should be installed after adding to the themes setting in config"
-
-    await application.set_config({"themes": ""})
-    await ops_test.model.wait_for_idle()
-
-    for unit_ip in unit_ip_list:
-        assert (
-                theme not in get_theme_list_from_ip(unit_ip)
-        ), "theme should be uninstalled after removing from the themes setting in config"
+        for unit_ip in unit_ip_list:
+            expected_themes = set(themes)
+            expected_themes.update(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
+            assert (
+                    expected_themes == set(get_theme_list_from_ip(unit_ip))
+            ), f"theme installed {themes} should match themes setting in config"
 
 
 @pytest.mark.asyncio
@@ -164,7 +165,13 @@ async def test_wordpress_theme_installation_error(
         ops_test: pytest_operator.plugin.OpsTest,
         application_name
 ):
-    invalid_theme = "sgkeahrgalejr"
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: install a nonexistent theme
+    assert: charm should switch to blocked state and the reason should be included in the status
+    message.
+    """
+    invalid_theme = "invalid-theme-sgkeahrgalejr"
     await ops_test.model.applications[application_name].set_config({"themes": invalid_theme})
     await ops_test.model.wait_for_idle()
 

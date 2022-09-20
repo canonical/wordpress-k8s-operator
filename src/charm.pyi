@@ -1,4 +1,4 @@
-from typing import Optional, Union, List, Dict, Tuple, TypedDict
+from typing import Optional, Union, List, Dict, Tuple, TypedDict, NamedTuple
 
 import ops
 import ops.model
@@ -13,6 +13,19 @@ class DBInfoDict(TypedDict):
     DB_PASSWORD: str
 
 
+class WordpressCliExecResult(NamedTuple):
+    return_code: int
+    stdout: str
+    stderr: str
+
+
+class ThemeInfoDict(TypedDict):
+    name: str
+    status: str
+    update: str
+    version: str
+
+
 class WordpressCharm(ops.charm.CharmBase):
     class _ReplicaRelationNotReady(Exception): ...
 
@@ -23,7 +36,10 @@ class WordpressCharm(ops.charm.CharmBase):
     _WORDPRESS_USER: str
     _WORDPRESS_GROUP: str
     _WORDPRESS_DB_CHARSET: str
+
     _DB_CHECK_INTERVAL: Union[float, int]
+
+    _WORDPRESS_DEFAULT_THEMES: List[str]
 
     @staticmethod
     def _wordpress_secret_key_fields() -> List[str]: ...
@@ -52,6 +68,13 @@ class WordpressCharm(ops.charm.CharmBase):
 
     def _stop_server(self) -> None: ...
 
+    def _run_wp_cli(
+            self,
+            cmd: List[str],
+            timeout: Optional[int] = 60,
+            combine_stderr: bool = False
+    ) -> WordpressCliExecResult: ...
+
     def _wp_is_installed(self) -> None: ...
 
     def _current_effective_db_info(self) -> DBInfoDict: ...
@@ -71,6 +94,14 @@ class WordpressCharm(ops.charm.CharmBase):
     def _remove_wp_config(self) -> None: ...
 
     def _push_wp_config(self, wp_config: str) -> None: ...
+
+    def _wp_theme_list(self) -> List[ThemeInfoDict]: ...
+
+    def _wp_theme_install(self, theme: str) -> None: ...
+
+    def _wp_theme_delete(self, theme: str) -> None: ...
+
+    def _theme_reconciliation(self) -> None: ...
 
     def _core_reconciliation(self) -> None: ...
 

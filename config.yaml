@@ -107,3 +107,9 @@ options:
       YAML dictionary with keys named after WordPress settings and the desired values.
       Please note that the settings will be reset to values provided every time hooks run.
     default: ""
+  themes:
+    type: string
+    description: |
+      Theme slugs of themes to be installed, separated by comma. Not including default
+      installed themes.
+    default: ""

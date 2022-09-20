@@ -56,10 +56,11 @@ class WordpressClient:
                 raise ValueError("set options-permalink manually or login with an admin account")
             self._set_options_permalink()
 
-    def _get(self, url: str, except_status_code=None):
+    def _get(self, url: str, headers=None, except_status_code=None):
         """HTTP GET using the instance session"""
         response = self._session.get(
             url,
+            headers=headers,
             timeout=self.timeout
         )
         if except_status_code is not None and response.status_code != except_status_code:
@@ -114,11 +115,15 @@ class WordpressClient:
             except_status_code=200
         )
 
-    def _create_post(self, title: str, content: str):
-        """Create a WordPress post using wp-json API, return post object"""
+    def _gen_wp_rest_nonce(self):
+        """Generate a nonce for WordPress REST API"""
         new_post_page = self._get(f"http://{self.host}/wp-admin/post-new.php")
         new_post_page = new_post_page.text
         nonce = json.loads(re.findall('var wpApiSettings = ([^;]+);', new_post_page)[0])["nonce"]
+        return nonce
+
+    def _create_post(self, title: str, content: str):
+        """Create a WordPress post using wp-json API, return post object"""
         response = self._post(
             f"http://{self.host}/wp-json/wp/v2/posts/",
             json={
@@ -126,7 +131,7 @@ class WordpressClient:
                 "title": title,
                 "content": content
             },
-            headers={"X-WP-Nonce": nonce},
+            headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
             except_status_code=201
         )
         return response.json()
@@ -161,3 +166,12 @@ class WordpressClient:
     def get_post(self, post_link: str):
         """Get the WordPress blog post page source (HTML) as string"""
         return self._get(post_link).text
+
+    def list_themes(self):
+        """List all installed WordPress theme slugs"""
+        response = self._get(
+            f"http://{self.host}/wp-json/wp/v2/themes?per_page=100",
+            headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
+            except_status_code=200,
+        )
+        return [t["stylesheet"] for t in response.json()]

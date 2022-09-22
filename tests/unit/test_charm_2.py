@@ -90,6 +90,19 @@ class WordpressMock:
             return Result(return_code=0,
                           stdout=json.dumps([{"name": t} for t in self._plugins]),
                           stderr="")
+        elif cmd_prefix == ["wp", "plugin", "install"]:
+            self._plugins.add(cmd[3])
+            return Result(return_code=0, stdout="", stderr="")
+        elif cmd_prefix == ["wp", "plugin", "uninstall"]:
+            plugin = cmd[3]
+            if plugin not in self._plugins:
+                return Result(
+                    return_code=1,
+                    stdout="",
+                    stderr=f"Error, try to delete a non-existent plugin {repr(plugin)}"
+                )
+            self._plugins.remove(plugin)
+            return Result(return_code=0, stdout="", stderr="")
         raise ValueError(f"matrix breached, running an unknown cmd {cmd}")
 
     def start(self):
@@ -135,6 +148,9 @@ class WordpressMock:
 
     def installed_themes(self):
         return self._themes
+
+    def installed_plugins(self):
+        return self._plugins
 
     def check_database_installed(self, db_host, db_name):
         return (db_host, db_name) in self._database
@@ -569,4 +585,47 @@ class TestWordpressK8s(unittest.TestCase):
             self.patch.installed_themes(),
             set(self.harness.charm._WORDPRESS_DEFAULT_THEMES + ["123"]),
             "removing themes from themes config should trigger theme deletion"
+        )
+
+    def test_plugin_reconciliation(self):
+        """
+        arrange: after peer relation established and database ready
+        act: update plugins configuration
+        assert: plugin installed in WordPress should update according to the plugin config
+        """
+        self._setup_replica_consensus()
+        db_config = {
+            "db_host": "config_db_host",
+            "db_name": "config_db_name",
+            "db_user": "config_db_user",
+            "db_password": "config_db_password",
+        }
+        self.patch.allow_database(db_config)
+        self.harness.update_config(db_config)
+
+        self.assertEqual(
+            self.patch.installed_plugins(),
+            set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS),
+            "installed plugins should match the default installed plugins "
+            "with the default plugins config"
+        )
+
+        self.harness.update_config({
+            "plugins": "123, abc"
+        })
+
+        self.assertEqual(
+            self.patch.installed_plugins(),
+            set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]),
+            "adding plugins to plugins config should install trigger plugin installation"
+        )
+
+        self.harness.update_config({
+            "plugins": "123"
+        })
+
+        self.assertEqual(
+            self.patch.installed_plugins(),
+            set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]),
+            "removing plugins from plugins config should trigger plugin deletion"
         )

@@ -96,6 +96,8 @@ class WordpressCharm(CharmBase):
     class _ReplicaRelationNotReady(Exception):
         pass
 
+    _ExecResult = collections.namedtuple("ExecResult", "success result message")
+
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
     _CONTAINER_NAME = "wordpress"
     _SERVICE_NAME = "wordpress"
@@ -123,6 +125,48 @@ class WordpressCharm(CharmBase):
         'xubuntu-website/xubuntu-fifteen',
         'xubuntu-website/xubuntu-fourteen',
         'xubuntu-website/xubuntu-thirteen'
+    ]
+
+    _WORDPRESS_DEFAULT_PLUGINS = [
+        '404page',
+        'akismet',
+        'all-in-one-event-calendar',
+        'powerpress',
+        'coschedule-by-todaymade',
+        'elementor',
+        'essential-addons-for-elementor-lite',
+        'favicon-by-realfavicongenerator',
+        'feedwordpress',
+        'fruitful-shortcodes',
+        'genesis-columns-advanced',
+        'hello',
+        'line-break-shortcode',
+        'wp-mastodon-share',
+        'no-category-base-wpml',
+        'openid',
+        'wordpress-launchpad-integration',
+        'wordpress-teams-integration',
+        'openstack-objectstorage-k8s',
+        'post-grid',
+        'redirection',
+        'relative-image-urls',
+        'rel-publisher',
+        'safe-svg',
+        'show-current-template',
+        'simple-301-redirects',
+        'simple-custom-css',
+        'so-widgets-bundle',
+        'social-media-buttons-toolbar',
+        'svg-support',
+        'syntaxhighlighter',
+        'wordpress-importer',
+        'wp-markdown',
+        'wp-polls',
+        'wp-font-awesome',
+        'wp-lightbox-2',
+        'wp-statistics',
+        'xubuntu-team-members',
+        'wordpress-seo'
     ]
 
     _DB_CHECK_INTERVAL = 1
@@ -161,9 +205,11 @@ class WordpressCharm(CharmBase):
 
         self.ingress = IngressRequires(self, self.ingress_config)
 
-        self.framework.observe(self.on.get_initial_password_action, self._on_get_initial_password_action)
+        self.framework.observe(self.on.get_initial_password_action,
+                               self._on_get_initial_password_action)
 
-        self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
+        self.framework.observe(self.on.leader_elected,
+                               self._on_leader_elected_replica_data_handler)
         self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
 
         self.framework.observe(self.on.config_changed, self._reconciliation)
@@ -279,7 +325,8 @@ class WordpressCharm(CharmBase):
             initial_settings.update(safe_load(config["initial_settings"]))
         # TODO: make these class default attributes
         env_config["WORDPRESS_ADMIN_USER"] = initial_settings.get("user_name", "admin")
-        env_config["WORDPRESS_ADMIN_EMAIL"] = initial_settings.get("admin_email", "nobody@localhost")
+        env_config["WORDPRESS_ADMIN_EMAIL"] = initial_settings.get("admin_email",
+                                                                   "nobody@localhost")
 
         env_config["WORDPRESS_INSTALLED"] = self.state.installed_successfully
         env_config.update(self._wordpress_secrets)
@@ -295,7 +342,8 @@ class WordpressCharm(CharmBase):
         if config.get("wp_plugin_openstack-objectstorage_config"):
             # Actual plugin name is 'openstack-objectstorage', but we're only
             # implementing the 'swift' portion of it.
-            wp_plugin_swift_config = safe_load(config.get("wp_plugin_openstack-objectstorage_config"))
+            wp_plugin_swift_config = safe_load(
+                config.get("wp_plugin_openstack-objectstorage_config"))
             env_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get("auth-url")
             env_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get("bucket")
             env_config["SWIFT_PASSWORD"] = wp_plugin_swift_config.get("password")
@@ -420,7 +468,8 @@ class WordpressCharm(CharmBase):
             container.add_layer(self.container_name, self.wordpress_workload, combine=True)
 
             self.unit.status = MaintenanceStatus("Restarting WordPress")
-            running_services = [s for s in self.wordpress_workload["services"] if container.get_service(s).is_running()]
+            running_services = [s for s in self.wordpress_workload["services"] if
+                                container.get_service(s).is_running()]
             if running_services:
                 container.pebble.stop_services(running_services)
 
@@ -441,9 +490,11 @@ class WordpressCharm(CharmBase):
         """Handle when the user supplies database details via charm config.
         """
         if self.state.has_db_relation is False:
-            db_config = {k: v or None for (k, v) in self.model.config.items() if k.startswith("db_")}
+            db_config = {k: v or None for (k, v) in self.model.config.items() if
+                         k.startswith("db_")}
             if any(db_config.values()) is True:  # User has supplied db config.
-                current_db_data = {self.state.db_host, self.state.db_name, self.state.db_user, self.state.db_password}
+                current_db_data = {self.state.db_host, self.state.db_name, self.state.db_user,
+                                   self.state.db_password}
                 new_db_data = {db_config.values()}
                 db_differences = current_db_data.difference(new_db_data)
                 if db_differences:
@@ -579,7 +630,8 @@ class WordpressCharm(CharmBase):
             valid_domain_name_pattern = re.compile(r"^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$")
             valid = [re.match(valid_domain_name_pattern, h) for h in additional_hostnames]
             if not all(valid):
-                message = "Invalid additional hostnames supplied: {}".format(config["additional_hostnames"])
+                message = "Invalid additional hostnames supplied: {}".format(
+                    config["additional_hostnames"])
                 logger.info(message)
                 self.model.unit.status = BlockedStatus(message)
                 is_valid = False
@@ -626,7 +678,6 @@ class WordpressCharm(CharmBase):
         else:
             logger.error("Action get-initial-password failed. Replica consensus not exists")
             event.fail("Default admin password has not been generated yet.")
-
 
     @staticmethod
     def _wordpress_secret_key_fields():
@@ -767,7 +818,10 @@ class WordpressCharm(CharmBase):
         This operation is idempotence.
         """
         logger.debug("Ensure WordPress (apache) server is down")
-        if self._wordpress_service_exists():
+        if (
+                self._wordpress_service_exists()
+                and self._container().get_service(self._SERVICE_NAME).is_running()
+        ):
             self._container().stop(self._SERVICE_NAME)
 
     def _run_wp_cli(self, cmd, timeout=60, combine_stderr=False):
@@ -778,12 +832,37 @@ class WordpressCharm(CharmBase):
             group=self._WORDPRESS_GROUP,
             working_dir="/var/www/html",
             combine_stderr=combine_stderr,
-            timeout=timeout)
+            timeout=timeout
+        )
         try:
             stdout, stderr = process.wait_output()
-            return Result(0, stdout, stderr)
+            result = Result(0, stdout, stderr)
         except ops.pebble.ExecError as e:
-            return Result(e.exit_code, e.stdout, e.stderr)
+            result = Result(e.exit_code, e.stdout, e.stderr)
+        if combine_stderr:
+            logger.debug(f"Run wp-cli command: {cmd}\noutput: {result.stdout}")
+        else:
+            logger.debug(
+                f"Run wp-cli command: {cmd}\nstdout: {result.stdout}\nstderr:{result.stderr}"
+            )
+        return result
+
+    def _wrapped_run_wp_cli(self, cmd, timeout=60, error_message=None):
+        """Run wp cli command and return the result as ``self._ExecResult``
+
+        Stdout and stderr are discarded, the result field of ExecResult is always none. The
+        execution is considered success if return code is 0. The message field will be generated
+        automatically based on command if ``error_message`` is not provided.
+        """
+        result = self._run_wp_cli(cmd=cmd, timeout=timeout, combine_stderr=True)
+        if result.return_code != 0:
+            return self._ExecResult(
+                success=False,
+                result=None,
+                message=f"command {cmd} failed" if not error_message else error_message
+            )
+        else:
+            return self._ExecResult(success=True, result=None, message="")
 
     def _wp_is_installed(self):
         """Check if WordPress is installed (check if WordPress related tables exist in database)"""
@@ -898,7 +977,8 @@ class WordpressCharm(CharmBase):
                 raise FileNotFoundError(
                     "required file (wp-config.php) for starting WordPress server not exists"
                 )
-        self._container().start(self._SERVICE_NAME)
+        if not self._container().get_service(self._SERVICE_NAME).is_running():
+            self._container().start(self._SERVICE_NAME)
 
     def _current_wp_config(self):
         """Retrieve the current version of wp-config.php from server, return None if not exists"""
@@ -976,70 +1056,106 @@ class WordpressCharm(CharmBase):
         if self._current_wp_config() is not None:
             self._start_server()
 
-    def _wp_theme_list(self):
+    def _check_addon_type(self,addon_type):
+        """Check if addon_type is one of the accepted addon types (theme/plugin).
+
+        Raise a ValueException if not.
+        """
+        if addon_type not in ("theme", "plugin"):
+            raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
+
+    def _wp_addon_list(self, addon_type):
         """List all installed WordPress themes"""
-        process = self._run_wp_cli(["wp", "theme", "list", "--format=json"], timeout=600)
+        self._check_addon_type(addon_type)
+        process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
         if process.return_code != 0:
-            raise RuntimeError(f"wp theme list command failed: {process.stderr}")
+            return self._ExecResult(
+                success=False,
+                result=None,
+                message=f"wp {addon_type} list command failed"
+            )
         try:
-            return json.loads(process.stdout)
+            return self._ExecResult(success=True, result=json.loads(process.stdout), message="")
         except json.decoder.JSONDecodeError:
-            raise RuntimeError(
-                f"wp theme list command failed, stdout is not json: {repr(process.stdout)}"
+            return self._ExecResult(
+                success=False,
+                result=None,
+                message=f"wp {addon_type} list command failed, stdout is not json"
             )
 
-    def _wp_theme_install(self, theme):
-        """Install WordPress theme"""
-        process = self._run_wp_cli(
+    def _wp_addon_install(self, addon_type, addon_name):
+        """Install WordPress addon (plugin/theme)"""
+        self._check_addon_type(addon_type)
+        if addon_type == "theme":
             # --force will overwrite any installed version of the theme,
             # without prompting for confirmation
-            ["wp", "theme", "install", theme, "--force"],
-            timeout=600,
-            combine_stderr=True
-        )
-        if process.return_code != 0:
-            raise RuntimeError("wp theme list command failed: " + process.stdout)
+            cmd = ["wp", "theme", "install", addon_name, "--force"]
+        else:
+            cmd = ["wp", "plugin", "install", addon_name]
+        return self._wrapped_run_wp_cli(cmd, timeout=600)
 
-    def _wp_theme_delete(self, theme):
-        """Uninstall WordPress theme"""
-        process = self._run_wp_cli(
-            ["wp", "theme", "delete", theme, "--force"],
-            combine_stderr=True
-        )
-        if process.return_code != 0:
-            raise RuntimeError("wp theme list command failed: " + process.stdout)
+    def _wp_addon_uninstall(self, addon_type, addon_name):
+        """Uninstall WordPress addon (theme/plugin)"""
+        self._check_addon_type(addon_type)
+        if addon_type == "theme":
+            cmd = ["wp", "theme", "delete", addon_name, "--force"]
+        else:
+            cmd = ["wp", "plugin", "uninstall", addon_name, "--deactivate"]
+        return self._wrapped_run_wp_cli(cmd, timeout=600)
 
+    def _addon_reconciliation(self, addon_type):
+        """Reconciliation process for WordPress addons (theme/plugin)
+
+        Install and uninstall themes/plugins to match the themes/plugins setting in config
+        """
+        self._check_addon_type(addon_type)
+        logger.debug(f"Start {addon_type} reconciliation process")
+        current_installed_addons = set(t["name"] for t in self._wp_addon_list(addon_type).result)
+        logger.debug(f"Currently installed {addon_type}s %s", current_installed_addons)
+        addons_in_config = [
+            t.strip() for t in self.model.config[f"{addon_type}s"].split(",")
+            if t.strip()
+        ]
+        default_addons = (
+            self._WORDPRESS_DEFAULT_THEMES if addon_type == "theme"
+            else self._WORDPRESS_DEFAULT_PLUGINS
+        )
+        desired_addons = set(
+            itertools.chain(
+                addons_in_config,
+                default_addons
+            )
+        )
+        install_plugins = desired_addons - current_installed_addons
+        uninstall_plugins = current_installed_addons - desired_addons
+        for addon in install_plugins:
+            logger.debug(f"Install {addon_type}: %s", repr(addon))
+            result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
+            if not result.success:
+                raise exceptions.WordPressBlockedStatusException(
+                    f"failed to install {addon_type} {repr(addon)}"
+                )
+        for addon in uninstall_plugins:
+            logger.debug(f"Uninstall {addon}: %s", repr(addon))
+            result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
+            if not result.success:
+                raise exceptions.WordPressBlockedStatusException(
+                    f"failed to uninstall {addon_type} {repr(addon)}"
+                )
     def _theme_reconciliation(self):
         """Reconciliation process for WordPress themes
 
         Install and uninstall themes to match the themes setting in config
         """
-        logger.debug("Start theme reconciliation process")
-        current_installed_themes = set(t["name"] for t in self._wp_theme_list())
-        logger.debug("Currently installed themes %s", current_installed_themes)
-        themes_in_config = [
-            t.strip() for t in self.model.config["themes"].split(",")
-            if t.strip()
-        ]
-        desired_themes = set(
-            itertools.chain(
-                themes_in_config,
-                self._WORDPRESS_DEFAULT_THEMES
-            )
-        )
-        install_themes = desired_themes - current_installed_themes
-        uninstall_themes = current_installed_themes - desired_themes
-        for theme in install_themes:
-            try:
-                logger.debug("Install theme: %s", repr(theme))
-                self._wp_theme_install(theme)
-            except RuntimeError:
-                raise exceptions.WordPressBlockedStatusException(
-                    f"failed to install theme {repr(theme)}"
-                )
-        for theme in uninstall_themes:
-            logger.debug("Uninstall theme: %s", repr(theme))
-            self._wp_theme_delete(theme)
+        self._addon_reconciliation("theme")
+
+    def _plugin_reconciliation(self):
+        """Reconciliation process for WordPress plugins
+
+        Install and uninstall plugins to match the plugins setting in config
+        """
+        self._addon_reconciliation("plugin")
+
 
     def _reconciliation(self, _event):
         logger.info(f"Start reconciliation process, triggered by {_event}")
@@ -1050,6 +1166,7 @@ class WordpressCharm(CharmBase):
         try:
             self._core_reconciliation()
             self._theme_reconciliation()
+            self._plugin_reconciliation()
             logger.info("Reconciliation process finished successfully.")
             self.unit.status = ops.model.ActiveStatus()
         except exceptions.WordPressStatusException as status_exception:

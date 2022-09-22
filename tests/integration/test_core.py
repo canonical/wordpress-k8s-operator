@@ -191,3 +191,66 @@ async def test_wordpress_theme_installation_error(
         assert (
                 unit.workload_status == ops.model.ActiveStatus.name
         ), "status should back to active after invalid theme removed from config"
+
+@pytest.mark.asyncio
+async def test_wordpress_install_uninstall_plugins(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name,
+        unit_ip_list,
+        get_plugin_list_from_ip
+):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: change plugins setting in config
+    assert: plugins should be installed and uninstalled accordingly
+    """
+    plugin_change_list = [
+        ["classic-editor", "classic-widgets"],
+        ["classic-editor"],
+        ["classic-widgets"],
+        []
+    ]
+    for plugins in plugin_change_list:
+        application = ops_test.model.applications[application_name]
+        await application.set_config({"plugins": ",".join(plugins)})
+        await ops_test.model.wait_for_idle()
+
+        for unit_ip in unit_ip_list:
+            expected_plugins = set(plugins)
+            expected_plugins.update(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
+            assert (
+                    expected_plugins == set(get_plugin_list_from_ip(unit_ip))
+            ), f"plugin installed {plugins} should match plugins setting in config"
+
+
+@pytest.mark.asyncio
+async def test_wordpress_plugin_installation_error(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name
+):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: install a nonexistent plugin
+    assert: charm should switch to blocked state and the reason should be included in the status
+    message.
+    """
+    invalid_plugin = "invalid-plugin-sgkeahrgalejr"
+    await ops_test.model.applications[application_name].set_config({"plugins": invalid_plugin})
+    await ops_test.model.wait_for_idle()
+
+    for unit in ops_test.model.applications[application_name].units:
+        assert (
+                unit.workload_status == ops.model.BlockedStatus.name
+        ), "status should be 'blocked' since the plugin in plugins config does not exist"
+
+        assert (
+                invalid_plugin in unit.workload_status_message
+        ), "status message should contain the reason why it's blocked"
+
+    await ops_test.model.applications[application_name].set_config({"plugins": ""})
+    await ops_test.model.wait_for_idle()
+
+    for unit in ops_test.model.applications[application_name].units:
+        assert (
+                unit.workload_status == ops.model.ActiveStatus.name
+        ), "status should back to active after invalid plugin removed from config"

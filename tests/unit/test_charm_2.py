@@ -13,6 +13,7 @@ from exceptions import *
 
 
 class WordpressMock:
+    """WordPress wp-cli command run and database simulation system for unit tests"""
     def __init__(self):
         self._database = {}
         self._container_fs = {}

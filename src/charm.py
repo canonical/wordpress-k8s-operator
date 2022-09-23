@@ -1126,16 +1126,16 @@ class WordpressCharm(CharmBase):
                 default_addons
             )
         )
-        install_plugins = desired_addons - current_installed_addons
-        uninstall_plugins = current_installed_addons - desired_addons
-        for addon in install_plugins:
+        install_addons = desired_addons - current_installed_addons
+        uninstall_addons = current_installed_addons - desired_addons
+        for addon in install_addons:
             logger.debug(f"Install {addon_type}: %s", repr(addon))
             result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
             if not result.success:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to install {addon_type} {repr(addon)}"
                 )
-        for addon in uninstall_plugins:
+        for addon in uninstall_addons:
             logger.debug(f"Uninstall {addon}: %s", repr(addon))
             result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
             if not result.success:

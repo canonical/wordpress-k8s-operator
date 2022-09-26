@@ -110,12 +110,12 @@ options:
   themes:
     type: string
     description: |
-      Theme slugs of themes to be installed, separated by comma. Not including default
-      installed themes.
+      Theme slugs of themes to be installed, separated by comma. Including or excluding
+      a default theme here will have no effect.
     default: ""
   plugins:
     type: string
     description: |
-      Plugin slugs of plugins to be installed, separated by comma. Not including default
-      installed plugins.
+      Plugin slugs of plugins to be installed, separated by comma. Including or excluding
+      a default plugin here will have no effect.
     default: ""

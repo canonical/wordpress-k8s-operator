@@ -841,10 +841,13 @@ class WordpressCharm(CharmBase):
         except ops.pebble.ExecError as e:
             result = Result(e.exit_code, e.stdout, e.stderr)
         if combine_stderr:
-            logger.debug(f"Run wp-cli command: {cmd}\noutput: {result.stdout}")
+            logger.debug(f"Run wp-cli command: %s\noutput: %s", cmd, result.stdout)
         else:
             logger.debug(
-                f"Run wp-cli command: {cmd}\nstdout: {result.stdout}\nstderr:{result.stderr}"
+                f"Run wp-cli command: %s\nstdout: %s\nstderr:%s",
+                cmd,
+                result.stdout,
+                result.stderr
             )
         return result
 

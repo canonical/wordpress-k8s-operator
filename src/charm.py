@@ -105,6 +105,7 @@ class WordpressCharm(CharmBase):
     _WORDPRESS_GROUP = "www-data"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
 
+    # Default themes and plugins are installed in oci image build time and defined in Dockerfile
     _WORDPRESS_DEFAULT_THEMES = [
         'fruitful',
         'launchpad',
@@ -1065,7 +1066,7 @@ class WordpressCharm(CharmBase):
             raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
 
     def _wp_addon_list(self, addon_type):
-        """List all installed WordPress themes"""
+        """List all installed WordPress addons"""
         self._check_addon_type(addon_type)
         process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
         if process.return_code != 0:

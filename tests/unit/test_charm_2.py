@@ -27,7 +27,7 @@ class WordpressMock:
         if wp_config is None:
             return None
         db_info = {}
-        for db_key in ['db_host', 'db_name', 'db_user', 'db_password']:
+        for db_key in ('db_host', 'db_name', 'db_user', 'db_password'):
             db_value = re.findall(f"define\\( '{db_key.upper()}', '([^']+)' \\);", wp_config)
             if not db_value:
                 raise ValueError(f"{db_key} is missing in wp-config.php")
@@ -477,7 +477,7 @@ class TestWordpressK8s(unittest.TestCase):
         arrange: after peer relation established and database configured
         act: run core reconciliation
         assert: core reconciliation should update config files to match current config and
-        application state
+            application state
         """
         self._setup_replica_consensus()
         db_config = {

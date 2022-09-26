@@ -16,7 +16,7 @@ async def test_build_and_deploy(
     arrange: no pre-condition
     act: build charm using charmcraft and deploy charm to test juju model
     assert: building and deploying should success and status should be "blocked" since the
-    database info hasn't been provided yet.
+        database info hasn't been provided yet.
     """
     my_charm = await ops_test.build_charm(".")
     await ops_test.model.deploy(
@@ -52,7 +52,7 @@ async def test_incorrect_db_config(
     arrange: after WordPress charm has been deployed
     act: provide incorrect database info via config
     assert: charm should be blocked by WordPress installation errors, instead of lacking
-    of database connection info
+        of database connection info
     """
     # Database configuration can retry for up to 30 seconds before giving up and showing an error.
     # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
@@ -141,11 +141,11 @@ async def test_wordpress_install_uninstall_themes(
     assert: themes should be installed and uninstalled accordingly
     """
     theme_change_list = [
-        ["twentyfifteen", "classic"],
-        ["tt1-blocks", "twentyfifteen"],
-        ["tt1-blocks"],
-        ["twentyeleven"],
-        []
+        {"twentyfifteen", "classic"},
+        {"tt1-blocks", "twentyfifteen"},
+        {"tt1-blocks"},
+        {"twentyeleven"},
+        set()
     ]
     for themes in theme_change_list:
         application = ops_test.model.applications[application_name]
@@ -153,7 +153,7 @@ async def test_wordpress_install_uninstall_themes(
         await ops_test.model.wait_for_idle()
 
         for unit_ip in unit_ip_list:
-            expected_themes = set(themes)
+            expected_themes = themes
             expected_themes.update(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
             assert (
                     expected_themes == set(get_theme_list_from_ip(unit_ip))
@@ -169,7 +169,7 @@ async def test_wordpress_theme_installation_error(
     arrange: after WordPress charm has been deployed and db relation established
     act: install a nonexistent theme
     assert: charm should switch to blocked state and the reason should be included in the status
-    message.
+        message.
     """
     invalid_theme = "invalid-theme-sgkeahrgalejr"
     await ops_test.model.applications[application_name].set_config({"themes": invalid_theme})
@@ -192,6 +192,7 @@ async def test_wordpress_theme_installation_error(
                 unit.workload_status == ops.model.ActiveStatus.name
         ), "status should back to active after invalid theme removed from config"
 
+
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_plugins(
         ops_test: pytest_operator.plugin.OpsTest,
@@ -205,10 +206,10 @@ async def test_wordpress_install_uninstall_plugins(
     assert: plugins should be installed and uninstalled accordingly
     """
     plugin_change_list = [
-        ["classic-editor", "classic-widgets"],
-        ["classic-editor"],
-        ["classic-widgets"],
-        []
+        {"classic-editor", "classic-widgets"},
+        {"classic-editor"},
+        {"classic-widgets"},
+        set()
     ]
     for plugins in plugin_change_list:
         application = ops_test.model.applications[application_name]
@@ -216,7 +217,7 @@ async def test_wordpress_install_uninstall_plugins(
         await ops_test.model.wait_for_idle()
 
         for unit_ip in unit_ip_list:
-            expected_plugins = set(plugins)
+            expected_plugins = plugins
             expected_plugins.update(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
             assert (
                     expected_plugins == set(get_plugin_list_from_ip(unit_ip))
@@ -232,7 +233,7 @@ async def test_wordpress_plugin_installation_error(
     arrange: after WordPress charm has been deployed and db relation established
     act: install a nonexistent plugin
     assert: charm should switch to blocked state and the reason should be included in the status
-    message.
+        message.
     """
     invalid_plugin = "invalid-plugin-sgkeahrgalejr"
     await ops_test.model.applications[application_name].set_config({"plugins": invalid_plugin})

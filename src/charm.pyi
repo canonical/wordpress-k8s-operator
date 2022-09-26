@@ -1,5 +1,4 @@
 from typing import Optional, Union, List, Dict, Tuple, TypedDict, NamedTuple, Any
-from dataclasses import dataclass
 
 import ops
 import ops.model

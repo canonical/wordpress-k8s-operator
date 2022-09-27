@@ -841,10 +841,10 @@ class WordpressCharm(CharmBase):
         except ops.pebble.ExecError as e:
             result = Result(e.exit_code, e.stdout, e.stderr)
         if combine_stderr:
-            logger.debug(f"Run wp-cli command: %s\noutput: %s", cmd, result.stdout)
+            logger.debug("Run wp-cli command: %s\noutput: %s", cmd, result.stdout)
         else:
             logger.debug(
-                f"Run wp-cli command: %s\nstdout: %s\nstderr:%s",
+                "Run wp-cli command: %s\nstdout: %s\nstderr:%s",
                 cmd,
                 result.stdout,
                 result.stderr
@@ -937,7 +937,7 @@ class WordpressCharm(CharmBase):
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
         process = self._run_wp_cli(self._wp_install_cmd(), combine_stderr=True, timeout=60)
         if process.return_code != 0:
-            logger.error(f"WordPress installation failed: %s", e.stdout)
+            logger.error("WordPress installation failed: %s", process.stdout)
             raise exceptions.WordPressInstallError("check logs for more information")
 
     def _init_pebble_layer(self):
@@ -1164,7 +1164,7 @@ class WordpressCharm(CharmBase):
     def _reconciliation(self, _event):
         logger.info(f"Start reconciliation process, triggered by {_event}")
         if not self._container().can_connect():
-            logger.info(f"Reconciliation process terminated early, pebble is not ready")
+            logger.info("Reconciliation process terminated early, pebble is not ready")
             self.unit.status = WaitingStatus("Waiting for pebble")
             return
         try:

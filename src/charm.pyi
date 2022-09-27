@@ -1,4 +1,4 @@
-from typing import Optional, Union, List, Dict, Tuple, TypedDict, NamedTuple
+from typing import Optional, Union, List, Dict, Tuple, TypedDict, NamedTuple, Any
 
 import ops
 import ops.model
@@ -26,8 +26,32 @@ class ThemeInfoDict(TypedDict):
     version: str
 
 
+class AddonInfoDict(TypedDict):
+    name: str
+    status: str
+    update: str
+    version: str
+
+
+class WPAddonListExecResult(NamedTuple):
+    success: bool
+    result: Optional[List[AddonInfoDict]]
+    message: str
+
+
+class NoneReturnExecResult(NamedTuple):
+    success: bool
+    result: None
+    message: str
+
+
 class WordpressCharm(ops.charm.CharmBase):
     class _ReplicaRelationNotReady(Exception): ...
+
+    class _ExecResult(NamedTuple):
+        success: bool
+        result: Any
+        message: str
 
     state: ops.framework.StoredState
     _WP_CONFIG_PATH: str
@@ -40,6 +64,7 @@ class WordpressCharm(ops.charm.CharmBase):
     _DB_CHECK_INTERVAL: Union[float, int]
 
     _WORDPRESS_DEFAULT_THEMES: List[str]
+    _WORDPRESS_DEFAULT_PLUGINS: List[str]
 
     @staticmethod
     def _wordpress_secret_key_fields() -> List[str]: ...
@@ -75,6 +100,13 @@ class WordpressCharm(ops.charm.CharmBase):
             combine_stderr: bool = False
     ) -> WordpressCliExecResult: ...
 
+    def _wrapped_run_wp_cli(
+            self,
+            cmd: List[str],
+            timeout: Optional[int] = 60,
+            error_message: Optional[str] = None
+    ) -> NoneReturnExecResult: ...
+
     def _wp_is_installed(self) -> None: ...
 
     def _current_effective_db_info(self) -> DBInfoDict: ...
@@ -95,13 +127,19 @@ class WordpressCharm(ops.charm.CharmBase):
 
     def _push_wp_config(self, wp_config: str) -> None: ...
 
-    def _wp_theme_list(self) -> List[ThemeInfoDict]: ...
+    def _check_addon_type(self, addon_type: str) -> None: ...
 
-    def _wp_theme_install(self, theme: str) -> None: ...
+    def _wp_addon_list(self, addon_type: str) -> WPAddonListExecResult: ...
 
-    def _wp_theme_delete(self, theme: str) -> None: ...
+    def _wp_addon_install(self, addon_type: str, addon_name: str) -> NoneReturnExecResult: ...
+
+    def _wp_addon_uninstall(self, addon_type: str, addon_name: str) -> NoneReturnExecResult: ...
+
+    def _addon_reconciliation(self, addon_type: str) -> None: ...
 
     def _theme_reconciliation(self) -> None: ...
+
+    def _plugin_reconciliation(self) -> None: ...
 
     def _core_reconciliation(self) -> None: ...
 

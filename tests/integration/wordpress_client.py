@@ -175,3 +175,12 @@ class WordpressClient:
             except_status_code=200,
         )
         return [t["stylesheet"] for t in response.json()]
+
+    def list_plugins(self):
+        """List all installed WordPress plugin slugs"""
+        response = self._get(
+            f"http://{self.host}/wp-json/wp/v2/plugins?per_page=100",
+            headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
+            except_status_code=200,
+        )
+        return [p["plugin"].split("/")[0] for p in response.json()]

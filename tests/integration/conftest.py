@@ -1,3 +1,6 @@
+import re
+import configparser
+
 import pytest
 import juju.action
 import pytest_asyncio
@@ -86,6 +89,7 @@ async def fixture_get_theme_list_from_ip(
 
     return _get_theme_list_from_ip
 
+
 @pytest_asyncio.fixture(scope="function", name="get_plugin_list_from_ip")
 async def fixture_get_plugin_list_from_ip(
         default_admin_password
@@ -102,3 +106,18 @@ async def fixture_get_plugin_list_from_ip(
         return wordpress_client.list_plugins()
 
     return _get_plugin_list_from_ip
+
+
+@pytest.fixture
+def openstack_environment(request):
+    """Parse the openstack rc style configuration file from the --openstack-rc argument
+
+    Return a dictionary of environment variables and values.
+    """
+    rc_file = request.config.getoption("--openstack-rc")
+    with open(rc_file) as f:
+        rc_file = f.read()
+    rc_file = re.sub("^export ", "", rc_file, flags=re.MULTILINE)
+    openstack_conf = configparser.ConfigParser()
+    openstack_conf.read_string("[DEFAULT]\n" + rc_file)
+    return {k.upper(): v for k, v in openstack_conf["DEFAULT"].items()}

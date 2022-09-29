@@ -825,13 +825,21 @@ class WordpressCharm(CharmBase):
         ):
             self._container().stop(self._SERVICE_NAME)
 
-    def _run_wp_cli(self, cmd, timeout=60, combine_stderr=False):
-        Result = collections.namedtuple("WordpressCliExecResult", "return_code stdout stderr")
+    def _run_cli(
+            self,
+            cmd,
+            user=None,
+            group=None,
+            working_dir=None,
+            combine_stderr=False,
+            timeout=60
+    ):
+        Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
         process = self._container().exec(
             cmd,
-            user=self._WORDPRESS_USER,
-            group=self._WORDPRESS_GROUP,
-            working_dir="/var/www/html",
+            user=user,
+            group=group,
+            working_dir=working_dir,
             combine_stderr=combine_stderr,
             timeout=timeout
         )
@@ -840,15 +848,30 @@ class WordpressCharm(CharmBase):
             result = Result(0, stdout, stderr)
         except ops.pebble.ExecError as e:
             result = Result(e.exit_code, e.stdout, e.stderr)
+        return_code = result.return_code
         if combine_stderr:
-            logger.debug("Run wp-cli command: %s\noutput: %s", cmd, result.stdout)
+            logger.debug(
+                f"Run command: %s\noutput: %s, return code {return_code}",
+                cmd,
+                result.stdout
+            )
         else:
             logger.debug(
-                "Run wp-cli command: %s\nstdout: %s\nstderr:%s",
-                cmd,
+                f"Run command: {cmd}, return code {return_code}\nstdout: %s\nstderr:%s",
                 result.stdout,
                 result.stderr
             )
+        return result
+
+    def _run_wp_cli(self, cmd, timeout=60, combine_stderr=False):
+        result = self._run_cli(
+            cmd,
+            user=self._WORDPRESS_USER,
+            group=self._WORDPRESS_GROUP,
+            working_dir="/var/www/html",
+            combine_stderr=combine_stderr,
+            timeout=timeout
+        )
         return result
 
     def _wrapped_run_wp_cli(self, cmd, timeout=60, error_message=None):
@@ -1060,7 +1083,7 @@ class WordpressCharm(CharmBase):
         if self._current_wp_config() is not None:
             self._start_server()
 
-    def _check_addon_type(self,addon_type):
+    def _check_addon_type(self, addon_type):
         """Check if addon_type is one of the accepted addon types (theme/plugin).
 
         Raise a ValueException if not.
@@ -1146,6 +1169,7 @@ class WordpressCharm(CharmBase):
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to uninstall {addon_type} {repr(addon)}"
                 )
+
     def _theme_reconciliation(self):
         """Reconciliation process for WordPress themes
 
@@ -1153,13 +1177,266 @@ class WordpressCharm(CharmBase):
         """
         self._addon_reconciliation("theme")
 
+    def _wp_option_update(self, option, value, format="plaintext"):
+        """Create or update a WordPress option value
+
+        If the option does not exist, wp option update will create one.
+        """
+        return self._wrapped_run_wp_cli(
+            ["wp", "option", "update", option, value, f"--format={format}"]
+        )
+
+    def _wp_option_delete(self, option):
+        """Delete a WordPress option
+
+        It's not an error to delete a non-existent option (it's a warning though)
+        """
+        return self._wrapped_run_wp_cli(["wp", "option", "delete", option])
+
+    def _wp_plugin_activate(self, plugin):
+        """Active a WordPress plugin"""
+        logger.info("activate plugin %s", repr(plugin))
+        return self._wrapped_run_wp_cli(["wp", "plugin", "activate", plugin])
+
+    def _wp_plugin_deactivate(self, plugin):
+        """Deactivate a WordPress plugin"""
+        logger.info("deactivate plugin %s", repr(plugin))
+        return self._wrapped_run_wp_cli(["wp", "plugin", "deactivate", plugin])
+
+    def _perform_plugin_activate_or_deactivate(self, plugin, action):
+        """Activate a WordPress plugin or deactivate a WordPress plugin.
+
+        It's not an error to activate an active plugin or deactivate an inactive plugin.
+        """
+        if action not in ("activate", "deactivate"):
+            raise ValueError(
+                f"Unknown activation_status {repr(action)}, "
+                "accept (activate, deactivate)"
+            )
+        current_plugins = self._wp_addon_list("plugin")
+        if not current_plugins.success:
+            return self._ExecResult(
+                success=False,
+                result=None,
+                message=f"failed to list installed plugins while {action} plugin {plugin}"
+            )
+        current_plugins = current_plugins.result
+        current_plugins_activate_status = {
+            p["name"]: p["status"] for p in current_plugins
+        }
+        if plugin not in current_plugins_activate_status:
+            return self._ExecResult(
+                success=False,
+                result=None,
+                message=f"{action} a non-existent plugin {plugin}"
+            )
+        is_active = current_plugins_activate_status[plugin] == "active"
+        target_activation_status = action == "activate"
+        if is_active != target_activation_status:
+            if action == "activate":
+                result = self._wp_plugin_activate(plugin)
+            else:
+                result = self._wp_plugin_deactivate(plugin)
+            if not result.success:
+                return self._ExecResult(
+                    success=False,
+                    result=None,
+                    message=f"failed to {action} plugin {plugin}"
+                )
+        return self._ExecResult(success=True, result=None, message="")
+
+    def _activate_plugin(self, plugin, options):
+        """Activate a WordPress plugin and set WordPress options after activation"""
+        activate_result = self._perform_plugin_activate_or_deactivate(plugin, "activate")
+        if not activate_result.success:
+            return activate_result
+        for option, value in options.items():
+            if isinstance(value, dict):
+                option_update_result = self._wp_option_update(
+                    option=option, value=json.dumps(value), format="json"
+                )
+            else:
+                option_update_result = self._wp_option_update(option=option, value=value)
+            if not option_update_result.success:
+                return self._ExecResult(
+                    success=False,
+                    result=None,
+                    message=f"failed to update option {option} after activating plugin {plugin}"
+                )
+        return self._ExecResult(success=True, result=None, message="")
+
+    def _deactivate_plugin(self, plugin, options):
+        """Deactivate a WordPress plugin and delete WordPress options after deactivation"""
+        deactivate_result = self._perform_plugin_activate_or_deactivate(plugin, "deactivate")
+        if not deactivate_result.success:
+            return deactivate_result
+        for option in options:
+            option_update_result = self._wp_option_delete(option)
+            if not option_update_result.success:
+                return self._ExecResult(
+                    success=False,
+                    result=None,
+                    message=f"failed to delete option {option} after deactivating plugin {plugin}"
+                )
+        return self._ExecResult(success=True, result=None, message="")
+
+    def _plugin_akismet_reconciliation(self):
+        """Reconciliation process for the akismet plugin"""
+        akismet_key = self.model.config["wp_plugin_akismet_key"].strip()
+        if not akismet_key:
+            result = self._deactivate_plugin("akismet", [
+                "akismet_strictness",
+                "akismet_show_user_comments_approved",
+                "wordpress_api_key"
+            ])
+        else:
+            result = self._activate_plugin("akismet", {
+                "akismet_strictness": "0",
+                "akismet_show_user_comments_approved": "0",
+                "wordpress_api_key": akismet_key
+            })
+        if not result.success:
+            raise exceptions.WordPressBlockedStatusException(
+                f"Unable to config akismet plugin, {result.message}"
+            )
+
+    @staticmethod
+    def _encode_openid_team_map(team_map):
+        """Convert wp_plugin_openid_team_map setting to WordPress openid_teams_trust_list option
+
+        example input: site-sysadmins=administrator,site-editors=editor,site-executives=editor
+        """
+        team_map_lines = []
+        i = 0
+        team_map_lines.append("a:{}:{{".format(len(team_map.split(","))))
+        for mapping in team_map.split(","):
+            i = i + 1
+            team, role = mapping.split("=", 2)
+            team_map_lines.append("i:{};".format(i))
+            team_map_lines.append('O:8:"stdClass":4:{')
+            team_map_lines.append('s:2:"id";')
+            team_map_lines.append("i:{};".format(i))
+            team_map_lines.append('s:4:"team";')
+            team_map_lines.append('s:{}:"{}";'.format(len(team), team))
+            team_map_lines.append('s:4:"role";')
+            team_map_lines.append('s:{}:"{}";'.format(len(role), role))
+            team_map_lines.append('s:6:"server";')
+            team_map_lines.append('s:1:"0";')
+            team_map_lines.append("}")
+        team_map_lines.append("}")
+
+        return "".join(team_map_lines)
+
+    def _plugin_openid_reconciliation(self):
+        """Reconciliation process for the openid plugin"""
+        openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
+        if not openid_team_map:
+            result = self._deactivate_plugin(
+                "openid",
+                ["openid_required_for_registration", "openid_teams_trust_list"]
+            )
+        else:
+            result = self._activate_plugin("openid", {
+                "openid_required_for_registration": "1",
+                "openid_teams_trust_list": self._encode_openid_team_map(openid_team_map)
+            })
+        if not result.success:
+            raise exceptions.WordPressBlockedStatusException(
+                f"Unable to config openid plugin, {result.message}"
+            )
+
+    def _apache_config_is_enabled(self, conf_name):
+        """Check if a specified apache configuration file is enabled"""
+        enabled_config = [
+            name for name in self._container().list_files("/etc/apache2/conf-enabled")
+        ]
+        return f"{conf_name}.conf" in enabled_config
+    def _apache_enable_config(self, conf_name, conf):
+        """enables a specified configuration file within the apache2 configuration"""
+        self._stop_server()
+        self._container().push(
+            path=f"/etc/apache2/conf-available/{conf_name}.conf", source=conf
+        )
+        self._run_cli(["a2enconf", conf_name])
+        self._start_server()
+
+    def _apache_disable_config(self, conf_name):
+        """disables a specified configuration file within the apache2 configuration"""
+        self._stop_server()
+        self._container().remove_path(
+            f"/etc/apache2/conf-available/{conf_name}.conf", recursive=True
+        )
+        self._run_cli(["a2disconf", conf_name])
+        self._start_server()
+
+
+    def _plugin_swift_reconciliation(self):
+        """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin"""
+        swift_config_str = self.model.config["wp_plugin_openstack-objectstorage_config"]
+        swift_config_key = [
+            'auth-url',
+            'bucket',
+            'password',
+            'object-prefix',
+            'region',
+            'tenant',
+            'domain',
+            'swift-url',
+            'username',
+            'copy-to-swift',
+            'serve-from-swift',
+            'remove-local-file'
+        ]
+        enable_swift = bool(swift_config_str.strip())
+        if not enable_swift:
+            result = self._deactivate_plugin(
+                "openstack-objectstorage-k8s",
+                ["object_storage"]
+            )
+        else:
+            swift_config = safe_load(swift_config_str)
+            for key in swift_config_key:
+                if key not in swift_config:
+                    raise exceptions.WordPressBlockedStatusException(
+                        f"missing {key} in wp_plugin_openstack-objectstorage_config"
+                    )
+            result = self._activate_plugin(
+                "openstack-objectstorage-k8s",
+                {
+                    "object_storage": swift_config
+                }
+            )
+        if not result.success:
+            raise exceptions.WordPressBlockedStatusException(
+                f"Unable to config openstack-objectstorage-k8s plugin, {result.message}"
+            )
+        apache_swift_conf = "docker-php-swift-proxy"
+        swift_apache_config_enabled = self._apache_config_is_enabled(apache_swift_conf)
+        if enable_swift and not swift_apache_config_enabled:
+            swift_url = swift_config.get("swift-url")
+            bucket = swift_config.get("bucket")
+            object_prefix = swift_config.get("object-prefix")
+            redirect_url = os.path.join(swift_url, bucket, object_prefix)
+            conf = textwrap.dedent(f"""\
+            SSLProxyEngine on
+            ProxyPass /wp-content/uploads/ {redirect_url}
+            ProxyPassReverse /wp-content/uploads/ {redirect_url}
+            Timeout 300
+            """)
+            self._apache_enable_config(apache_swift_conf, conf)
+        elif not enable_swift and swift_apache_config_enabled:
+            self._apache_config_is_enabled(apache_swift_conf)
+
     def _plugin_reconciliation(self):
         """Reconciliation process for WordPress plugins
 
         Install and uninstall plugins to match the plugins setting in config
         """
         self._addon_reconciliation("plugin")
-
+        if self.unit.is_leader():
+            self._plugin_akismet_reconciliation()
+            self._plugin_openid_reconciliation()
+            self._plugin_swift_reconciliation()
 
     def _reconciliation(self, _event):
         logger.info(f"Start reconciliation process, triggered by {_event}")

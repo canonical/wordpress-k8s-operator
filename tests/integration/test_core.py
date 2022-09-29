@@ -354,6 +354,10 @@ async def test_openstack_object_storage_plugin(
             any(nonce in f for f in swift_object_list)
         ), "media files uploaded should be stored in swift object storage"
         source_url = min(image_urls, key=len)
+        for image_url in image_urls:
+            assert (
+                    requests.get(image_url).status_code == 200
+            ), "the original image and resized images should be accessible from the WordPress site"
         for host in unit_ip_list:
             url_components = list(urllib.parse.urlsplit(source_url))
             url_components[1] = host

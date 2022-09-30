@@ -192,7 +192,7 @@ class WordpressClient:
     ) -> typing.List[str]:
         """Upload a media file (image/video)
 
-        Return url of different sized for the uploaded file on WordPress.
+        Return URL of the original image and resized images for the uploaded file on WordPress.
         """
         if mimetype is None:
             mimetype = mimetypes.guess_type(filename)[0]

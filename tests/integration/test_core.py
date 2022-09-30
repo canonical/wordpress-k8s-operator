@@ -281,6 +281,8 @@ async def test_openstack_object_storage_plugin(
     act: update charm configuration for openstack object storage plugin
     assert: openstack object storage plugin should be installed after the config update and
         WordPress openstack swift object storage integration should be set up properly.
+        After openstack swift plugin activated, an image file uploaded to one unit through
+        WordPress media uploader should be accessible from all units.
     """
 
     swift_conn = swiftclient.Connection(

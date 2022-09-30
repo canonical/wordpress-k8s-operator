@@ -192,7 +192,7 @@ class WordpressMock:
             _DB_CHECK_INTERVAL=0,
             _apache_config_is_enabled=mock_apache_config_is_enabled,
             _apache_enable_config=mock_apache_enable_config,
-            _apache_disable_config=mock_apache_disable_config
+            _apache_disable_config=mock_apache_disable_config,
         )
         self._patch.start()
 
@@ -723,7 +723,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertEqual(
             self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
             excepted_options,
-            "akismet options should be set correctly"
+            f"options of plugin {plugin} should be set correctly"
         )
 
         if additional_check_after_install is not None:

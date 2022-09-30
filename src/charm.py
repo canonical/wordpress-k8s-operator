@@ -1211,6 +1211,7 @@ class WordpressCharm(CharmBase):
                 f"Unknown activation_status {repr(action)}, "
                 "accept (activate, deactivate)"
             )
+
         current_plugins = self._wp_addon_list("plugin")
         if not current_plugins.success:
             return self._ExecResult(
@@ -1222,6 +1223,7 @@ class WordpressCharm(CharmBase):
         current_plugins_activate_status = {
             p["name"]: p["status"] for p in current_plugins
         }
+
         if plugin not in current_plugins_activate_status:
             return self._ExecResult(
                 success=False,
@@ -1230,6 +1232,7 @@ class WordpressCharm(CharmBase):
             )
         is_active = current_plugins_activate_status[plugin] == "active"
         target_activation_status = action == "activate"
+
         if is_active != target_activation_status:
             if action == "activate":
                 result = self._wp_plugin_activate(plugin)

@@ -1192,7 +1192,7 @@ class WordpressCharm(CharmBase):
         return self._wrapped_run_wp_cli(["wp", "option", "delete", option])
 
     def _wp_plugin_activate(self, plugin):
-        """Active a WordPress plugin"""
+        """Activate a WordPress plugin"""
         logger.info("activate plugin %s", repr(plugin))
         return self._wrapped_run_wp_cli(["wp", "plugin", "activate", plugin])
 

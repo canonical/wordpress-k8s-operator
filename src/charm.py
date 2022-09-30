@@ -851,15 +851,13 @@ class WordpressCharm(CharmBase):
         return_code = result.return_code
         if combine_stderr:
             logger.debug(
-                f"Run command: %s\noutput: %s, return code {return_code}",
-                cmd,
-                result.stdout
+                "Run command: %s return code %s\noutput: %s",
+                cmd, return_code, result.stdout
             )
         else:
             logger.debug(
-                f"Run command: {cmd}, return code {return_code}\nstdout: %s\nstderr:%s",
-                result.stdout,
-                result.stderr
+                "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+                cmd, return_code, result.stdout, result.stderr
             )
         return result
 
@@ -1070,8 +1068,8 @@ class WordpressCharm(CharmBase):
         if len(available_db_config) != 4 and len(available_db_relation) != 4:
             logger.info(
                 "Core reconciliation terminated early due to db info missing, "
-                f"available from config: {available_db_config}, "
-                f"available from relation: {available_db_relation}"
+                "available from config: %s, available from relation: %s",
+                available_db_config, available_db_relation
             )
             self._stop_server()
             raise exceptions.WordPressBlockedStatusException("Waiting for db relation/config")
@@ -1439,7 +1437,7 @@ class WordpressCharm(CharmBase):
             self._plugin_swift_reconciliation()
 
     def _reconciliation(self, _event):
-        logger.info(f"Start reconciliation process, triggered by {_event}")
+        logger.info("Start reconciliation process, triggered by %", _event)
         if not self._container().can_connect():
             logger.info("Reconciliation process terminated early, pebble is not ready")
             self.unit.status = WaitingStatus("Waiting for pebble")
@@ -1451,7 +1449,7 @@ class WordpressCharm(CharmBase):
             logger.info("Reconciliation process finished successfully.")
             self.unit.status = ops.model.ActiveStatus()
         except exceptions.WordPressStatusException as status_exception:
-            logger.info(f"Reconciliation process terminated early, reason: {status_exception}")
+            logger.info("Reconciliation process terminated early, reason: %s", status_exception)
             self.unit.status = status_exception.status
 
 

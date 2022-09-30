@@ -1349,8 +1349,9 @@ class WordpressCharm(CharmBase):
             name for name in self._container().list_files("/etc/apache2/conf-enabled")
         ]
         return f"{conf_name}.conf" in enabled_config
+
     def _apache_enable_config(self, conf_name, conf):
-        """enables a specified configuration file within the apache2 configuration"""
+        """Create and enable an apache2 configuration file"""
         self._stop_server()
         self._container().push(
             path=f"/etc/apache2/conf-available/{conf_name}.conf", source=conf
@@ -1359,14 +1360,13 @@ class WordpressCharm(CharmBase):
         self._start_server()
 
     def _apache_disable_config(self, conf_name):
-        """disables a specified configuration file within the apache2 configuration"""
+        """Remove and disable a specified apache2 configuration file"""
         self._stop_server()
         self._container().remove_path(
             f"/etc/apache2/conf-available/{conf_name}.conf", recursive=True
         )
         self._run_cli(["a2disconf", conf_name])
         self._start_server()
-
 
     def _plugin_swift_reconciliation(self):
         """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin"""
@@ -1426,9 +1426,11 @@ class WordpressCharm(CharmBase):
             self._apache_config_is_enabled(apache_swift_conf)
 
     def _plugin_reconciliation(self):
-        """Reconciliation process for WordPress plugins
+        """Reconciliation process for WordPress plugins.
 
-        Install and uninstall plugins to match the plugins setting in config
+        Install and uninstall plugins to match the plugins setting in config.
+        Activate and deactivate three charm managed plugins (akismet, openid, openstack-swift)
+        and adjust plugin options for these three plugins according to charm config.
         """
         self._addon_reconciliation("plugin")
         if self.unit.is_leader():

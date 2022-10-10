@@ -715,7 +715,11 @@ class WordpressCharm(CharmBase):
             return relation.data[self.app]
 
     def _replica_consensus_reached(self):
-        """Test if the synchronized data required for WordPress replication are initialized."""
+        """Test if the synchronized data required for WordPress replication are initialized.
+
+        Returns:
+            True if the initialization of synchronized data has finished, else False.
+        """
         fields = self._wordpress_secret_key_fields()
         try:
             replica_data = self._replica_relation_data()
@@ -729,6 +733,12 @@ class WordpressCharm(CharmBase):
         Only the leader can update the data shared with all replicas. Leader should check if
         the data exist when leadership is established, generate required data and set it in
         the peer relation if not.
+
+        Args:
+            event: required by ops framework, not used.
+
+        Returns:
+            None.
         """
         if not self._replica_consensus_reached() and self.unit.is_leader():
             replica_relation_data = self._replica_relation_data()
@@ -741,6 +751,13 @@ class WordpressCharm(CharmBase):
 
         This method will set all db relation related states ``relation_db_*`` when db relation
         changes and will reset all that to ``None`` after db relation is broken.
+
+        Args:
+            event: An instance of opslib.mysql.MySQLDatabaseChangedEvent represents the new
+                database connection information.
+
+        Returns:
+            None.
         """
         self.state.relation_db_host = event.host
         self.state.relation_db_name = event.database
@@ -752,6 +769,9 @@ class WordpressCharm(CharmBase):
 
         This method will not check the validity of the configuration or current state,
         unless they are security related, in that case, an exception will be raised.
+
+        Returns:
+            The content of wp-config.php file in string.
         """
         wp_config = [
             textwrap.dedent("""\
@@ -807,16 +827,26 @@ class WordpressCharm(CharmBase):
         return "\n".join(wp_config)
 
     def _container(self):
-        """Get the WordPress workload container"""
+        """Get the WordPress workload container.
+
+        Returns:
+            The pebble instance of the WordPress container.
+        """
         return self.unit.get_container(self._CONTAINER_NAME)
 
     def _wordpress_service_exists(self):
+        """Check if the WordPress pebble layer exists.
+
+        Returns:
+            True if WordPress layer already exists, else False.
+        """
         return self._SERVICE_NAME in self._container().get_plan().services
 
     def _stop_server(self):
-        """Stop WordPress (apache) server
+        """Stop WordPress (apache) server, this operation is idempotence.
 
-        This operation is idempotence.
+        Returns:
+            None.
         """
         logger.debug("Ensure WordPress (apache) server is down")
         if (
@@ -834,6 +864,23 @@ class WordpressCharm(CharmBase):
             combine_stderr=False,
             timeout=60
     ):
+        """Execute a command in WordPress container.
+
+        Args:
+            cmd (List[str]): The command to be executed.
+            user (str): Username to run this command as, use root when not provided.
+            group (str): Name of the group to run this command as, use root when not provided.
+            working_dir (str):  Working dir to run this command in, use home dir if not provided.
+            combine_stderr (bool): Redirect stderr to stdout, when enabled, stderr in the result
+                will always be empty.
+            timeout (int): Set a timeout for the running program in seconds. Default is 60 seconds.
+                ``TimeoutError`` will be raised if timeout exceeded.
+
+        Returns:
+            A named tuple with three fields: return code, stdout and stderr. Stdout and stderr are
+            both string.
+        """
+
         Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
         process = self._container().exec(
             cmd,
@@ -862,6 +909,11 @@ class WordpressCharm(CharmBase):
         return result
 
     def _run_wp_cli(self, cmd, timeout=60, combine_stderr=False):
+        """Execute a wp-cli command, this is a wrapper around :meth:`charm.WordpressCharm._run_cli`
+
+        See :meth:`charm.WordpressCharm._run_cli` for documentation of the arguments and return
+        value.
+        """
         result = self._run_cli(
             cmd,
             user=self._WORDPRESS_USER,
@@ -878,6 +930,18 @@ class WordpressCharm(CharmBase):
         Stdout and stderr are discarded, the result field of ExecResult is always none. The
         execution is considered success if return code is 0. The message field will be generated
         automatically based on command if ``error_message`` is not provided.
+
+        Args:
+            cmd (List[str]): The command to be executed.
+            timeout (int): Set a timeout for the running program, in seconds. Default is 60 seconds.
+                ``TimeoutError`` will be raised if timeout exceeded.
+            error_message (str) message in the return result if the command failed, if None, a default
+                error message will be provided in the result.
+
+        Returns:
+            A named tuple with three fields: success, result and message. ``success`` will be True
+            if the command succeed. ``result`` will always be None and ``message`` represents the
+            error message, in case of success, it will be empty.
         """
         result = self._run_wp_cli(cmd=cmd, timeout=timeout, combine_stderr=True)
         if result.return_code != 0:
@@ -890,7 +954,11 @@ class WordpressCharm(CharmBase):
             return self._ExecResult(success=True, result=None, message="")
 
     def _wp_is_installed(self):
-        """Check if WordPress is installed (check if WordPress related tables exist in database)"""
+        """Check if WordPress is installed (check if WordPress related tables exist in database)
+
+        Returns:
+            True if WordPress is installed in the current connected database.
+        """
         logger.debug("Check if WordPress is installed")
         return self._run_wp_cli(["wp", "core", "is-installed"]).return_code == 0
 
@@ -899,6 +967,10 @@ class WordpressCharm(CharmBase):
 
         Database info in config takes precedence over database info provided by relations.
         Return value is a dict containing four keys (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD)
+
+        Returns:
+            A dict containing four keys "db_host", "db_name", "db_user" and "db_password". All
+            values are string.
         """
         database_info = {
             key.upper(): self.model.config[key] for key in
@@ -914,8 +986,9 @@ class WordpressCharm(CharmBase):
     def _test_database_connectivity(self):
         """Test the connectivity of the current database config/relation
 
-        Return a tuple of connectivity as bool and error message as str, error message will be
-        an empty string if charm can connect to the database.
+        Returns:
+            A tuple of connectivity as bool and error message as str, error message will be
+            an empty string if charm can connect to the database.
         """
         db_info = self._current_effective_db_info()
         try:
@@ -935,7 +1008,11 @@ class WordpressCharm(CharmBase):
             return False, f"MySQL error {err.errno}"
 
     def _wp_install_cmd(self):
-        """Generate wp-cli command used to install WordPress on database"""
+        """Generate wp-cli command used to install WordPress on database
+
+        Returns:
+            Wp-cli WordPress install command, a list of strings.
+        """
         initial_settings = yaml.safe_load(self.model.config["initial_settings"])
         admin_user = initial_settings.get("user_name", "admin_username")
         admin_email = initial_settings.get("admin_email", "name@example.com")
@@ -962,6 +1039,7 @@ class WordpressCharm(CharmBase):
             raise exceptions.WordPressInstallError("check logs for more information")
 
     def _init_pebble_layer(self):
+        """Ensure WordPress layer exists in pebble"""
         logger.debug("Ensure WordPress layer exists in pebble")
         layer = {
             "summary": "WordPress layer",
@@ -1006,7 +1084,11 @@ class WordpressCharm(CharmBase):
             self._container().start(self._SERVICE_NAME)
 
     def _current_wp_config(self):
-        """Retrieve the current version of wp-config.php from server, return None if not exists"""
+        """Retrieve the current version of wp-config.php from server, return None if not exists
+
+        Returns:
+            The content of the current wp-config.php file, str.
+        """
         wp_config_path = self._WP_CONFIG_PATH
         container = self._container()
         if container.exists(wp_config_path):
@@ -1023,7 +1105,13 @@ class WordpressCharm(CharmBase):
         self._container().remove_path(self._WP_CONFIG_PATH, recursive=True)
 
     def _push_wp_config(self, wp_config):
-        """Update the content of wp-config.php on server"""
+        """Update the content of wp-config.php on server
+
+        Write the wp-config.php file in :attr:`charm.WordpressCharm._WP_CONFIG_PATH`.
+
+        Args:
+            wp_config (str): the content of wp-config.php file.
+        """
         logger.debug("Update wp-config.php content in container")
         self._container().push(
             self._WP_CONFIG_PATH,
@@ -1090,7 +1178,18 @@ class WordpressCharm(CharmBase):
             raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
 
     def _wp_addon_list(self, addon_type):
-        """List all installed WordPress addons"""
+        """List all installed WordPress addons
+
+        Args:
+            addon_type (str): ``"theme"`` or ``"plugin"``
+
+        Returns:
+            A named tuple with three fields: success, result and message. If list command failed,
+            success will be False, result will be None and message will be the error message.
+            Other than that, success will be True, message will be empty and result will be a list
+            of dicts represents the status of currently installed addons. Each dict contains four
+            keys: name, status, update and version.
+        """
         self._check_addon_type(addon_type)
         process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
         if process.return_code != 0:
@@ -1109,7 +1208,12 @@ class WordpressCharm(CharmBase):
             )
 
     def _wp_addon_install(self, addon_type, addon_name):
-        """Install WordPress addon (plugin/theme)"""
+        """Install WordPress addon (plugin/theme)
+
+        Args:
+            addon_type (str): ``"theme"`` or ``"plugin"``.
+            addon_name (str): name of the addon that needs to be installed.
+        """
         self._check_addon_type(addon_type)
         if addon_type == "theme":
             # --force will overwrite any installed version of the theme,
@@ -1120,7 +1224,12 @@ class WordpressCharm(CharmBase):
         return self._wrapped_run_wp_cli(cmd, timeout=600)
 
     def _wp_addon_uninstall(self, addon_type, addon_name):
-        """Uninstall WordPress addon (theme/plugin)"""
+        """Uninstall WordPress addon (theme/plugin)
+
+        Args:
+            addon_type (str): ``"theme"`` or ``"plugin"``.
+            addon_name (str): name of the addon that needs to be uninstalled.
+        """
         self._check_addon_type(addon_type)
         if addon_type == "theme":
             cmd = ["wp", "theme", "delete", addon_name, "--force"]
@@ -1131,7 +1240,10 @@ class WordpressCharm(CharmBase):
     def _addon_reconciliation(self, addon_type):
         """Reconciliation process for WordPress addons (theme/plugin)
 
-        Install and uninstall themes/plugins to match the themes/plugins setting in config
+        Install and uninstall themes/plugins to match the themes/plugins setting in config.
+
+        Args:
+            addon_type (str): ``"theme"`` or ``"plugin"``.
         """
         self._check_addon_type(addon_type)
         logger.debug(f"Start {addon_type} reconciliation process")
@@ -1179,6 +1291,16 @@ class WordpressCharm(CharmBase):
         """Create or update a WordPress option value
 
         If the option does not exist, wp option update will create one.
+
+        Args:
+            option (str): WordPress option name.
+            value (Union[str, dict]): WordPress option value. If the format is ``"plaintext"``,
+                then it's a str. If the format is ``"json"``, the value should be a json compatible
+                dict.
+            format (str): ``"plaintext"`` or ``"json"``
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
         """
         return self._wrapped_run_wp_cli(
             ["wp", "option", "update", option, value, f"--format={format}"]
@@ -1187,17 +1309,37 @@ class WordpressCharm(CharmBase):
     def _wp_option_delete(self, option):
         """Delete a WordPress option
 
-        It's not an error to delete a non-existent option (it's a warning though)
+        It's not an error to delete a non-existent option (it's a warning though).
+
+        Args:
+            option (str): option name.
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
         """
         return self._wrapped_run_wp_cli(["wp", "option", "delete", option])
 
     def _wp_plugin_activate(self, plugin):
-        """Activate a WordPress plugin"""
+        """Activate a WordPress plugin
+
+        Args:
+            plugin (str): plugin slug.
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
+        """
         logger.info("activate plugin %s", repr(plugin))
         return self._wrapped_run_wp_cli(["wp", "plugin", "activate", plugin])
 
     def _wp_plugin_deactivate(self, plugin):
-        """Deactivate a WordPress plugin"""
+        """Deactivate a WordPress plugin
+
+        Args:
+            plugin (str): plugin slug.
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
+        """
         logger.info("deactivate plugin %s", repr(plugin))
         return self._wrapped_run_wp_cli(["wp", "plugin", "deactivate", plugin])
 
@@ -1205,6 +1347,13 @@ class WordpressCharm(CharmBase):
         """Activate a WordPress plugin or deactivate a WordPress plugin.
 
         It's not an error to activate an active plugin or deactivate an inactive plugin.
+
+        Args:
+            plugin (str): plugin slug.
+            action (str): ``"activate"`` or ``"deactivate"``
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
         """
         if action not in ("activate", "deactivate"):
             raise ValueError(
@@ -1247,7 +1396,17 @@ class WordpressCharm(CharmBase):
         return self._ExecResult(success=True, result=None, message="")
 
     def _activate_plugin(self, plugin, options):
-        """Activate a WordPress plugin and set WordPress options after activation"""
+        """Activate a WordPress plugin and set WordPress options after activation
+
+        Args:
+            plugin (str): plugin slug.
+            options (Dict[str, Union[str, dict])): options related to the plugin, if the value is
+                a string, it will be passed as plaintext, else if the value is a dict, the option
+                value will be passed as json.
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
+        """
         activate_result = self._perform_plugin_activate_or_deactivate(plugin, "activate")
         if not activate_result.success:
             return activate_result
@@ -1267,7 +1426,15 @@ class WordpressCharm(CharmBase):
         return self._ExecResult(success=True, result=None, message="")
 
     def _deactivate_plugin(self, plugin, options):
-        """Deactivate a WordPress plugin and delete WordPress options after deactivation"""
+        """Deactivate a WordPress plugin and delete WordPress options after deactivation
+
+        Args:
+            plugin (str): plugin slug.
+            options (List[str]): options related to the plugin that need to be removed.
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
+        """
         deactivate_result = self._perform_plugin_activate_or_deactivate(plugin, "deactivate")
         if not deactivate_result.success:
             return deactivate_result
@@ -1306,6 +1473,12 @@ class WordpressCharm(CharmBase):
         """Convert wp_plugin_openid_team_map setting to WordPress openid_teams_trust_list option
 
         example input: site-sysadmins=administrator,site-editors=editor,site-executives=editor
+
+        Args:
+            team_map (str): team definition.
+
+        Returns:
+            A serialized PHP array, as a Python string.
         """
         team_map_lines = []
         i = 0
@@ -1347,14 +1520,26 @@ class WordpressCharm(CharmBase):
             )
 
     def _apache_config_is_enabled(self, conf_name):
-        """Check if a specified apache configuration file is enabled"""
+        """Check if a specified apache configuration file is enabled
+
+        Args:
+            conf_name (str): name of the apache config, without trailing ``.conf``.
+
+        Returns:
+            True if certain apache config is enabled.
+        """
         enabled_config = [
             name for name in self._container().list_files("/etc/apache2/conf-enabled")
         ]
         return f"{conf_name}.conf" in enabled_config
 
     def _apache_enable_config(self, conf_name, conf):
-        """Create and enable an apache2 configuration file"""
+        """Create and enable an apache2 configuration file
+
+        Args:
+            conf_name (str): name of the apache config, without trailing ``.conf``.
+            conf (str): content of the apache config.
+        """
         self._stop_server()
         self._container().push(
             path=f"/etc/apache2/conf-available/{conf_name}.conf", source=conf
@@ -1363,7 +1548,11 @@ class WordpressCharm(CharmBase):
         self._start_server()
 
     def _apache_disable_config(self, conf_name):
-        """Remove and disable a specified apache2 configuration file"""
+        """Remove and disable a specified apache2 configuration file
+
+        Args:
+            conf_name (str): name of the apache config, without trailing ``.conf``.
+        """
         self._stop_server()
         self._container().remove_path(
             f"/etc/apache2/conf-available/{conf_name}.conf", recursive=True

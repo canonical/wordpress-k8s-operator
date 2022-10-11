@@ -1,5 +1,8 @@
 juju
 pytest
+Pillow
 requests
 pytest-cov
 pytest-operator
+python-swiftclient
+python-keystoneclient

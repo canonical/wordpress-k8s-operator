@@ -1,6 +1,8 @@
 import re
 import json
 import secrets
+import mimetypes
+import typing
 
 import requests
 
@@ -184,3 +186,32 @@ class WordpressClient:
             except_status_code=200,
         )
         return [p["plugin"].split("/")[0] for p in response.json()]
+
+    def upload_media(
+            self, filename: str, content: bytes, mimetype: str = None
+    ) -> typing.List[str]:
+        """Upload a media file (image/video)
+
+        Return URL of the original image and resized images for the uploaded file on WordPress.
+        """
+        if mimetype is None:
+            mimetype = mimetypes.guess_type(filename)[0]
+        if mimetype is None:
+            raise ValueError("Unable to deduce mimetype from filename")
+        response = self._post(
+            f"http://{self.host}/wp-json/wp/v2/media",
+            headers={
+                "X-WP-Nonce": self._gen_wp_rest_nonce(),
+                "Content-Type": mimetype,
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            },
+            data=content,
+            except_status_code=201
+        )
+        media = response.json()
+        image_urls = []
+        for size in media["media_details"]["sizes"].values():
+            image_urls.append(size["source_url"])
+        if media["source_url"] not in image_urls:
+            image_urls.append(media["source_url"])
+        return image_urls

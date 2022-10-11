@@ -13,17 +13,10 @@ class DBInfoDict(TypedDict):
     DB_PASSWORD: str
 
 
-class WordpressCliExecResult(NamedTuple):
+class CliExecResult(NamedTuple):
     return_code: int
     stdout: str
     stderr: str
-
-
-class ThemeInfoDict(TypedDict):
-    name: str
-    status: str
-    update: str
-    version: str
 
 
 class AddonInfoDict(TypedDict):
@@ -33,15 +26,22 @@ class AddonInfoDict(TypedDict):
     version: str
 
 
-class WPAddonListExecResult(NamedTuple):
+# FIXME: fixme after generic named tuple is fully supported
+class ExecResultListOfAddonInfoDict(NamedTuple):
     success: bool
     result: Optional[List[AddonInfoDict]]
     message: str
 
 
-class NoneReturnExecResult(NamedTuple):
+class ExecResultNone(NamedTuple):
     success: bool
     result: None
+    message: str
+
+
+class ExecResultBool(NamedTuple):
+    success: bool
+    result: Optional[bool]
     message: str
 
 
@@ -93,19 +93,29 @@ class WordpressCharm(ops.charm.CharmBase):
 
     def _stop_server(self) -> None: ...
 
+    def _run_cli(
+            self,
+            cmd: List[str],
+            user: Optional[str] = None,
+            group: Optional[str] = None,
+            working_dir: Optional[str] = None,
+            combine_stderr: bool = False,
+            timeout: int = 60
+    ) -> CliExecResult: ...
+
     def _run_wp_cli(
             self,
             cmd: List[str],
             timeout: Optional[int] = 60,
             combine_stderr: bool = False
-    ) -> WordpressCliExecResult: ...
+    ) -> CliExecResult: ...
 
     def _wrapped_run_wp_cli(
             self,
             cmd: List[str],
             timeout: Optional[int] = 60,
             error_message: Optional[str] = None
-    ) -> NoneReturnExecResult: ...
+    ) -> ExecResultNone: ...
 
     def _wp_is_installed(self) -> None: ...
 
@@ -129,15 +139,52 @@ class WordpressCharm(ops.charm.CharmBase):
 
     def _check_addon_type(self, addon_type: str) -> None: ...
 
-    def _wp_addon_list(self, addon_type: str) -> WPAddonListExecResult: ...
+    def _wp_addon_list(self, addon_type: str) -> ExecResultListOfAddonInfoDict: ...
 
-    def _wp_addon_install(self, addon_type: str, addon_name: str) -> NoneReturnExecResult: ...
+    def _wp_addon_install(self, addon_type: str, addon_name: str) -> ExecResultNone: ...
 
-    def _wp_addon_uninstall(self, addon_type: str, addon_name: str) -> NoneReturnExecResult: ...
+    def _wp_addon_uninstall(self, addon_type: str, addon_name: str) -> ExecResultNone: ...
 
     def _addon_reconciliation(self, addon_type: str) -> None: ...
 
     def _theme_reconciliation(self) -> None: ...
+
+    def _wp_option_update(
+            self, option: str, value: str, format: str= "plaintext"
+    ) -> ExecResultNone: ...
+
+    def _wp_option_delete(self, option: str) -> ExecResultNone: ...
+
+    def _wp_plugin_activate(self, plugin: str) -> ExecResultNone: ...
+
+    def _wp_plugin_deactivate(self, plugin: str) -> ExecResultNone: ...
+
+    def _perform_plugin_activate_or_deactivate(
+            self,
+            plugin: str,
+            action: str
+    ) -> ExecResultNone: ...
+
+    def _activate_plugin(
+            self, plugin: str, options: Dict[str, Union[str, Dict[str, str]]]
+    ) -> ExecResultNone: ...
+
+    def _deactivate_plugin(self, plugin: str, options: List[str]) -> ExecResultNone: ...
+
+    def _plugin_akismet_reconciliation(self) -> None: ...
+
+    @staticmethod
+    def _encode_openid_team_map(team_map: str) -> str: ...
+
+    def _plugin_openid_reconciliation(self) -> None: ...
+
+    def _apache_config_is_enabled(self, conf_name: str) -> bool: ...
+
+    def _apache_enable_config(self, conf_name: str, conf: str) -> None: ...
+
+    def _apache_disable_config(self, conf_name: str) -> None: ...
+
+    def _plugin_swift_reconciliation(self) -> None: ...
 
     def _plugin_reconciliation(self) -> None: ...
 

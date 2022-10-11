@@ -1,5 +1,15 @@
+import io
+import json
+import secrets
+import urllib.parse
+
 import pytest
+import requests
 import ops.model
+import PIL.Image
+import swiftclient
+import swiftclient.service
+import swiftclient.exceptions
 import pytest_operator.plugin
 
 from charm import WordpressCharm
@@ -255,3 +265,105 @@ async def test_wordpress_plugin_installation_error(
         assert (
                 unit.workload_status == ops.model.ActiveStatus.name
         ), "status should back to active after invalid plugin removed from config"
+
+
+@pytest.mark.asyncio
+async def test_openstack_object_storage_plugin(
+        ops_test: pytest_operator.plugin.OpsTest,
+        application_name,
+        default_admin_password,
+        unit_ip_list,
+        openstack_environment
+):
+    """
+    arrange: after WordPress charm has been deployed, db relation established and openstack swift
+        server ready
+    act: update charm configuration for openstack object storage plugin
+    assert: openstack object storage plugin should be installed after the config update and
+        WordPress openstack swift object storage integration should be set up properly.
+        After openstack swift plugin activated, an image file uploaded to one unit through
+        WordPress media uploader should be accessible from all units.
+    """
+
+    swift_conn = swiftclient.Connection(
+        authurl=openstack_environment["OS_AUTH_URL"],
+        auth_version="3",
+        user=openstack_environment["OS_USERNAME"],
+        key=openstack_environment["OS_PASSWORD"],
+        os_options={
+            "user_domain_name": openstack_environment["OS_USER_DOMAIN_ID"],
+            "project_domain_name": openstack_environment["OS_PROJECT_DOMAIN_ID"],
+            "project_name": openstack_environment["OS_PROJECT_NAME"]
+        }
+    )
+    container_exists = True
+    container = "WordPress"
+    try:
+        swift_conn.head_container(container)
+    except swiftclient.exceptions.ClientException as e:
+        if e.http_status == 404:
+            container_exists = False
+        else:
+            raise e
+    if container_exists:
+        for swift_object in swift_conn.get_container(container, full_listing=True)[1]:
+            swift_conn.delete_object(container, swift_object["name"])
+        swift_conn.delete_container(container)
+    swift_conn.put_container(container)
+    swift_service = swiftclient.service.SwiftService(options=dict(
+        auth_version="3",
+        os_auth_url=openstack_environment["OS_AUTH_URL"],
+        os_username=openstack_environment["OS_USERNAME"],
+        os_password=openstack_environment["OS_PASSWORD"],
+        os_project_name=openstack_environment["OS_PROJECT_NAME"],
+        os_project_domain_name=openstack_environment["OS_PROJECT_DOMAIN_ID"],
+    ))
+    swift_service.post(container=container, options={"read_acl": ".r:*,.rlistings"})
+    application = ops_test.model.applications[application_name]
+    await application.set_config({
+        "wp_plugin_openstack-objectstorage_config": json.dumps({
+            "auth-url": openstack_environment["OS_AUTH_URL"] + "/v3",
+            "bucket": container,
+            "password": openstack_environment["OS_PASSWORD"],
+            "object-prefix": "wp-content/uploads/",
+            "region": openstack_environment["OS_REGION_NAME"],
+            "tenant": openstack_environment["OS_PROJECT_NAME"],
+            "domain": openstack_environment["OS_PROJECT_DOMAIN_ID"],
+            "swift-url": swift_conn.url,
+            "username": openstack_environment["OS_USERNAME"],
+            "copy-to-swift": "1",
+            "serve-from-swift": "1",
+            "remove-local-file": "0"
+        })
+    })
+    await ops_test.model.wait_for_idle()
+
+    for idx, unit_ip in enumerate(unit_ip_list):
+        image = PIL.Image.new("RGB", (500, 500), color=(idx, 0, 0))
+        nonce = secrets.token_hex(8)
+        filename = f"{nonce}.{unit_ip}.{idx}.jpg"
+        image_buf = io.BytesIO()
+        image.save(image_buf, format="jpeg")
+        image = image_buf.getvalue()
+        wp = WordpressClient(
+            host=unit_ip, username="admin", password=default_admin_password, is_admin=True
+        )
+        image_urls = wp.upload_media(filename=filename, content=image)
+        swift_object_list = [
+            o["name"] for o in swift_conn.get_container(container, full_listing=True)[1]
+        ]
+        assert (
+            any(nonce in f for f in swift_object_list)
+        ), "media files uploaded should be stored in swift object storage"
+        source_url = min(image_urls, key=len)
+        for image_url in image_urls:
+            assert (
+                    requests.get(image_url).status_code == 200
+            ), "the original image and resized images should be accessible from the WordPress site"
+        for host in unit_ip_list:
+            url_components = list(urllib.parse.urlsplit(source_url))
+            url_components[1] = host
+            url = urllib.parse.urlunsplit(url_components)
+            assert (
+                    requests.get(url).content == image
+            ), "image downloaded from WordPress should match the image uploaded"

@@ -14,12 +14,14 @@ from exceptions import *
 
 class WordpressMock:
     """WordPress wp-cli command run and database simulation system for unit tests"""
+
     def __init__(self):
         self._database = {}
         self._container_fs = {}
         self._database_credentials = {}
         self._themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
         self._plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
+        self._enabled_apache_conf = set()
         self._patch = None
 
     def _get_current_database_config(self):
@@ -54,6 +56,10 @@ class WordpressMock:
             errno=1045
         )
 
+    def _current_connected_database(self):
+        db_info = self._get_current_database_config()
+        return self._database[(db_info["db_host"], db_info["db_name"])]
+
     def _simulate_run_wp_cli(self, cmd):
         Result = collections.namedtuple("WordpressCliExecResult", "return_code stdout stderr")
 
@@ -68,7 +74,7 @@ class WordpressMock:
         if cmd_prefix == ["wp", "core", "is-installed"]:
             return Result(return_code=1 if database is None else 0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "core", "install"]:
-            self._database[database_key] = {}
+            self._database[database_key] = {"active_plugins": set(), "options": {}}
             return Result(return_code=0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "theme", "list"]:
             return Result(return_code=0,
@@ -88,8 +94,13 @@ class WordpressMock:
             self._themes.remove(cmd[3])
             return Result(return_code=0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "plugin", "list"]:
+            db = self._current_connected_database()
+            active_plugins = db["active_plugins"]
             return Result(return_code=0,
-                          stdout=json.dumps([{"name": t} for t in self._plugins]),
+                          stdout=json.dumps([{
+                              "name": t,
+                              "status": "active" if t in active_plugins else "inactive"
+                          } for t in self._plugins]),
                           stderr="")
         elif cmd_prefix == ["wp", "plugin", "install"]:
             self._plugins.add(cmd[3])
@@ -103,6 +114,42 @@ class WordpressMock:
                     stderr=f"Error, try to delete a non-existent plugin {repr(plugin)}"
                 )
             self._plugins.remove(plugin)
+            return Result(return_code=0, stdout="", stderr="")
+        elif cmd_prefix == ["wp", "plugin", "activate"]:
+            plugin = cmd[3]
+            db = self._current_connected_database()
+            if plugin in db["active_plugins"]:
+                return Result(
+                    return_code=1,
+                    stdout="",
+                    stderr=f"Error, activate an active plugin"
+                )
+            else:
+                db["active_plugins"].add(plugin)
+                return Result(return_code=0, stdout="", stderr="")
+        elif cmd_prefix == ["wp", "plugin", "deactivate"]:
+            plugin = cmd[3]
+            db = self._current_connected_database()
+            if plugin not in db["active_plugins"]:
+                return Result(
+                    return_code=1,
+                    stdout="",
+                    stderr=f"Error, deactivate an inactive plugin"
+                )
+            else:
+                db["active_plugins"].remove(plugin)
+                return Result(return_code=0, stdout="", stderr="")
+        elif cmd_prefix == ["wp", "option", "update"]:
+            option = cmd[3]
+            value = cmd[4]
+            db = self._current_connected_database()
+            db["options"][option] = value
+            return Result(return_code=0, stdout="", stderr="")
+        elif cmd_prefix == ["wp", "option", "delete"]:
+            option = cmd[3]
+            db = self._current_connected_database()
+            if option in db["options"]:
+                del db["options"][option]
             return Result(return_code=0, stdout="", stderr="")
         raise ValueError(f"matrix breached, running an unknown cmd {cmd}")
 
@@ -126,6 +173,15 @@ class WordpressMock:
             except mysql.connector.Error as err:
                 return False, f"MySQL error {err.errno}"
 
+        def mock_apache_config_is_enabled(_self, conf_name: str) -> bool:
+            return conf_name in self._enabled_apache_conf
+
+        def mock_apache_enable_config(_self, conf_name: str, conf) -> None:
+            self._enabled_apache_conf.add(conf_name)
+
+        def mock_apache_disable_config(_self, conf_name: str) -> None:
+            self._enabled_apache_conf.remove(conf_name)
+
         self._patch = unittest.mock.patch.multiple(
             WordpressCharm,
             _current_wp_config=mock_current_wp_config,
@@ -133,7 +189,10 @@ class WordpressMock:
             _remove_wp_config=mock_remove_wp_config,
             _run_wp_cli=mock_run_wp_cli,
             _test_database_connectivity=mock_test_database_connectivity,
-            _DB_CHECK_INTERVAL=0
+            _DB_CHECK_INTERVAL=0,
+            _apache_config_is_enabled=mock_apache_config_is_enabled,
+            _apache_enable_config=mock_apache_enable_config,
+            _apache_disable_config=mock_apache_disable_config,
         )
         self._patch.start()
 
@@ -155,6 +214,15 @@ class WordpressMock:
 
     def check_database_installed(self, db_host, db_name):
         return (db_host, db_name) in self._database
+
+    def get_options(self, db_host, db_name):
+        return self._database[(db_host, db_name)]["options"]
+
+    def get_active_plugins(self, db_host, db_name):
+        return self._database[(db_host, db_name)]["active_plugins"]
+
+    def get_enabled_apache_conf(self):
+        return self._enabled_apache_conf
 
 
 class TestWordpressK8s(unittest.TestCase):
@@ -629,4 +697,102 @@ class TestWordpressK8s(unittest.TestCase):
             self.patch.installed_plugins(),
             set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]),
             "removing plugins from plugins config should trigger plugin deletion"
+        )
+
+    def _standard_plugin_test(
+            self, plugin, plugin_config, excepted_options, additional_check_after_install=None
+    ):
+        plugin_config_keys = list(plugin_config.keys())
+        self._setup_replica_consensus()
+        db_config = {
+            "db_host": "config_db_host",
+            "db_name": "config_db_name",
+            "db_user": "config_db_user",
+            "db_password": "config_db_password",
+        }
+        self.patch.allow_database(db_config)
+        self.harness.update_config(db_config)
+
+        self.harness.update_config(plugin_config)
+
+        self.assertEqual(
+            self.patch.get_active_plugins(db_host="config_db_host", db_name="config_db_name"),
+            {plugin},
+            f"{plugin} should be activated after {plugin_config_keys} being set"
+        )
+        self.assertEqual(
+            self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
+            excepted_options,
+            f"options of plugin {plugin} should be set correctly"
+        )
+
+        if additional_check_after_install is not None:
+            additional_check_after_install()
+
+        self.harness.update_config({k: "" for k in plugin_config})
+        self.assertEqual(
+            self.patch.get_active_plugins(db_host="config_db_host", db_name="config_db_name"),
+            set(),
+            f"{plugin} should be deactivated after {plugin_config_keys} being reset"
+        )
+        self.assertEqual(
+            self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
+            {},
+            f"{plugin} options should be removed after {plugin_config_keys} being reset"
+        )
+
+    def test_akismet_plugin(self):
+        """
+        arrange: after peer relation established and database ready
+        act: update akismet plugin configuration
+        assert: plugin should be activated with WordPress options being set correctly, and plugin
+            should be deactivated with options removed after config being reset
+        """
+        self._standard_plugin_test(
+            plugin="akismet",
+            plugin_config={"wp_plugin_akismet_key": "test"},
+            excepted_options={
+                "akismet_strictness": "0",
+                "akismet_show_user_comments_approved": "0",
+                "wordpress_api_key": "test"
+            }
+        )
+
+    def test_openid_plugin(self):
+        """
+        arrange: after peer relation established and database ready
+        act: update openid plugin configuration
+        assert: plugin should be activated with WordPress options being set correctly, and plugin
+            should be deactivated with options removed after config being reset
+        """
+        self._standard_plugin_test(
+            plugin="openid",
+            plugin_config={
+                "wp_plugin_openid_team_map":
+                    "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
+            },
+            excepted_options={
+                'openid_required_for_registration': '1',
+                'openid_teams_trust_list': 'a:3:{i:1;O:8:"stdClass":4:{s:2:"id";i:1;s:4:"team";s:14:"site-sysadmins";s:4:"role";s:13:"administrator";s:6:"server";s:1:"0";}i:2;O:8:"stdClass":4:{s:2:"id";i:2;s:4:"team";s:12:"site-editors";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}i:3;O:8:"stdClass":4:{s:2:"id";i:3;s:4:"team";s:15:"site-executives";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}}'
+            }
+        )
+
+    def _test_swift_plugin(self):
+        """
+        arrange: after peer relation established and database ready
+        act: update openid plugin configuration
+        assert: plugin should be activated with WordPress options being set correctly, and plugin
+            should be deactivated with options removed after config being reset. Apache
+            configuration for swift integration should be enabled after swift plugin activated
+            and configuration should be disabled after swift plugin deactivated.
+        """
+
+        def additional_check_after_install():
+            assert "docker-php-swift-proxy" in self.patch.get_enabled_apache_conf()
+
+        self._standard_plugin_test(
+            plugin="openstack-objectstorage-k8s",
+            plugin_config={},
+            excepted_options={},
+            additional_check_after_install=additional_check_after_install
         )

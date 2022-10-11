@@ -9,7 +9,7 @@ import ops.testing
 import mysql.connector
 
 from charm import WordpressCharm
-from exceptions import *
+from exceptions import WordPressWaitingStatusException, WordPressBlockedStatusException
 
 
 class WordpressMock:
@@ -43,17 +43,16 @@ class WordpressMock:
         if credential_key not in self._database_credentials:
             raise mysql.connector.Error(
                 msg=f"Can't connect to MySQL server on '{db_info['db_host']}:3306' (2003)",
-                errno=2003
+                errno=2003,
             )
         for credential in self._database_credentials[credential_key]:
             if (
-                    credential["db_user"] == db_info["db_user"] and
-                    credential["db_password"] == db_info["db_password"]
+                credential["db_user"] == db_info["db_user"]
+                and credential["db_password"] == db_info["db_password"]
             ):
                 return
         raise mysql.connector.Error(
-            msg=f"Access denied for user '{db_info['db_user']}'@* (using password: *)",
-            errno=1045
+            msg=f"Access denied for user '{db_info['db_user']}'@* (using password: *)", errno=1045
         )
 
     def _current_connected_database(self):
@@ -77,9 +76,9 @@ class WordpressMock:
             self._database[database_key] = {"active_plugins": set(), "options": {}}
             return Result(return_code=0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "theme", "list"]:
-            return Result(return_code=0,
-                          stdout=json.dumps([{"name": t} for t in self._themes]),
-                          stderr="")
+            return Result(
+                return_code=0, stdout=json.dumps([{"name": t} for t in self._themes]), stderr=""
+            )
         elif cmd_prefix == ["wp", "theme", "install"]:
             self._themes.add(cmd[3])
             return Result(return_code=0, stdout="", stderr="")
@@ -89,19 +88,23 @@ class WordpressMock:
                 return Result(
                     return_code=1,
                     stdout="",
-                    stderr=f"Error, try to delete a non-existent theme {repr(theme)}"
+                    stderr=f"Error, try to delete a non-existent theme {repr(theme)}",
                 )
             self._themes.remove(cmd[3])
             return Result(return_code=0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "plugin", "list"]:
             db = self._current_connected_database()
             active_plugins = db["active_plugins"]
-            return Result(return_code=0,
-                          stdout=json.dumps([{
-                              "name": t,
-                              "status": "active" if t in active_plugins else "inactive"
-                          } for t in self._plugins]),
-                          stderr="")
+            return Result(
+                return_code=0,
+                stdout=json.dumps(
+                    [
+                        {"name": t, "status": "active" if t in active_plugins else "inactive"}
+                        for t in self._plugins
+                    ]
+                ),
+                stderr="",
+            )
         elif cmd_prefix == ["wp", "plugin", "install"]:
             self._plugins.add(cmd[3])
             return Result(return_code=0, stdout="", stderr="")
@@ -111,7 +114,7 @@ class WordpressMock:
                 return Result(
                     return_code=1,
                     stdout="",
-                    stderr=f"Error, try to delete a non-existent plugin {repr(plugin)}"
+                    stderr=f"Error, try to delete a non-existent plugin {repr(plugin)}",
                 )
             self._plugins.remove(plugin)
             return Result(return_code=0, stdout="", stderr="")
@@ -119,11 +122,7 @@ class WordpressMock:
             plugin = cmd[3]
             db = self._current_connected_database()
             if plugin in db["active_plugins"]:
-                return Result(
-                    return_code=1,
-                    stdout="",
-                    stderr=f"Error, activate an active plugin"
-                )
+                return Result(return_code=1, stdout="", stderr="Error, activate an active plugin")
             else:
                 db["active_plugins"].add(plugin)
                 return Result(return_code=0, stdout="", stderr="")
@@ -132,9 +131,7 @@ class WordpressMock:
             db = self._current_connected_database()
             if plugin not in db["active_plugins"]:
                 return Result(
-                    return_code=1,
-                    stdout="",
-                    stderr=f"Error, deactivate an inactive plugin"
+                    return_code=1, stdout="", stderr="Error, deactivate an inactive plugin"
                 )
             else:
                 db["active_plugins"].remove(plugin)
@@ -231,19 +228,9 @@ class TestWordpressK8s(unittest.TestCase):
         self.patch.start()
         self.harness = ops.testing.Harness(WordpressCharm)
         self.addCleanup(self.harness.cleanup)
-        self._leadership_data = {}
-        self.leadership_patch = unittest.mock.patch.multiple(
-            "leadership.LeadershipSettings",
-            __getitem__=self._leadership_data.get,
-            __setitem__=lambda this, key, value: self._leadership_data.update({key: value}),
-            setdefault=self._leadership_data.setdefault
-        )
-        self.leadership_patch.start()
-
         self.app_name = "wordpress-k8s"
 
     def tearDown(self) -> None:
-        self.leadership_patch.stop()
         self.patch.stop()
 
     def test_generate_wp_secret_keys(self):
@@ -256,26 +243,21 @@ class TestWordpressK8s(unittest.TestCase):
 
         secrets = self.harness.charm._generate_wp_secret_keys()
         self.assertIn(
-            "default_admin_password",
-            secrets,
-            "wordpress should generate a default admin password"
+            "default_admin_password", secrets, "wordpress should generate a default admin password"
         )
         del secrets["default_admin_password"]
         key_values = list(secrets.values())
         self.assertSetEqual(
             set(secrets.keys()),
             set(self.harness.charm._wordpress_secret_key_fields()),
-            "generated wordpress secrets should contain all required fields"
+            "generated wordpress secrets should contain all required fields",
         )
         self.assertEqual(
-            len(key_values),
-            len(set(key_values)),
-            "no two secret values should be the same"
+            len(key_values), len(set(key_values)), "no two secret values should be the same"
         )
         for value in key_values:
             self.assertFalse(
-                value.isalnum() or len(value) < 64,
-                "secret values should not be too simple"
+                value.isalnum() or len(value) < 64, "secret values should not be too simple"
             )
 
     def _setup_replica_consensus(self):
@@ -295,7 +277,7 @@ class TestWordpressK8s(unittest.TestCase):
 
         self.assertTrue(
             self.harness.charm._replica_consensus_reached(),
-            "units in application should reach consensus once leadership established"
+            "units in application should reach consensus once leadership established",
         )
 
     def test_replica_consensus_stable_after_leader_reelection(self):
@@ -311,12 +293,12 @@ class TestWordpressK8s(unittest.TestCase):
 
         self.assertFalse(
             self.harness.charm._replica_consensus_reached(),
-            "units in application should not reach consensus before leadership established"
+            "units in application should not reach consensus before leadership established",
         )
         self.harness.set_leader()
         self.assertTrue(
             self.harness.charm._replica_consensus_reached(),
-            "units in application should reach consensus once leadership established"
+            "units in application should reach consensus once leadership established",
         )
         consensus = self.harness.get_relation_data(replica_relation_id, self.app_name)
         # The harness will emit a leader-elected event when calling ``set_leader(True)`` no matter
@@ -327,7 +309,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertDictEqual(
             consensus,
             self.harness.get_relation_data(replica_relation_id, self.app_name),
-            "consensus once established should not change after leadership changed"
+            "consensus once established should not change after leadership changed",
         )
 
     @staticmethod
@@ -359,7 +341,7 @@ class TestWordpressK8s(unittest.TestCase):
                 "host": self.harness.charm.state.relation_db_host,
                 "database": self.harness.charm.state.relation_db_name,
                 "user": self.harness.charm.state.relation_db_user,
-                "password": self.harness.charm.state.relation_db_password
+                "password": self.harness.charm.state.relation_db_password,
             }
 
         self.harness.begin_with_initial_hooks()
@@ -367,7 +349,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertSetEqual(
             {None},
             set(get_db_info_from_state().values()),
-            "database info in charm state should not exist before database relation created"
+            "database info in charm state should not exist before database relation created",
         )
 
         db_info = self._example_db_info()
@@ -378,8 +360,9 @@ class TestWordpressK8s(unittest.TestCase):
             self.assertEqual(
                 db_info_in_state[db_info_key],
                 db_info[db_info_key],
-                "database info {} in charm state should be updated after database relation changed"
-                .format(db_info_key)
+                "database info {} in charm state should be updated after database relation changed".format(
+                    db_info_key
+                ),
             )
 
         self.harness.remove_relation(db_relation_id)
@@ -388,8 +371,9 @@ class TestWordpressK8s(unittest.TestCase):
         for db_info_key in db_info_in_state:
             self.assertIsNone(
                 db_info_in_state[db_info_key],
-                "database info {} should be reset to None after database relation broken"
-                .format(db_info_key)
+                "database info {} should be reset to None after database relation broken".format(
+                    db_info_key
+                ),
             )
 
     def test_wp_config(self):
@@ -408,7 +392,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertRaises(
             Exception,
             lambda _: self.harness.charm._gen_wp_config(),
-            "generating a config before consensus should raise an exception for security reasons"
+            "generating a config before consensus should raise an exception for security reasons",
         )
 
         replica_consensus = self._setup_replica_consensus()
@@ -418,7 +402,7 @@ class TestWordpressK8s(unittest.TestCase):
             secret_value = replica_consensus[secret_key]
             self.assertTrue(
                 in_same_line(wp_config, "define(", secret_key.upper(), secret_value),
-                "wp-config.php should contain a valid {}".format(secret_key)
+                "wp-config.php should contain a valid {}".format(secret_key),
             )
 
         db_info = self._example_db_info()
@@ -435,10 +419,13 @@ class TestWordpressK8s(unittest.TestCase):
             self.assertTrue(
                 in_same_line(
                     wp_config,
-                    "define(", db_info_field.upper(), db_info[db_field_conversion[db_info_field]]
+                    "define(",
+                    db_info_field.upper(),
+                    db_info[db_field_conversion[db_info_field]],
                 ),
-                "wp-config.php should contain database setting {} from the db relation"
-                .format(db_info_field)
+                "wp-config.php should contain database setting {} from the db relation".format(
+                    db_info_field
+                ),
             )
 
         db_info_in_config = {
@@ -453,10 +440,9 @@ class TestWordpressK8s(unittest.TestCase):
         for db_info_field in db_info_in_config.keys():
             self.assertTrue(
                 in_same_line(
-                    wp_config,
-                    "define(", db_info_field.upper(), db_info_in_config[db_info_field]
+                    wp_config, "define(", db_info_field.upper(), db_info_in_config[db_info_field]
                 ),
-                "db info in config should takes precedence over the db relation"
+                "db info in config should takes precedence over the db relation",
             )
 
     def test_wp_install_cmd(self):
@@ -471,21 +457,23 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertIn(
             "--admin_user=admin",
             install_cmd,
-            "admin user should be \"admin\" with the default configuration"
+            "admin user should be \"admin\" with the default configuration",
         )
         self.assertIn(
             "--admin_password={}".format(consensus["default_admin_password"]),
             install_cmd,
-            "admin password should be the same as the default_admin_password in peer relation data"
+            "admin password should be the same as the default_admin_password in peer relation data",
         )
 
-        self.harness.update_config({
-            "initial_settings": """\
+        self.harness.update_config(
+            {
+                "initial_settings": """\
             user_name: test_admin_username
             admin_email: test@test.com
             admin_password: test_admin_password
             """
-        })
+            }
+        )
         install_cmd = self.harness.charm._wp_install_cmd()
 
         self.assertIn("--admin_user=test_admin_username", install_cmd)
@@ -501,19 +489,18 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.begin_with_initial_hooks()
 
         with self.assertRaises(
-                WordPressWaitingStatusException,
-                msg="core reconciliation should fail"
+            WordPressWaitingStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
             self.harness.model.unit.status,
             ops.charm.model.WaitingStatus,
-            "unit should be in WaitingStatus"
+            "unit should be in WaitingStatus",
         )
         self.assertIn(
             "unit consensus",
             self.harness.model.unit.status.message,
-            "unit should wait for peer relation establishment right now"
+            "unit should wait for peer relation establishment right now",
         )
 
     def test_core_reconciliation_before_database_ready(self):
@@ -525,19 +512,18 @@ class TestWordpressK8s(unittest.TestCase):
         self._setup_replica_consensus()
 
         with self.assertRaises(
-                WordPressBlockedStatusException,
-                msg="core reconciliation should fail"
+            WordPressBlockedStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
             self.harness.model.unit.status,
             ops.charm.model.BlockedStatus,
-            "unit should be in WaitingStatus"
+            "unit should be in WaitingStatus",
         )
         self.assertIn(
             "db relation",
             self.harness.model.unit.status.message,
-            "unit should wait for database connection info"
+            "unit should wait for database connection info",
         )
 
     def test_core_reconciliation(self):
@@ -559,7 +545,7 @@ class TestWordpressK8s(unittest.TestCase):
 
         self.assertTrue(
             self.patch.check_database_installed(db_config["db_host"], db_config["db_name"]),
-            "wordpress should be installed after core reconciliation"
+            "wordpress should be installed after core reconciliation",
         )
 
         db_config.update({"db_host": "config_db_host_2"})
@@ -568,7 +554,7 @@ class TestWordpressK8s(unittest.TestCase):
 
         self.assertTrue(
             self.patch.check_database_installed("config_db_host_2", db_config["db_name"]),
-            "wordpress should be installed after database config changed"
+            "wordpress should be installed after database config changed",
         )
 
     @staticmethod
@@ -588,12 +574,8 @@ class TestWordpressK8s(unittest.TestCase):
         event = self._gen_action_event_mock()
         self.harness.charm._on_get_initial_password_action(event)
 
-        self.assertEqual(
-            len(event.set_results.mock_calls), 0
-        )
-        self.assertEqual(
-            len(event.fail.mock_calls), 1
-        )
+        self.assertEqual(len(event.set_results.mock_calls), 0)
+        self.assertEqual(len(event.fail.mock_calls), 1)
 
     def test_get_initial_password_action(self):
         """
@@ -605,12 +587,10 @@ class TestWordpressK8s(unittest.TestCase):
         event = self._gen_action_event_mock()
         self.harness.charm._on_get_initial_password_action(event)
 
-        self.assertEqual(
-            len(event.fail.mock_calls), 0
-        )
+        self.assertEqual(len(event.fail.mock_calls), 0)
         self.assertSequenceEqual(
             event.set_results.mock_calls,
-            [unittest.mock.call({"password": consensus["default_admin_password"]})]
+            [unittest.mock.call({"password": consensus["default_admin_password"]})],
         )
 
     def test_theme_reconciliation(self):
@@ -633,27 +613,23 @@ class TestWordpressK8s(unittest.TestCase):
             self.patch.installed_themes(),
             set(self.harness.charm._WORDPRESS_DEFAULT_THEMES),
             "installed themes should match the default installed themes "
-            "with the default themes config"
+            "with the default themes config",
         )
 
-        self.harness.update_config({
-            "themes": "123, abc"
-        })
+        self.harness.update_config({"themes": "123, abc"})
 
         self.assertEqual(
             self.patch.installed_themes(),
             set(self.harness.charm._WORDPRESS_DEFAULT_THEMES + ["abc", "123"]),
-            "adding themes to themes config should install trigger theme installation"
+            "adding themes to themes config should install trigger theme installation",
         )
 
-        self.harness.update_config({
-            "themes": "123"
-        })
+        self.harness.update_config({"themes": "123"})
 
         self.assertEqual(
             self.patch.installed_themes(),
             set(self.harness.charm._WORDPRESS_DEFAULT_THEMES + ["123"]),
-            "removing themes from themes config should trigger theme deletion"
+            "removing themes from themes config should trigger theme deletion",
         )
 
     def test_plugin_reconciliation(self):
@@ -676,31 +652,27 @@ class TestWordpressK8s(unittest.TestCase):
             self.patch.installed_plugins(),
             set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS),
             "installed plugins should match the default installed plugins "
-            "with the default plugins config"
+            "with the default plugins config",
         )
 
-        self.harness.update_config({
-            "plugins": "123, abc"
-        })
+        self.harness.update_config({"plugins": "123, abc"})
 
         self.assertEqual(
             self.patch.installed_plugins(),
             set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]),
-            "adding plugins to plugins config should install trigger plugin installation"
+            "adding plugins to plugins config should install trigger plugin installation",
         )
 
-        self.harness.update_config({
-            "plugins": "123"
-        })
+        self.harness.update_config({"plugins": "123"})
 
         self.assertEqual(
             self.patch.installed_plugins(),
             set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]),
-            "removing plugins from plugins config should trigger plugin deletion"
+            "removing plugins from plugins config should trigger plugin deletion",
         )
 
     def _standard_plugin_test(
-            self, plugin, plugin_config, excepted_options, additional_check_after_install=None
+        self, plugin, plugin_config, excepted_options, additional_check_after_install=None
     ):
         plugin_config_keys = list(plugin_config.keys())
         self._setup_replica_consensus()
@@ -718,12 +690,12 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertEqual(
             self.patch.get_active_plugins(db_host="config_db_host", db_name="config_db_name"),
             {plugin},
-            f"{plugin} should be activated after {plugin_config_keys} being set"
+            f"{plugin} should be activated after {plugin_config_keys} being set",
         )
         self.assertEqual(
             self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
             excepted_options,
-            f"options of plugin {plugin} should be set correctly"
+            f"options of plugin {plugin} should be set correctly",
         )
 
         if additional_check_after_install is not None:
@@ -733,12 +705,12 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertEqual(
             self.patch.get_active_plugins(db_host="config_db_host", db_name="config_db_name"),
             set(),
-            f"{plugin} should be deactivated after {plugin_config_keys} being reset"
+            f"{plugin} should be deactivated after {plugin_config_keys} being reset",
         )
         self.assertEqual(
             self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
             {},
-            f"{plugin} options should be removed after {plugin_config_keys} being reset"
+            f"{plugin} options should be removed after {plugin_config_keys} being reset",
         )
 
     def test_akismet_plugin(self):
@@ -754,8 +726,8 @@ class TestWordpressK8s(unittest.TestCase):
             excepted_options={
                 "akismet_strictness": "0",
                 "akismet_show_user_comments_approved": "0",
-                "wordpress_api_key": "test"
-            }
+                "wordpress_api_key": "test",
+            },
         )
 
     def test_openid_plugin(self):
@@ -768,13 +740,12 @@ class TestWordpressK8s(unittest.TestCase):
         self._standard_plugin_test(
             plugin="openid",
             plugin_config={
-                "wp_plugin_openid_team_map":
-                    "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
+                "wp_plugin_openid_team_map": "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
             },
             excepted_options={
                 'openid_required_for_registration': '1',
-                'openid_teams_trust_list': 'a:3:{i:1;O:8:"stdClass":4:{s:2:"id";i:1;s:4:"team";s:14:"site-sysadmins";s:4:"role";s:13:"administrator";s:6:"server";s:1:"0";}i:2;O:8:"stdClass":4:{s:2:"id";i:2;s:4:"team";s:12:"site-editors";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}i:3;O:8:"stdClass":4:{s:2:"id";i:3;s:4:"team";s:15:"site-executives";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}}'
-            }
+                'openid_teams_trust_list': 'a:3:{i:1;O:8:"stdClass":4:{s:2:"id";i:1;s:4:"team";s:14:"site-sysadmins";s:4:"role";s:13:"administrator";s:6:"server";s:1:"0";}i:2;O:8:"stdClass":4:{s:2:"id";i:2;s:4:"team";s:12:"site-editors";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}i:3;O:8:"stdClass":4:{s:2:"id";i:3;s:4:"team";s:15:"site-executives";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}}',
+            },
         )
 
     def _test_swift_plugin(self):
@@ -794,5 +765,5 @@ class TestWordpressK8s(unittest.TestCase):
             plugin="openstack-objectstorage-k8s",
             plugin_config={},
             excepted_options={},
-            additional_check_after_install=additional_check_after_install
+            additional_check_after_install=additional_check_after_install,
         )

@@ -13,12 +13,7 @@ class WordpressClient:
     @classmethod
     def run_wordpress_functionality_test(cls, host: str, admin_username: str, admin_password: str):
         """Run standard WordPress functionality test suite"""
-        wp_client = cls(
-            host=host,
-            username=admin_username,
-            password=admin_password,
-            is_admin=True
-        )
+        wp_client = cls(host=host, username=admin_username, password=admin_password, is_admin=True)
         post_title = secrets.token_hex(16)
         post_content = secrets.token_hex(16)
         post = wp_client._create_post(
@@ -27,7 +22,7 @@ class WordpressClient:
         )
         homepage = wp_client.get_homepage()
         assert (
-                post_title in homepage and post_content in homepage
+            post_title in homepage and post_content in homepage
         ), "admin user should be able to create a new post"
         comment = secrets.token_hex(16)
         post_link = post["link"]
@@ -36,9 +31,8 @@ class WordpressClient:
             post_link=post_link,
             content=comment,
         )
-        assert (
-                comment_link.startswith(post_link) and
-                comment in wp_client.get_post(post_link)
+        assert comment_link.startswith(post_link) and comment in wp_client.get_post(
+            post_link
         ), "admin user should be able to create a comment"
 
     def __init__(self, host: str, username: str, password: str, is_admin: bool):
@@ -60,11 +54,7 @@ class WordpressClient:
 
     def _get(self, url: str, headers=None, except_status_code=None):
         """HTTP GET using the instance session"""
-        response = self._session.get(
-            url,
-            headers=headers,
-            timeout=self.timeout
-        )
+        response = self._session.get(url, headers=headers, timeout=self.timeout)
         if except_status_code is not None and response.status_code != except_status_code:
             raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
         return response
@@ -72,11 +62,7 @@ class WordpressClient:
     def _post(self, url: str, json=None, data=None, headers=None, except_status_code=None):
         """HTTP GET using the instance session"""
         response = self._session.post(
-            url,
-            json=json,
-            data=data,
-            headers=headers,
-            timeout=self.timeout
+            url, json=json, data=data, headers=headers, timeout=self.timeout
         )
         if except_status_code is not None and response.status_code != except_status_code:
             raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
@@ -92,17 +78,15 @@ class WordpressClient:
                 "pwd": self.password,
                 "wp-submit": "Log In",
                 "redirect_to": f"http://{self.host}/wp-admin/",
-                "testcookie": 1
+                "testcookie": 1,
             },
-            except_status_code=200
+            except_status_code=200,
         )
         return response.url == f"http://{self.host}/wp-admin/"
 
     def _set_options_permalink(self):
         """Set WordPress permalink option to /%postname%/"""
-        options_permalink_page = self._get(
-            f"http://{self.host}/wp-admin/options-permalink.php"
-        )
+        options_permalink_page = self._get(f"http://{self.host}/wp-admin/options-permalink.php")
         options_permalink_page = options_permalink_page.text
         wp_nonce = re.findall('name="_wpnonce" value="([a-zA-Z0-9]+)"', options_permalink_page)[0]
         self._post(
@@ -112,9 +96,9 @@ class WordpressClient:
                 '_wp_http_referer': '/wp-admin/options-permalink.php',
                 'selection': '/%postname%/',
                 'permalink_structure': '/%postname%/',
-                'submit': 'Save Changes'
+                'submit': 'Save Changes',
             },
-            except_status_code=200
+            except_status_code=200,
         )
 
     def _gen_wp_rest_nonce(self):
@@ -128,13 +112,9 @@ class WordpressClient:
         """Create a WordPress post using wp-json API, return post object"""
         response = self._post(
             f"http://{self.host}/wp-json/wp/v2/posts/",
-            json={
-                "status": "publish",
-                "title": title,
-                "content": content
-            },
+            json={"status": "publish", "title": title, "content": content},
             headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
-            except_status_code=201
+            except_status_code=201,
         )
         return response.json()
 
@@ -142,8 +122,7 @@ class WordpressClient:
         """Add a comment to a WordPress post using HTML form, return url link of the new comment"""
         post_page = self._get(post_link)
         nonce = re.findall(
-            'name="_wp_unfiltered_html_comment_disabled" value="([a-zA-Z0-9]+)"',
-            post_page.text
+            'name="_wp_unfiltered_html_comment_disabled" value="([a-zA-Z0-9]+)"', post_page.text
         )[0]
 
         response = self._post(
@@ -153,9 +132,9 @@ class WordpressClient:
                 'submit': 'Post Comment',
                 'comment_post_ID': post_id,
                 'comment_parent': '0',
-                '_wp_unfiltered_html_comment': nonce
+                '_wp_unfiltered_html_comment': nonce,
             },
-            except_status_code=200
+            except_status_code=200,
         )
         if "Duplicate comment detected" in response.text:
             raise ValueError(f"Duplicate comment detected: {repr(content)}")
@@ -187,9 +166,7 @@ class WordpressClient:
         )
         return [p["plugin"].split("/")[0] for p in response.json()]
 
-    def upload_media(
-            self, filename: str, content: bytes, mimetype: str = None
-    ) -> typing.List[str]:
+    def upload_media(self, filename: str, content: bytes, mimetype: str = None) -> typing.List[str]:
         """Upload a media file (image/video)
 
         Return URL of the original image and resized images for the uploaded file on WordPress.
@@ -203,10 +180,10 @@ class WordpressClient:
             headers={
                 "X-WP-Nonce": self._gen_wp_rest_nonce(),
                 "Content-Type": mimetype,
-                "Content-Disposition": f'attachment; filename="{filename}"'
+                "Content-Disposition": f'attachment; filename="{filename}"',
             },
             data=content,
-            except_status_code=201
+            except_status_code=201,
         )
         media = response.json()
         image_urls = []

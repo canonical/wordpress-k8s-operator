@@ -3,7 +3,6 @@ import collections
 import itertools
 import json
 import logging
-import re
 import os
 import secrets
 import string
@@ -15,81 +14,21 @@ import ops.charm
 import ops.pebble
 import yaml
 
-import charm
 from yaml import safe_load
 import mysql.connector
 
-from ops.charm import CharmBase, CharmEvents
-from ops.framework import EventBase, EventSource, StoredState
+from ops.charm import CharmBase
+from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+from ops.model import ActiveStatus, WaitingStatus
 
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
-from leadership import LeadershipSettings
 import exceptions
 from opslib.mysql import MySQLClient
-
-from wordpress import Wordpress, password_generator, WORDPRESS_SECRETS
 
 # MySQL logger prints database credentials on debug level, silence it
 logging.getLogger(mysql.connector.__name__).setLevel(logging.WARNING)
 logger = logging.getLogger()
-
-
-def juju_setting_to_list(config_string, split_char=" "):
-    "Transforms Juju setting strings into a list, defaults to splitting on whitespace."
-    return config_string.split(split_char)
-
-
-class WordpressFirstInstallEvent(EventBase):
-    """Custom event for signalling Wordpress initialisation.
-
-    WordpressInitialiseEvent allows us to signal the handler for
-    the initial Wordpress setup logic.
-    """
-
-    pass
-
-
-class WordpressStaticDatabaseChanged(EventBase):
-    """Custom event for static Database configuration changed.
-
-    WordpressStaticDatabaseChanged provides the same interface as the
-    db.on.database_changed event which enables the WordPressCharm's
-    on_database_changed handler to update state for both relation and static
-    database configuration events.
-    """
-
-    @property
-    def database(self):
-        return self.model.config["db_name"]
-
-    @property
-    def host(self):
-        return self.model.config["db_host"]
-
-    @property
-    def user(self):
-        return self.model.config["db_user"]
-
-    @property
-    def password(self):
-        return self.model.config["db_password"]
-
-    @property
-    def model(self):
-        return self.framework.model
-
-
-class WordpressCharmEvents(CharmEvents):
-    """Register custom charm events.
-
-    WordpressCharmEvents registers the custom WordpressFirstInstallEvent
-    and WordpressStaticDatabaseChanged event to the charm.
-    """
-
-    wordpress_initial_setup = EventSource(WordpressFirstInstallEvent)
-    wordpress_static_database_changed = EventSource(WordpressStaticDatabaseChanged)
 
 
 class WordpressCharm(CharmBase):
@@ -125,7 +64,7 @@ class WordpressCharm(CharmBase):
         'xubuntu-website/xubuntu-eighteen',
         'xubuntu-website/xubuntu-fifteen',
         'xubuntu-website/xubuntu-fourteen',
-        'xubuntu-website/xubuntu-thirteen'
+        'xubuntu-website/xubuntu-thirteen',
     ]
 
     _WORDPRESS_DEFAULT_PLUGINS = [
@@ -167,7 +106,7 @@ class WordpressCharm(CharmBase):
         'wp-lightbox-2',
         'wp-statistics',
         'xubuntu-team-members',
-        'wordpress-seo'
+        'wordpress-seo',
     ]
 
     _DB_CHECK_INTERVAL = 1
@@ -176,12 +115,9 @@ class WordpressCharm(CharmBase):
     _default_service_port = 80
 
     state = StoredState()
-    on = WordpressCharmEvents()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.leader_data = LeadershipSettings()
 
         self.db = MySQLClient(self, "db")
 
@@ -202,15 +138,13 @@ class WordpressCharm(CharmBase):
             relation_db_password=None,
         )
 
-        self.wordpress = Wordpress(c)
-
         self.ingress = IngressRequires(self, self.ingress_config)
 
-        self.framework.observe(self.on.get_initial_password_action,
-                               self._on_get_initial_password_action)
+        self.framework.observe(
+            self.on.get_initial_password_action, self._on_get_initial_password_action
+        )
 
-        self.framework.observe(self.on.leader_elected,
-                               self._on_leader_elected_replica_data_handler)
+        self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
         self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
 
         self.framework.observe(self.on.config_changed, self._reconciliation)
@@ -219,457 +153,17 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.db.on.database_changed, self._reconciliation)
 
     @property
-    def container_name(self):
-        return self._container_name
-
-    @property
-    def service_ip_address(self):
-        return os.environ.get("WORDPRESS_SERVICE_SERVICE_HOST")
-
-    @property
-    def service_port(self):
-        return self._default_service_port
-
-    @property
-    def wordpress_workload(self):
-        """Returns the WordPress pebble workload configuration."""
-        return {
-            "summary": "WordPress layer",
-            "description": "pebble config layer for WordPress",
-            "services": {
-                "wordpress-plugins": {
-                    "override": "replace",
-                    "summary": "WordPress plugin updater",
-                    "command": (
-                        "bash -c '/srv/wordpress-helpers/plugin_handler.py && "
-                        "stat /srv/wordpress-helpers/.ready && "
-                        "sleep infinity'"
-                    ),
-                    "after": ["apache2"],
-                    "environment": self._env_config,
-                },
-                "wordpress-init": {
-                    "override": "replace",
-                    "summary": "WordPress initialiser",
-                    "command": (
-                        "bash -c '"
-                        "/charm/bin/wordpressInit.sh >> /wordpressInit.log 2>&1"
-                        "'"
-                    ),
-                    "environment": self._env_config,
-                },
-                "apache2": {
-                    "override": "replace",
-                    "summary": "Apache2 service",
-                    "command": (
-                        "bash -c '"
-                        "apache2ctl -D FOREGROUND -E /apache-error.log -e debug >>/apache-sout.log 2>&1"
-                        "'"
-                    ),
-                    "requires": ["wordpress-init"],
-                    "after": ["wordpress-init"],
-                    "environment": self._env_config,
-                },
-                self.container_name: {
-                    "override": "replace",
-                    "summary": "WordPress service",
-                    "command": "sleep infinity",
-                    "requires": ["apache2", "wordpress-plugins"],
-                    "environment": self._env_config,
-                },
-            },
-        }
-
-    @property
     def ingress_config(self):
         blog_hostname = self.state.blog_hostname
         ingress_config = {
             "service-hostname": blog_hostname,
             "service-name": self.app.name,
-            "service-port": self.service_port,
+            "service-port": "80",
         }
         tls_secret_name = self.model.config["tls_secret_name"]
         if tls_secret_name:
             ingress_config["tls-secret-name"] = tls_secret_name
         return ingress_config
-
-    @property
-    def _db_config(self):
-        """Kubernetes Pod environment variables."""
-        # TODO: make this less fragile.
-        if self.unit.is_leader():
-            return {
-                "WORDPRESS_DB_HOST": self.state.db_host,
-                "WORDPRESS_DB_NAME": self.state.db_name,
-                "WORDPRESS_DB_USER": self.state.db_user,
-                "WORDPRESS_DB_PASSWORD": self.state.db_password,
-            }
-        else:
-            return {
-                "WORDPRESS_DB_HOST": self.leader_data["db_host"],
-                "WORDPRESS_DB_NAME": self.leader_data["db_name"],
-                "WORDPRESS_DB_USER": self.leader_data["db_user"],
-                "WORDPRESS_DB_PASSWORD": self.leader_data["db_password"],
-            }
-
-    @property
-    def _env_config(self):
-        """Kubernetes Pod environment variables."""
-        config = dict(self.model.config)
-        env_config = {}
-        if config["container_config"].strip():
-            env_config = safe_load(config["container_config"])
-
-        env_config["WORDPRESS_BLOG_HOSTNAME"] = self.state.blog_hostname
-        initial_settings = {}
-        if config["initial_settings"].strip():
-            initial_settings.update(safe_load(config["initial_settings"]))
-        # TODO: make these class default attributes
-        env_config["WORDPRESS_ADMIN_USER"] = initial_settings.get("user_name", "admin")
-        env_config["WORDPRESS_ADMIN_EMAIL"] = initial_settings.get("admin_email",
-                                                                   "nobody@localhost")
-
-        env_config["WORDPRESS_INSTALLED"] = self.state.installed_successfully
-        env_config.update(self._wordpress_secrets)
-
-        if not config["tls_secret_name"]:
-            env_config["WORDPRESS_TLS_DISABLED"] = "true"
-        if config.get("wp_plugin_openid_team_map"):
-            env_config["WP_PLUGIN_OPENID_TEAM_MAP"] = config["wp_plugin_openid_team_map"]
-
-        # Add secrets from charm config.
-        if config.get("wp_plugin_akismet_key"):
-            env_config["WP_PLUGIN_AKISMET_KEY"] = config["wp_plugin_akismet_key"]
-        if config.get("wp_plugin_openstack-objectstorage_config"):
-            # Actual plugin name is 'openstack-objectstorage', but we're only
-            # implementing the 'swift' portion of it.
-            wp_plugin_swift_config = safe_load(
-                config.get("wp_plugin_openstack-objectstorage_config"))
-            env_config["SWIFT_AUTH_URL"] = wp_plugin_swift_config.get("auth-url")
-            env_config["SWIFT_BUCKET"] = wp_plugin_swift_config.get("bucket")
-            env_config["SWIFT_PASSWORD"] = wp_plugin_swift_config.get("password")
-            env_config["SWIFT_PREFIX"] = wp_plugin_swift_config.get("prefix")
-            env_config["SWIFT_REGION"] = wp_plugin_swift_config.get("region")
-            env_config["SWIFT_TENANT"] = wp_plugin_swift_config.get("tenant")
-            env_config["SWIFT_URL"] = wp_plugin_swift_config.get("url")
-            env_config["SWIFT_USERNAME"] = wp_plugin_swift_config.get("username")
-            env_config["SWIFT_COPY_TO_SWIFT"] = wp_plugin_swift_config.get("copy-to-swift")
-            env_config["SWIFT_SERVE_FROM_SWIFT"] = wp_plugin_swift_config.get("serve-from-swift")
-            env_config["SWIFT_REMOVE_LOCAL_FILE"] = wp_plugin_swift_config.get("remove-local-file")
-
-        env_config.update(self._db_config)
-        return env_config
-
-    def on_wordpress_uninitialised(self, event):
-        """Setup the WordPress service with default values.
-
-        WordPress will expose the setup page to the user to manually
-        configure with their browser. This isn't ideal from a security
-        perspective so the charm will initialise the site for you and
-        expose the admin password via `get_initial_password_action`.
-
-        This method observes all changes to the system by registering
-        to the .on.config_changed event. This avoids current state split
-        brain issues because all changes to the system sink into
-        `on.config_changed`.
-
-        It defines the state of the install ready state as:
-          - We aren't leader, so check leader_data install state for the installed state answer.
-          - We aren't ready to setup WordPress yet (missing configuration data).
-          - We're ready to do the initial setup of WordPress (all dependent configuration data set).
-          - We're currently setting up WordPress, lock out any other events from attempting to install.
-          - WordPress is operating in a production capacity, no more work to do, no-op.
-        """
-
-        if self.unit.is_leader() is False:
-            # Poorly named, expect a separate flag for non leader units here.
-            self.state.installed_successfully = self.leader_data.setdefault("installed", False)
-
-        if self.state.installed_successfully is True:
-            logger.warning("already installed, nothing more to do...")
-            return
-
-        # By using sets we're able to follow a state relay pattern. Each event handler that is
-        # responsible for setting state adds their flag to the set. Once thet set is complete
-        # it will be observed here. During the install phase we use StoredState as a mutex lock
-        # to avoid race conditions with future events. By calling .emit() we flush the current
-        # state to persistent storage which ensures future events do not observe stale state.
-        first_time_ready = {"leader", "db", "ingress", "leader"}
-        install_running = {"attempted", "ingress", "db", "leader"}
-
-        logger.debug(
-            (
-                f"DEBUG: current install ready state is {self.state.install_state}, "
-                f"required install ready state is {first_time_ready}"
-            )
-        )
-
-        if self.state.install_state == install_running:
-            logger.info("Install phase currently running...")
-            BlockedStatus("WordPress installing...")
-
-        elif self.state.install_state == first_time_ready:
-            # TODO:
-            # Check if WordPress is already installed.
-            # Would be something like
-            #   if self.is_vhost_ready():[...]
-            WaitingStatus("WordPress not installed yet...")
-            self.state.attempted_install = True
-            self.state.install_state.add("attempted")
-            logger.info("Attempting WordPress install...")
-            self.on.wordpress_initial_setup.emit()
-
-    def on_wordpress_initial_setup(self, event):
-        logger.info("Beginning WordPress setup process...")
-        container = self.unit.get_container(self.container_name)
-        container.add_layer(self.container_name, self.wordpress_workload, combine=True)
-
-        # Temporary workaround until the init script is baked into the Dockerimage.
-        setup_service = "wordpressInit"
-        src_path = f"src/{setup_service}.sh"
-        charm_bin = "/charm/bin"
-        dst_path = f"{charm_bin}/{setup_service}.sh"
-        with open(src_path, "r", encoding="utf-8") as f:
-            container.push(dst_path, f, permissions=0o755)
-
-        admin_password = "/admin_password"
-        config = self._get_initial_password()
-        container.push(admin_password, config, permissions=0o400)
-
-        logger.info("Adding WordPress layer to container...")
-        self.ingress.update_config(self.ingress_config)
-        container = self.unit.get_container(self.container_name)
-        pebble = container.pebble
-        wait_on = pebble.start_services([self.container_name])
-        pebble.wait_change(wait_on)
-
-        logger.info("first time WordPress install was successful...")
-        container.remove_path(admin_password)
-        self.unit.status = MaintenanceStatus("WordPress Initialised")
-
-        wait_on = pebble.stop_services([s for s in self.wordpress_workload["services"]])
-        self.leader_data["installed"] = True
-        self.state.installed_successfully = True
-        self.on.config_changed.emit()
-
-    def on_config_changed(self, event):
-        """Merge charm configuration transitions."""
-        logger.debug(f"Event {event} install ready state is {self.state.install_state}")
-
-        is_valid = self.is_valid_config()
-        if not is_valid:
-            return
-
-        container = self.unit.get_container(self.container_name)
-        services = container.get_plan().to_dict().get("services", {})
-
-        if services != self.wordpress_workload["services"]:
-            logger.info("WordPress configuration transition detected...")
-            self.unit.status = MaintenanceStatus("Transitioning WordPress configuration")
-            container.add_layer(self.container_name, self.wordpress_workload, combine=True)
-
-            self.unit.status = MaintenanceStatus("Restarting WordPress")
-            running_services = [s for s in self.wordpress_workload["services"] if
-                                container.get_service(s).is_running()]
-            if running_services:
-                container.pebble.stop_services(running_services)
-
-            # Temporary workaround until the init script is baked into the Dockerimage.
-            setup_service = "wordpressInit"
-            src_path = f"src/{setup_service}.sh"
-            charm_bin = "/charm/bin"
-            dst_path = f"{charm_bin}/{setup_service}.sh"
-            with open(src_path, "r", encoding="utf-8") as f:
-                container.push(dst_path, f, permissions=0o755)
-
-            container.start(self.container_name)
-
-            self.unit.status = ActiveStatus("WordPress service is live!")
-            self.ingress.update_config(self.ingress_config)
-
-    def on_database_config_changed(self, event):
-        """Handle when the user supplies database details via charm config.
-        """
-        if self.state.has_db_relation is False:
-            db_config = {k: v or None for (k, v) in self.model.config.items() if
-                         k.startswith("db_")}
-            if any(db_config.values()) is True:  # User has supplied db config.
-                current_db_data = {self.state.db_host, self.state.db_name, self.state.db_user,
-                                   self.state.db_password}
-                new_db_data = {db_config.values()}
-                db_differences = current_db_data.difference(new_db_data)
-                if db_differences:
-                    self.on.wordpress_static_database_changed.emit()
-
-    def on_db_relation_created(self, event):
-        """Handle the db-relation-created hook.
-
-        We need to handle this hook to switch from database
-        credentials being specified in the charm configuration
-        to being provided by the relation.
-        """
-
-        self.state.db_host = None
-        self.state.db_name = None
-        self.state.db_user = None
-        self.state.db_password = None
-        self.state.has_db_relation = True
-        self.on.config_changed.emit()
-
-    def on_db_relation_broken(self, event):
-        """Handle the db-relation-broken hook.
-
-        We need to handle this hook to switch from database
-        credentials being provided by the relation to being
-        specified in the charm configuration.
-        """
-        self.state.db_host = None
-        self.state.db_name = None
-        self.state.db_user = None
-        self.state.db_password = None
-        self.state.has_db_relation = False
-        self.on.config_changed.emit()
-
-    def on_database_changed(self, event):
-        """Handle the MySQL configuration changed event.
-
-        The MySQLClient (self.db) and WordpressStaticDatabaseChanged
-        (self.on.wordpress_static_database_changed ) emits this event whenever
-        the database credentials have changed, this also includes when they
-        disappear as part of relation tear down. In addition to handling the
-        MySQLClient relation, this method handles the case where db
-        configuration is supplied by the user via model config. See
-        WordpressStaticDatabaseChanged for details.
-        """
-        # TODO: we could potentially remove setting database config from state
-        # entirely and just rely on leader_data.
-        self.state.db_host = event.host
-        self.state.db_name = event.database
-        self.state.db_user = event.user
-        self.state.db_password = event.password
-
-        if self.unit.is_leader():
-            self.leader_data["db_host"] = event.host
-            self.leader_data["db_name"] = event.database
-            self.leader_data["db_user"] = event.user
-            self.leader_data["db_password"] = event.password
-
-        self.state.has_db_relation = True
-        self.state.install_state.add("db")
-        self.on.config_changed.emit()
-
-    def on_ingress_relation_broken(self, event):
-        """Handle the ingress-relation-broken hook.
-        """
-        self.ingress.update_config({})
-        self.state.has_ingress_relation = False
-        self.state.install_state.discard("ingress")
-        self.on.config_changed.emit()
-
-    def on_ingress_relation_changed(self, event):
-        """Store the current ingress IP address on relation changed."""
-        self.state.has_ingress_relation = True
-        self.state.install_state.add("ingress")
-        self.on.config_changed.emit()
-
-    def on_leader_elected(self, event):
-        """Setup common workload state.
-
-        This includes:
-          - database config.
-          - wordpress secrets.
-        """
-        if self.unit.is_leader() is True:
-            if not all(self._wordpress_secrets.values()):
-                self._generate_wordpress_secrets()
-            self.state.install_state.add("leader")
-
-        else:
-            if not all(self._db_config.values()) or not all(self._wordpress_secrets.values()):
-                logger.info("Non leader has unexpected db_config or wp secrets...")
-
-        self.on.config_changed.emit()
-
-    def is_valid_config(self):
-        """Validate that the current configuration is valid.
-
-        Before the workload can start we must ensure all prerequisite state
-        is present, the config_changed handler uses the return value here.
-        to guard the WordPress service from prematurely starting.
-        """
-        # TODO: This method is starting to look a bit wild and should definitely
-        # be refactored.
-        is_valid = True
-        config = dict(self.model.config)
-
-        if self.state.installed_successfully is False:
-            logger.info("WordPress has not been setup yet...")
-            is_valid = False
-
-        if not config.get("initial_settings"):
-            logger.info("No initial_setting provided. Skipping first install.")
-            self.model.unit.status = BlockedStatus("Missing initial_settings")
-            is_valid = False
-
-        want = ["image"]
-
-        db_state = self._db_config.values()
-        if not all(db_state):
-            want.extend(["db_host", "db_name", "db_user", "db_password"])
-            logger.info("MySQL relation has not yet provided database credentials.")
-            is_valid = False
-
-        missing = [k for k in want if config[k].rstrip() == ""]
-        if missing:
-            message = "Missing required config or relation: {}".format(" ".join(missing))
-            logger.info(message)
-            self.model.unit.status = BlockedStatus(message)
-            is_valid = False
-
-        if config["additional_hostnames"]:
-            additional_hostnames = juju_setting_to_list(config["additional_hostnames"])
-            valid_domain_name_pattern = re.compile(r"^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$")
-            valid = [re.match(valid_domain_name_pattern, h) for h in additional_hostnames]
-            if not all(valid):
-                message = "Invalid additional hostnames supplied: {}".format(
-                    config["additional_hostnames"])
-                logger.info(message)
-                self.model.unit.status = BlockedStatus(message)
-                is_valid = False
-        return is_valid
-
-    def _generate_wordpress_secrets(self):
-        """Generate WordPress auth keys and salts.
-
-        Secret data should be in sync for each container workload
-        so persist the state in leader_data.
-        """
-        wp_secrets = {}
-        for secret in WORDPRESS_SECRETS:
-            # `self.leader_data` itself will never return a KeyError, but
-            # checking for the presence of an item before setting it will make
-            # it easier to test, as we can simply set `self.leader_data` to
-            # be a dictionary.
-            if secret not in self.leader_data or not self.leader_data[secret]:
-                self.leader_data[secret] = password_generator(64)
-            wp_secrets[secret] = self.leader_data[secret]
-        return wp_secrets
-
-    @property
-    def _wordpress_secrets(self):
-        """WordPress auth keys and salts.
-        """
-        wp_secrets = {}
-        for secret in WORDPRESS_SECRETS:
-            wp_secrets[secret] = self.leader_data.get(secret)
-        return wp_secrets
-
-    def is_service_up(self):
-        """Check to see if the HTTP service is up"""
-        service_ip = self.service_ip_address
-        if service_ip:
-            return self.wordpress.is_vhost_ready(service_ip)
-        return False
 
     def _on_get_initial_password_action(self, event):
         """Handle the get-initial-password action."""
@@ -690,7 +184,7 @@ class WordpressCharm(CharmBase):
             'auth_salt',
             'secure_auth_salt',
             'logged_in_salt',
-            'nonce_salt'
+            'nonce_salt',
         ]
 
     def _generate_wp_secret_keys(self):
@@ -699,8 +193,7 @@ class WordpressCharm(CharmBase):
             return "".join(secrets.choice(characters) for _ in range(length))
 
         wp_secrets = {
-            field: _wp_generate_password()
-            for field in self._wordpress_secret_key_fields()
+            field: _wp_generate_password() for field in self._wordpress_secret_key_fields()
         }
         wp_secrets["default_admin_password"] = secrets.token_urlsafe(32)
         return wp_secrets
@@ -747,7 +240,7 @@ class WordpressCharm(CharmBase):
                 replica_relation_data[secret_key] = secret_value
 
     def _on_relation_database_changed(self, event):
-        """ Callback function to handle db relation changes (data changes/relation breaks)
+        """Callback function to handle db relation changes (data changes/relation breaks)
 
         This method will set all db relation related states ``relation_db_*`` when db relation
         changes and will reset all that to ``None`` after db relation is broken.
@@ -774,7 +267,8 @@ class WordpressCharm(CharmBase):
             The content of wp-config.php file in string.
         """
         wp_config = [
-            textwrap.dedent("""\
+            textwrap.dedent(
+                """\
             <?php
             # This file is managed by Juju. Do not make local changes.
             if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) {
@@ -789,7 +283,8 @@ class WordpressCharm(CharmBase):
             define( 'WP_CONTENT_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] . '/wp-content' );
             define( 'WP_SITEURL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
             define( 'WP_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
-            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );""")
+            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );"""
+            )
         ]
 
         # database info in config takes precedence over database info provided by relations
@@ -850,19 +345,13 @@ class WordpressCharm(CharmBase):
         """
         logger.debug("Ensure WordPress (apache) server is down")
         if (
-                self._wordpress_service_exists()
-                and self._container().get_service(self._SERVICE_NAME).is_running()
+            self._wordpress_service_exists()
+            and self._container().get_service(self._SERVICE_NAME).is_running()
         ):
             self._container().stop(self._SERVICE_NAME)
 
     def _run_cli(
-            self,
-            cmd,
-            user=None,
-            group=None,
-            working_dir=None,
-            combine_stderr=False,
-            timeout=60
+        self, cmd, user=None, group=None, working_dir=None, combine_stderr=False, timeout=60
     ):
         """Execute a command in WordPress container.
 
@@ -888,7 +377,7 @@ class WordpressCharm(CharmBase):
             group=group,
             working_dir=working_dir,
             combine_stderr=combine_stderr,
-            timeout=timeout
+            timeout=timeout,
         )
         try:
             stdout, stderr = process.wait_output()
@@ -898,13 +387,15 @@ class WordpressCharm(CharmBase):
         return_code = result.return_code
         if combine_stderr:
             logger.debug(
-                "Run command: %s return code %s\noutput: %s",
-                cmd, return_code, result.stdout
+                "Run command: %s return code %s\noutput: %s", cmd, return_code, result.stdout
             )
         else:
             logger.debug(
                 "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-                cmd, return_code, result.stdout, result.stderr
+                cmd,
+                return_code,
+                result.stdout,
+                result.stderr,
             )
         return result
 
@@ -920,7 +411,7 @@ class WordpressCharm(CharmBase):
             group=self._WORDPRESS_GROUP,
             working_dir="/var/www/html",
             combine_stderr=combine_stderr,
-            timeout=timeout
+            timeout=timeout,
         )
         return result
 
@@ -948,7 +439,7 @@ class WordpressCharm(CharmBase):
             return self._ExecResult(
                 success=False,
                 result=None,
-                message=f"command {cmd} failed" if not error_message else error_message
+                message=f"command {cmd} failed" if not error_message else error_message,
             )
         else:
             return self._ExecResult(success=True, result=None, message="")
@@ -973,13 +464,13 @@ class WordpressCharm(CharmBase):
             values are string.
         """
         database_info = {
-            key.upper(): self.model.config[key] for key in
-            ["db_host", "db_name", "db_user", "db_password"]
+            key.upper(): self.model.config[key]
+            for key in ["db_host", "db_name", "db_user", "db_password"]
         }
         if any(not value for value in database_info.values()):
             database_info = {
-                key.upper(): getattr(self.state, f"relation_{key}") for key in
-                ["db_host", "db_name", "db_user", "db_password"]
+                key.upper(): getattr(self.state, f"relation_{key}")
+                for key in ["db_host", "db_name", "db_user", "db_password"]
             }
         return database_info
 
@@ -1026,7 +517,7 @@ class WordpressCharm(CharmBase):
             f"--title=The {self.model.config['blog_hostname'] or self.app.name} Blog",
             f"--admin_user={admin_user}",
             f"--admin_email={admin_email}",
-            f"--admin_password={admin_password}"
+            f"--admin_password={admin_password}",
         ]
 
     def _wp_install(self):
@@ -1144,20 +635,21 @@ class WordpressCharm(CharmBase):
             self._stop_server()
             raise exceptions.WordPressWaitingStatusException("Waiting for unit consensus")
         available_db_config = tuple(
-            key for key in
-            ("db_host", "db_name", "db_user", "db_password")
+            key
+            for key in ("db_host", "db_name", "db_user", "db_password")
             if self.model.config[key]
         )
         available_db_relation = tuple(
-            key for key in
-            ("db_host", "db_name", "db_user", "db_password")
+            key
+            for key in ("db_host", "db_name", "db_user", "db_password")
             if getattr(self.state, f"relation_{key}")
         )
         if len(available_db_config) != 4 and len(available_db_relation) != 4:
             logger.info(
                 "Core reconciliation terminated early due to db info missing, "
                 "available from config: %s, available from relation: %s",
-                available_db_config, available_db_relation
+                available_db_config,
+                available_db_relation,
             )
             self._stop_server()
             raise exceptions.WordPressBlockedStatusException("Waiting for db relation/config")
@@ -1194,9 +686,7 @@ class WordpressCharm(CharmBase):
         process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
         if process.return_code != 0:
             return self._ExecResult(
-                success=False,
-                result=None,
-                message=f"wp {addon_type} list command failed"
+                success=False, result=None, message=f"wp {addon_type} list command failed"
             )
         try:
             return self._ExecResult(success=True, result=json.loads(process.stdout), message="")
@@ -1204,7 +694,7 @@ class WordpressCharm(CharmBase):
             return self._ExecResult(
                 success=False,
                 result=None,
-                message=f"wp {addon_type} list command failed, stdout is not json"
+                message=f"wp {addon_type} list command failed, stdout is not json",
             )
 
     def _wp_addon_install(self, addon_type, addon_name):
@@ -1250,19 +740,14 @@ class WordpressCharm(CharmBase):
         current_installed_addons = set(t["name"] for t in self._wp_addon_list(addon_type).result)
         logger.debug(f"Currently installed {addon_type}s %s", current_installed_addons)
         addons_in_config = [
-            t.strip() for t in self.model.config[f"{addon_type}s"].split(",")
-            if t.strip()
+            t.strip() for t in self.model.config[f"{addon_type}s"].split(",") if t.strip()
         ]
         default_addons = (
-            self._WORDPRESS_DEFAULT_THEMES if addon_type == "theme"
+            self._WORDPRESS_DEFAULT_THEMES
+            if addon_type == "theme"
             else self._WORDPRESS_DEFAULT_PLUGINS
         )
-        desired_addons = set(
-            itertools.chain(
-                addons_in_config,
-                default_addons
-            )
-        )
+        desired_addons = set(itertools.chain(addons_in_config, default_addons))
         install_addons = desired_addons - current_installed_addons
         uninstall_addons = current_installed_addons - desired_addons
         for addon in install_addons:
@@ -1357,8 +842,7 @@ class WordpressCharm(CharmBase):
         """
         if action not in ("activate", "deactivate"):
             raise ValueError(
-                f"Unknown activation_status {repr(action)}, "
-                "accept (activate, deactivate)"
+                f"Unknown activation_status {repr(action)}, " "accept (activate, deactivate)"
             )
 
         current_plugins = self._wp_addon_list("plugin")
@@ -1366,18 +850,14 @@ class WordpressCharm(CharmBase):
             return self._ExecResult(
                 success=False,
                 result=None,
-                message=f"failed to list installed plugins while {action} plugin {plugin}"
+                message=f"failed to list installed plugins while {action} plugin {plugin}",
             )
         current_plugins = current_plugins.result
-        current_plugins_activate_status = {
-            p["name"]: p["status"] for p in current_plugins
-        }
+        current_plugins_activate_status = {p["name"]: p["status"] for p in current_plugins}
 
         if plugin not in current_plugins_activate_status:
             return self._ExecResult(
-                success=False,
-                result=None,
-                message=f"{action} a non-existent plugin {plugin}"
+                success=False, result=None, message=f"{action} a non-existent plugin {plugin}"
             )
         is_active = current_plugins_activate_status[plugin] == "active"
         target_activation_status = action == "activate"
@@ -1389,9 +869,7 @@ class WordpressCharm(CharmBase):
                 result = self._wp_plugin_deactivate(plugin)
             if not result.success:
                 return self._ExecResult(
-                    success=False,
-                    result=None,
-                    message=f"failed to {action} plugin {plugin}"
+                    success=False, result=None, message=f"failed to {action} plugin {plugin}"
                 )
         return self._ExecResult(success=True, result=None, message="")
 
@@ -1421,7 +899,7 @@ class WordpressCharm(CharmBase):
                 return self._ExecResult(
                     success=False,
                     result=None,
-                    message=f"failed to update option {option} after activating plugin {plugin}"
+                    message=f"failed to update option {option} after activating plugin {plugin}",
                 )
         return self._ExecResult(success=True, result=None, message="")
 
@@ -1444,7 +922,7 @@ class WordpressCharm(CharmBase):
                 return self._ExecResult(
                     success=False,
                     result=None,
-                    message=f"failed to delete option {option} after deactivating plugin {plugin}"
+                    message=f"failed to delete option {option} after deactivating plugin {plugin}",
                 )
         return self._ExecResult(success=True, result=None, message="")
 
@@ -1452,17 +930,19 @@ class WordpressCharm(CharmBase):
         """Reconciliation process for the akismet plugin"""
         akismet_key = self.model.config["wp_plugin_akismet_key"].strip()
         if not akismet_key:
-            result = self._deactivate_plugin("akismet", [
-                "akismet_strictness",
-                "akismet_show_user_comments_approved",
-                "wordpress_api_key"
-            ])
+            result = self._deactivate_plugin(
+                "akismet",
+                ["akismet_strictness", "akismet_show_user_comments_approved", "wordpress_api_key"],
+            )
         else:
-            result = self._activate_plugin("akismet", {
-                "akismet_strictness": "0",
-                "akismet_show_user_comments_approved": "0",
-                "wordpress_api_key": akismet_key
-            })
+            result = self._activate_plugin(
+                "akismet",
+                {
+                    "akismet_strictness": "0",
+                    "akismet_show_user_comments_approved": "0",
+                    "wordpress_api_key": akismet_key,
+                },
+            )
         if not result.success:
             raise exceptions.WordPressBlockedStatusException(
                 f"Unable to config akismet plugin, {result.message}"
@@ -1506,14 +986,16 @@ class WordpressCharm(CharmBase):
         openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
         if not openid_team_map:
             result = self._deactivate_plugin(
-                "openid",
-                ["openid_required_for_registration", "openid_teams_trust_list"]
+                "openid", ["openid_required_for_registration", "openid_teams_trust_list"]
             )
         else:
-            result = self._activate_plugin("openid", {
-                "openid_required_for_registration": "1",
-                "openid_teams_trust_list": self._encode_openid_team_map(openid_team_map)
-            })
+            result = self._activate_plugin(
+                "openid",
+                {
+                    "openid_required_for_registration": "1",
+                    "openid_teams_trust_list": self._encode_openid_team_map(openid_team_map),
+                },
+            )
         if not result.success:
             raise exceptions.WordPressBlockedStatusException(
                 f"Unable to config openid plugin, {result.message}"
@@ -1541,9 +1023,7 @@ class WordpressCharm(CharmBase):
             conf (str): content of the apache config.
         """
         self._stop_server()
-        self._container().push(
-            path=f"/etc/apache2/conf-available/{conf_name}.conf", source=conf
-        )
+        self._container().push(path=f"/etc/apache2/conf-available/{conf_name}.conf", source=conf)
         self._run_cli(["a2enconf", conf_name])
         self._start_server()
 
@@ -1575,14 +1055,11 @@ class WordpressCharm(CharmBase):
             'username',
             'copy-to-swift',
             'serve-from-swift',
-            'remove-local-file'
+            'remove-local-file',
         ]
         enable_swift = bool(swift_config_str.strip())
         if not enable_swift:
-            result = self._deactivate_plugin(
-                "openstack-objectstorage-k8s",
-                ["object_storage"]
-            )
+            result = self._deactivate_plugin("openstack-objectstorage-k8s", ["object_storage"])
         else:
             swift_config = safe_load(swift_config_str)
             for key in swift_config_key:
@@ -1591,10 +1068,7 @@ class WordpressCharm(CharmBase):
                         f"missing {key} in wp_plugin_openstack-objectstorage_config"
                     )
             result = self._activate_plugin(
-                "openstack-objectstorage-k8s",
-                {
-                    "object_storage": swift_config
-                }
+                "openstack-objectstorage-k8s", {"object_storage": swift_config}
             )
         if not result.success:
             raise exceptions.WordPressBlockedStatusException(
@@ -1607,12 +1081,14 @@ class WordpressCharm(CharmBase):
             bucket = swift_config.get("bucket")
             object_prefix = swift_config.get("object-prefix")
             redirect_url = os.path.join(swift_url, bucket, object_prefix)
-            conf = textwrap.dedent(f"""\
+            conf = textwrap.dedent(
+                f"""\
             SSLProxyEngine on
             ProxyPass /wp-content/uploads/ {redirect_url}
             ProxyPassReverse /wp-content/uploads/ {redirect_url}
             Timeout 300
-            """)
+            """
+            )
             self._apache_enable_config(apache_swift_conf, conf)
         elif not enable_swift and swift_apache_config_enabled:
             self._apache_config_is_enabled(apache_swift_conf)
@@ -1631,7 +1107,7 @@ class WordpressCharm(CharmBase):
             self._plugin_swift_reconciliation()
 
     def _reconciliation(self, _event):
-        logger.info("Start reconciliation process, triggered by %", _event)
+        logger.info("Start reconciliation process, triggered by %s", _event)
         if not self._container().can_connect():
             logger.info("Reconciliation process terminated early, pebble is not ready")
             self.unit.status = WaitingStatus("Waiting for pebble")
@@ -1641,7 +1117,7 @@ class WordpressCharm(CharmBase):
             self._theme_reconciliation()
             self._plugin_reconciliation()
             logger.info("Reconciliation process finished successfully.")
-            self.unit.status = ops.model.ActiveStatus()
+            self.unit.status = ActiveStatus()
         except exceptions.WordPressStatusException as status_exception:
             logger.info("Reconciliation process terminated early, reason: %s", status_exception)
             self.unit.status = status_exception.status

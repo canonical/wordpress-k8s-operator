@@ -5,7 +5,7 @@ __all__ = [
     "WordPressBlockedStatusException",
     "WordPressWaitingStatusException",
     "WordPressMaintenanceStatusException",
-    "WordPressInstallError"
+    "WordPressInstallError",
 ]
 
 
@@ -15,6 +15,7 @@ class WordPressStatusException(Exception):
     ``status`` represents the status change comes with the early termination.
     Do not instantiate this class directly, use subclass instead.
     """
+
     _status_class = ops.model.StatusBase
 
     def __init__(self, message):

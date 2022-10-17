@@ -102,3 +102,11 @@ def openstack_environment(request):
     openstack_conf = configparser.ConfigParser()
     openstack_conf.read_string("[DEFAULT]\n" + rc_file)
     return {k.upper(): v for k, v in openstack_conf["DEFAULT"].items()}
+
+
+@pytest.fixture
+def akismet_api_key(request):
+    """The Akismet API key, in str"""
+    api_key = request.config.getoption("--akismet-api-key")
+    assert api_key, "Akismet API key should not be empty"
+    return api_key

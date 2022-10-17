@@ -16,7 +16,7 @@ class WordpressClient:
         wp_client = cls(host=host, username=admin_username, password=admin_password, is_admin=True)
         post_title = secrets.token_hex(16)
         post_content = secrets.token_hex(16)
-        post = wp_client._create_post(
+        post = wp_client.create_post(
             title=post_title,
             content=post_content,
         )
@@ -26,7 +26,7 @@ class WordpressClient:
         ), "admin user should be able to create a new post"
         comment = secrets.token_hex(16)
         post_link = post["link"]
-        comment_link = wp_client._create_comment(
+        comment_link = wp_client.create_comment(
             post_id=post["id"],
             post_link=post_link,
             content=comment,
@@ -108,7 +108,7 @@ class WordpressClient:
         nonce = json.loads(re.findall('var wpApiSettings = ([^;]+);', new_post_page)[0])["nonce"]
         return nonce
 
-    def _create_post(self, title: str, content: str):
+    def create_post(self, title: str, content: str):
         """Create a WordPress post using wp-json API, return post object"""
         response = self._post(
             f"http://{self.host}/wp-json/wp/v2/posts/",
@@ -118,7 +118,7 @@ class WordpressClient:
         )
         return response.json()
 
-    def _create_comment(self, post_id: int, post_link: str, content: str):
+    def create_comment(self, post_id: int, post_link: str, content: str):
         """Add a comment to a WordPress post using HTML form, return url link of the new comment"""
         post_page = self._get(post_link)
         nonce = re.findall(
@@ -166,6 +166,14 @@ class WordpressClient:
         )
         return [p["plugin"].split("/")[0] for p in response.json()]
 
+    def list_comments(self, status='approve', post_id: int = None):
+        """List all comments in the WordPress site"""
+        url = f"http://{self.host}/wp-json/wp/v2/comments?status={status}"
+        if post_id:
+            url += f"&post={post_id}"
+        response = self._get(url, headers={"X-WP-Nonce": self._gen_wp_rest_nonce()})
+        return response.json()
+
     def upload_media(self, filename: str, content: bytes, mimetype: str = None) -> typing.List[str]:
         """Upload a media file (image/video)
 
@@ -192,3 +200,23 @@ class WordpressClient:
         if media["source_url"] not in image_urls:
             image_urls.append(media["source_url"])
         return image_urls
+
+    def update_general_option(self, option, value):
+        options_url = f"http://{self.host}/wp-admin/options-general.php"
+        options_page = self._get(options_url).text
+        nonce = re.findall('name="_wpnonce" value="([a-zA-Z0-9]+)"', options_page)
+        nonce = nonce[0]
+        response = self._post(
+            f"http://{self.host}/wp-admin/options.php",
+            headers={'Content-Type': 'application/x-www-form-urlencoded'},
+            data={
+                'option_page': 'general',
+                'action': 'update',
+                '_wpnonce': nonce,
+                '_wp_http_referer': '/wp-admin/options-general.php',
+                option: value,
+                'submit': 'Save Changes',
+            },
+            except_status_code=200,
+        )
+        assert "settings-updated=true" in response.url

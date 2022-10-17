@@ -30,6 +30,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
         my_charm,
         resources={"wordpress-image": "localhost:32000/wordpress:test"},
         application_name="wordpress",
+        series="jammy",
     )
     await ops_test.model.wait_for_idle()
     for unit in ops_test.model.applications[application_name].units:
@@ -353,3 +354,37 @@ async def test_openstack_object_storage_plugin(
             assert (
                 requests.get(url).content == image
             ), "image downloaded from WordPress should match the image uploaded"
+
+
+@pytest.mark.asyncio
+async def test_openstack_akismet_plugin(
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name,
+    default_admin_password,
+    unit_ip_list,
+    akismet_api_key,
+):
+    """
+    arrange: after WordPress charm has been deployed, db relation established
+    act: update charm configuration for Akismet plugin
+    assert: Akismet plugin should be activated and spam detection function should be working
+    """
+    application = ops_test.model.applications[application_name]
+    await application.set_config({"wp_plugin_akismet_key": akismet_api_key})
+    await ops_test.model.wait_for_idle()
+
+    for unit_ip in unit_ip_list:
+        wp = WordpressClient(
+            host=unit_ip, username="admin", password=default_admin_password, is_admin=True
+        )
+        post = wp.create_post(secrets.token_hex(8), secrets.token_hex(8))
+        wp.create_comment(
+            post_id=post["id"], post_link=post["link"], content="akismet-guaranteed-spam"
+        )
+        wp.create_comment(post_id=post["id"], post_link=post["link"], content="test comment")
+        assert (
+            len(wp.list_comments(status="spam", post_id=post["id"])) == 1
+        ), "Akismet plugin should move the triggered spam comment to the spam section"
+        assert (
+            len(wp.list_comments(post_id=post["id"])) == 1
+        ), "Akismet plugin should keep the normal comment"

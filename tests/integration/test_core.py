@@ -99,6 +99,25 @@ async def test_mysql_relation(ops_test: pytest_operator.plugin.OpsTest, applicat
 
 
 @pytest.mark.asyncio
+async def test_default_wordpress_themes_and_plugins(unit_ip_list, default_admin_password):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: test default installed themes and plugins
+    assert: default plugins and themes should match default themes and plugins defined in charm.py
+    """
+    for unit_ip in unit_ip_list:
+        wp = WordpressClient(
+            host=unit_ip, username="admin", password=default_admin_password, is_admin=True
+        )
+        assert set(wp.list_themes()) == set(
+            WordpressCharm._WORDPRESS_DEFAULT_THEMES
+        ), "themes installed on WordPress should match default themes defined in charm.py"
+        assert set(wp.list_plugins()) == set(
+            WordpressCharm._WORDPRESS_DEFAULT_PLUGINS
+        ), "plugins installed on WordPress should match default plugins defined in charm.py"
+
+
+@pytest.mark.asyncio
 async def test_wordpress_functionality(unit_ip_list, default_admin_password):
     """
     arrange: after WordPress charm has been deployed and db relation established
@@ -388,3 +407,35 @@ async def test_openstack_akismet_plugin(
         assert (
             len(wp.list_comments(post_id=post["id"])) == 1
         ), "Akismet plugin should keep the normal comment"
+
+
+@pytest.mark.asyncio
+async def test_openstack_openid_plugin(
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name,
+    default_admin_password,
+    unit_ip_list,
+    openid_username,
+    openid_password,
+):
+    """
+    arrange: after WordPress charm has been deployed, db relation established
+    act: update charm configuration for Akismet plugin
+    assert: An Ubuntu One OpenID account should be able to associate with a WordPress user
+    """
+    application = ops_test.model.applications[application_name]
+    await application.set_config({"wp_plugin_openid_team_map": "site-sysadmins=administrator"})
+    await ops_test.model.wait_for_idle()
+
+    for idx, unit_ip in enumerate(unit_ip_list):
+        wp = WordpressClient(
+            host=unit_ip,
+            username="admin",
+            password=default_admin_password,
+            is_admin=True,
+        )
+        if idx == 0:
+            wp.associate_ubuntu_one(username=openid_username, password=openid_password)
+        assert (
+            len(wp.list_associated_ubuntu_one_accounts()) == 1
+        ), "An Ubuntu One OpenID account should be associated with the WordPress admin user"

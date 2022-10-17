@@ -110,3 +110,19 @@ def akismet_api_key(request):
     api_key = request.config.getoption("--akismet-api-key")
     assert api_key, "Akismet API key should not be empty"
     return api_key
+
+
+@pytest.fixture
+def openid_username(request):
+    """The OpenID username for testing the OpenID plugin"""
+    openid_username = request.config.getoption("--openid-username")
+    assert openid_username, "OpenID username should not be empty"
+    return openid_username
+
+
+@pytest.fixture
+def openid_password(request):
+    """The OpenID username for testing the OpenID plugin"""
+    openid_password = request.config.getoption("--openid-password")
+    assert openid_password, "OpenID password should not be empty"
+    return openid_password

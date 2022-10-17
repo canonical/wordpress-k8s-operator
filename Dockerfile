@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-ARG VERSION
+ARG VERSION=6.0.2
 ENV APACHE_CONFDIR=/etc/apache2
 ENV APACHE_ENVVARS=/etc/apache2/envvars
 

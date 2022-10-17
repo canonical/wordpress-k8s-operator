@@ -201,22 +201,71 @@ class WordpressClient:
             image_urls.append(media["source_url"])
         return image_urls
 
-    def update_general_option(self, option, value):
-        options_url = f"http://{self.host}/wp-admin/options-general.php"
-        options_page = self._get(options_url).text
-        nonce = re.findall('name="_wpnonce" value="([a-zA-Z0-9]+)"', options_page)
-        nonce = nonce[0]
-        response = self._post(
-            f"http://{self.host}/wp-admin/options.php",
-            headers={'Content-Type': 'application/x-www-form-urlencoded'},
+    def associate_ubuntu_one(self, username, password):
+        openid_setting_url = f"http://{self.host}/wp-admin/users.php?page=your_openids"
+        openid_setting_page = self._get(openid_setting_url)
+        nonce = re.findall(
+            '<input type="hidden" id="_wpnonce" name="_wpnonce" value="([^"]+)" />',
+            openid_setting_page.text,
+        )[1]
+        openid_redirect = self._post(
+            openid_setting_url,
             data={
-                'option_page': 'general',
-                'action': 'update',
+                'openid_identifier': 'login.ubuntu.com',
                 '_wpnonce': nonce,
-                '_wp_http_referer': '/wp-admin/options-general.php',
-                option: value,
-                'submit': 'Save Changes',
+                '_wp_http_referer': '/wp-admin/users.php?page=your_openids',
+                'action': 'add',
             },
+        )
+        openid_args = re.findall(
+            '<input type="hidden" name="([^"]+)" value="([^"]+)" />', openid_redirect.text
+        )
+        openid_args = dict(openid_args)
+        login_page = self._post(
+            "https://login.ubuntu.com/+openid",
+            data=openid_args,
+        )
+        csrf_token = re.findall(
+            "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", login_page.text
+        )[0]
+        login_link = re.findall(
+            '<a id="login-link" data-qa-id="login_link" href="([^"]+)" class="p-link--soft">',
+            login_page.text,
+        )[0]
+        login_url = "https://login.ubuntu.com" + login_link
+        confirm_page = self._post(
+            login_url,
+            data={
+                'csrfmiddlewaretoken': csrf_token,
+                'email': username,
+                'user-intentions': 'login',
+                'password': password,
+                'continue': '',
+                'openid.usernamesecret': '',
+            },
+            headers={"Referer": login_page.url},
+        )
+        csrf_token = re.findall(
+            "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", confirm_page.text
+        )[0]
+        self._post(
+            confirm_page.url,
+            data={
+                'csrfmiddlewaretoken': csrf_token,
+                'nickname': 'on',
+                'email': 'on',
+                'fullname': 'on',
+                'ok': '',
+                'yes': '',
+                'openid.usernamesecret': '',
+            },
+            headers={"Referer": confirm_page.url},
             except_status_code=200,
         )
-        assert "settings-updated=true" in response.url
+
+    def list_associated_ubuntu_one_accounts(self):
+        openid_setting = self._get(
+            f"http://{self.host}/wp-admin/users.php?page=your_openids",
+            except_status_code=200,
+        )
+        return re.findall("<td>(https://login\\.ubuntu\\.com[^<]+)</td>", openid_setting.text)

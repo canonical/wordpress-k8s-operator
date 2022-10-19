@@ -33,7 +33,7 @@ def fixture_application_name():
 
 @pytest_asyncio.fixture(scope="function", name="default_admin_password")
 async def fixture_default_admin_password(
-    ops_test: pytest_operator.plugin.OpsTest, application_name
+        ops_test: pytest_operator.plugin.OpsTest, application_name
 ):
     application: juju.application = ops_test.model.applications[application_name]
     action: juju.action.Action = await application.units[0].run_action("get-initial-password")
@@ -102,3 +102,33 @@ def openstack_environment(request):
     openstack_conf = configparser.ConfigParser()
     openstack_conf.read_string("[DEFAULT]\n" + rc_file)
     return {k.upper(): v for k, v in openstack_conf["DEFAULT"].items()}
+
+
+@pytest.fixture
+def akismet_api_key(request):
+    """The Akismet API key, in str"""
+    api_key = request.config.getoption("--akismet-api-key")
+    assert (
+        api_key
+    ), "Akismet API key should not be empty, please include it in the --akismet-api-key parameter"
+    return api_key
+
+
+@pytest.fixture
+def openid_username(request):
+    """The OpenID username for testing the OpenID plugin"""
+    openid_username = request.config.getoption("--openid-username")
+    assert (
+        openid_username
+    ), "OpenID username should not be empty, please include it in the --openid-username parameter"
+    return openid_username
+
+
+@pytest.fixture
+def openid_password(request):
+    """The OpenID username for testing the OpenID plugin"""
+    openid_password = request.config.getoption("--openid-password")
+    assert (
+        openid_password
+    ), "OpenID password should not be empty, please include it in the --openid-password parameter"
+    return openid_password

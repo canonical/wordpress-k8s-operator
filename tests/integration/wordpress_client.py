@@ -7,26 +7,37 @@ import typing
 import requests
 
 
+class WordPressPost(typing.TypedDict):
+    id: int
+    link: str
+
+
 class WordpressClient:
     """A very simple WordPress client for test purpose only"""
 
     @classmethod
     def run_wordpress_functionality_test(cls, host: str, admin_username: str, admin_password: str):
-        """Run standard WordPress functionality test suite"""
+        """Run standard WordPress functionality test suite.
+
+        Args:
+            host: ip address or hostname of the WordPress instance.
+            admin_username: WordPress admin user username.
+            admin_password: WordPress admin user password.
+        """
         wp_client = cls(host=host, username=admin_username, password=admin_password, is_admin=True)
         post_title = secrets.token_hex(16)
         post_content = secrets.token_hex(16)
-        post = wp_client._create_post(
+        post = wp_client.create_post(
             title=post_title,
             content=post_content,
         )
         homepage = wp_client.get_homepage()
         assert (
-            post_title in homepage and post_content in homepage
+                post_title in homepage and post_content in homepage
         ), "admin user should be able to create a new post"
         comment = secrets.token_hex(16)
         post_link = post["link"]
-        comment_link = wp_client._create_comment(
+        comment_link = wp_client.create_comment(
             post_id=post["id"],
             post_link=post_link,
             content=comment,
@@ -36,6 +47,14 @@ class WordpressClient:
         ), "admin user should be able to create a comment"
 
     def __init__(self, host: str, username: str, password: str, is_admin: bool):
+        """Initialize the WordPress JSON API client.
+
+        Args:
+            host: ip address or hostname of the WordPress instance.
+            username: WordPress user username.
+            password: WordPress user password.
+            is_admin: If this user is a WordPress admin.
+        """
         self.host = host
         self.username = username
         self.password = password
@@ -52,15 +71,55 @@ class WordpressClient:
                 raise ValueError("set options-permalink manually or login with an admin account")
             self._set_options_permalink()
 
-    def _get(self, url: str, headers=None, except_status_code=None):
-        """HTTP GET using the instance session"""
+    def _get(
+            self,
+            url: str,
+            headers: typing.Optional[typing.Dict[str, str]] = None,
+            except_status_code: typing.Optional[int] = None) -> requests.Response:
+        """HTTP GET using the instance session.
+
+        The instance session contains user's login session cookies, so this method can assess
+        restricted resources on WordPress.
+
+        Args:
+            url: Same as the ``url`` argument in :meth:`requests.Session.get`.
+            headers: Same as ``url``  in :meth:`requests.Session.get`.
+            except_status_code: Except the response http status code,
+                raise :exc:`requests.HTTPError` if not match.
+
+        Returns:
+            An instance of :class:`requests.Response`.
+        """
         response = self._session.get(url, headers=headers, timeout=self.timeout)
         if except_status_code is not None and response.status_code != except_status_code:
             raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
         return response
 
-    def _post(self, url: str, json=None, data=None, headers=None, except_status_code=None):
-        """HTTP GET using the instance session"""
+    def _post(
+            self,
+            url: str,
+            json: typing.Optional[dict] = None,
+            data: typing.Optional[typing.Dict[str, typing.Any]] = None,
+            headers: typing.Optional[typing.Dict[str, str]] = None,
+            except_status_code: typing.Optional[int] = None
+    ) -> requests.Response:
+        """HTTP GET using the instance session.
+
+        The instance session contains user's login session cookies, so this method can assess
+        restricted resources on WordPress.
+
+        Args:
+            url: Same as the ``url`` argument in :meth:`requests.Session.post`.
+            json: Same as the ``json`` argument in :meth:`requests.Session.post`.
+            data: Same as the ``data`` argument in :meth:`requests.Session.post`.
+            headers: Same as the ``url``  in :meth:`requests.Session.post`.
+            except_status_code: Except the response http status code,
+                raise :exc:`requests.HTTPError` if not match.
+
+        Returns:
+            An instance of :class:`requests.Response`.
+        """
+
         response = self._session.post(
             url, json=json, data=data, headers=headers, timeout=self.timeout
         )
@@ -68,8 +127,12 @@ class WordpressClient:
             raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
         return response
 
-    def _login(self):
-        """Login WordPress with current username and password, set session cookies"""
+    def _login(self) -> bool:
+        """Login WordPress with current username and password, set session cookies.
+
+        Returns:
+            True if login successfully.
+        """
         self._get(f"http://{self.host}/wp-login.php")
         response = self._post(
             f"http://{self.host}/wp-login.php",
@@ -84,7 +147,7 @@ class WordpressClient:
         )
         return response.url == f"http://{self.host}/wp-admin/"
 
-    def _set_options_permalink(self):
+    def _set_options_permalink(self) -> None:
         """Set WordPress permalink option to /%postname%/"""
         options_permalink_page = self._get(f"http://{self.host}/wp-admin/options-permalink.php")
         options_permalink_page = options_permalink_page.text
@@ -101,15 +164,27 @@ class WordpressClient:
             except_status_code=200,
         )
 
-    def _gen_wp_rest_nonce(self):
-        """Generate a nonce for WordPress REST API"""
+    def _gen_wp_rest_nonce(self) -> str:
+        """Generate a nonce for WordPress REST API.
+
+        Returns:
+            (str) A WordPress nonce for WordPress JSON REST API.
+        """
         new_post_page = self._get(f"http://{self.host}/wp-admin/post-new.php")
         new_post_page = new_post_page.text
         nonce = json.loads(re.findall('var wpApiSettings = ([^;]+);', new_post_page)[0])["nonce"]
         return nonce
 
-    def _create_post(self, title: str, content: str):
-        """Create a WordPress post using wp-json API, return post object"""
+    def create_post(self, title: str, content: str) -> WordPressPost:
+        """Create a WordPress post using wp-json API, return post object.
+
+        Args:
+            title (str): Title of the post.
+            content (str): Content of the post.
+
+        Returns:
+            Post object returned from WordPress REST API.
+        """
         response = self._post(
             f"http://{self.host}/wp-json/wp/v2/posts/",
             json={"status": "publish", "title": title, "content": content},
@@ -118,8 +193,17 @@ class WordpressClient:
         )
         return response.json()
 
-    def _create_comment(self, post_id: int, post_link: str, content: str):
-        """Add a comment to a WordPress post using HTML form, return url link of the new comment"""
+    def create_comment(self, post_id: int, post_link: str, content: str) -> str:
+        """Add a comment to a WordPress post using HTML form, return url link of the new comment.
+
+        Args:
+            post_id: ID of the post that the new comment will be attached to.
+            post_link: URL of the post that the new comment will be attached to.
+            content: Content of the new comment.
+
+        Return:
+            (str) URL pointed to the comment created.
+        """
         post_page = self._get(post_link)
         nonce = re.findall(
             'name="_wp_unfiltered_html_comment_disabled" value="([a-zA-Z0-9]+)"', post_page.text
@@ -140,16 +224,31 @@ class WordpressClient:
             raise ValueError(f"Duplicate comment detected: {repr(content)}")
         return response.url
 
-    def get_homepage(self):
-        """Get the WordPress homepage source (HTML) as string"""
+    def get_homepage(self) -> str:
+        """Get the WordPress homepage source (HTML).
+
+        Returns:
+            (str) The WordPress homepage content, HTML.
+        """
         return self._get(f"http://{self.host}").text
 
-    def get_post(self, post_link: str):
-        """Get the WordPress blog post page source (HTML) as string"""
+    def get_post(self, post_link: str) -> str:
+        """Get the WordPress blog post page source (HTML).
+
+        Args:
+            post_link: URL to the WordPress post.
+
+        Returns:
+            (str) The WordPress homepage content, HTML.
+        """
         return self._get(post_link).text
 
-    def list_themes(self):
-        """List all installed WordPress theme slugs"""
+    def list_themes(self) -> typing.List[str]:
+        """List all installed WordPress theme slugs.
+
+        Return:
+            (List[str]) WordPress themes Installed.
+        """
         response = self._get(
             f"http://{self.host}/wp-json/wp/v2/themes?per_page=100",
             headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
@@ -157,8 +256,12 @@ class WordpressClient:
         )
         return [t["stylesheet"] for t in response.json()]
 
-    def list_plugins(self):
-        """List all installed WordPress plugin slugs"""
+    def list_plugins(self) -> typing.List[str]:
+        """List all installed WordPress plugin slugs.
+
+        Return:
+            (List[str]) WordPress plugins Installed.
+        """
         response = self._get(
             f"http://{self.host}/wp-json/wp/v2/plugins?per_page=100",
             headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
@@ -166,10 +269,35 @@ class WordpressClient:
         )
         return [p["plugin"].split("/")[0] for p in response.json()]
 
-    def upload_media(self, filename: str, content: bytes, mimetype: str = None) -> typing.List[str]:
+    def list_comments(
+            self, status: str = 'approve', post_id: typing.Optional[int] = None
+    ) -> typing.List[dict]:
+        """List all comments in the WordPress site.
+
+        Args:
+            status: WordPress comment status, can be 'hold', 'approve', 'spam', or 'trash'.
+            post_id: List all comments attached to the post, None to query the entire site.
+
+        Returns:
+            (List[dict]) A list of comment objects returned by WordPress REST API.
+        """
+        url = f"http://{self.host}/wp-json/wp/v2/comments?status={status}"
+        if post_id:
+            url += f"&post={post_id}"
+        response = self._get(url, headers={"X-WP-Nonce": self._gen_wp_rest_nonce()})
+        return response.json()
+
+    def upload_media(
+            self, filename: str, content: bytes, mimetype: str = None
+    ) -> typing.List[str]:
         """Upload a media file (image/video)
 
-        Return URL of the original image and resized images for the uploaded file on WordPress.
+        Args:
+            filename: Filename of the media file.
+            content: Content of the media file, bytes.
+            mimetype: Mimetype of the media file, will infer from the filename if not provided.
+        Returns:
+             URL of the original image and resized images for the uploaded file on WordPress.
         """
         if mimetype is None:
             mimetype = mimetypes.guess_type(filename)[0]
@@ -192,3 +320,84 @@ class WordpressClient:
         if media["source_url"] not in image_urls:
             image_urls.append(media["source_url"])
         return image_urls
+
+    def associate_ubuntu_one(self, username: str, password: str) -> None:
+        """Associate an Ubuntu One account with the currnet WordPress account.
+
+        Args:
+            username: Username of the Ubuntu One account.
+            password: Password of the Ubuntu One account.
+        """
+        openid_setting_url = f"http://{self.host}/wp-admin/users.php?page=your_openids"
+        openid_setting_page = self._get(openid_setting_url)
+        nonce = re.findall(
+            '<input type="hidden" id="_wpnonce" name="_wpnonce" value="([^"]+)" />',
+            openid_setting_page.text,
+        )[1]
+        openid_redirect = self._post(
+            openid_setting_url,
+            data={
+                'openid_identifier': 'login.ubuntu.com',
+                '_wpnonce': nonce,
+                '_wp_http_referer': '/wp-admin/users.php?page=your_openids',
+                'action': 'add',
+            },
+        )
+        openid_args = re.findall(
+            '<input type="hidden" name="([^"]+)" value="([^"]+)" />', openid_redirect.text
+        )
+        openid_args = dict(openid_args)
+        login_page = self._post(
+            "https://login.ubuntu.com/+openid",
+            data=openid_args,
+        )
+        csrf_token = re.findall(
+            "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", login_page.text
+        )[0]
+        login_link = re.findall(
+            '<a id="login-link" data-qa-id="login_link" href="([^"]+)" class="p-link--soft">',
+            login_page.text,
+        )[0]
+        login_url = f"https://login.ubuntu.com{login_link}"
+        confirm_page = self._post(
+            login_url,
+            data={
+                'csrfmiddlewaretoken': csrf_token,
+                'email': username,
+                'user-intentions': 'login',
+                'password': password,
+                'continue': '',
+                'openid.usernamesecret': '',
+            },
+            headers={"Referer": login_page.url},
+        )
+        csrf_token = re.findall(
+            "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", confirm_page.text
+        )[0]
+        self._post(
+            confirm_page.url,
+            data={
+                'csrfmiddlewaretoken': csrf_token,
+                'nickname': 'on',
+                'email': 'on',
+                'fullname': 'on',
+                'ok': '',
+                'yes': '',
+                'openid.usernamesecret': '',
+            },
+            headers={"Referer": confirm_page.url},
+            except_status_code=200,
+        )
+
+    def list_associated_ubuntu_one_accounts(self) -> typing.List[str]:
+        """List Ubuntu One accounts OpenID IDs associated with the current WordPress account.
+
+        Returns:
+            A list of Ubuntu One account OpenID IDs
+            (something like https://login.ubuntu.com/+id/xxxxxxxx).
+        """
+        openid_setting = self._get(
+            f"http://{self.host}/wp-admin/users.php?page=your_openids",
+            except_status_code=200,
+        )
+        return re.findall("<td>(https://login\\.ubuntu\\.com[^<]+)</td>", openid_setting.text)

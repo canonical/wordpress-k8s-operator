@@ -17,3 +17,8 @@ def pytest_addoption(parser: pytest.Parser):
     # export OS_PASSWORD=nomoresecret
     # export OS_IDENTITY_API_VERSION=3
     parser.addoption("--openstack-rc", action="store", default="")
+    # Akismet API key for testing the Akismet plugin
+    parser.addoption("--akismet-api-key", action="store", default="")
+    # OpenID username and password for testing the OpenID plugin
+    parser.addoption("--openid-username", action="store", default="")
+    parser.addoption("--openid-password", action="store", default="")

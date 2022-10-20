@@ -23,8 +23,9 @@ from ops.main import main
 from ops.model import ActiveStatus, WaitingStatus
 
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
-import exceptions
 from opslib.mysql import MySQLClient
+
+import exceptions
 
 # MySQL logger prints database credentials on debug level, silence it
 logging.getLogger(mysql.connector.__name__).setLevel(logging.WARNING)
@@ -110,9 +111,7 @@ class WordpressCharm(CharmBase):
     ]
 
     _DB_CHECK_INTERVAL = 1
-
-    _container_name = "wordpress"
-    _default_service_port = 80
+    _DB_CHECK_TIMEOUT = 60
 
     state = StoredState()
 
@@ -123,15 +122,6 @@ class WordpressCharm(CharmBase):
 
         c = self.model.config
         self.state.set_default(
-            blog_hostname=c["blog_hostname"] or self.app.name,
-            installed_successfully=False,
-            install_state=set(),
-            has_db_relation=False,
-            has_ingress_relation=False,
-            db_host=c["db_host"] or None,
-            db_name=c["db_name"] or None,
-            db_user=c["db_user"] or None,
-            db_password=None,
             relation_db_host=None,
             relation_db_name=None,
             relation_db_user=None,
@@ -146,7 +136,7 @@ class WordpressCharm(CharmBase):
 
         self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
         self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
-
+        self.framework.observe(self.on.config_changed, self._update_ingress_config)
         self.framework.observe(self.on.config_changed, self._reconciliation)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
@@ -154,7 +144,7 @@ class WordpressCharm(CharmBase):
 
     @property
     def ingress_config(self):
-        blog_hostname = self.state.blog_hostname
+        blog_hostname = self.model.config["blog_hostname"] or self.app.name
         ingress_config = {
             "service-hostname": blog_hostname,
             "service-name": self.app.name,
@@ -164,6 +154,14 @@ class WordpressCharm(CharmBase):
         if tls_secret_name:
             ingress_config["tls-secret-name"] = tls_secret_name
         return ingress_config
+
+    def _update_ingress_config(self, _event):
+        """Update the ingress relation when config changed.
+
+        Args:
+            _event: not used.
+        """
+        self.ingress.update_config(self.ingress_config)
 
     def _on_get_initial_password_action(self, event):
         """Handle the get-initial-password action."""
@@ -556,7 +554,7 @@ class WordpressCharm(CharmBase):
         self._init_pebble_layer()
         if self.unit.is_leader():
             msg = ""
-            for _ in range(30):
+            for _ in range(max(1, self._DB_CHECK_TIMEOUT // self._DB_CHECK_INTERVAL)):
                 success, msg = self._test_database_connectivity()
                 if success:
                     break

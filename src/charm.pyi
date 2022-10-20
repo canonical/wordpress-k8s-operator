@@ -54,6 +54,7 @@ class WordpressCharm(ops.charm.CharmBase):
     _WORDPRESS_DB_CHARSET: str
 
     _DB_CHECK_INTERVAL: Union[float, int]
+    _DB_CHECK_TIMEOUT: Union[float, int]
 
     _WORDPRESS_DEFAULT_THEMES: List[str]
     _WORDPRESS_DEFAULT_PLUGINS: List[str]

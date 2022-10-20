@@ -1,7 +1,10 @@
 import io
 import json
+import socket
 import secrets
+import tempfile
 import urllib.parse
+import unittest.mock
 
 import pytest
 import requests
@@ -67,10 +70,10 @@ async def test_incorrect_db_config(
     assert: charm should be blocked by WordPress installation errors, instead of lacking
         of database connection info
     """
-    # Database configuration can retry for up to 30 seconds before giving up and showing an error.
+    # Database configuration can retry for up to 60 seconds before giving up and showing an error.
     # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
     # db config.
-    await ops_test.model.wait_for_idle(idle_period=30)
+    await ops_test.model.wait_for_idle(idle_period=60)
 
     for unit in ops_test.model.applications[application_name].units:
         assert unit.workload_status == ops.model.BlockedStatus.name, "unit status should be blocked"
@@ -265,6 +268,77 @@ async def test_wordpress_plugin_installation_error(
         assert (
             unit.workload_status == ops.model.ActiveStatus.name
         ), "status should back to active after invalid plugin removed from config"
+
+
+@pytest.mark.asyncio
+async def test_ingress(
+    ops_test: pytest_operator.plugin.OpsTest, application_name: str, create_self_signed_tls_secret
+):
+    """
+    arrange: after WordPress charm has been deployed and db relation established
+    act: deploy the nginx-ingress-integrator charm and create the relation between ingress charm
+        and wordpress charm. After that, update some ingress related configuration of the
+        wordpress charm.
+    assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections
+        after configuration tls_secret_name be set.
+    """
+
+    def gen_patch_getaddrinfo(host, resolve_to):
+        original_getaddrinfo = socket.getaddrinfo
+
+        def patched_getaddrinfo(*args):
+            if args[0] == host:
+                return original_getaddrinfo(resolve_to, *args[1:])
+            else:
+                return original_getaddrinfo(*args)
+
+        return patched_getaddrinfo
+
+    await ops_test.model.deploy("nginx-ingress-integrator", "ingress")
+    await ops_test.model.add_relation(application_name, "ingress:ingress")
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
+
+    response = requests.get("http://127.0.0.1", headers={"Host": application_name}, timeout=5)
+    assert (
+        response.status_code == 200,
+        "wordpress" in response.text.lower(),
+    ), "Ingress should accept requests to WordPress and return correct contents"
+
+    tls_secret_name, tls_cert = create_self_signed_tls_secret(application_name)
+    application = ops_test.model.applications[application_name]
+    await application.set_config({"tls_secret_name": tls_secret_name})
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
+
+    with tempfile.NamedTemporaryFile(mode="wb+") as f:
+        with unittest.mock.patch.multiple(
+            socket, getaddrinfo=gen_patch_getaddrinfo(application_name, "127.0.0.1")
+        ):
+            f.write(tls_cert)
+            f.flush()
+            response = requests.get(f"https://{application_name}", verify=f.name, timeout=5)
+            assert (
+                response.status_code == 200 and "wordpress" in response.text.lower()
+            ), "Ingress should accept HTTPS requests after tls_secret_name being set"
+
+    new_hostname = "wordpress.test"
+    tls_secret_name, tls_cert = create_self_signed_tls_secret(new_hostname)
+    print(tls_secret_name)
+    application = ops_test.model.applications[application_name]
+    await application.set_config(
+        {"tls_secret_name": tls_secret_name, "blog_hostname": new_hostname}
+    )
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
+
+    with tempfile.NamedTemporaryFile(mode="wb+") as f:
+        with unittest.mock.patch.multiple(
+            socket, getaddrinfo=gen_patch_getaddrinfo(new_hostname, "127.0.0.1")
+        ):
+            f.write(tls_cert)
+            f.flush()
+            response = requests.get(f"https://{new_hostname}", verify=f.name, timeout=5)
+            assert (
+                response.status_code == 200 and "wordpress" in response.text.lower()
+            ), "Ingress should update the server name indication based routing after blog_hostname updated"
 
 
 @pytest.mark.asyncio

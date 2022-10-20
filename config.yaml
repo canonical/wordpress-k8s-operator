@@ -1,22 +1,4 @@
 options:
-  image:
-    type: string
-    description: "The docker image to install. Required."
-    default: "wordpresscharmers/wordpress:5.6"
-  image_user:
-    type: string
-    description: "Username to use for the configured image registry, if required"
-    default: ""
-  image_pass:
-    type: string
-    description: "Password to use for the configured image registry, if required"
-    default: ""
-  ports:
-    type: string
-    description: >
-       Ports to expose, space separated list in name:8000 format. Names are alphanumeric + hyphen.
-       e.g. "http:80 metrics:7127"
-    default: "http:80"
   tls_secret_name:
     type: string
     description: "The Kubernetes TLS secret resource name."
@@ -36,24 +18,6 @@ options:
   db_password:
     type: string
     description: "MySQL database user's password"
-    default: ""
-  additional_hostnames:
-    type: string
-    description: "Space separated list of aditional hostnames for the site."
-    default: ""
-  container_config:
-    type: string
-    description: >
-      YAML formatted map of container config keys & values. These are
-      generally accessed from inside the image as environment variables.
-      Use to configure customized WordPress images. This configuration
-      gets logged; use container_secrets for secrets.
-    default: ""
-  container_secrets:
-    type: string
-    description: >
-      YAML formatted map of secrets. Works just like container_config,
-      except that values should not be logged.
     default: ""
   initial_settings:
       type: string
@@ -79,7 +43,19 @@ options:
   blog_hostname:
     type: string
     description: >
-      The blog hostname. If left unset, defaults to wordpress-k8s.
+      The blog hostname. If left unset, defaults to the application name.
+    default: ""
+  themes:
+    type: string
+    description: |
+      Theme slugs of themes to be installed, separated by comma. Including or excluding
+      a default theme here will have no effect.
+    default: ""
+  plugins:
+    type: string
+    description: |
+      Plugin slugs of plugins to be installed, separated by comma. Including or excluding
+      a default plugin here will have no effect.
     default: ""
   wp_plugin_akismet_key:
     type: string
@@ -106,16 +82,4 @@ options:
     description: |
       YAML dictionary with keys named after WordPress settings and the desired values.
       Please note that the settings will be reset to values provided every time hooks run.
-    default: ""
-  themes:
-    type: string
-    description: |
-      Theme slugs of themes to be installed, separated by comma. Including or excluding
-      a default theme here will have no effect.
-    default: ""
-  plugins:
-    type: string
-    description: |
-      Plugin slugs of plugins to be installed, separated by comma. Including or excluding
-      a default plugin here will have no effect.
     default: ""

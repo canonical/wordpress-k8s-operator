@@ -1,11 +1,19 @@
 import re
+import base64
+import secrets
+import datetime
 import configparser
 
 import pytest
+import kubernetes
 import juju.action
 import pytest_asyncio
 import juju.application
+import cryptography.x509
 import pytest_operator.plugin
+import cryptography.hazmat.primitives.hashes
+import cryptography.hazmat.primitives.serialization
+import cryptography.hazmat.primitives.asymmetric.rsa
 
 from wordpress_client import WordpressClient
 
@@ -33,7 +41,7 @@ def fixture_application_name():
 
 @pytest_asyncio.fixture(scope="function", name="default_admin_password")
 async def fixture_default_admin_password(
-        ops_test: pytest_operator.plugin.OpsTest, application_name
+    ops_test: pytest_operator.plugin.OpsTest, application_name
 ):
     application: juju.application = ops_test.model.applications[application_name]
     action: juju.action.Action = await application.units[0].run_action("get-initial-password")
@@ -132,3 +140,87 @@ def openid_password(request):
         openid_password
     ), "OpenID password should not be empty, please include it in the --openid-password parameter"
     return openid_password
+
+
+@pytest.fixture
+def kube_config(request):
+    """The Kubernetes cluster configuration file"""
+    openid_password = request.config.getoption("--kube-config")
+    assert (
+        openid_password
+    ), "The Kubernetes cluster configuration file path should not be empty, please include it in the --kube-config parameter"
+    return openid_password
+
+
+@pytest.fixture(scope="function", name="create_self_signed_tls_secret")
+def create_self_signed_tls_secret_fixture(kube_config, ops_test: pytest_operator.plugin.OpsTest):
+    """Create a self-signed TLS certificate as a Kubernetes secret."""
+    created_secrets = []
+    namespace = ops_test.model.info["name"]
+    kubernetes.config.load_kube_config(config_file=kube_config)
+    kubernetes_client_v1 = kubernetes.client.CoreV1Api()
+
+    def create_self_signed_tls_secret(host):
+        """Function to create a self-signed TLS certificate as a Kubernetes secret.
+
+        Args:
+            host: Certificate subject common name.
+
+        Returns:
+            (Tuple[str, bytes]) A tuple of the Kubernetes secret name as str, and certificate
+            public key in bytes.
+        """
+        secret_name = f"tls-secret-{host}-{secrets.token_hex(8)}"
+        key = cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        private_key_pem = key.private_bytes(
+            encoding=cryptography.hazmat.primitives.serialization.Encoding.PEM,
+            format=cryptography.hazmat.primitives.serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=cryptography.hazmat.primitives.serialization.NoEncryption(),
+        )
+        issuer = subject = cryptography.x509.Name(
+            [
+                cryptography.x509.NameAttribute(cryptography.x509.NameOID.COUNTRY_NAME, "UK"),
+                cryptography.x509.NameAttribute(
+                    cryptography.x509.NameOID.ORGANIZATION_NAME, "Canonical Group Ltd"
+                ),
+                cryptography.x509.NameAttribute(cryptography.x509.NameOID.COMMON_NAME, host),
+            ]
+        )
+        cert = (
+            cryptography.x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(key.public_key())
+            .serial_number(cryptography.x509.random_serial_number())
+            .add_extension(
+                cryptography.x509.SubjectAlternativeName([cryptography.x509.DNSName(host)]),
+                critical=False,
+            )
+            .not_valid_before(datetime.datetime.utcnow() - datetime.timedelta(days=10))
+            .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10))
+            .sign(key, cryptography.hazmat.primitives.hashes.SHA256())
+        )
+        public_key_pem = cert.public_bytes(
+            cryptography.hazmat.primitives.serialization.Encoding.PEM
+        )
+        kubernetes_client_v1.create_namespaced_secret(
+            namespace=namespace,
+            body=kubernetes.client.V1Secret(
+                metadata={"name": secret_name, "namespace": namespace},
+                data={
+                    "tls.crt": base64.standard_b64encode(public_key_pem).decode(),
+                    "tls.key": base64.standard_b64encode(private_key_pem).decode(),
+                },
+                type="kubernetes.io/tls",
+            ),
+        )
+        created_secrets.append(secret_name)
+        return secret_name, public_key_pem
+
+    yield create_self_signed_tls_secret
+
+    for secret in created_secrets:
+        kubernetes_client_v1.delete_namespaced_secret(name=secret, namespace=namespace)

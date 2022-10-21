@@ -2,7 +2,9 @@ juju
 pytest
 Pillow
 requests
+kubernetes
 pytest-cov
+cryptography
 pytest-operator
 python-swiftclient
 python-keystoneclient

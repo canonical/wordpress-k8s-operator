@@ -33,7 +33,7 @@ class WordpressClient:
         )
         homepage = wp_client.get_homepage()
         assert (
-                post_title in homepage and post_content in homepage
+            post_title in homepage and post_content in homepage
         ), "admin user should be able to create a new post"
         comment = secrets.token_hex(16)
         post_link = post["link"]
@@ -72,10 +72,11 @@ class WordpressClient:
             self._set_options_permalink()
 
     def _get(
-            self,
-            url: str,
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            except_status_code: typing.Optional[int] = None) -> requests.Response:
+        self,
+        url: str,
+        headers: typing.Optional[typing.Dict[str, str]] = None,
+        except_status_code: typing.Optional[int] = None,
+    ) -> requests.Response:
         """HTTP GET using the instance session.
 
         The instance session contains user's login session cookies, so this method can assess
@@ -96,12 +97,12 @@ class WordpressClient:
         return response
 
     def _post(
-            self,
-            url: str,
-            json: typing.Optional[dict] = None,
-            data: typing.Optional[typing.Dict[str, typing.Any]] = None,
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            except_status_code: typing.Optional[int] = None
+        self,
+        url: str,
+        json: typing.Optional[dict] = None,
+        data: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        headers: typing.Optional[typing.Dict[str, str]] = None,
+        except_status_code: typing.Optional[int] = None,
     ) -> requests.Response:
         """HTTP GET using the instance session.
 
@@ -270,7 +271,7 @@ class WordpressClient:
         return [p["plugin"].split("/")[0] for p in response.json()]
 
     def list_comments(
-            self, status: str = 'approve', post_id: typing.Optional[int] = None
+        self, status: str = 'approve', post_id: typing.Optional[int] = None
     ) -> typing.List[dict]:
         """List all comments in the WordPress site.
 
@@ -287,9 +288,7 @@ class WordpressClient:
         response = self._get(url, headers={"X-WP-Nonce": self._gen_wp_rest_nonce()})
         return response.json()
 
-    def upload_media(
-            self, filename: str, content: bytes, mimetype: str = None
-    ) -> typing.List[str]:
+    def upload_media(self, filename: str, content: bytes, mimetype: str = None) -> typing.List[str]:
         """Upload a media file (image/video)
 
         Args:

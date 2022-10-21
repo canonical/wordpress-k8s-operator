@@ -300,7 +300,7 @@ async def test_ingress(
 
     response = requests.get("http://127.0.0.1", headers={"Host": application_name}, timeout=5)
     assert (
-        response.status_code == 200,
+        response.status_code == 200 and
         "wordpress" in response.text.lower(),
     ), "Ingress should accept requests to WordPress and return correct contents"
 
@@ -322,7 +322,6 @@ async def test_ingress(
 
     new_hostname = "wordpress.test"
     tls_secret_name, tls_cert = create_self_signed_tls_secret(new_hostname)
-    print(tls_secret_name)
     application = ops_test.model.applications[application_name]
     await application.set_config(
         {"tls_secret_name": tls_secret_name, "blog_hostname": new_hostname}

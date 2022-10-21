@@ -195,6 +195,10 @@ def create_self_signed_tls_secret_fixture(kube_config, ops_test: pytest_operator
             .issuer_name(issuer)
             .public_key(key.public_key())
             .serial_number(cryptography.x509.random_serial_number())
+            .add_extension(
+                cryptography.x509.SubjectAlternativeName([cryptography.x509.DNSName(host)]),
+                critical=False,
+            )
             .not_valid_before(datetime.datetime.utcnow() - datetime.timedelta(days=10))
             .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10))
             .sign(key, cryptography.hazmat.primitives.hashes.SHA256())

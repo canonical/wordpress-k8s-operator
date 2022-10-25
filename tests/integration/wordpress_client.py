@@ -427,17 +427,3 @@ class WordpressClient:
             if email == self.username or username == self.username:
                 return [r.strip() for r in role.lower().split(",")]
         raise ValueError(f"User {self.username} not found")
-
-
-if __name__ == "__main__":
-    wp = WordpressClient(
-        host="10.1.75.131",
-        username="testwwcanonical@proton.me",
-        password="vebvip-1syffe-Vecwub",
-        is_admin=True,
-        use_launchpad_login=True,
-    )
-    wp.login_using_launchpad(wp.username, wp.password)
-    import pprint
-
-    pprint.pp(wp.list_roles())

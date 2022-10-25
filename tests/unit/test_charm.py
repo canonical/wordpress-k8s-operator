@@ -48,8 +48,8 @@ class WordpressMock:
             )
         for credential in self._database_credentials[credential_key]:
             if (
-                    credential["db_user"] == db_info["db_user"]
-                    and credential["db_password"] == db_info["db_password"]
+                credential["db_user"] == db_info["db_user"]
+                and credential["db_password"] == db_info["db_password"]
             ):
                 return
         raise mysql.connector.Error(
@@ -503,7 +503,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.begin_with_initial_hooks()
 
         with self.assertRaises(
-                WordPressWaitingStatusException, msg="core reconciliation should fail"
+            WordPressWaitingStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
@@ -526,7 +526,7 @@ class TestWordpressK8s(unittest.TestCase):
         self._setup_replica_consensus()
 
         with self.assertRaises(
-                WordPressBlockedStatusException, msg="core reconciliation should fail"
+            WordPressBlockedStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
@@ -686,12 +686,12 @@ class TestWordpressK8s(unittest.TestCase):
         )
 
     def _standard_plugin_test(
-            self,
-            plugin,
-            plugin_config,
-            excepted_options,
-            excepted_options_after_removed=None,
-            additional_check_after_install=None,
+        self,
+        plugin,
+        plugin_config,
+        excepted_options,
+        excepted_options_after_removed=None,
+        additional_check_after_install=None,
     ):
         plugin_config_keys = list(plugin_config.keys())
         self._setup_replica_consensus()

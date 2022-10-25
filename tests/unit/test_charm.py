@@ -74,7 +74,10 @@ class WordpressMock:
         if cmd_prefix == ["wp", "core", "is-installed"]:
             return Result(return_code=1 if database is None else 0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "core", "install"]:
-            self._database[database_key] = {"active_plugins": set(), "options": {}}
+            self._database[database_key] = {
+                "active_plugins": set(),
+                "options": {'users_can_register': '0'},
+            }
             return Result(return_code=0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "theme", "list"]:
             return Result(
@@ -140,6 +143,8 @@ class WordpressMock:
         elif cmd_prefix == ["wp", "option", "update"]:
             option = cmd[3]
             value = cmd[4]
+            if "--format=json" in cmd:
+                value = json.loads(value)
             db = self._current_connected_database()
             db["options"][option] = value
             return Result(return_code=0, stdout="", stderr="")
@@ -681,7 +686,12 @@ class TestWordpressK8s(unittest.TestCase):
         )
 
     def _standard_plugin_test(
-        self, plugin, plugin_config, excepted_options, additional_check_after_install=None
+        self,
+        plugin,
+        plugin_config,
+        excepted_options,
+        excepted_options_after_removed=None,
+        additional_check_after_install=None,
     ):
         plugin_config_keys = list(plugin_config.keys())
         self._setup_replica_consensus()
@@ -698,7 +708,7 @@ class TestWordpressK8s(unittest.TestCase):
 
         self.assertEqual(
             self.patch.get_active_plugins(db_host="config_db_host", db_name="config_db_name"),
-            {plugin},
+            {plugin} if isinstance(plugin, str) else set(plugin),
             f"{plugin} should be activated after {plugin_config_keys} being set",
         )
         self.assertEqual(
@@ -718,7 +728,7 @@ class TestWordpressK8s(unittest.TestCase):
         )
         self.assertEqual(
             self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
-            {},
+            {} if excepted_options_after_removed is None else excepted_options_after_removed,
             f"{plugin} options should be removed after {plugin_config_keys} being reset",
         )
 
@@ -736,7 +746,9 @@ class TestWordpressK8s(unittest.TestCase):
                 "akismet_strictness": "0",
                 "akismet_show_user_comments_approved": "0",
                 "wordpress_api_key": "test",
+                'users_can_register': '0',
             },
+            excepted_options_after_removed={'users_can_register': '0'},
         )
 
     def test_team_map(self):
@@ -781,20 +793,19 @@ class TestWordpressK8s(unittest.TestCase):
             should be deactivated with options removed after config being reset
         """
         self._standard_plugin_test(
-            plugin="openid",
+            plugin={'openid', 'wordpress-launchpad-integration', 'wordpress-teams-integration'},
             plugin_config={
                 "wp_plugin_openid_team_map": "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
             },
-            excepted_options={
-                'openid_required_for_registration': '1',
-            },
+            excepted_options={'openid_required_for_registration': '1', 'users_can_register': '1'},
+            excepted_options_after_removed={'users_can_register': '0'},
         )
         self.assertTrue(
             self.patch.eval_history()[-1].startswith("update_option('openid_teams_trust_list',"),
             "PHP function update_option should be invoked after openid plugin enabled",
         )
 
-    def _test_swift_plugin(self):
+    def test_swift_plugin(self):
         """
         arrange: after peer relation established and database ready
         act: update openid plugin configuration
@@ -809,7 +820,41 @@ class TestWordpressK8s(unittest.TestCase):
 
         self._standard_plugin_test(
             plugin="openstack-objectstorage-k8s",
-            plugin_config={},
-            excepted_options={},
+            plugin_config={
+                "wp_plugin_openstack-objectstorage_config": json.dumps(
+                    {
+                        "auth-url": "http://localhost/v3",
+                        "bucket": "wordpress",
+                        "password": "password",
+                        "object-prefix": "wp-content/uploads/",
+                        "region": "region",
+                        "tenant": "tenant",
+                        "domain": "domain",
+                        "swift-url": "http://localhost:8080",
+                        "username": "username",
+                        "copy-to-swift": "1",
+                        "serve-from-swift": "1",
+                        "remove-local-file": "0",
+                    }
+                )
+            },
+            excepted_options={
+                'object_storage': {
+                    'auth-url': 'http://localhost/v3',
+                    'bucket': 'wordpress',
+                    'password': 'password',
+                    'object-prefix': 'wp-content/uploads/',
+                    'region': 'region',
+                    'tenant': 'tenant',
+                    'domain': 'domain',
+                    'swift-url': 'http://localhost:8080',
+                    'username': 'username',
+                    'copy-to-swift': '1',
+                    'serve-from-swift': '1',
+                    'remove-local-file': '0',
+                },
+                'users_can_register': '0',
+            },
+            excepted_options_after_removed={'users_can_register': '0'},
             additional_check_after_install=additional_check_after_install,
         )

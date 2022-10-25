@@ -120,7 +120,6 @@ class WordpressCharm(CharmBase):
 
         self.db = MySQLClient(self, "db")
 
-        c = self.model.config
         self.state.set_default(
             relation_db_host=None,
             relation_db_name=None,
@@ -134,7 +133,9 @@ class WordpressCharm(CharmBase):
             self.on.get_initial_password_action, self._on_get_initial_password_action
         )
 
-        self.framework.observe(self.on.leader_elected, self._on_leader_elected_replica_data_handler)
+        self.framework.observe(
+            self.on.leader_elected, self._on_leader_elected_replica_data_handler
+        )
         self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
         self.framework.observe(self.on.config_changed, self._update_ingress_config)
         self.framework.observe(self.on.config_changed, self._reconciliation)
@@ -946,9 +947,21 @@ class WordpressCharm(CharmBase):
                 f"Unable to config akismet plugin, {result.message}"
             )
 
+    def _wp_eval(self, php_code):
+        """Executes arbitrary PHP code.
+
+        Args:
+            php_code: PHP code to be executed.
+
+        Returns:
+            An instance of :attr:`charm.WordpressCharm._ExecResult`.
+        """
+        return self._wrapped_run_wp_cli(["wp", "eval", php_code])
+
     @staticmethod
     def _encode_openid_team_map(team_map):
         """Convert wp_plugin_openid_team_map setting to WordPress openid_teams_trust_list option
+        in PHP code.
 
         example input: site-sysadmins=administrator,site-editors=editor,site-executives=editor
 
@@ -956,48 +969,64 @@ class WordpressCharm(CharmBase):
             team_map (str): team definition.
 
         Returns:
-            A serialized PHP array, as a Python string.
+            A PHP array, as a Python string.
         """
-        team_map_lines = []
-        i = 0
-        team_map_lines.append("a:{}:{{".format(len(team_map.split(","))))
-        for mapping in team_map.split(","):
-            i = i + 1
-            team, role = mapping.split("=", 2)
-            team_map_lines.append("i:{};".format(i))
-            team_map_lines.append('O:8:"stdClass":4:{')
-            team_map_lines.append('s:2:"id";')
-            team_map_lines.append("i:{};".format(i))
-            team_map_lines.append('s:4:"team";')
-            team_map_lines.append('s:{}:"{}";'.format(len(team), team))
-            team_map_lines.append('s:4:"role";')
-            team_map_lines.append('s:{}:"{}";'.format(len(role), role))
-            team_map_lines.append('s:6:"server";')
-            team_map_lines.append('s:1:"0";')
-            team_map_lines.append("}")
-        team_map_lines.append("}")
-
-        return "".join(team_map_lines)
+        array_items = []
+        for idx, mapping in enumerate(team_map.split(","), start=1):
+            launchpad_role, wordpress_role = mapping.split("=")
+            launchpad_role = launchpad_role.strip()
+            wordpress_role = wordpress_role.strip()
+            array_items.append(
+                f"{idx} => (object) array ("
+                f"'id'=>{idx},"
+                f"'team'=>'{launchpad_role}',"
+                f"'role'=>'{wordpress_role}',"
+                f"'server' => '0',),"
+            )
+        return f"array({''.join(array_items)})"
 
     def _plugin_openid_reconciliation(self):
         """Reconciliation process for the openid plugin"""
         openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
+        result = None
+
+        def check_result():
+            if not result.success:
+                raise exceptions.WordPressBlockedStatusException(
+                    f"Unable to config openid plugin, {result.message}"
+                )
+
         if not openid_team_map:
+            result = self._wp_option_update("users_can_register", "0")
+            check_result()
             result = self._deactivate_plugin(
-                "openid", ["openid_required_for_registration", "openid_teams_trust_list"]
+                'wordpress-teams-integration', ["openid_teams_trust_list"]
             )
+            check_result()
+            result = self._deactivate_plugin('wordpress-launchpad-integration', [])
+            check_result()
+            result = self._deactivate_plugin('openid', ["openid_required_for_registration"])
+            check_result()
         else:
             result = self._activate_plugin(
                 "openid",
                 {
                     "openid_required_for_registration": "1",
-                    "openid_teams_trust_list": self._encode_openid_team_map(openid_team_map),
                 },
             )
-        if not result.success:
-            raise exceptions.WordPressBlockedStatusException(
-                f"Unable to config openid plugin, {result.message}"
+            check_result()
+            result = self._activate_plugin('wordpress-launchpad-integration', {})
+            check_result()
+            result = self._activate_plugin('wordpress-teams-integration', {})
+            check_result()
+            result = self._wp_eval(
+                "update_option("
+                f"'openid_teams_trust_list', {self._encode_openid_team_map(openid_team_map)}"
+                ");"
             )
+            check_result()
+            result = self._wp_option_update("users_can_register", "1")
+            check_result()
 
     def _apache_config_is_enabled(self, conf_name):
         """Check if a specified apache configuration file is enabled

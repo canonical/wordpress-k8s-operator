@@ -22,6 +22,7 @@ class WordpressMock:
         self._themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
         self._plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self._enabled_apache_conf = set()
+        self._eval_history = []
         self._patch = None
 
     def _get_current_database_config(self):
@@ -148,6 +149,10 @@ class WordpressMock:
             if option in db["options"]:
                 del db["options"][option]
             return Result(return_code=0, stdout="", stderr="")
+        elif cmd[:2] == ["wp", "eval"]:
+            php_code = cmd[2]
+            self._eval_history.append(php_code)
+            return Result(return_code=0, stdout="", stderr="")
         raise ValueError(f"matrix breached, running an unknown cmd {cmd}")
 
     def start(self):
@@ -186,7 +191,8 @@ class WordpressMock:
             _remove_wp_config=mock_remove_wp_config,
             _run_wp_cli=mock_run_wp_cli,
             _test_database_connectivity=mock_test_database_connectivity,
-            _DB_CHECK_INTERVAL=0,
+            _DB_CHECK_TIMEOUT=0,
+            _DB_CHECK_INTERVAL=0.001,
             _apache_config_is_enabled=mock_apache_config_is_enabled,
             _apache_enable_config=mock_apache_enable_config,
             _apache_disable_config=mock_apache_disable_config,
@@ -220,6 +226,9 @@ class WordpressMock:
 
     def get_enabled_apache_conf(self):
         return self._enabled_apache_conf
+
+    def eval_history(self):
+        return self._eval_history
 
 
 class TestWordpressK8s(unittest.TestCase):
@@ -730,6 +739,40 @@ class TestWordpressK8s(unittest.TestCase):
             },
         )
 
+    def test_team_map(self):
+        team_map = "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
+        option = WordpressCharm._encode_openid_team_map(team_map)
+        self.assertEqual(
+            option.replace(" ", "").replace("\n", ""),
+            """array (
+                  1 =>
+                  (object) array(
+                     'id' => 1,
+                     'team' => 'site-sysadmins',
+                     'role' => 'administrator',
+                     'server' => '0',
+                  ),
+                  2 =>
+                  (object) array(
+                     'id' => 2,
+                     'team' => 'site-editors',
+                     'role' => 'editor',
+                     'server' => '0',
+                  ),
+                  3 =>
+                  (object) array(
+                     'id' => 3,
+                     'team' => 'site-executives',
+                     'role' => 'editor',
+                     'server' => '0',
+                  ),
+                )""".replace(
+                " ", ""
+            ).replace(
+                "\n", ""
+            ),
+        )
+
     def test_openid_plugin(self):
         """
         arrange: after peer relation established and database ready
@@ -744,8 +787,11 @@ class TestWordpressK8s(unittest.TestCase):
             },
             excepted_options={
                 'openid_required_for_registration': '1',
-                'openid_teams_trust_list': 'a:3:{i:1;O:8:"stdClass":4:{s:2:"id";i:1;s:4:"team";s:14:"site-sysadmins";s:4:"role";s:13:"administrator";s:6:"server";s:1:"0";}i:2;O:8:"stdClass":4:{s:2:"id";i:2;s:4:"team";s:12:"site-editors";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}i:3;O:8:"stdClass":4:{s:2:"id";i:3;s:4:"team";s:15:"site-executives";s:4:"role";s:6:"editor";s:6:"server";s:1:"0";}}',
             },
+        )
+        self.assertTrue(
+            self.patch.eval_history()[-1].startswith("update_option('openid_teams_trust_list',"),
+            "PHP function update_option should be invoked after openid plugin enabled",
         )
 
     def _test_swift_plugin(self):

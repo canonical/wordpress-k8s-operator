@@ -1,8 +1,9 @@
 import re
+import html
 import json
+import typing
 import secrets
 import mimetypes
-import typing
 
 import requests
 
@@ -46,7 +47,14 @@ class WordpressClient:
             post_link
         ), "admin user should be able to create a comment"
 
-    def __init__(self, host: str, username: str, password: str, is_admin: bool):
+    def __init__(
+        self,
+        host: str,
+        username: str,
+        password: str,
+        is_admin: bool,
+        use_launchpad_login: bool = False,
+    ):
         """Initialize the WordPress JSON API client.
 
         Args:
@@ -54,14 +62,18 @@ class WordpressClient:
             username: WordPress user username.
             password: WordPress user password.
             is_admin: If this user is a WordPress admin.
+            use_launchpad_login: Use Launchpad OpenID to login instead of WordPress userpass.
         """
         self.host = host
         self.username = username
         self.password = password
         self._session = requests.session()
         self.timeout = 10
-        if not self._login():
-            raise RuntimeError(f"login failed with username {username}")
+        if use_launchpad_login:
+            self.login_using_launchpad(username, password)
+        else:
+            if not self._login():
+                raise RuntimeError(f"login failed with username {username}")
         # By default, WordPress does not expose the /wp-json/ endpoint test if /wp-json
         # is exposed, and expose that with a permalink setting if not
         try:
@@ -100,7 +112,7 @@ class WordpressClient:
         self,
         url: str,
         json: typing.Optional[dict] = None,
-        data: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        data: typing.Optional[typing.Union[bytes, typing.Dict[str, typing.Any]]] = None,
         headers: typing.Optional[typing.Dict[str, str]] = None,
         except_status_code: typing.Optional[int] = None,
     ) -> requests.Response:
@@ -288,7 +300,9 @@ class WordpressClient:
         response = self._get(url, headers={"X-WP-Nonce": self._gen_wp_rest_nonce()})
         return response.json()
 
-    def upload_media(self, filename: str, content: bytes, mimetype: str = None) -> typing.List[str]:
+    def upload_media(
+        self, filename: str, content: bytes, mimetype: str = None
+    ) -> typing.List[str]:
         """Upload a media file (image/video)
 
         Args:
@@ -320,34 +334,30 @@ class WordpressClient:
             image_urls.append(media["source_url"])
         return image_urls
 
-    def associate_ubuntu_one(self, username: str, password: str) -> None:
-        """Associate an Ubuntu One account with the currnet WordPress account.
+    def login_using_launchpad(self, username: str, password: str) -> None:
+        """Use Launchpad OpenID to login the WordPress site, require launchpad related plugins.
 
         Args:
-            username: Username of the Ubuntu One account.
-            password: Password of the Ubuntu One account.
+            username: Username of the launchpad account.
+            password: Password of the launchpad account.
         """
-        openid_setting_url = f"http://{self.host}/wp-admin/users.php?page=your_openids"
-        openid_setting_page = self._get(openid_setting_url)
-        nonce = re.findall(
-            '<input type="hidden" id="_wpnonce" name="_wpnonce" value="([^"]+)" />',
-            openid_setting_page.text,
-        )[1]
+        login_url = f"http://{self.host}/wp-login.php"
+        self._get(login_url)
         openid_redirect = self._post(
-            openid_setting_url,
+            login_url,
             data={
-                'openid_identifier': 'login.ubuntu.com',
-                '_wpnonce': nonce,
-                '_wp_http_referer': '/wp-admin/users.php?page=your_openids',
-                'action': 'add',
+                'launchpad': 'Login',
+                'redirect_to': f'http://{self.host}/wp-admin/',
+                'testcookie': '1',
             },
         )
         openid_args = re.findall(
-            '<input type="hidden" name="([^"]+)" value="([^"]+)" />', openid_redirect.text
+            '<input type="hidden" name="([^"]+)" value="([^"]+)" />',
+            html.unescape(openid_redirect.text),
         )
         openid_args = dict(openid_args)
         login_page = self._post(
-            "https://login.ubuntu.com/+openid",
+            "https://login.launchpad.net/+openid",
             data=openid_args,
         )
         csrf_token = re.findall(
@@ -357,7 +367,7 @@ class WordpressClient:
             '<a id="login-link" data-qa-id="login_link" href="([^"]+)" class="p-link--soft">',
             login_page.text,
         )[0]
-        login_url = f"https://login.ubuntu.com{login_link}"
+        login_url = f"https://login.launchpad.net{login_link}"
         confirm_page = self._post(
             login_url,
             data={
@@ -373,6 +383,7 @@ class WordpressClient:
         csrf_token = re.findall(
             "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", confirm_page.text
         )[0]
+        team = re.findall(">Team membership: ([^<]+)<", confirm_page.text)[0]
         self._post(
             confirm_page.url,
             data={
@@ -380,6 +391,7 @@ class WordpressClient:
                 'nickname': 'on',
                 'email': 'on',
                 'fullname': 'on',
+                team: 'on',
                 'ok': '',
                 'yes': '',
                 'openid.usernamesecret': '',
@@ -400,3 +412,32 @@ class WordpressClient:
             except_status_code=200,
         )
         return re.findall("<td>(https://login\\.ubuntu\\.com[^<]+)</td>", openid_setting.text)
+
+    def list_roles(self) -> typing.List[str]:
+        """List all WordPress roles of the current user.
+
+        Returns:
+            WordPress roles as a list of str.
+        """
+        user_page = self._get(f"http://{self.host}/wp-admin/users.php").text
+        emails = re.findall("""data-colname="Email"><a href='mailto:([^']+)'>""", user_page)
+        usernames = re.findall('users\\.php">([^<]+)</a>', user_page)
+        roles = re.findall('data-colname="Role">([^<]+)</td>', user_page)
+        for email, username, role in zip(emails, usernames, roles):
+            if email == self.username or username == self.username:
+                return [r.strip() for r in role.lower().split(",")]
+        raise ValueError(f"User {self.username} not found")
+
+
+if __name__ == "__main__":
+    wp = WordpressClient(
+        host="10.1.75.131",
+        username="testwwcanonical@proton.me",
+        password="vebvip-1syffe-Vecwub",
+        is_admin=True,
+        use_launchpad_login=True,
+    )
+    wp.login_using_launchpad(wp.username, wp.password)
+    import pprint
+
+    pprint.pp(wp.list_roles())

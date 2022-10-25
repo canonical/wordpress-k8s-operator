@@ -146,9 +146,10 @@ def openid_password(request):
 def kube_config(request):
     """The Kubernetes cluster configuration file"""
     openid_password = request.config.getoption("--kube-config")
-    assert (
-        openid_password
-    ), "The Kubernetes cluster configuration file path should not be empty, please include it in the --kube-config parameter"
+    assert openid_password, (
+        "The Kubernetes config file path should not be empty, "
+        "please include it in the --kube-config parameter"
+    )
     return openid_password
 
 

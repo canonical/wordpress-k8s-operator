@@ -168,11 +168,11 @@ class WordpressClient:
         self._post(
             f"http://{self.host}/wp-admin/options-permalink.php",
             data={
-                '_wpnonce': wp_nonce,
-                '_wp_http_referer': '/wp-admin/options-permalink.php',
-                'selection': '/%postname%/',
-                'permalink_structure': '/%postname%/',
-                'submit': 'Save Changes',
+                "_wpnonce": wp_nonce,
+                "_wp_http_referer": "/wp-admin/options-permalink.php",
+                "selection": "/%postname%/",
+                "permalink_structure": "/%postname%/",
+                "submit": "Save Changes",
             },
             except_status_code=200,
         )
@@ -185,7 +185,7 @@ class WordpressClient:
         """
         new_post_page = self._get(f"http://{self.host}/wp-admin/post-new.php")
         new_post_page = new_post_page.text
-        nonce = json.loads(re.findall('var wpApiSettings = ([^;]+);', new_post_page)[0])["nonce"]
+        nonce = json.loads(re.findall("var wpApiSettings = ([^;]+);", new_post_page)[0])["nonce"]
         return nonce
 
     def create_post(self, title: str, content: str) -> WordPressPost:
@@ -225,11 +225,11 @@ class WordpressClient:
         response = self._post(
             f"http://{self.host}/wp-comments-post.php",
             data={
-                'comment': content,
-                'submit': 'Post Comment',
-                'comment_post_ID': post_id,
-                'comment_parent': '0',
-                '_wp_unfiltered_html_comment': nonce,
+                "comment": content,
+                "submit": "Post Comment",
+                "comment_post_ID": post_id,
+                "comment_parent": "0",
+                "_wp_unfiltered_html_comment": nonce,
             },
             except_status_code=200,
         )
@@ -283,7 +283,7 @@ class WordpressClient:
         return [p["plugin"].split("/")[0] for p in response.json()]
 
     def list_comments(
-        self, status: str = 'approve', post_id: typing.Optional[int] = None
+        self, status: str = "approve", post_id: typing.Optional[int] = None
     ) -> typing.List[dict]:
         """List all comments in the WordPress site.
 
@@ -346,9 +346,9 @@ class WordpressClient:
         openid_redirect = self._post(
             login_url,
             data={
-                'launchpad': 'Login',
-                'redirect_to': f'http://{self.host}/wp-admin/',
-                'testcookie': '1',
+                "launchpad": "Login",
+                "redirect_to": f"http://{self.host}/wp-admin/",
+                "testcookie": "1",
             },
         )
         openid_args = re.findall(
@@ -371,12 +371,12 @@ class WordpressClient:
         confirm_page = self._post(
             login_url,
             data={
-                'csrfmiddlewaretoken': csrf_token,
-                'email': username,
-                'user-intentions': 'login',
-                'password': password,
-                'continue': '',
-                'openid.usernamesecret': '',
+                "csrfmiddlewaretoken": csrf_token,
+                "email": username,
+                "user-intentions": "login",
+                "password": password,
+                "continue": "",
+                "openid.usernamesecret": "",
             },
             headers={"Referer": login_page.url},
         )
@@ -387,14 +387,14 @@ class WordpressClient:
         self._post(
             confirm_page.url,
             data={
-                'csrfmiddlewaretoken': csrf_token,
-                'nickname': 'on',
-                'email': 'on',
-                'fullname': 'on',
-                team: 'on',
-                'ok': '',
-                'yes': '',
-                'openid.usernamesecret': '',
+                "csrfmiddlewaretoken": csrf_token,
+                "nickname": "on",
+                "email": "on",
+                "fullname": "on",
+                team: "on",
+                "ok": "",
+                "yes": "",
+                "openid.usernamesecret": "",
             },
             headers={"Referer": confirm_page.url},
             except_status_code=200,

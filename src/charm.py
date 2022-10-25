@@ -47,67 +47,67 @@ class WordpressCharm(CharmBase):
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
     _WORDPRESS_DEFAULT_THEMES = [
-        'fruitful',
-        'launchpad',
-        'light-wordpress-theme',
-        'mscom',
-        'thematic',
-        'twentyeleven',
-        'twentytwenty',
-        'twentytwentyone',
-        'twentytwentytwo',
-        'ubuntu-cloud-website',
-        'ubuntu-community-wordpress-theme/ubuntu-community',
-        'ubuntu-community/ubuntu-community',
-        'ubuntu-fi',
-        'ubuntu-light',
-        'ubuntustudio-wp/ubuntustudio-wp',
-        'xubuntu-website/xubuntu-eighteen',
-        'xubuntu-website/xubuntu-fifteen',
-        'xubuntu-website/xubuntu-fourteen',
-        'xubuntu-website/xubuntu-thirteen',
+        "fruitful",
+        "launchpad",
+        "light-wordpress-theme",
+        "mscom",
+        "thematic",
+        "twentyeleven",
+        "twentytwenty",
+        "twentytwentyone",
+        "twentytwentytwo",
+        "ubuntu-cloud-website",
+        "ubuntu-community-wordpress-theme/ubuntu-community",
+        "ubuntu-community/ubuntu-community",
+        "ubuntu-fi",
+        "ubuntu-light",
+        "ubuntustudio-wp/ubuntustudio-wp",
+        "xubuntu-website/xubuntu-eighteen",
+        "xubuntu-website/xubuntu-fifteen",
+        "xubuntu-website/xubuntu-fourteen",
+        "xubuntu-website/xubuntu-thirteen",
     ]
 
     _WORDPRESS_DEFAULT_PLUGINS = [
-        '404page',
-        'akismet',
-        'all-in-one-event-calendar',
-        'powerpress',
-        'coschedule-by-todaymade',
-        'elementor',
-        'essential-addons-for-elementor-lite',
-        'favicon-by-realfavicongenerator',
-        'feedwordpress',
-        'fruitful-shortcodes',
-        'genesis-columns-advanced',
-        'hello',
-        'line-break-shortcode',
-        'wp-mastodon-share',
-        'no-category-base-wpml',
-        'openid',
-        'wordpress-launchpad-integration',
-        'wordpress-teams-integration',
-        'openstack-objectstorage-k8s',
-        'post-grid',
-        'redirection',
-        'relative-image-urls',
-        'rel-publisher',
-        'safe-svg',
-        'show-current-template',
-        'simple-301-redirects',
-        'simple-custom-css',
-        'so-widgets-bundle',
-        'social-media-buttons-toolbar',
-        'svg-support',
-        'syntaxhighlighter',
-        'wordpress-importer',
-        'wp-markdown',
-        'wp-polls',
-        'wp-font-awesome',
-        'wp-lightbox-2',
-        'wp-statistics',
-        'xubuntu-team-members',
-        'wordpress-seo',
+        "404page",
+        "akismet",
+        "all-in-one-event-calendar",
+        "powerpress",
+        "coschedule-by-todaymade",
+        "elementor",
+        "essential-addons-for-elementor-lite",
+        "favicon-by-realfavicongenerator",
+        "feedwordpress",
+        "fruitful-shortcodes",
+        "genesis-columns-advanced",
+        "hello",
+        "line-break-shortcode",
+        "wp-mastodon-share",
+        "no-category-base-wpml",
+        "openid",
+        "wordpress-launchpad-integration",
+        "wordpress-teams-integration",
+        "openstack-objectstorage-k8s",
+        "post-grid",
+        "redirection",
+        "relative-image-urls",
+        "rel-publisher",
+        "safe-svg",
+        "show-current-template",
+        "simple-301-redirects",
+        "simple-custom-css",
+        "so-widgets-bundle",
+        "social-media-buttons-toolbar",
+        "svg-support",
+        "syntaxhighlighter",
+        "wordpress-importer",
+        "wp-markdown",
+        "wp-polls",
+        "wp-font-awesome",
+        "wp-lightbox-2",
+        "wp-statistics",
+        "xubuntu-team-members",
+        "wordpress-seo",
     ]
 
     _DB_CHECK_INTERVAL = 1
@@ -176,14 +176,14 @@ class WordpressCharm(CharmBase):
     @staticmethod
     def _wordpress_secret_key_fields():
         return [
-            'auth_key',
-            'secure_auth_key',
-            'logged_in_key',
-            'nonce_key',
-            'auth_salt',
-            'secure_auth_salt',
-            'logged_in_salt',
-            'nonce_salt',
+            "auth_key",
+            "secure_auth_key",
+            "logged_in_key",
+            "nonce_key",
+            "auth_salt",
+            "secure_auth_salt",
+            "logged_in_salt",
+            "nonce_salt",
         ]
 
     def _generate_wp_secret_keys(self):
@@ -1000,12 +1000,12 @@ class WordpressCharm(CharmBase):
             result = self._wp_option_update("users_can_register", "0")
             check_result()
             result = self._deactivate_plugin(
-                'wordpress-teams-integration', ["openid_teams_trust_list"]
+                "wordpress-teams-integration", ["openid_teams_trust_list"]
             )
             check_result()
-            result = self._deactivate_plugin('wordpress-launchpad-integration', [])
+            result = self._deactivate_plugin("wordpress-launchpad-integration", [])
             check_result()
-            result = self._deactivate_plugin('openid', ["openid_required_for_registration"])
+            result = self._deactivate_plugin("openid", ["openid_required_for_registration"])
             check_result()
         else:
             result = self._activate_plugin(
@@ -1015,9 +1015,9 @@ class WordpressCharm(CharmBase):
                 },
             )
             check_result()
-            result = self._activate_plugin('wordpress-launchpad-integration', {})
+            result = self._activate_plugin("wordpress-launchpad-integration", {})
             check_result()
-            result = self._activate_plugin('wordpress-teams-integration', {})
+            result = self._activate_plugin("wordpress-teams-integration", {})
             check_result()
             result = self._wp_eval(
                 "update_option("
@@ -1071,18 +1071,18 @@ class WordpressCharm(CharmBase):
         """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin"""
         swift_config_str = self.model.config["wp_plugin_openstack-objectstorage_config"]
         swift_config_key = [
-            'auth-url',
-            'bucket',
-            'password',
-            'object-prefix',
-            'region',
-            'tenant',
-            'domain',
-            'swift-url',
-            'username',
-            'copy-to-swift',
-            'serve-from-swift',
-            'remove-local-file',
+            "auth-url",
+            "bucket",
+            "password",
+            "object-prefix",
+            "region",
+            "tenant",
+            "domain",
+            "swift-url",
+            "username",
+            "copy-to-swift",
+            "serve-from-swift",
+            "remove-local-file",
         ]
         enable_swift = bool(swift_config_str.strip())
         if not enable_swift:

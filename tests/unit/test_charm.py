@@ -30,7 +30,7 @@ class WordpressMock:
         if wp_config is None:
             return None
         db_info = {}
-        for db_key in ('db_host', 'db_name', 'db_user', 'db_password'):
+        for db_key in ("db_host", "db_name", "db_user", "db_password"):
             db_value = re.findall(f"define\\( '{db_key.upper()}', '([^']+)' \\);", wp_config)
             if not db_value:
                 raise ValueError(f"{db_key} is missing in wp-config.php")
@@ -48,8 +48,8 @@ class WordpressMock:
             )
         for credential in self._database_credentials[credential_key]:
             if (
-                credential["db_user"] == db_info["db_user"]
-                and credential["db_password"] == db_info["db_password"]
+                    credential["db_user"] == db_info["db_user"]
+                    and credential["db_password"] == db_info["db_password"]
             ):
                 return
         raise mysql.connector.Error(
@@ -60,7 +60,7 @@ class WordpressMock:
         db_info = self._get_current_database_config()
         return self._database[(db_info["db_host"], db_info["db_name"])]
 
-    def _simulate_run_wp_cli(self, cmd):
+    def _simulate_run_wp_cli(self, cmd):  # noqa: C901
         Result = collections.namedtuple("WordpressCliExecResult", "return_code stdout stderr")
 
         cmd_prefix = cmd[:3]
@@ -76,7 +76,7 @@ class WordpressMock:
         elif cmd_prefix == ["wp", "core", "install"]:
             self._database[database_key] = {
                 "active_plugins": set(),
-                "options": {'users_can_register': '0'},
+                "options": {"users_can_register": "0"},
             }
             return Result(return_code=0, stdout="", stderr="")
         elif cmd_prefix == ["wp", "theme", "list"]:
@@ -160,7 +160,7 @@ class WordpressMock:
             return Result(return_code=0, stdout="", stderr="")
         raise ValueError(f"matrix breached, running an unknown cmd {cmd}")
 
-    def start(self):
+    def start(self):  # noqa: C901
         def mock_current_wp_config(_self):
             return self._container_fs.get(WordpressCharm._WP_CONFIG_PATH)
 
@@ -471,7 +471,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.assertIn(
             "--admin_user=admin",
             install_cmd,
-            "admin user should be \"admin\" with the default configuration",
+            'admin user should be "admin" with the default configuration',
         )
         self.assertIn(
             "--admin_password={}".format(consensus["default_admin_password"]),
@@ -503,7 +503,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.begin_with_initial_hooks()
 
         with self.assertRaises(
-            WordPressWaitingStatusException, msg="core reconciliation should fail"
+                WordPressWaitingStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
@@ -526,7 +526,7 @@ class TestWordpressK8s(unittest.TestCase):
         self._setup_replica_consensus()
 
         with self.assertRaises(
-            WordPressBlockedStatusException, msg="core reconciliation should fail"
+                WordPressBlockedStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
@@ -686,12 +686,12 @@ class TestWordpressK8s(unittest.TestCase):
         )
 
     def _standard_plugin_test(
-        self,
-        plugin,
-        plugin_config,
-        excepted_options,
-        excepted_options_after_removed=None,
-        additional_check_after_install=None,
+            self,
+            plugin,
+            plugin_config,
+            excepted_options,
+            excepted_options_after_removed=None,
+            additional_check_after_install=None,
     ):
         plugin_config_keys = list(plugin_config.keys())
         self._setup_replica_consensus()
@@ -746,9 +746,9 @@ class TestWordpressK8s(unittest.TestCase):
                 "akismet_strictness": "0",
                 "akismet_show_user_comments_approved": "0",
                 "wordpress_api_key": "test",
-                'users_can_register': '0',
+                "users_can_register": "0",
             },
-            excepted_options_after_removed={'users_can_register': '0'},
+            excepted_options_after_removed={"users_can_register": "0"},
         )
 
     def test_team_map(self):
@@ -793,12 +793,12 @@ class TestWordpressK8s(unittest.TestCase):
             should be deactivated with options removed after config being reset
         """
         self._standard_plugin_test(
-            plugin={'openid', 'wordpress-launchpad-integration', 'wordpress-teams-integration'},
+            plugin={"openid", "wordpress-launchpad-integration", "wordpress-teams-integration"},
             plugin_config={
                 "wp_plugin_openid_team_map": "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
             },
-            excepted_options={'openid_required_for_registration': '1', 'users_can_register': '1'},
-            excepted_options_after_removed={'users_can_register': '0'},
+            excepted_options={"openid_required_for_registration": "1", "users_can_register": "1"},
+            excepted_options_after_removed={"users_can_register": "0"},
         )
         self.assertTrue(
             self.patch.eval_history()[-1].startswith("update_option('openid_teams_trust_list',"),
@@ -839,22 +839,22 @@ class TestWordpressK8s(unittest.TestCase):
                 )
             },
             excepted_options={
-                'object_storage': {
-                    'auth-url': 'http://localhost/v3',
-                    'bucket': 'wordpress',
-                    'password': 'password',
-                    'object-prefix': 'wp-content/uploads/',
-                    'region': 'region',
-                    'tenant': 'tenant',
-                    'domain': 'domain',
-                    'swift-url': 'http://localhost:8080',
-                    'username': 'username',
-                    'copy-to-swift': '1',
-                    'serve-from-swift': '1',
-                    'remove-local-file': '0',
+                "object_storage": {
+                    "auth-url": "http://localhost/v3",
+                    "bucket": "wordpress",
+                    "password": "password",
+                    "object-prefix": "wp-content/uploads/",
+                    "region": "region",
+                    "tenant": "tenant",
+                    "domain": "domain",
+                    "swift-url": "http://localhost:8080",
+                    "username": "username",
+                    "copy-to-swift": "1",
+                    "serve-from-swift": "1",
+                    "remove-local-file": "0",
                 },
-                'users_can_register': '0',
+                "users_can_register": "0",
             },
-            excepted_options_after_removed={'users_can_register': '0'},
+            excepted_options_after_removed={"users_can_register": "0"},
             additional_check_after_install=additional_check_after_install,
         )

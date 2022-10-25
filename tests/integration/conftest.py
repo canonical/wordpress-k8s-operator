@@ -143,6 +143,16 @@ def openid_password(request):
 
 
 @pytest.fixture
+def launchpad_team(request):
+    """The launchpad team for the OpenID account"""
+    launchpad_team = request.config.getoption("--launchpad-team")
+    assert (
+        launchpad_team
+    ), "Launchpad team should not be empty, please include it in the --launchpad-team parameter"
+    return launchpad_team
+
+
+@pytest.fixture
 def kube_config(request):
     """The Kubernetes cluster configuration file"""
     openid_password = request.config.getoption("--kube-config")

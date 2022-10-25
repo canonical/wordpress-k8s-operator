@@ -493,19 +493,21 @@ async def test_openstack_openid_plugin(
     unit_ip_list,
     openid_username,
     openid_password,
+    launchpad_team,
 ):
     """
-    arrange: after WordPress charm has been deployed, db relation established
-    act: update charm configuration for Akismet plugin
-    assert: An Ubuntu One OpenID account should be able to associate with a WordPress user
+    arrange: after WordPress charm has been deployed, db relation established.
+    act: update charm configuration for OpenID plugin.
+    assert: A WordPress user should be created with correct roles according to the config.
     """
     application = ops_test.model.applications[application_name]
-    await application.set_config(
-        {"wp_plugin_openid_team_map": "weii-wang-test-only=administrator"}
-    )
+    await application.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})
     await ops_test.model.wait_for_idle()
 
     for idx, unit_ip in enumerate(unit_ip_list):
+        # wordpress-teams-integration has a bug causing desired roles not to be assigned to
+        # the user when first-time login. Login twice by creating the WordPressClient client twice
+        # for the very first time.
         for _ in range(2 if idx == 0 else 1):
             wp = WordpressClient(
                 host=unit_ip,

@@ -22,5 +22,7 @@ def pytest_addoption(parser: pytest.Parser):
     # OpenID username and password for testing the OpenID plugin
     parser.addoption("--openid-username", action="store", default="")
     parser.addoption("--openid-password", action="store", default="")
+    # Launchpad team for the launchpad OpenID account
+    parser.addoption("--launchpad-team", action="store", default="")
     # Kubernetes cluster configuration file
     parser.addoption("--kube-config", action="store", default="")

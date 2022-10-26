@@ -76,7 +76,9 @@ async def test_incorrect_db_config(
     await ops_test.model.wait_for_idle(idle_period=60)
 
     for unit in ops_test.model.applications[application_name].units:
-        assert unit.workload_status == ops.model.BlockedStatus.name, "unit status should be blocked"
+        assert (
+            unit.workload_status == ops.model.BlockedStatus.name
+        ), "unit status should be blocked"
         msg = unit.workload_status_message
         assert "MySQL error" in msg and (
             "2003" in msg or "2005" in msg
@@ -148,7 +150,10 @@ async def test_wordpress_default_themes(unit_ip_list, get_theme_list_from_ip):
 
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_themes(
-    ops_test: pytest_operator.plugin.OpsTest, application_name, unit_ip_list, get_theme_list_from_ip
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name,
+    unit_ip_list,
+    get_theme_list_from_ip,
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established
@@ -300,8 +305,7 @@ async def test_ingress(
 
     response = requests.get("http://127.0.0.1", headers={"Host": application_name}, timeout=5)
     assert (
-        response.status_code == 200 and
-        "wordpress" in response.text.lower(),
+        response.status_code == 200 and "wordpress" in response.text.lower()
     ), "Ingress should accept requests to WordPress and return correct contents"
 
     tls_secret_name, tls_cert = create_self_signed_tls_secret(application_name)
@@ -486,29 +490,32 @@ async def test_openstack_akismet_plugin(
 async def test_openstack_openid_plugin(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
-    default_admin_password,
     unit_ip_list,
     openid_username,
     openid_password,
+    launchpad_team,
 ):
     """
-    arrange: after WordPress charm has been deployed, db relation established
-    act: update charm configuration for Akismet plugin
-    assert: An Ubuntu One OpenID account should be able to associate with a WordPress user
+    arrange: after WordPress charm has been deployed, db relation established.
+    act: update charm configuration for OpenID plugin.
+    assert: A WordPress user should be created with correct roles according to the config.
     """
     application = ops_test.model.applications[application_name]
-    await application.set_config({"wp_plugin_openid_team_map": "site-sysadmins=administrator"})
+    await application.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})
     await ops_test.model.wait_for_idle()
 
     for idx, unit_ip in enumerate(unit_ip_list):
-        wp = WordpressClient(
-            host=unit_ip,
-            username="admin",
-            password=default_admin_password,
-            is_admin=True,
-        )
-        if idx == 0:
-            wp.associate_ubuntu_one(username=openid_username, password=openid_password)
+        # wordpress-teams-integration has a bug causing desired roles not to be assigned to
+        # the user when first-time login. Login twice by creating the WordPressClient client twice
+        # for the very first time.
+        for _ in range(2 if idx == 0 else 1):
+            wp = WordpressClient(
+                host=unit_ip,
+                username=openid_username,
+                password=openid_password,
+                is_admin=True,
+                use_launchpad_login=True,
+            )
         assert (
-            len(wp.list_associated_ubuntu_one_accounts()) == 1
-        ), "An Ubuntu One OpenID account should be associated with the WordPress admin user"
+            "administrator" in wp.list_roles()
+        ), "An launchpad OpenID account should be associated with the WordPress admin user"

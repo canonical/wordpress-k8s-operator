@@ -1,6 +1,6 @@
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
-ARG VERSION=6.0.2
+ARG VERSION=5.9.3
 ENV APACHE_CONFDIR=/etc/apache2
 ENV APACHE_ENVVARS=/etc/apache2/envvars
 
@@ -84,7 +84,6 @@ RUN set -e; \
         genesis-columns-advanced \
         line-break-shortcode \
         no-category-base-wpml \
-        openid \
         post-grid \
         powerpress \
         redirection \
@@ -111,6 +110,9 @@ RUN set -e; \
         unzip "${plugin}.zip"; \
         rm "${plugin}.zip"; \
     done; \
+    curl -sSL "https://downloads.wordpress.org/plugin/openid.3.5.0.zip" -o "openid.zip"; \
+    unzip "openid.zip"; \
+    rm "openid.zip"; \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/wordpress-launchpad-integration wordpress-launchpad-integration; \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s openstack-objectstorage-k8s; \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration wordpress-teams-integration; \

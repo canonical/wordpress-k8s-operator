@@ -1,30 +1,33 @@
+# Copyright 2022 Canonical Ltd.
+# Licensed under the GPLv3, see LICENCE file for details.
+
 import io
 import json
-import socket
 import secrets
+import socket
 import tempfile
-import urllib.parse
 import unittest.mock
+import urllib.parse
 
-import pytest
-import requests
 import ops.model
 import PIL.Image
-import swiftclient
-import swiftclient.service
-import swiftclient.exceptions
+import pytest
 import pytest_operator.plugin
+import requests
+import swiftclient
+import swiftclient.exceptions
+import swiftclient.service
+from wordpress_client_for_test import WordpressClient
 
 from charm import WordpressCharm
-from wordpress_client import WordpressClient
 
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, application_name):
     """
-    arrange: no pre-condition
-    act: build charm using charmcraft and deploy charm to test juju model
+    arrange: no pre-condition.
+    act: build charm using charmcraft and deploy charm to test juju model.
     assert: building and deploying should success and status should be "blocked" since the
         database info hasn't been provided yet.
     """
@@ -65,10 +68,10 @@ async def test_incorrect_db_config(
     ops_test: pytest_operator.plugin.OpsTest, app_config: dict, application_name
 ):
     """
-    arrange: after WordPress charm has been deployed
-    act: provide incorrect database info via config
+    arrange: after WordPress charm has been deployed.
+    act: provide incorrect database info via config.
     assert: charm should be blocked by WordPress installation errors, instead of lacking
-        of database connection info
+        of database connection info.
     """
     # Database configuration can retry for up to 60 seconds before giving up and showing an error.
     # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
@@ -89,9 +92,9 @@ async def test_incorrect_db_config(
 @pytest.mark.abort_on_fail
 async def test_mysql_relation(ops_test: pytest_operator.plugin.OpsTest, application_name):
     """
-    arrange: after WordPress charm has been deployed
-    act: deploy a mariadb charm and add a relation between WordPress and mariadb
-    assert: WordPress should be active
+    arrange: after WordPress charm has been deployed.
+    act: deploy a mariadb charm and add a relation between WordPress and mariadb.
+    assert: WordPress should be active.
     """
     await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
@@ -106,9 +109,9 @@ async def test_mysql_relation(ops_test: pytest_operator.plugin.OpsTest, applicat
 @pytest.mark.asyncio
 async def test_default_wordpress_themes_and_plugins(unit_ip_list, default_admin_password):
     """
-    arrange: after WordPress charm has been deployed and db relation established
-    act: test default installed themes and plugins
-    assert: default plugins and themes should match default themes and plugins defined in charm.py
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: test default installed themes and plugins.
+    assert: default plugins and themes should match default themes and plugins defined in charm.py.
     """
     for unit_ip in unit_ip_list:
         wp = WordpressClient(
@@ -125,9 +128,9 @@ async def test_default_wordpress_themes_and_plugins(unit_ip_list, default_admin_
 @pytest.mark.asyncio
 async def test_wordpress_functionality(unit_ip_list, default_admin_password):
     """
-    arrange: after WordPress charm has been deployed and db relation established
-    act: test WordPress basic functionality (login, post, comment)
-    assert: WordPress works normally as a blog site
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: test WordPress basic functionality (login, post, comment).
+    assert: WordPress works normally as a blog site.
     """
     for unit_ip in unit_ip_list:
         WordpressClient.run_wordpress_functionality_test(
@@ -138,9 +141,9 @@ async def test_wordpress_functionality(unit_ip_list, default_admin_password):
 @pytest.mark.asyncio
 async def test_wordpress_default_themes(unit_ip_list, get_theme_list_from_ip):
     """
-    arrange: after WordPress charm has been deployed and db relation established
-    act: check installed WordPress themes
-    assert: all default themes should be installed
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: check installed WordPress themes.
+    assert: all default themes should be installed.
     """
     for unit_ip in unit_ip_list:
         assert set(WordpressCharm._WORDPRESS_DEFAULT_THEMES) == set(
@@ -156,9 +159,9 @@ async def test_wordpress_install_uninstall_themes(
     get_theme_list_from_ip,
 ):
     """
-    arrange: after WordPress charm has been deployed and db relation established
-    act: change themes setting in config
-    assert: themes should be installed and uninstalled accordingly
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: change themes setting in config.
+    assert: themes should be installed and uninstalled accordingly.
     """
     theme_change_list = [
         {"twentyfifteen", "classic"},
@@ -185,8 +188,8 @@ async def test_wordpress_theme_installation_error(
     ops_test: pytest_operator.plugin.OpsTest, application_name
 ):
     """
-    arrange: after WordPress charm has been deployed and db relation established
-    act: install a nonexistent theme
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: install a nonexistent theme.
     assert: charm should switch to blocked state and the reason should be included in the status
         message.
     """
@@ -220,9 +223,9 @@ async def test_wordpress_install_uninstall_plugins(
     get_plugin_list_from_ip,
 ):
     """
-    arrange: after WordPress charm has been deployed and db relation established
-    act: change plugins setting in config
-    assert: plugins should be installed and uninstalled accordingly
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: change plugins setting in config.
+    assert: plugins should be installed and uninstalled accordingly.
     """
     plugin_change_list = [
         {"classic-editor", "classic-widgets"},
@@ -248,8 +251,8 @@ async def test_wordpress_plugin_installation_error(
     ops_test: pytest_operator.plugin.OpsTest, application_name
 ):
     """
-    arrange: after WordPress charm has been deployed and db relation established
-    act: install a nonexistent plugin
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: install a nonexistent plugin.
     assert: charm should switch to blocked state and the reason should be included in the status
         message.
     """
@@ -280,7 +283,7 @@ async def test_ingress(
     ops_test: pytest_operator.plugin.OpsTest, application_name: str, create_self_signed_tls_secret
 ):
     """
-    arrange: after WordPress charm has been deployed and db relation established
+    arrange: after WordPress charm has been deployed and db relation established.
     act: deploy the nginx-ingress-integrator charm and create the relation between ingress charm
         and wordpress charm. After that, update some ingress related configuration of the
         wordpress charm.
@@ -353,15 +356,13 @@ async def test_openstack_object_storage_plugin(
     openstack_environment,
 ):
     """
-    arrange: after WordPress charm has been deployed, db relation established and openstack swift
-        server ready
-    act: update charm configuration for openstack object storage plugin
+    arrange: after charm deployed, db relation established and openstack swift server ready.
+    act: update charm configuration for openstack object storage plugin.
     assert: openstack object storage plugin should be installed after the config update and
         WordPress openstack swift object storage integration should be set up properly.
         After openstack swift plugin activated, an image file uploaded to one unit through
         WordPress media uploader should be accessible from all units.
     """
-
     swift_conn = swiftclient.Connection(
         authurl=openstack_environment["OS_AUTH_URL"],
         auth_version="3",
@@ -461,9 +462,9 @@ async def test_openstack_akismet_plugin(
     akismet_api_key,
 ):
     """
-    arrange: after WordPress charm has been deployed, db relation established
-    act: update charm configuration for Akismet plugin
-    assert: Akismet plugin should be activated and spam detection function should be working
+    arrange: after WordPress charm has been deployed, db relation established.
+    act: update charm configuration for Akismet plugin.
+    assert: Akismet plugin should be activated and spam detection function should be working.
     """
     application = ops_test.model.applications[application_name]
     await application.set_config({"wp_plugin_akismet_key": akismet_api_key})

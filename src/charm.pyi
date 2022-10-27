@@ -1,8 +1,11 @@
-from typing import Optional, Union, List, Dict, Tuple, TypedDict, NamedTuple, Any
+# Copyright 2022 Canonical Ltd.
+# Licensed under the GPLv3, see LICENCE file for details.
+
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
 import ops
-import ops.model
 import ops.framework
+import ops.model
 import opslib.mysql
 
 class DBInfoDict(TypedDict):

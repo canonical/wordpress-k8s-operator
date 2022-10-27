@@ -1,20 +1,22 @@
-import re
-import base64
-import secrets
-import datetime
-import configparser
+# Copyright 2022 Canonical Ltd.
+# Licensed under the GPLv3, see LICENCE file for details.
 
-import pytest
-import kubernetes
-import juju.action
-import pytest_asyncio
-import juju.application
-import cryptography.x509
-import pytest_operator.plugin
+import base64
+import configparser
+import datetime
+import re
+import secrets
+
+import cryptography.hazmat.primitives.asymmetric.rsa
 import cryptography.hazmat.primitives.hashes
 import cryptography.hazmat.primitives.serialization
-import cryptography.hazmat.primitives.asymmetric.rsa
-
+import cryptography.x509
+import juju.action
+import juju.application
+import kubernetes
+import pytest
+import pytest_asyncio
+import pytest_operator.plugin
 from wordpress_client import WordpressClient
 
 

@@ -302,7 +302,7 @@ async def test_ingress(
 
         return patched_getaddrinfo
 
-    await ops_test.model.deploy("nginx-ingress-integrator", "ingress")
+    await ops_test.model.deploy("nginx-ingress-integrator", "ingress", trust=True)
     await ops_test.model.add_relation(application_name, "ingress:ingress")
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
 

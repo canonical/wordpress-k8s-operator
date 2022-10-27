@@ -8,20 +8,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install tox
-        run: python3 -m pip install tox
+
+      - name: Setup Devstack Swift
+        id: setup-devstack-swift
+        uses: canonical/setup-devstack-swift@v1
+
+      - name: Create OpenStack credential file
+        run: echo "${{ steps.setup-devstack-swift.outputs.credentials }}" > openrc
+
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-      - name: Enable microk8s registry
-        run: microk8s enable registry
-      - name: Setup Devstack Swift
-        id: setup-devstack-swift
-        uses: canonical/setup-devstack-swift@v1
-      - name: Create OpenStack credential file
-        run: echo "${{ steps.setup-devstack-swift.outputs.credentials }}" > openrc
+
+      - name: Enable microk8s plugins
+        run: sudo microk8s enable registry hostpath-storage ingress
+
+      - name: Dump microk8s config
+        run: sudo microk8s config > kube-config
+
+      - name: Debug
+        run: |
+          sudo lxc list --project devstack
+          curl http://10.100.115.2/identity
+          juju status
+          juju models
+          sudo microk8s status
+
+      - name: Install tox
+        run: python3 -m pip install tox
+
       - name: Build docker image
         run: tox -e test-build
+
       - name: Run integration tests
-        run: tox -e integration
+        run: > 
+          tox -e integration -- 
+          --openstack-rc ${GITHUB_WORKSPACE}/openrc
+          --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
+          --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
+          --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
+          --kube-config ${GITHUB_WORKSPACE}/kube-config
+          --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}

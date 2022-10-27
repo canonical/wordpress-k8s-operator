@@ -17,7 +17,7 @@ import kubernetes
 import pytest
 import pytest_asyncio
 import pytest_operator.plugin
-from wordpress_client import WordpressClient
+from wordpress_client_for_test import WordpressClient
 
 
 @pytest_asyncio.fixture(scope="function", name="app_config")

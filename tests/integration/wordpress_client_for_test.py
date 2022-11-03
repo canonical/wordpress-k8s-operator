@@ -1,9 +1,12 @@
-import re
+# Copyright 2022 Canonical Ltd.
+# Licensed under the GPLv3, see LICENCE file for details.
+
 import html
 import json
-import typing
-import secrets
 import mimetypes
+import re
+import secrets
+import typing
 
 import requests
 
@@ -14,7 +17,7 @@ class WordPressPost(typing.TypedDict):
 
 
 class WordpressClient:
-    """A very simple WordPress client for test purpose only"""
+    """A very simple WordPress client for test purpose only."""
 
     @classmethod
     def run_wordpress_functionality_test(cls, host: str, admin_username: str, admin_password: str):
@@ -132,7 +135,6 @@ class WordpressClient:
         Returns:
             An instance of :class:`requests.Response`.
         """
-
         response = self._session.post(
             url, json=json, data=data, headers=headers, timeout=self.timeout
         )
@@ -303,12 +305,13 @@ class WordpressClient:
     def upload_media(
         self, filename: str, content: bytes, mimetype: str = None
     ) -> typing.List[str]:
-        """Upload a media file (image/video)
+        """Upload a media file (image/video).
 
         Args:
             filename: Filename of the media file.
             content: Content of the media file, bytes.
             mimetype: Mimetype of the media file, will infer from the filename if not provided.
+
         Returns:
              URL of the original image and resized images for the uploaded file on WordPress.
         """

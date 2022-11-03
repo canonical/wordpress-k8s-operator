@@ -1,3 +1,7 @@
+# Copyright 2022 Canonical Ltd.
+# Licensed under the GPLv3, see LICENCE file for details.
+
+"""User-defined exceptions used by WordPress charm."""
 import ops.model
 
 __all__ = [
@@ -9,7 +13,11 @@ __all__ = [
 ]
 
 
-class WordPressStatusException(Exception):
+# This exception is used to signal the early termination of a reconciliation process.
+# The early termination can be caused by many things like relation is not ready or config is not
+# updated, and may turn the charm into waiting or block state. They are inevitable in the early
+# stage of the charm's lifecycle, thus this is not an error (N818), same for all the subclasses.
+class WordPressStatusException(Exception):  # noqa: N818
     """Exception to signal an early termination of the reconciliation.
 
     ``status`` represents the status change comes with the early termination.
@@ -25,17 +33,25 @@ class WordPressStatusException(Exception):
         self.status = self._status_class(message)
 
 
-class WordPressBlockedStatusException(WordPressStatusException):
+class WordPressBlockedStatusException(WordPressStatusException):  # noqa: N818
+    """Same as :exc:`exceptions.WordPressStatusException`."""
+
     _status_class = ops.model.BlockedStatus
 
 
-class WordPressWaitingStatusException(WordPressStatusException):
+class WordPressWaitingStatusException(WordPressStatusException):  # noqa: N818
+    """Same as :exc:`exceptions.WordPressStatusException`."""
+
     _status_class = ops.model.WaitingStatus
 
 
-class WordPressMaintenanceStatusException(WordPressStatusException):
+class WordPressMaintenanceStatusException(WordPressStatusException):  # noqa: N818
+    """Same as :exc:`exceptions.WordPressStatusException`."""
+
     _status_class = ops.model.MaintenanceStatus
 
 
 class WordPressInstallError(Exception):
+    """Exception for unrecoverable errors during WordPress installation."""
+
     pass

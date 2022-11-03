@@ -1,19 +1,22 @@
-import re
-import json
-import unittest
+# Copyright 2022 Canonical Ltd.
+# Licensed under the GPLv3, see LICENCE file for details.
+
 import collections
+import json
+import re
+import unittest
 import unittest.mock
 
+import mysql.connector
 import ops.pebble
 import ops.testing
-import mysql.connector
 
 from charm import WordpressCharm
-from exceptions import WordPressWaitingStatusException, WordPressBlockedStatusException
+from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 
 
 class WordpressMock:
-    """WordPress wp-cli command run and database simulation system for unit tests"""
+    """WordPress wp-cli command run and database simulation system for unit tests."""
 
     def __init__(self):
         self._database = {}
@@ -60,7 +63,7 @@ class WordpressMock:
         db_info = self._get_current_database_config()
         return self._database[(db_info["db_host"], db_info["db_name"])]
 
-    def _simulate_run_wp_cli(self, cmd):  # noqa: C901
+    def _simulate_run_wp_cli(self, cmd):  # noqa: C901 FIXME: refactor to reduce complexity
         Result = collections.namedtuple("WordpressCliExecResult", "return_code stdout stderr")
 
         cmd_prefix = cmd[:3]
@@ -160,7 +163,7 @@ class WordpressMock:
             return Result(return_code=0, stdout="", stderr="")
         raise ValueError(f"matrix breached, running an unknown cmd {cmd}")
 
-    def start(self):  # noqa: C901
+    def start(self):  # noqa: C901 FIXME: refactor to reduce complexity
         def mock_current_wp_config(_self):
             return self._container_fs.get(WordpressCharm._WP_CONFIG_PATH)
 
@@ -249,9 +252,9 @@ class TestWordpressK8s(unittest.TestCase):
 
     def test_generate_wp_secret_keys(self):
         """
-        arrange: no pre-condition
+        arrange: no pre-condition.
         act: generate a group of WordPress secrets from scratch.
-        assert: generated secrets should be safe .
+        assert: generated secrets should be safe.
         """
         self.harness.begin()
 
@@ -283,9 +286,9 @@ class TestWordpressK8s(unittest.TestCase):
 
     def test_replica_consensus(self):
         """
-        arrange: deploy a new wordpress-k8s application
-        act: simulate peer relation creating and leader electing during the start of deployment
-        assert: units should reach consensus after leader elected
+        arrange: deploy a new wordpress-k8s application.
+        act: simulate peer relation creating and leader electing during the start of deployment.
+        assert: units should reach consensus after leader elected.
         """
         self._setup_replica_consensus()
 
@@ -296,9 +299,9 @@ class TestWordpressK8s(unittest.TestCase):
 
     def test_replica_consensus_stable_after_leader_reelection(self):
         """
-        arrange: deploy a new wordpress-k8s application
-        act: simulate a leader re-election after application deployed
-        assert: consensus should not change
+        arrange: deploy a new wordpress-k8s application.
+        act: simulate a leader re-election after application deployed.
+        assert: consensus should not change.
         """
         replica_relation_id = self.harness.add_relation("wordpress-replica", self.app_name)
         non_leader_peer_name = "wordpress-k8s/1"
@@ -345,9 +348,9 @@ class TestWordpressK8s(unittest.TestCase):
 
     def test_mysql_relation(self):
         """
-        arrange: no pre-condition
-        act: add and remove the database relation between WordPress application and mysql
-        assert: database info in charm state should change accordingly
+        arrange: no pre-condition.
+        act: add and remove the database relation between WordPress application and mysql.
+        assert: database info in charm state should change accordingly.
         """
 
         def get_db_info_from_state():
@@ -392,9 +395,9 @@ class TestWordpressK8s(unittest.TestCase):
 
     def test_wp_config(self):
         """
-        arrange: after WordPress application unit consensus has been reached
-        act: generate wp-config.php
-        assert: generated wp-config.php should be valid
+        arrange: after WordPress application unit consensus has been reached.
+        act: generate wp-config.php.
+        assert: generated wp-config.php should be valid.
         """
 
         def in_same_line(content, *matches):
@@ -461,9 +464,9 @@ class TestWordpressK8s(unittest.TestCase):
 
     def test_wp_install_cmd(self):
         """
-        arrange: no pre-condition
-        act: generate wp-cli command to install WordPress
-        assert: generated command should match current config and status
+        arrange: no pre-condition.
+        act: generate wp-cli command to install WordPress.
+        assert: generated command should match current config and status.
         """
         consensus = self._setup_replica_consensus()
         install_cmd = self.harness.charm._wp_install_cmd()

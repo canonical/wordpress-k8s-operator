@@ -4,6 +4,7 @@
 # Licensed under the GPLv3, see LICENCE file for details.
 
 """Charm for WordPress on kubernetes."""
+
 import collections
 import itertools
 import json

@@ -22,18 +22,14 @@ jobs:
           provider: microk8s
 
       - name: Enable microk8s plugins
-        run: sudo microk8s enable registry hostpath-storage ingress
+        run: |
+          sudo microk8s enable registry hostpath-storage ingress
+          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
+          sudo microk8s kubectl -n container-registry rollout status -w deployment/registry
+          sudo microk8s kubectl -n ingress rollout status -w daemonset.apps/nginx-ingress-microk8s-controller
 
       - name: Dump microk8s config
         run: sudo microk8s config > kube-config
-
-      - name: Debug
-        run: |
-          sudo lxc list --project devstack
-          curl http://10.100.115.2/identity
-          juju status
-          juju models
-          sudo microk8s status
 
       - name: Install tox
         run: python3 -m pip install tox

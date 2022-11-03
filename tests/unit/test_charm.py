@@ -63,7 +63,7 @@ class WordpressMock:
         db_info = self._get_current_database_config()
         return self._database[(db_info["db_host"], db_info["db_name"])]
 
-    def _simulate_run_wp_cli(self, cmd):  # noqa: C901
+    def _simulate_run_wp_cli(self, cmd):  # noqa: C901 FIXME: refactor to reduce complexity
         Result = collections.namedtuple("WordpressCliExecResult", "return_code stdout stderr")
 
         cmd_prefix = cmd[:3]
@@ -163,7 +163,7 @@ class WordpressMock:
             return Result(return_code=0, stdout="", stderr="")
         raise ValueError(f"matrix breached, running an unknown cmd {cmd}")
 
-    def start(self):  # noqa: C901
+    def start(self):  # noqa: C901 FIXME: refactor to reduce complexity
         def mock_current_wp_config(_self):
             return self._container_fs.get(WordpressCharm._WP_CONFIG_PATH)
 

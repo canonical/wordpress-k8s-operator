@@ -1,4 +1,4 @@
-juju==3.0.2
+juju
 pytest
 Pillow
 requests

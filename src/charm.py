@@ -524,7 +524,11 @@ class WordpressCharm(CharmBase):
         ]
 
     def _wp_install(self):
-        """Install WordPress (create WordPress required tables in DB)."""
+        """Install WordPress (create WordPress required tables in DB).
+
+        Raises:
+            exceptions.WordPressInstallError: If WordPress installation fails.
+        """
         logger.debug("Install WordPress, create WordPress related table in the database")
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
         process = self._run_wp_cli(self._wp_install_cmd(), combine_stderr=True, timeout=60)
@@ -554,6 +558,9 @@ class WordpressCharm(CharmBase):
         Check if the pebble layer has been added, then check the installation status of WordPress,
         finally start the server. The installation process only run on the leader unit. This
         operation is idempotence.
+
+        Raises:
+            WordPressStatusException: If unrecoverable error happens.
         """
         logger.debug("Ensure WordPress server is up")
         self._init_pebble_layer()
@@ -590,7 +597,11 @@ class WordpressCharm(CharmBase):
         return None
 
     def _remove_wp_config(self):
-        """Remove wp-config.php file on server."""
+        """Remove wp-config.php file on server.
+
+        Raises:
+            RuntimeError: If the WordPress server is running while trying to delete wp-config.php.
+        """
         logger.debug("Remove wp-config.php in container")
         container = self._container()
         if container.get_service(self._SERVICE_NAME).is_running():

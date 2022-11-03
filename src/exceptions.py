@@ -13,6 +13,8 @@ __all__ = [
 ]
 
 
+# This exception is used to signal the early termination of a reconciliation process,
+# thus not an error (N818), same for all the subclasses.
 class WordPressStatusException(Exception):  # noqa: N818
     """Exception to signal an early termination of the reconciliation.
 

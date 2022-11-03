@@ -13,8 +13,10 @@ __all__ = [
 ]
 
 
-# This exception is used to signal the early termination of a reconciliation process,
-# thus not an error (N818), same for all the subclasses.
+# This exception is used to signal the early termination of a reconciliation process.
+# The early termination can be caused by many things like relation is not ready or config is not
+# updated, and may turn the charm into waiting or block state. They are inevitable in the early
+# stage of the charm's lifecycle, thus this is not an error (N818), same for all the subclasses.
 class WordPressStatusException(Exception):  # noqa: N818
     """Exception to signal an early termination of the reconciliation.
 

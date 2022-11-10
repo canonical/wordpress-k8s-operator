@@ -10,7 +10,7 @@ import ops.testing
 
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
-from tests.unit.pebble_mock import WordpressPatch
+from tests.unit.wordpress_mock import WordpressPatch
 
 
 class TestWordpressK8s(unittest.TestCase):
@@ -280,7 +280,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.begin_with_initial_hooks()
 
         with self.assertRaises(
-                WordPressWaitingStatusException, msg="core reconciliation should fail"
+            WordPressWaitingStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
@@ -303,7 +303,7 @@ class TestWordpressK8s(unittest.TestCase):
         self._setup_replica_consensus()
 
         with self.assertRaises(
-                WordPressBlockedStatusException, msg="core reconciliation should fail"
+            WordPressBlockedStatusException, msg="core reconciliation should fail"
         ):
             self.harness.charm._core_reconciliation()
         self.assertIsInstance(
@@ -335,7 +335,7 @@ class TestWordpressK8s(unittest.TestCase):
             host=db_config["db_host"],
             database=db_config["db_name"],
             user=db_config["db_user"],
-            password=db_config["db_password"]
+            password=db_config["db_password"],
         )
         self.harness.update_config(db_config)
 
@@ -349,7 +349,7 @@ class TestWordpressK8s(unittest.TestCase):
             host=db_config["db_host"],
             database=db_config["db_name"],
             user=db_config["db_user"],
-            password=db_config["db_password"]
+            password=db_config["db_password"],
         )
         self.harness.update_config({"db_host": "config_db_host_2"})
 
@@ -411,7 +411,7 @@ class TestWordpressK8s(unittest.TestCase):
             host=db_config["db_host"],
             database=db_config["db_name"],
             user=db_config["db_user"],
-            password=db_config["db_password"]
+            password=db_config["db_password"],
         )
         self.harness.update_config(db_config)
 
@@ -455,7 +455,7 @@ class TestWordpressK8s(unittest.TestCase):
             host=db_config["db_host"],
             database=db_config["db_name"],
             user=db_config["db_user"],
-            password=db_config["db_password"]
+            password=db_config["db_password"],
         )
         self.harness.update_config(db_config)
 
@@ -483,12 +483,12 @@ class TestWordpressK8s(unittest.TestCase):
         )
 
     def _standard_plugin_test(
-            self,
-            plugin,
-            plugin_config,
-            excepted_options,
-            excepted_options_after_removed=None,
-            additional_check_after_install=None,
+        self,
+        plugin,
+        plugin_config,
+        excepted_options,
+        excepted_options_after_removed=None,
+        additional_check_after_install=None,
     ):
         plugin_config_keys = list(plugin_config.keys())
         self._setup_replica_consensus()
@@ -502,15 +502,16 @@ class TestWordpressK8s(unittest.TestCase):
             host=db_config["db_host"],
             database=db_config["db_name"],
             user=db_config["db_user"],
-            password=db_config["db_password"]
+            password=db_config["db_password"],
         )
 
         self.harness.update_config(db_config)
 
         self.harness.update_config(plugin_config)
 
-        database_instance = self.patch.database.get_wordpress_database(host="config_db_host",
-                                                                       database="config_db_name")
+        database_instance = self.patch.database.get_wordpress_database(
+            host="config_db_host", database="config_db_name"
+        )
         self.assertEqual(
             database_instance.activated_plugins,
             {plugin} if isinstance(plugin, str) else set(plugin),
@@ -607,7 +608,8 @@ class TestWordpressK8s(unittest.TestCase):
         )
         self.assertTrue(
             self.patch.container.wp_eval_history[-1].startswith(
-                "update_option('openid_teams_trust_list',"),
+                "update_option('openid_teams_trust_list',"
+            ),
             "PHP function update_option should be invoked after openid plugin enabled",
         )
 

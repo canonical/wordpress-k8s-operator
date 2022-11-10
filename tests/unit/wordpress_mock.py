@@ -1,6 +1,8 @@
+# Copyright 2022 Canonical Ltd.
+# Licensed under the GPLv3, see LICENCE file for details.
+
 import io
 import json
-import logging
 import re
 import typing
 import unittest.mock
@@ -13,7 +15,16 @@ from charm import WordpressCharm
 
 
 class WordPressDatabaseInstanceMock:
-    def __init__(self, builtin_options=None):
+    """The simulation of a WordPress installed MySQL database."""
+
+    def __init__(
+            self, builtin_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None
+    ):
+        """Initialize the instance.
+
+        Args:
+            builtin_options: some builtin WordPress options come with the WordPress installation.
+        """
         self.activated_plugins = set()
         self.default_theme = ""
         self.activated_theme = self.default_theme
@@ -21,19 +32,45 @@ class WordPressDatabaseInstanceMock:
         if builtin_options:
             self.options.update(builtin_options)
 
-    def activate_plugin(self, plugin):
+    def activate_plugin(self, plugin: str) -> None:
+        """Simulate activate a WordPress plugin.
+
+        Args:
+            plugin: plugin name.
+        """
         self.activated_plugins.add(plugin)
 
-    def deactivate_plugin(self, plugin):
+    def deactivate_plugin(self, plugin: str) -> None:
+        """Simulate deactivate a WordPress plugin.
+
+        Args:
+            plugin: plugin name.
+        """
         self.activated_plugins.remove(plugin)
 
-    def activate_theme(self, theme):
+    def activate_theme(self, theme: str) -> None:
+        """Simulate activate a WordPress theme.
+
+        Args:
+            theme: theme name.
+        """
         self.activated_theme = theme
 
-    def update_option(self, name, value):
+    def update_option(self, name: str, value: str | dict) -> None:
+        """Simulate update a WordPress option.
+
+        Args:
+            name: option name.
+            value: option value, which can be a string for PHP string or a dict for PHP array.
+        """
         self.options[name] = value
 
-    def delete_option(self, name):
+    def delete_option(self, name: str) -> None:
+        """Simulate delete a WordPress option.
+
+        Args:
+            name: option name.
+        """
         try:
             del self.options[name]
         except KeyError:
@@ -41,34 +78,79 @@ class WordPressDatabaseInstanceMock:
 
 
 class WordpressDatabaseMock:
-    def __init__(self, builtin_wordpress_options=None):
+    """Simulate database interaction like connecting, login, WordPress installation."""
+
+    def __init__(
+            self,
+            builtin_wordpress_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None,
+    ) -> None:
+        """Initialize the instance.
+
+        Args:
+            builtin_wordpress_options: some builtin WordPress options come with the
+                WordPress installation.
+        """
         self._databases = {}
         self._database_credentials = {}
         self._builtin_wordpress_options = builtin_wordpress_options
 
     @staticmethod
-    def _database_identifier(host, database):
+    def _database_identifier(host: str, database: str):
+        """Create a key for index simulated databases.
+
+        Args:
+            host: database host.
+            database: database name.
+        """
         return host, database
 
-    def prepare_database(self, host, database, user, password):
+    def prepare_database(self, host: str, database: str, user: str, password: str) -> None:
+        """Set up a simulated database, so it can be connected and installed with WordPress.
+
+        Args:
+            host: database host.
+            database: database name.
+            user: database user.
+            password: database password.
+        """
         key = self._database_identifier(host, database)
         if key in self._databases:
             raise KeyError(f"Database (host={host}, database={database}) already exists")
         self._databases[key] = None
         self._database_credentials[key] = {"user": user, "password": password}
 
-    def database_can_connect(self, host, database):
+    def database_can_connect(self, host: str, database: str) -> bool:
+        """Test if given host and database can connect to a simulated database.
+
+        Args:
+            host: database host.
+            database: database name.
+        """
         key = self._database_identifier(host, database)
         return key in self._databases
 
-    def database_can_login(self, host, database, user, password):
+    def database_can_login(self, host: str, database: str, user: str, password: str) -> bool:
+        """Test if given database credentials can connect to a simulated database.
+
+        Args:
+            host: database host.
+            database: database name.
+            user: database user.
+            password: database password.
+        """
         key = self._database_identifier(host, database)
         if key not in self._database_credentials:
             raise KeyError(f"Database (host={host}, database={database}) does not exist")
         credential = self._database_credentials[key]
         return credential["user"] == user and credential["password"] == password
 
-    def install_wordpress(self, host, database):
+    def install_wordpress(self, host: str, database: str) -> None:
+        """Install WordPress on a simulated database.
+
+        Args:
+            host: database host.
+            database: database name.
+        """
         key = self._database_identifier(host, database)
         if key not in self._databases:
             raise KeyError(f"Database (host={host}, database={database}) does not exist")
@@ -78,13 +160,25 @@ class WordpressDatabaseMock:
             builtin_options=self._builtin_wordpress_options
         )
 
-    def is_wordpress_installed(self, host, database):
+    def is_wordpress_installed(self, host: str, database: str) -> bool:
+        """Test if WordPress is installed on the given simulated database.
+
+        Args:
+            host: database host.
+            database: database name.
+        """
         key = self._database_identifier(host, database)
         if key not in self._databases:
             raise KeyError(f"Database (host={host}, database={database}) does not exist")
         return self._databases[key] is not None
 
     def get_wordpress_database(self, host, database) -> WordPressDatabaseInstanceMock:
+        """Get the simulated WordPress installed database.
+
+        Args:
+            host: database host.
+            database: database name.
+        """
         key = self._database_identifier(host, database)
         if not self.is_wordpress_installed(host, database):
             raise KeyError(f"Wordpress isn't installed on (host={host}, database={database}).")
@@ -92,12 +186,14 @@ class WordpressDatabaseMock:
 
 
 class MysqlConnectorMock:
+    """A mock for :py:mod:`mysql.connector`."""
+
     Error = mysql.connector.Error
 
     def __init__(self, wordpress_database_mock: WordpressDatabaseMock):
         self._wordpress_database_mock = wordpress_database_mock
 
-    def connect(self, host, database, user, password, charset):
+    def connect(self, host: str, database: str, user: str, password: str, charset: str):
         if not self._wordpress_database_mock.database_can_connect(host, database):
             raise self.Error(
                 msg=f"Can't connect to MySQL server on '{host}:3306' (2003)",
@@ -113,10 +209,32 @@ class MysqlConnectorMock:
 
 
 class HandlerRegistry:
+    """A utility class that can be used to collect pattern and handler pair using decorator syntax.
+
+    For example::
+        registry = HandlerRegistry()
+
+        @registry.register(match=lambda target: target.startswith("a"))
+        def handler_func(target):
+            print(target)
+
+        match, handler = registry.registered_handler[0]
+        match("abc") # => True
+        handler("abc") # => print("abc")
+    """
+
     def __init__(self):
         self.registered_handler = []
 
-    def register(self, match: typing.Callable[[typing.Sequence[str]], bool]):
+    def register(
+            self, match: typing.Callable[[typing.Sequence[str]], bool]
+    ) -> typing.Callable[[typing.Callable], typing.Callable]:
+        """The decorator to collector the match pattern and handler, see class docstring for usage.
+
+        Args:
+            match: A match function takes input and output matching result as bool.
+        """
+
         def decorator(func):
             self.registered_handler.append((match, func))
             return func
@@ -125,12 +243,14 @@ class HandlerRegistry:
 
 
 class ExecProcessMock:
+    """A mock for :class:`ops.pebble.ExecProcess`."""
+
     def __init__(self, return_code: int, stdout: str, stderr: str):
         self._return_code = return_code
         self._stdout = stdout
         self._stderr = stderr
 
-    def wait_output(self):
+    def wait_output(self) -> typing.Tuple[str, str]:
         if self._return_code != 0:
             raise ops.pebble.ExecError(
                 [], exit_code=self._return_code, stdout=self._stdout, stderr=self._stderr
@@ -138,7 +258,11 @@ class ExecProcessMock:
         return self._stdout, self._stderr
 
 
-class WordpressPebbleMock:
+class WordpressContainerMock:
+    """A mock for :class:`ops.charm.model.Container`.
+
+    This will simulate file system and subprocess system inside the WordPress container.
+    """
     _exec_handler = HandlerRegistry()
 
     def __init__(
@@ -238,7 +362,7 @@ class WordpressPebbleMock:
         )
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "theme", "install"])
-    def _mock_wp_theme_list(self, cmd):
+    def _mock_wp_theme_install(self, cmd):
         theme = cmd[3]
         self.installed_themes.add(theme)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
@@ -354,19 +478,27 @@ class WordpressPebbleMock:
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     def __getattr__(self, item):
+        """Passthrough anything else to :class:`ops.charm.model.Container`.
+
+        The ops testing framework will handle the rest of the simulation, like service start/stop,
+            service layer etc.
+        """
         return getattr(self.original_pebble, item)
 
 
 class WordpressPatch:
+    """The combined mocking and patching system for WordPress unit tests."""
+
     def __init__(self):
         self.database = WordpressDatabaseMock(
             builtin_wordpress_options={"users_can_register": "0"}
         )
-        self.container = WordpressPebbleMock(wordpress_database_mock=self.database)
+        self.container = WordpressContainerMock(wordpress_database_mock=self.database)
         self.mysql_connector = MysqlConnectorMock(wordpress_database_mock=self.database)
         self._patches = []
 
     def start(self):
+        """Start patching."""
         original_container_method = WordpressCharm._container
 
         def mock_container(_self):
@@ -375,19 +507,19 @@ class WordpressPatch:
             return self.container
 
         self._patches.append(
-            unittest.mock.patch.multiple(WordpressCharm, _container=mock_container,
-                                         _DB_CHECK_INTERVAL=0.001,
-                                         _DB_CHECK_TIMEOUT=0
-                                         )
+            unittest.mock.patch.multiple(
+                WordpressCharm,
+                _container=mock_container,
+                _DB_CHECK_INTERVAL=0.001,
+                _DB_CHECK_TIMEOUT=0,
+            )
         )
-        self._patches.append(unittest.mock.patch.multiple(
-            mysql,
-            connector=self.mysql_connector
-        ))
+        self._patches.append(unittest.mock.patch.multiple(mysql, connector=self.mysql_connector))
         for patch in self._patches:
             patch.start()
 
     def stop(self):
+        """Stop patching."""
         for patch in reversed(self._patches):
             patch.stop()
         self._patches = []

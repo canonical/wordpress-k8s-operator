@@ -18,7 +18,7 @@ class WordPressDatabaseInstanceMock:
     """The simulation of a WordPress installed MySQL database."""
 
     def __init__(
-            self, builtin_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None
+        self, builtin_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None
     ):
         """Initialize the instance.
 
@@ -81,8 +81,8 @@ class WordpressDatabaseMock:
     """Simulate database interaction like connecting, login, WordPress installation."""
 
     def __init__(
-            self,
-            builtin_wordpress_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None,
+        self,
+        builtin_wordpress_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None,
     ) -> None:
         """Initialize the instance.
 
@@ -227,7 +227,7 @@ class HandlerRegistry:
         self.registered_handler = []
 
     def register(
-            self, match: typing.Callable[[typing.Sequence[str]], bool]
+        self, match: typing.Callable[[typing.Sequence[str]], bool]
     ) -> typing.Callable[[typing.Callable], typing.Callable]:
         """The decorator to collector the match pattern and handler, see class docstring for usage.
 
@@ -263,11 +263,12 @@ class WordpressContainerMock:
 
     This will simulate file system and subprocess system inside the WordPress container.
     """
+
     _exec_handler = HandlerRegistry()
 
     def __init__(
-            self,
-            wordpress_database_mock: WordpressDatabaseMock,
+        self,
+        wordpress_database_mock: WordpressDatabaseMock,
     ):
         self.original_pebble = None
         self.fs: typing.Dict[str, str] = {}
@@ -277,7 +278,7 @@ class WordpressContainerMock:
         self.wp_eval_history = []
 
     def exec(
-            self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
+        self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
     ):
         handler = None
         for match, potential_handler in self._exec_handler.registered_handler:

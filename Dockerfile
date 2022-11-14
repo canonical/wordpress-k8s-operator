@@ -8,7 +8,7 @@ LABEL maintainer="wordpress-charmers@lists.launchpad.net"
 
 # Update all packages, remove cruft, install required packages, configure apache
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
-    apt-get update && \
+    apt-get update \
         && apt-get --purge autoremove -y \
         && apt-get install -y apache2 \
             bzr \

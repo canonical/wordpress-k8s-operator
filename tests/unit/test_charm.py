@@ -1,247 +1,21 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
-import collections
 import json
-import re
 import unittest
 import unittest.mock
 
-import mysql.connector
 import ops.pebble
 import ops.testing
 
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
-
-
-class WordpressMock:
-    """WordPress wp-cli command run and database simulation system for unit tests."""
-
-    def __init__(self):
-        self._database = {}
-        self._container_fs = {}
-        self._database_credentials = {}
-        self._themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
-        self._plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
-        self._enabled_apache_conf = set()
-        self._eval_history = []
-        self._patch = None
-
-    def _get_current_database_config(self):
-        wp_config = self._container_fs.get(WordpressCharm._WP_CONFIG_PATH)
-        if wp_config is None:
-            return None
-        db_info = {}
-        for db_key in ("db_host", "db_name", "db_user", "db_password"):
-            db_value = re.findall(f"define\\( '{db_key.upper()}', '([^']+)' \\);", wp_config)
-            if not db_value:
-                raise ValueError(f"{db_key} is missing in wp-config.php")
-            if len(db_value) > 1:
-                raise ValueError(f"multiple {db_key} definitions")
-            db_info[db_key] = db_value[0]
-        return db_info
-
-    def _mock_database_connect(self, db_info):
-        credential_key = db_info["db_host"], db_info["db_name"]
-        if credential_key not in self._database_credentials:
-            raise mysql.connector.Error(
-                msg=f"Can't connect to MySQL server on '{db_info['db_host']}:3306' (2003)",
-                errno=2003,
-            )
-        for credential in self._database_credentials[credential_key]:
-            if (
-                credential["db_user"] == db_info["db_user"]
-                and credential["db_password"] == db_info["db_password"]
-            ):
-                return
-        raise mysql.connector.Error(
-            msg=f"Access denied for user '{db_info['db_user']}'@* (using password: *)", errno=1045
-        )
-
-    def _current_connected_database(self):
-        db_info = self._get_current_database_config()
-        return self._database[(db_info["db_host"], db_info["db_name"])]
-
-    def _simulate_run_wp_cli(self, cmd):  # noqa: C901 FIXME: refactor to reduce complexity
-        Result = collections.namedtuple("WordpressCliExecResult", "return_code stdout stderr")
-
-        cmd_prefix = cmd[:3]
-        db_info = self._get_current_database_config()
-        database_key = db_info["db_host"], db_info["db_name"]
-        try:
-            self._mock_database_connect(db_info)
-        except mysql.connector.Error:
-            raise ValueError("attempt to run wp cli before database is ready")
-        database = self._database.get(database_key)
-        if cmd_prefix == ["wp", "core", "is-installed"]:
-            return Result(return_code=1 if database is None else 0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "core", "install"]:
-            self._database[database_key] = {
-                "active_plugins": set(),
-                "options": {"users_can_register": "0"},
-            }
-            return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "theme", "list"]:
-            return Result(
-                return_code=0, stdout=json.dumps([{"name": t} for t in self._themes]), stderr=""
-            )
-        elif cmd_prefix == ["wp", "theme", "install"]:
-            self._themes.add(cmd[3])
-            return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "theme", "delete"]:
-            theme = cmd[3]
-            if theme not in self._themes:
-                return Result(
-                    return_code=1,
-                    stdout="",
-                    stderr=f"Error, try to delete a non-existent theme {repr(theme)}",
-                )
-            self._themes.remove(cmd[3])
-            return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "plugin", "list"]:
-            db = self._current_connected_database()
-            active_plugins = db["active_plugins"]
-            return Result(
-                return_code=0,
-                stdout=json.dumps(
-                    [
-                        {"name": t, "status": "active" if t in active_plugins else "inactive"}
-                        for t in self._plugins
-                    ]
-                ),
-                stderr="",
-            )
-        elif cmd_prefix == ["wp", "plugin", "install"]:
-            self._plugins.add(cmd[3])
-            return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "plugin", "uninstall"]:
-            plugin = cmd[3]
-            if plugin not in self._plugins:
-                return Result(
-                    return_code=1,
-                    stdout="",
-                    stderr=f"Error, try to delete a non-existent plugin {repr(plugin)}",
-                )
-            self._plugins.remove(plugin)
-            return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "plugin", "activate"]:
-            plugin = cmd[3]
-            db = self._current_connected_database()
-            if plugin in db["active_plugins"]:
-                return Result(return_code=1, stdout="", stderr="Error, activate an active plugin")
-            else:
-                db["active_plugins"].add(plugin)
-                return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "plugin", "deactivate"]:
-            plugin = cmd[3]
-            db = self._current_connected_database()
-            if plugin not in db["active_plugins"]:
-                return Result(
-                    return_code=1, stdout="", stderr="Error, deactivate an inactive plugin"
-                )
-            else:
-                db["active_plugins"].remove(plugin)
-                return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "option", "update"]:
-            option = cmd[3]
-            value = cmd[4]
-            if "--format=json" in cmd:
-                value = json.loads(value)
-            db = self._current_connected_database()
-            db["options"][option] = value
-            return Result(return_code=0, stdout="", stderr="")
-        elif cmd_prefix == ["wp", "option", "delete"]:
-            option = cmd[3]
-            db = self._current_connected_database()
-            if option in db["options"]:
-                del db["options"][option]
-            return Result(return_code=0, stdout="", stderr="")
-        elif cmd[:2] == ["wp", "eval"]:
-            php_code = cmd[2]
-            self._eval_history.append(php_code)
-            return Result(return_code=0, stdout="", stderr="")
-        raise ValueError(f"matrix breached, running an unknown cmd {cmd}")
-
-    def start(self):  # noqa: C901 FIXME: refactor to reduce complexity
-        def mock_current_wp_config(_self):
-            return self._container_fs.get(WordpressCharm._WP_CONFIG_PATH)
-
-        def mock_push_wp_config(_self, wp_config):
-            self._container_fs[WordpressCharm._WP_CONFIG_PATH] = wp_config
-
-        def mock_remove_wp_config(_self):
-            del self._container_fs[WordpressCharm._WP_CONFIG_PATH]
-
-        def mock_run_wp_cli(_self, cmd, timeout=60, combine_stderr=False):
-            return self._simulate_run_wp_cli(cmd)
-
-        def mock_test_database_connectivity(_self):
-            try:
-                self._mock_database_connect(self._get_current_database_config())
-                return True, ""
-            except mysql.connector.Error as err:
-                return False, f"MySQL error {err.errno}"
-
-        def mock_apache_config_is_enabled(_self, conf_name: str) -> bool:
-            return conf_name in self._enabled_apache_conf
-
-        def mock_apache_enable_config(_self, conf_name: str, conf) -> None:
-            self._enabled_apache_conf.add(conf_name)
-
-        def mock_apache_disable_config(_self, conf_name: str) -> None:
-            self._enabled_apache_conf.remove(conf_name)
-
-        self._patch = unittest.mock.patch.multiple(
-            WordpressCharm,
-            _current_wp_config=mock_current_wp_config,
-            _push_wp_config=mock_push_wp_config,
-            _remove_wp_config=mock_remove_wp_config,
-            _run_wp_cli=mock_run_wp_cli,
-            _test_database_connectivity=mock_test_database_connectivity,
-            _DB_CHECK_TIMEOUT=0,
-            _DB_CHECK_INTERVAL=0.001,
-            _apache_config_is_enabled=mock_apache_config_is_enabled,
-            _apache_enable_config=mock_apache_enable_config,
-            _apache_disable_config=mock_apache_disable_config,
-        )
-        self._patch.start()
-
-    def stop(self):
-        self._patch.stop()
-
-    def allow_database(self, db_info):
-        database_key = db_info["db_host"], db_info["db_name"]
-        if database_key in self._database_credentials:
-            self._database_credentials[database_key].append(db_info)
-        else:
-            self._database_credentials[database_key] = [db_info]
-
-    def installed_themes(self):
-        return self._themes
-
-    def installed_plugins(self):
-        return self._plugins
-
-    def check_database_installed(self, db_host, db_name):
-        return (db_host, db_name) in self._database
-
-    def get_options(self, db_host, db_name):
-        return self._database[(db_host, db_name)]["options"]
-
-    def get_active_plugins(self, db_host, db_name):
-        return self._database[(db_host, db_name)]["active_plugins"]
-
-    def get_enabled_apache_conf(self):
-        return self._enabled_apache_conf
-
-    def eval_history(self):
-        return self._eval_history
+from tests.unit.wordpress_mock import WordpressPatch
 
 
 class TestWordpressK8s(unittest.TestCase):
     def setUp(self):
-        self.patch = WordpressMock()
+        self.patch = WordpressPatch()
         self.patch.start()
         self.harness = ops.testing.Harness(WordpressCharm)
         self.addCleanup(self.harness.cleanup)
@@ -557,20 +331,30 @@ class TestWordpressK8s(unittest.TestCase):
             "db_user": "config_db_user",
             "db_password": "config_db_password",
         }
-        self.patch.allow_database(db_info=db_config)
+        self.patch.database.prepare_database(
+            host=db_config["db_host"],
+            database=db_config["db_name"],
+            user=db_config["db_user"],
+            password=db_config["db_password"],
+        )
         self.harness.update_config(db_config)
 
         self.assertTrue(
-            self.patch.check_database_installed(db_config["db_host"], db_config["db_name"]),
+            self.patch.database.is_wordpress_installed(db_config["db_host"], db_config["db_name"]),
             "wordpress should be installed after core reconciliation",
         )
 
         db_config.update({"db_host": "config_db_host_2"})
-        self.patch.allow_database(db_config)
+        self.patch.database.prepare_database(
+            host=db_config["db_host"],
+            database=db_config["db_name"],
+            user=db_config["db_user"],
+            password=db_config["db_password"],
+        )
         self.harness.update_config({"db_host": "config_db_host_2"})
 
         self.assertTrue(
-            self.patch.check_database_installed("config_db_host_2", db_config["db_name"]),
+            self.patch.database.is_wordpress_installed("config_db_host_2", db_config["db_name"]),
             "wordpress should be installed after database config changed",
         )
 
@@ -623,11 +407,16 @@ class TestWordpressK8s(unittest.TestCase):
             "db_user": "config_db_user",
             "db_password": "config_db_password",
         }
-        self.patch.allow_database(db_config)
+        self.patch.database.prepare_database(
+            host=db_config["db_host"],
+            database=db_config["db_name"],
+            user=db_config["db_user"],
+            password=db_config["db_password"],
+        )
         self.harness.update_config(db_config)
 
         self.assertEqual(
-            self.patch.installed_themes(),
+            self.patch.container.installed_themes,
             set(self.harness.charm._WORDPRESS_DEFAULT_THEMES),
             "installed themes should match the default installed themes "
             "with the default themes config",
@@ -636,7 +425,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.update_config({"themes": "123, abc"})
 
         self.assertEqual(
-            self.patch.installed_themes(),
+            self.patch.container.installed_themes,
             set(self.harness.charm._WORDPRESS_DEFAULT_THEMES + ["abc", "123"]),
             "adding themes to themes config should install trigger theme installation",
         )
@@ -644,7 +433,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.update_config({"themes": "123"})
 
         self.assertEqual(
-            self.patch.installed_themes(),
+            self.patch.container.installed_themes,
             set(self.harness.charm._WORDPRESS_DEFAULT_THEMES + ["123"]),
             "removing themes from themes config should trigger theme deletion",
         )
@@ -662,11 +451,16 @@ class TestWordpressK8s(unittest.TestCase):
             "db_user": "config_db_user",
             "db_password": "config_db_password",
         }
-        self.patch.allow_database(db_config)
+        self.patch.database.prepare_database(
+            host=db_config["db_host"],
+            database=db_config["db_name"],
+            user=db_config["db_user"],
+            password=db_config["db_password"],
+        )
         self.harness.update_config(db_config)
 
         self.assertEqual(
-            self.patch.installed_plugins(),
+            self.patch.container.installed_plugins,
             set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS),
             "installed plugins should match the default installed plugins "
             "with the default plugins config",
@@ -675,7 +469,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.update_config({"plugins": "123, abc"})
 
         self.assertEqual(
-            self.patch.installed_plugins(),
+            self.patch.container.installed_plugins,
             set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]),
             "adding plugins to plugins config should install trigger plugin installation",
         )
@@ -683,7 +477,7 @@ class TestWordpressK8s(unittest.TestCase):
         self.harness.update_config({"plugins": "123"})
 
         self.assertEqual(
-            self.patch.installed_plugins(),
+            self.patch.container.installed_plugins,
             set(self.harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]),
             "removing plugins from plugins config should trigger plugin deletion",
         )
@@ -704,18 +498,27 @@ class TestWordpressK8s(unittest.TestCase):
             "db_user": "config_db_user",
             "db_password": "config_db_password",
         }
-        self.patch.allow_database(db_config)
+        self.patch.database.prepare_database(
+            host=db_config["db_host"],
+            database=db_config["db_name"],
+            user=db_config["db_user"],
+            password=db_config["db_password"],
+        )
+
         self.harness.update_config(db_config)
 
         self.harness.update_config(plugin_config)
 
+        database_instance = self.patch.database.get_wordpress_database(
+            host="config_db_host", database="config_db_name"
+        )
         self.assertEqual(
-            self.patch.get_active_plugins(db_host="config_db_host", db_name="config_db_name"),
+            database_instance.activated_plugins,
             {plugin} if isinstance(plugin, str) else set(plugin),
             f"{plugin} should be activated after {plugin_config_keys} being set",
         )
         self.assertEqual(
-            self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
+            database_instance.options,
             excepted_options,
             f"options of plugin {plugin} should be set correctly",
         )
@@ -725,12 +528,12 @@ class TestWordpressK8s(unittest.TestCase):
 
         self.harness.update_config({k: "" for k in plugin_config})
         self.assertEqual(
-            self.patch.get_active_plugins(db_host="config_db_host", db_name="config_db_name"),
+            database_instance.activated_plugins,
             set(),
             f"{plugin} should be deactivated after {plugin_config_keys} being reset",
         )
         self.assertEqual(
-            self.patch.get_options(db_host="config_db_host", db_name="config_db_name"),
+            database_instance.options,
             {} if excepted_options_after_removed is None else excepted_options_after_removed,
             f"{plugin} options should be removed after {plugin_config_keys} being reset",
         )
@@ -804,7 +607,9 @@ class TestWordpressK8s(unittest.TestCase):
             excepted_options_after_removed={"users_can_register": "0"},
         )
         self.assertTrue(
-            self.patch.eval_history()[-1].startswith("update_option('openid_teams_trust_list',"),
+            self.patch.container.wp_eval_history[-1].startswith(
+                "update_option('openid_teams_trust_list',"
+            ),
             "PHP function update_option should be invoked after openid plugin enabled",
         )
 
@@ -819,7 +624,11 @@ class TestWordpressK8s(unittest.TestCase):
         """
 
         def additional_check_after_install():
-            assert "docker-php-swift-proxy" in self.patch.get_enabled_apache_conf()
+            conf_found = False
+            for file in self.patch.container.fs:
+                if file.endswith("docker-php-swift-proxy.conf"):
+                    conf_found = True
+            assert conf_found
 
         self._standard_plugin_test(
             plugin="openstack-objectstorage-k8s",

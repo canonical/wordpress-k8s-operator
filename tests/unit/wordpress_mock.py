@@ -199,6 +199,7 @@ class WordpressDatabaseMock:
 class MysqlConnectorMock:
     """A mock for :py:mod:`mysql.connector`."""
 
+    # Mock for :class:`mysql.connector.Error`
     Error = mysql.connector.Error
 
     def __init__(self, wordpress_database_mock: WordpressDatabaseMock) -> None:

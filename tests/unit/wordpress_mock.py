@@ -19,7 +19,7 @@ class WordPressDatabaseInstanceMock:
 
     def __init__(
         self, builtin_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None
-    ):
+    ) -> None:
         """Initialize the instance.
 
         Args:
@@ -95,7 +95,7 @@ class WordpressDatabaseMock:
         self._builtin_wordpress_options = builtin_wordpress_options
 
     @staticmethod
-    def _database_identifier(host: str, database: str):
+    def _database_identifier(host: str, database: str) -> typing.Tuple[str, str]:
         """Create a key for index simulated databases.
 
         Args:
@@ -115,7 +115,7 @@ class WordpressDatabaseMock:
         """
         key = self._database_identifier(host, database)
         if key in self._databases:
-            raise KeyError(f"Database (host={host}, database={database}) already exists")
+            raise KeyError(f"Database ({host=!r}, {database=!r} already exists")
         self._databases[key] = None
         self._database_credentials[key] = {"user": user, "password": password}
 
@@ -125,6 +125,10 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Returns:
+            ``True`` if provided host and database name can be used to connect to a simulated
+            database, else ``False``.
         """
         key = self._database_identifier(host, database)
         return key in self._databases
@@ -137,10 +141,17 @@ class WordpressDatabaseMock:
             database: database name.
             user: database user.
             password: database password.
+
+        Returns:
+            ``True`` if provided host and database name can be used to connect to a simulated
+            database, and the username and the password matches the one for the simulated database.
+
+        Raises:
+             KeyError: if no simulated database found with the provided host and database name.
         """
         key = self._database_identifier(host, database)
         if key not in self._database_credentials:
-            raise KeyError(f"Database (host={host}, database={database}) does not exist")
+            raise KeyError(f"Database ({host=!r}, {database=!r}) does not exist")
         credential = self._database_credentials[key]
         return credential["user"] == user and credential["password"] == password
 
@@ -153,9 +164,9 @@ class WordpressDatabaseMock:
         """
         key = self._database_identifier(host, database)
         if key not in self._databases:
-            raise KeyError(f"Database (host={host}, database={database}) does not exist")
+            raise KeyError(f"Database ({host=!r}, {database=!r} does not exist")
         if self._databases[key] is not None:
-            raise KeyError(f"Wordpress already installed on (host={host}, database={database}).")
+            raise KeyError(f"Wordpress already installed on ({host=!r}, {database=!r}.")
         self._databases[key] = WordPressDatabaseInstanceMock(
             builtin_options=self._builtin_wordpress_options
         )
@@ -169,7 +180,7 @@ class WordpressDatabaseMock:
         """
         key = self._database_identifier(host, database)
         if key not in self._databases:
-            raise KeyError(f"Database (host={host}, database={database}) does not exist")
+            raise KeyError(f"Database ({host=!r}, {database=!r} does not exist")
         return self._databases[key] is not None
 
     def get_wordpress_database(self, host, database) -> WordPressDatabaseInstanceMock:
@@ -181,7 +192,7 @@ class WordpressDatabaseMock:
         """
         key = self._database_identifier(host, database)
         if not self.is_wordpress_installed(host, database):
-            raise KeyError(f"Wordpress isn't installed on (host={host}, database={database}).")
+            raise KeyError(f"Wordpress isn't installed on ({host=!r}, {database=!r}.")
         return self._databases[key]
 
 
@@ -190,10 +201,16 @@ class MysqlConnectorMock:
 
     Error = mysql.connector.Error
 
-    def __init__(self, wordpress_database_mock: WordpressDatabaseMock):
+    def __init__(self, wordpress_database_mock: WordpressDatabaseMock) -> None:
+        """Initialize the instance.
+
+        Args:
+            wordpress_database_mock: An instance of the WordPress database mock system.
+        """
         self._wordpress_database_mock = wordpress_database_mock
 
     def connect(self, host: str, database: str, user: str, password: str, charset: str):
+        """Mock method for :meth:`mysql.connector.connect`."""
         if not self._wordpress_database_mock.database_can_connect(host, database):
             raise self.Error(
                 msg=f"Can't connect to MySQL server on '{host}:3306' (2003)",
@@ -223,7 +240,8 @@ class HandlerRegistry:
         handler("abc") # => print("abc")
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the instance."""
         self.registered_handler = []
 
     def register(
@@ -245,12 +263,20 @@ class HandlerRegistry:
 class ExecProcessMock:
     """A mock for :class:`ops.pebble.ExecProcess`."""
 
-    def __init__(self, return_code: int, stdout: str, stderr: str):
+    def __init__(self, return_code: int, stdout: str, stderr: str) -> None:
+        """Initialize the instance.
+
+        Args:
+            return_code: return code of the mock process run.
+            stdout: stdout of the mock process run.
+            stderr: stderr of the mock process run.
+        """
         self._return_code = return_code
         self._stdout = stdout
         self._stderr = stderr
 
     def wait_output(self) -> typing.Tuple[str, str]:
+        """Mock method for :meth:`ops.pebble.ExecProcess.wait_output`."""
         if self._return_code != 0:
             raise ops.pebble.ExecError(
                 [], exit_code=self._return_code, stdout=self._stdout, stderr=self._stderr
@@ -270,6 +296,11 @@ class WordpressContainerMock:
         self,
         wordpress_database_mock: WordpressDatabaseMock,
     ):
+        """Initialize the instance.
+
+        Args:
+            wordpress_database_mock: An instance of the WordPress database mock system.
+        """
         self.original_pebble = None
         self.fs: typing.Dict[str, str] = {}
         self._wordpress_database_mock = wordpress_database_mock
@@ -280,6 +311,7 @@ class WordpressContainerMock:
     def exec(
         self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
     ):
+        """Mock method for :meth:`ops.charm.model.Container.exec`."""
         handler = None
         for match, potential_handler in self._exec_handler.registered_handler:
             is_match = match(cmd)
@@ -292,15 +324,19 @@ class WordpressContainerMock:
         return handler(self, cmd)
 
     def pull(self, path: str) -> typing.IO[str]:
+        """Mock method for :meth:`ops.charm.model.Container.pull`."""
         return io.StringIO(self.fs[path])
 
     def push(self, path: str, source: str, user=None, group=None, permissions=None) -> None:
+        """Mock method for :meth:`ops.charm.model.Container.push`."""
         self.fs[path] = source
 
     def exists(self, path):
+        """Mock method for :meth:`ops.charm.model.Container.exists`."""
         return path in self.fs
 
     def list_files(self, path: str) -> typing.List[str]:
+        """Mock method for :meth:`ops.charm.model.Container.list_files`."""
         if not path.endswith("/"):
             path += "/"
         file_list = []
@@ -310,6 +346,7 @@ class WordpressContainerMock:
         return file_list
 
     def remove_path(self, path: str, recursive: bool = False) -> None:
+        """Mock method for :meth:`ops.charm.model.Container.remove_path`."""
         try:
             del self.fs[path]
         except KeyError:
@@ -317,7 +354,12 @@ class WordpressContainerMock:
                 return
             raise
 
-    def _get_current_database_config(self):
+    def _get_current_database_config(self) -> typing.Optional[dict]:
+        """Extract the db connection info from the wp-config.php file in the mock file system.
+
+        Returns:
+            A dict with four keys: db_host, db_name, db_user, db_password.
+        """
         wp_config = self.fs.get(WordpressCharm._WP_CONFIG_PATH)
         if wp_config is None:
             return None
@@ -331,17 +373,28 @@ class WordpressContainerMock:
             db_info[db_key] = db_value[0]
         return db_info
 
-    def _current_database_host_and_database(self):
+    def _current_database_host_and_database(self) -> typing.Tuple[str, str]:
+        """Extract the db host and name from the wp-config.php file in the mock file system.
+
+        Returns:
+            A tuple of database host and database name.
+        """
         db_info = self._get_current_database_config()
         return db_info["db_host"], db_info["db_name"]
 
-    def _current_database(self):
+    def _current_database(self) -> WordPressDatabaseInstanceMock:
+        """Retrieve the current connected mock wordpress database instance as in the wp-config.php.
+
+        Returns:
+            The current connected mock wordpress database instance as in the wp-config.php.
+        """
         return self._wordpress_database_mock.get_wordpress_database(
             *self._current_database_host_and_database()
         )
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "is-installed"])
     def _mock_wp_core_is_installed(self, cmd):
+        """Simulate ``wp core is-installed`` command execution in the container."""
         is_installed = self._wordpress_database_mock.is_wordpress_installed(
             *self._current_database_host_and_database()
         )
@@ -349,6 +402,7 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "install"])
     def _mock_wp_core_install(self, cmd):
+        """Simulate ``wp core install`` command execution in the container."""
         self._wordpress_database_mock.install_wordpress(
             *self._current_database_host_and_database()
         )
@@ -356,6 +410,7 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "theme", "list"])
     def _mock_wp_theme_list(self, cmd):
+        """Simulate ``wp theme list`` command execution in the container."""
         return ExecProcessMock(
             return_code=0,
             stdout=json.dumps([{"name": t} for t in self.installed_themes]),
@@ -364,12 +419,14 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "theme", "install"])
     def _mock_wp_theme_install(self, cmd):
+        """Simulate ``wp theme install <theme>`` command execution in the container."""
         theme = cmd[3]
         self.installed_themes.add(theme)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "theme", "delete"])
     def _mock_wp_theme_delete(self, cmd):
+        """Simulate ``wp theme delete <theme>`` command execution in the container."""
         theme = cmd[3]
         if theme not in self.installed_themes:
             return ExecProcessMock(
@@ -382,6 +439,7 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "list"])
     def _mock_wp_plugin_list(self, cmd):
+        """Simulate ``wp plugin list`` command execution in the container."""
         db = self._current_database()
         active_plugins = db.activated_plugins
         return ExecProcessMock(
@@ -397,12 +455,14 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "install"])
     def _mock_wp_plugin_install(self, cmd):
+        """Simulate ``wp plugin install <plugin>`` command execution in the container."""
         plugin = cmd[3]
         self.installed_plugins.add(plugin)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "uninstall"])
     def _mock_wp_plugin_uninstall(self, cmd):
+        """Simulate ``wp plugin uninstall <plugin>`` command execution in the container."""
         plugin = cmd[3]
         if plugin not in self.installed_plugins:
             return ExecProcessMock(
@@ -415,6 +475,7 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "activate"])
     def _mock_wp_plugin_activate(self, cmd):
+        """Simulate ``wp plugin activate <plugin>`` command execution in the container."""
         db = self._current_database()
         plugin = cmd[3]
         if plugin in db.activated_plugins:
@@ -427,6 +488,7 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "deactivate"])
     def _mock_wp_plugin_deactivate(self, cmd):
+        """Simulate ``wp plugin deactivate <plugin>`` command execution in the container."""
         plugin = cmd[3]
         db = self._current_database()
         if plugin not in db.activated_plugins:
@@ -439,6 +501,9 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "option", "update"])
     def _mock_wp_option_update(self, cmd):
+        """Simulate ``wp option update <option> <value> [--format=json]`` command execution in the
+        container.
+        """
         db = self._current_database()
         option = cmd[3]
         value = cmd[4]
@@ -449,6 +514,7 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "option", "delete"])
     def _mock_wp_option_delete(self, cmd):
+        """Simulate ``wp option delete <option>`` command execution in the container."""
         db = self._current_database()
         option = cmd[3]
         db.delete_option(option)
@@ -456,12 +522,14 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:2] == ["wp", "eval"])
     def _mock_wp_eval(self, cmd):
+        """Simulate ``wp eval <php_code>`` command execution in the container."""
         php_code = cmd[2]
         self.wp_eval_history.append(php_code)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[0] == "a2enconf")
     def _mock_a2enconf(self, cmd):
+        """Simulate ``a2enconf <conf>`` command execution in the container."""
         conf = cmd[1]
         conf_src = f"/etc/apache2/conf-available/{conf}.conf"
         if conf_src not in self.fs:
@@ -471,6 +539,7 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[0] == "a2disconf")
     def _mock_a2disconf(self, cmd):
+        """Simulate ``a2disconf <conf>`` command execution in the container."""
         conf = cmd[1]
         try:
             del self.fs[f"/etc/apache2/conf-enabled/{conf}.conf"]
@@ -490,7 +559,7 @@ class WordpressContainerMock:
 class WordpressPatch:
     """The combined mocking and patching system for WordPress unit tests."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.database = WordpressDatabaseMock(
             builtin_wordpress_options={"users_can_register": "0"}
         )

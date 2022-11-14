@@ -383,7 +383,7 @@ def test_plugin_reconciliation(patch, harness, setup_replica_consensus):
 
     assert patch.container.installed_plugins == set(
         harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]
-    ), "adding plugins to plugins config should install trigger plugin installation"
+    ), "adding plugins to plugins config should trigger plugin installation"
 
     harness.update_config({"plugins": "123"})
 

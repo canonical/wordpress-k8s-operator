@@ -311,6 +311,13 @@ async def test_ingress(
         response.status_code == 200 and "wordpress" in response.text.lower()
     ), "Ingress should accept requests to WordPress and return correct contents"
 
+    response = requests.get(
+        "http://127.0.0.1", headers={"Host": application_name, "User-Agent": "Nikto"}, timeout=5
+    )
+    assert (
+        response.status_code == 403
+    ), "Modsecurity should be enabled by default and block requests for Nikto"
+
     tls_secret_name, tls_cert = create_self_signed_tls_secret(application_name)
     application = ops_test.model.applications[application_name]
     await application.set_config({"tls_secret_name": tls_secret_name})

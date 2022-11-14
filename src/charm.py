@@ -132,6 +132,8 @@ class WordpressCharm(CharmBase):
             relation_db_password=None,
         )
 
+        logger.info(self.ingress_config)
+
         self.ingress = IngressRequires(self, self.ingress_config)
 
         self.framework.observe(
@@ -160,6 +162,13 @@ class WordpressCharm(CharmBase):
         tls_secret_name = self.model.config["tls_secret_name"]
         if tls_secret_name:
             ingress_config["tls-secret-name"] = tls_secret_name
+
+        owasp_modsecurity_crs = False
+        data = self.config.get("use_nginx_ingress_modsec", None)
+        if data is not None and data != "":
+            owasp_modsecurity_crs = data
+        ingress_config["owasp-modsecurity-crs"] = owasp_modsecurity_crs
+
         return ingress_config
 
     def _update_ingress_config(self, _event):
@@ -168,6 +177,7 @@ class WordpressCharm(CharmBase):
         Args:
             _event: not used.
         """
+        logger.info(self.ingress_config)
         self.ingress.update_config(self.ingress_config)
 
     def _on_get_initial_password_action(self, event):

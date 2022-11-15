@@ -1,6 +1,6 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
-
+import typing
 import unittest
 import unittest.mock
 
@@ -27,7 +27,7 @@ def patch():
 
 
 @pytest.fixture(scope="function")
-def harness(patch):
+def harness(patch: WordpressPatch):
     """Enable ops test framework harness."""
     harness = ops.testing.Harness(WordpressCharm)
     yield harness
@@ -41,7 +41,7 @@ def app_name():
 
 
 @pytest.fixture(scope="function")
-def setup_replica_consensus(harness, app_name):
+def setup_replica_consensus(harness: ops.testing.Harness, app_name: str):
     """Yields a function that can be used to set up peer relation.
 
     After calling the yielded function, the replica consensus including WordPress salt keys and
@@ -72,7 +72,7 @@ def example_db_info():
 
 
 @pytest.fixture(scope="function")
-def setup_db_relation(harness, example_db_info):
+def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict):
     """Yields a function that can be used to set up db relation.
 
     After calling the yielded function, a db relation will be set up. If ``db_info`` not provided
@@ -80,7 +80,7 @@ def setup_db_relation(harness, example_db_info):
     relation id and the relation data.
     """
 
-    def _setup_db_relation(db_info=None):
+    def _setup_db_relation(db_info: dict = None):
         if db_info is None:
             db_info = example_db_info
         db_relation_id = harness.add_relation("db", "mysql")
@@ -102,9 +102,9 @@ def action_event_mock():
 
 @pytest.fixture(scope="function")
 def run_standard_plugin_test(
-    patch,
-    harness,
-    setup_replica_consensus,
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
 ):
     """Yields a function that can be used to perform some general test for different plugins."""
 

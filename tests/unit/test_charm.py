@@ -2,6 +2,7 @@
 # Licensed under the GPLv3, see LICENCE file for details.
 
 import json
+import typing
 import unittest
 import unittest.mock
 
@@ -11,9 +12,10 @@ import pytest
 
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
+from tests.unit.wordpress_mock import WordpressPatch
 
 
-def test_generate_wp_secret_keys(harness):
+def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     """
     arrange: no pre-condition.
     act: generate a group of WordPress secrets from scratch.
@@ -35,7 +37,9 @@ def test_generate_wp_secret_keys(harness):
         assert not (value.isalnum() or len(value) < 64), "secret values should not be too simple"
 
 
-def test_replica_consensus(harness, setup_replica_consensus):
+def test_replica_consensus(
+    harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
+):
     """
     arrange: deploy a new wordpress-k8s application.
     act: simulate peer relation creating and leader electing during the start of deployment.
@@ -48,7 +52,9 @@ def test_replica_consensus(harness, setup_replica_consensus):
     ), "units in application should reach consensus once leadership established"
 
 
-def test_replica_consensus_stable_after_leader_reelection(harness, app_name):
+def test_replica_consensus_stable_after_leader_reelection(
+    harness: ops.testing.Harness, app_name: str
+):
     """
     arrange: deploy a new wordpress-k8s application.
     act: simulate a leader re-election after application deployed.
@@ -72,12 +78,14 @@ def test_replica_consensus_stable_after_leader_reelection(harness, app_name):
     # aesthetic.
     harness.set_leader(False)
     harness.set_leader(True)
-    assert consensus == harness.get_relation_data(
-        replica_relation_id, app_name
+    assert (
+        harness.get_relation_data(replica_relation_id, app_name) == consensus
     ), "consensus once established should not change after leadership changed"
 
 
-def test_mysql_relation(harness, setup_db_relation):
+def test_mysql_relation(
+    harness: ops.testing.Harness, setup_db_relation: typing.Callable[..., typing.Tuple[int, dict]]
+):
     """
     arrange: no pre-condition.
     act: add and remove the database relation between WordPress application and mysql.
@@ -94,9 +102,9 @@ def test_mysql_relation(harness, setup_db_relation):
 
     harness.begin_with_initial_hooks()
 
-    assert {None} == set(
-        get_db_info_from_state().values()
-    ), "database info in charm state should not exist before database relation created"
+    assert set(get_db_info_from_state().values()) == {
+        None
+    }, "database info in charm state should not exist before database relation created"
 
     db_relation_id, db_info = setup_db_relation()
 
@@ -119,7 +127,11 @@ def test_mysql_relation(harness, setup_db_relation):
         )
 
 
-def test_wp_config(harness, setup_replica_consensus, setup_db_relation):
+def test_wp_config(
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    setup_db_relation: typing.Callable[..., typing.Tuple[int, dict]],
+):
     """
     arrange: after WordPress application unit consensus has been reached.
     act: generate wp-config.php.
@@ -179,7 +191,9 @@ def test_wp_config(harness, setup_replica_consensus, setup_db_relation):
         ), "db info in config should takes precedence over the db relation"
 
 
-def test_wp_install_cmd(harness, setup_replica_consensus):
+def test_wp_install_cmd(
+    harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
+):
     """
     arrange: no pre-condition.
     act: generate wp-cli command to install WordPress.
@@ -211,7 +225,7 @@ def test_wp_install_cmd(harness, setup_replica_consensus):
     assert "--admin_password=test_admin_password" in install_cmd
 
 
-def test_core_reconciliation_before_peer_relation_ready(harness):
+def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Harness):
     """
     arrange: before peer relation established but after charm created
     act: run core reconciliation
@@ -229,7 +243,9 @@ def test_core_reconciliation_before_peer_relation_ready(harness):
     ), "unit should wait for peer relation establishment right now"
 
 
-def test_core_reconciliation_before_database_ready(harness, setup_replica_consensus):
+def test_core_reconciliation_before_database_ready(
+    harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
+):
     """
     arrange: before database connection info ready but after peer relation established
     act: run core reconciliation
@@ -248,7 +264,11 @@ def test_core_reconciliation_before_database_ready(harness, setup_replica_consen
     ), "unit should wait for database connection info"
 
 
-def test_core_reconciliation(patch, harness, setup_replica_consensus):
+def test_core_reconciliation(
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
     """
     arrange: after peer relation established and database configured
     act: run core reconciliation
@@ -288,7 +308,9 @@ def test_core_reconciliation(patch, harness, setup_replica_consensus):
     ), "wordpress should be installed after database config changed"
 
 
-def test_get_initial_password_action_before_replica_consensus(harness, action_event_mock):
+def test_get_initial_password_action_before_replica_consensus(
+    harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
+):
     """
     arrange: before peer relation established but after charm created
     act: run get-initial-password action
@@ -301,7 +323,11 @@ def test_get_initial_password_action_before_replica_consensus(harness, action_ev
     assert len(action_event_mock.fail.mock_calls) == 1
 
 
-def test_get_initial_password_action(harness, setup_replica_consensus, action_event_mock):
+def test_get_initial_password_action(
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    action_event_mock: unittest.mock.MagicMock,
+):
     """
     arrange: after peer relation established
     act: run get-initial-password action
@@ -316,7 +342,11 @@ def test_get_initial_password_action(harness, setup_replica_consensus, action_ev
     ]
 
 
-def test_theme_reconciliation(patch, harness, setup_replica_consensus):
+def test_theme_reconciliation(
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
     """
     arrange: after peer relation established and database ready
     act: update themes configuration
@@ -354,7 +384,11 @@ def test_theme_reconciliation(patch, harness, setup_replica_consensus):
     ), "removing themes from themes config should trigger theme deletion"
 
 
-def test_plugin_reconciliation(patch, harness, setup_replica_consensus):
+def test_plugin_reconciliation(
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
     """
     arrange: after peer relation established and database ready
     act: update plugins configuration
@@ -427,7 +461,7 @@ def test_team_map():
     )
 
 
-def test_akismet_plugin(run_standard_plugin_test):
+def test_akismet_plugin(run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready
     act: update akismet plugin configuration
@@ -447,7 +481,7 @@ def test_akismet_plugin(run_standard_plugin_test):
     )
 
 
-def test_openid_plugin(patch, run_standard_plugin_test):
+def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready
     act: update openid plugin configuration
@@ -467,7 +501,7 @@ def test_openid_plugin(patch, run_standard_plugin_test):
     ), "PHP function update_option should be invoked after openid plugin enabled"
 
 
-def test_swift_plugin(patch, run_standard_plugin_test):
+def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready
     act: update openid plugin configuration

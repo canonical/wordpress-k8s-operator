@@ -84,7 +84,7 @@ def test_replica_consensus_stable_after_leader_reelection(
 
 
 def test_mysql_relation(
-    harness: ops.testing.Harness, setup_db_relation: typing.Callable[..., typing.Tuple[int, dict]]
+    harness: ops.testing.Harness, setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]]
 ):
     """
     arrange: no pre-condition.
@@ -130,7 +130,7 @@ def test_mysql_relation(
 def test_wp_config(
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
-    setup_db_relation: typing.Callable[..., typing.Tuple[int, dict]],
+    setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]],
 ):
     """
     arrange: after WordPress application unit consensus has been reached.

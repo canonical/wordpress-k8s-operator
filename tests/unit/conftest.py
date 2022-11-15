@@ -75,14 +75,12 @@ def example_db_info():
 def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict):
     """Yields a function that can be used to set up db relation.
 
-    After calling the yielded function, a db relation will be set up. If ``db_info`` not provided
-    during the invocation, example_db_info will be used as the relation data. Return a tuple of
-    relation id and the relation data.
+    After calling the yielded function, a db relation will be set up. example_db_info will be used
+    as the relation data. Return a tuple of relation id and the relation data.
     """
 
-    def _setup_db_relation(db_info: dict = None):
-        if db_info is None:
-            db_info = example_db_info
+    def _setup_db_relation():
+        db_info = example_db_info
         db_relation_id = harness.add_relation("db", "mysql")
         harness.add_relation_unit(db_relation_id, "mysql/0")
         harness.update_relation_data(db_relation_id, "mysql/0", example_db_info)

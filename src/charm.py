@@ -597,19 +597,6 @@ class WordpressCharm(CharmBase):
             return self._container().pull(wp_config_path).read()
         return None
 
-    def _remove_wp_config(self):
-        """Remove wp-config.php file on server.
-
-        Raises:
-            RuntimeError: If the WordPress server is running while trying to delete wp-config.php.
-        """
-        logger.debug("Remove wp-config.php in container")
-        container = self._container()
-        if container.get_service(self._SERVICE_NAME).is_running():
-            # For security reasons, prevent removing wp-config.php while WordPress server running
-            raise RuntimeError("trying to delete wp-config.php while WordPress server is running")
-        self._container().remove_path(self._WP_CONFIG_PATH, recursive=True)
-
     def _push_wp_config(self, wp_config):
         """Update the content of wp-config.php on server.
 
@@ -1133,7 +1120,7 @@ class WordpressCharm(CharmBase):
             )
             self._apache_enable_config(apache_swift_conf, conf)
         elif not enable_swift and swift_apache_config_enabled:
-            self._apache_config_is_enabled(apache_swift_conf)
+            self._apache_disable_config(apache_swift_conf)
 
     def _plugin_reconciliation(self):
         """Reconciliation process for WordPress plugins.

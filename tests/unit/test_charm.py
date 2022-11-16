@@ -231,6 +231,7 @@ def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Har
     act: run core reconciliation
     assert: core reconciliation should "fail" and status should be waiting
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
     # core reconciliation should fail
     with pytest.raises(WordPressWaitingStatusException):
@@ -251,6 +252,7 @@ def test_core_reconciliation_before_database_ready(
     act: run core reconciliation
     assert: core reconciliation should "fail" and status should be waiting
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     # core reconciliation should fail
     with pytest.raises(WordPressBlockedStatusException):
@@ -275,6 +277,7 @@ def test_core_reconciliation(
     assert: core reconciliation should update config files to match current config and
         application state
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     db_config = {
         "db_host": "config_db_host",
@@ -352,6 +355,7 @@ def test_theme_reconciliation(
     act: update themes configuration
     assert: themes installed in WordPress should update according to the themes config
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     db_config = {
         "db_host": "config_db_host",
@@ -394,6 +398,7 @@ def test_plugin_reconciliation(
     act: update plugins configuration
     assert: plugin installed in WordPress should update according to the plugin config
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     db_config = {
         "db_host": "config_db_host",

@@ -550,6 +550,13 @@ class WordpressCharm(CharmBase):
                     "command": "apache2ctl -D FOREGROUND",
                 }
             },
+            "checks": {
+                "wordpress-ready": {
+                    "override": "replace",
+                    "level": "alive",
+                    "http": {"url": "http://localhost/index.php"},
+                },
+            },
         }
         self._container().add_layer("wordpress", layer, combine=True)
 

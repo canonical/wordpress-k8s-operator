@@ -98,7 +98,7 @@ async def test_mysql_relation(ops_test: pytest_operator.plugin.OpsTest, applicat
     """
     await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
-    await ops_test.model.wait_for_idle()
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
     app_status = ops_test.model.applications[application_name].status
     assert app_status == ops.model.ActiveStatus.name, (
         "application status should be active once correct database connection info "

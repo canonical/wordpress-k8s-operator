@@ -137,6 +137,9 @@ class WordpressCharm(CharmBase):
         self.framework.observe(
             self.on.get_initial_password_action, self._on_get_initial_password_action
         )
+        self.framework.observe(
+            self.on.rotate_wordpress_secrets_action, self._on_rotate_wordpress_secrets_action
+        )
 
         self.framework.observe(
             self.on.leader_elected, self._on_leader_elected_replica_data_handler
@@ -178,6 +181,11 @@ class WordpressCharm(CharmBase):
         else:
             logger.error("Action get-initial-password failed. Replica consensus not exists")
             event.fail("Default admin password has not been generated yet.")
+
+    def _on_rotate_wordpress_secrets_action(self, event):
+        """Handle the rotate-wordpress-secrets action."""
+        # If is leader, then generate the secret keys, update the relation, and reconcile.
+        raise NotImplementedError()
 
     @staticmethod
     def _wordpress_secret_key_fields():

@@ -345,6 +345,87 @@ def test_get_initial_password_action(
     ]
 
 
+def test_rotate_wordpress_secrets_before_pebble_connect(
+    harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
+):
+    """
+    arrange: before connection to pebble is established
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should fail
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], False)
+    harness.begin_with_initial_hooks()
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    assert len(action_event_mock.set_results.mock_calls) == 0
+    assert len(action_event_mock.fail.mock_calls) == 1
+
+
+def test_rotate_wordpress_secrets_before_replica_consensus(
+    harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
+):
+    """
+    arrange: before peer relation is established
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should fail
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.begin_with_initial_hooks()
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    assert len(action_event_mock.set_results.mock_calls) == 0
+    assert len(action_event_mock.fail.mock_calls) == 1
+
+
+def test_rotate_wordpress_secrets_as_follower(
+    harness: ops.testing.Harness,
+    action_event_mock: unittest.mock.MagicMock,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
+    """
+    arrange: after peer relation is established, is follower
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should succeed and secrets updated
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    setup_replica_consensus()
+    harness.set_leader(False)
+
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    assert len(action_event_mock.set_results.mock_calls) == 0
+    assert len(action_event_mock.fail.mock_calls) == 0
+
+
+def test_rotate_wordpress_secrets(
+    harness: ops.testing.Harness,
+    action_event_mock: unittest.mock.MagicMock,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
+    """
+    arrange: after peer relation is established, is leader
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should succeed and secrets updated
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    setup_replica_consensus()
+
+    old_relation_data = dict(
+        harness.model.get_relation("wordpress-replica").data[harness.charm.app]
+    )
+
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    # Technically possible to generate the same passwords, but extremely unlikely.
+    assert (
+        old_relation_data
+        != harness.model.get_relation("wordpress-replica").data[harness.charm.app]
+    )
+
+    assert action_event_mock.set_results.mock_calls == [unittest.mock.call({"result": "ok"})]
+    assert len(action_event_mock.fail.mock_calls) == 0
+
+
 def test_theme_reconciliation(
     patch: WordpressPatch,
     harness: ops.testing.Harness,

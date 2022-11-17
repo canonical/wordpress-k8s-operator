@@ -183,27 +183,37 @@ class WordpressCharm(CharmBase):
             event.fail("Default admin password has not been generated yet.")
 
     def _on_rotate_wordpress_secrets_action(self, event):
-        """Handle the rotate-wordpress-secrets action."""
-        if self._replica_consensus_reached():
-            if self.unit.is_leader():
-                # Update the secrets in peer relation.
-                replica_relation_data = self._replica_relation_data()
-                secrets = self._generate_wp_secret_keys()
-                for secret_key, secret_value in secrets.items():
-                    replica_relation_data[secret_key] = secret_value
+        """Handle the rotate-wordpress_secrets action.
 
-                # Leader need to call `_reconciliation` manually.
-                # Followers call it automatically due to relation_changed event.
-                self._reconciliation(event)
-                event.set_results({"result": "ok"})
-            else:
-                event.fail(
-                    "This unit is not leader."
-                    " Use <application>/leader to specify the leader unit when running action."
-                )
-        else:
+        This action is for rotating the secrets of wordpress. The leader unit is the one handling
+        the rotation by updating the application relation data. The followers will pick up the
+        event and update the secrets via the application `relation_changed` event.
+
+        Args:
+            event: Used for returning result or failure of action.
+        """
+        if not self._replica_consensus_reached():
             logger.error("Action on-rotate-wordpress-secrets failed. Replica consensus not exists")
             event.fail("Secrets have not been initialized yet.")
+            return
+
+        if not self.unit.is_leader():
+            event.fail(
+                "This unit is not leader."
+                " Use <application>/leader to specify the leader unit when running action."
+            )
+            return
+
+        # Update the secrets in peer relation.
+        replica_relation_data = self._replica_relation_data()
+        secrets = self._generate_wp_secret_keys()
+        for secret_key, secret_value in secrets.items():
+            replica_relation_data[secret_key] = secret_value
+
+        # Leader need to call `_reconciliation` manually.
+        # Followers call it automatically due to relation_changed event.
+        self._reconciliation(event)
+        event.set_results({"result": "ok"})
 
     @staticmethod
     def _wordpress_secret_key_fields():
@@ -212,6 +222,7 @@ class WordpressCharm(CharmBase):
             "secure_auth_key",
             "logged_in_key",
             "nonce_key",
+            # These salts are for cookies. They should not affect user passwords.
             "auth_salt",
             "secure_auth_salt",
             "logged_in_salt",

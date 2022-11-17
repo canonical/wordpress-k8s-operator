@@ -322,8 +322,8 @@ def test_get_initial_password_action_before_replica_consensus(
     harness.begin_with_initial_hooks()
     harness.charm._on_get_initial_password_action(action_event_mock)
 
-    assert len(action_event_mock.set_results.mock_calls) == 0
-    assert len(action_event_mock.fail.mock_calls) == 1
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once()
 
 
 def test_get_initial_password_action(
@@ -339,7 +339,7 @@ def test_get_initial_password_action(
     consensus = setup_replica_consensus()
     harness.charm._on_get_initial_password_action(action_event_mock)
 
-    assert len(action_event_mock.fail.mock_calls) == 0
+    action_event_mock.fail.assert_not_called()
     assert action_event_mock.set_results.mock_calls == [
         unittest.mock.call({"password": consensus["default_admin_password"]})
     ]
@@ -357,8 +357,8 @@ def test_rotate_wordpress_secrets_before_pebble_connect(
     harness.begin_with_initial_hooks()
     harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
-    assert len(action_event_mock.set_results.mock_calls) == 0
-    assert len(action_event_mock.fail.mock_calls) == 1
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once()
 
 
 def test_rotate_wordpress_secrets_before_replica_consensus(
@@ -373,8 +373,8 @@ def test_rotate_wordpress_secrets_before_replica_consensus(
     harness.begin_with_initial_hooks()
     harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
-    assert len(action_event_mock.set_results.mock_calls) == 0
-    assert len(action_event_mock.fail.mock_calls) == 1
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once()
 
 
 def test_rotate_wordpress_secrets_as_follower(
@@ -393,8 +393,8 @@ def test_rotate_wordpress_secrets_as_follower(
 
     harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
-    assert len(action_event_mock.set_results.mock_calls) == 0
-    assert len(action_event_mock.fail.mock_calls) == 1
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once()
 
 
 def test_rotate_wordpress_secrets(
@@ -423,7 +423,7 @@ def test_rotate_wordpress_secrets(
     ), "password are same from before rotate"
 
     assert action_event_mock.set_results.mock_calls == [unittest.mock.call({"result": "ok"})]
-    assert len(action_event_mock.fail.mock_calls) == 0
+    action_event_mock.fail.assert_not_called()
 
 
 def test_theme_reconciliation(

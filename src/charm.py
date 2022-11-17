@@ -685,7 +685,8 @@ class WordpressCharm(CharmBase):
 
         Raise a ValueError if not.
         """
-        assert addon_type in ("theme", "plugin")
+        if addon_type not in ("theme", "plugin"):
+            raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
 
     def _wp_addon_list(self, addon_type):
         """List all installed WordPress addons.

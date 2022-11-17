@@ -185,7 +185,6 @@ class WordpressCharm(CharmBase):
     def _on_rotate_wordpress_secrets_action(self, event):
         """Handle the rotate-wordpress-secrets action."""
         if self._replica_consensus_reached():
-            # TODO: Review - rotating done only by leader?
             if self.unit.is_leader():
                 # Update the secrets in peer relation.
                 replica_relation_data = self._replica_relation_data()
@@ -196,18 +195,15 @@ class WordpressCharm(CharmBase):
                 # Leader need to call `_reconciliation` manually.
                 # Followers call it automatically due to relation_changed event.
                 self._reconciliation(event)
-                # TODO: Review - What to return? for leader? for followers?
                 event.set_results({"result": "ok"})
             else:
                 event.fail(
-                    "This Unit is not leader."
+                    "This unit is not leader."
                     " Use <application>/leader to specify the leader unit when running action."
                 )
-            # TODO: Review - concurrency model and data consistency model of Juju and charms.
-            # TODO: Review - integration testing with multiple units.
         else:
             logger.error("Action on-rotate-wordpress-secrets failed. Replica consensus not exists")
-            event.fail("Passwords have not been initialized yet.")
+            event.fail("Secrets have not been initialized yet.")
 
     @staticmethod
     def _wordpress_secret_key_fields():

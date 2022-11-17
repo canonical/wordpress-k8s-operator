@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Copyright 2022 Canonical Ltd.
-# Licensed under the GPLv3, see LICENCE file for details.
+# See LICENSE file for licensing details.
 
 """Charm for WordPress on kubernetes."""
 

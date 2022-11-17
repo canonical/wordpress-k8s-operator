@@ -198,6 +198,9 @@ class WordpressCharm(CharmBase):
                 self._reconciliation(event)
                 # TODO: Review - What to return? for leader? for followers?
                 event.set_results({"result": "ok"})
+            event.fail(
+                "This Unit is not leader. Use <application>/leader to specify the leader unit when running action."
+            )
             # TODO: Review - concurrency model and data consistency model of Juju and charms.
             # TODO: Review - integration testing with multiple units.
         else:

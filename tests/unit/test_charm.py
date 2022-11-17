@@ -394,7 +394,7 @@ def test_rotate_wordpress_secrets_as_follower(
     harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     assert len(action_event_mock.set_results.mock_calls) == 0
-    assert len(action_event_mock.fail.mock_calls) == 0
+    assert len(action_event_mock.fail.mock_calls) == 1
 
 
 def test_rotate_wordpress_secrets(

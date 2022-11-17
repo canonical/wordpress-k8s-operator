@@ -680,9 +680,10 @@ class WordpressCharm(CharmBase):
     def _check_addon_type(self, addon_type):
         """Check if addon_type is one of the accepted addon types (theme/plugin).
 
-        Raise a AssertError if not.
+        Raise a ValueError if not.
         """
-        assert addon_type in ("theme", "plugin")
+        if addon_type not in ("theme", "plugin"):
+            raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
 
     def _wp_addon_list(self, addon_type):
         """List all installed WordPress addons.
@@ -855,7 +856,10 @@ class WordpressCharm(CharmBase):
         Returns:
             An instance of :attr:`charm.WordpressCharm._ExecResult`.
         """
-        assert action in ("activate", "deactivate")
+        if action not in ("activate", "deactivate"):
+            raise ValueError(
+                f"Unknown activation_status {repr(action)}, " "accept (activate, deactivate)"
+            )
         current_plugins = self._wp_addon_list("plugin")
         if not current_plugins.success:
             return self._ExecResult(

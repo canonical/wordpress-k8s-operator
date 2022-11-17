@@ -569,7 +569,7 @@ def test_ingress(
     app_name: str,
 ):
     """
-    arrange: after peer relation established and database ready
+    arrange: after peer relation established and database ready.
     act: create a relation between wordpress and nginx ingress integrator, and update the
         tls_secret_name configuration.
     assert: ingress relation data should be set up according to the configuration and application
@@ -600,3 +600,22 @@ def test_ingress(
         "service-port": "80",
         "tls-secret-name": "tls_secret",
     }
+
+
+def test_defensive_programing(
+    harness: ops.testing.Harness,
+):
+    """
+    arrange: no arrange.
+    act: invoke some method with incorrect arguments.
+    assert: ValueError should be raised to prevent further execution.
+    """
+    harness.begin()
+    with pytest.raises(ValueError):
+        harness.charm._wp_addon_install("not theme/plugin", "name")
+    with pytest.raises(ValueError):
+        harness.charm._wp_addon_list("not theme/plugin")
+    with pytest.raises(ValueError):
+        harness.charm._wp_addon_uninstall("not theme/plugin", "name")
+    with pytest.raises(ValueError):
+        harness.charm._perform_plugin_activate_or_deactivate("", "not activate/deactivate")

@@ -420,7 +420,7 @@ def test_rotate_wordpress_secrets(
     assert (
         old_relation_data
         != harness.model.get_relation("wordpress-replica").data[harness.charm.app]
-    )
+    ), "password are same from before rotate"
 
     assert action_event_mock.set_results.mock_calls == [unittest.mock.call({"result": "ok"})]
     assert len(action_event_mock.fail.mock_calls) == 0

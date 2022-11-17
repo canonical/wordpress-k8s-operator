@@ -1,0 +1,3 @@
+rules:
+  # Ignore whitelist because it is used in the nginx dependency
+  - name: whitelist

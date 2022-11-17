@@ -558,3 +558,45 @@ def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Ca
         excepted_options_after_removed={"users_can_register": "0"},
         additional_check_after_install=additional_check_after_install,
     )
+
+
+def test_ingress(
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    example_db_info: dict,
+    setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]],
+    app_name: str,
+):
+    """
+    arrange: after peer relation established and database ready
+    act: create a relation between wordpress and nginx ingress integrator, and update the
+        tls_secret_name configuration.
+    assert: ingress relation data should be set up according to the configuration and application
+        name.
+    """
+    setup_replica_consensus()
+    patch.database.prepare_database(
+        host=example_db_info["host"],
+        database=example_db_info["database"],
+        user=example_db_info["user"],
+        password=example_db_info["password"],
+    )
+    setup_db_relation()
+    ingress_relation_id = harness.add_relation("ingress", "ingress")
+    harness.add_relation_unit(ingress_relation_id, "ingress/0")
+
+    assert harness.charm.ingress.config_dict == {
+        "service-hostname": app_name,
+        "service-name": app_name,
+        "service-port": "80",
+    }
+
+    harness.update_config({"tls_secret_name": "tls_secret"})
+
+    assert harness.charm.ingress.config_dict == {
+        "service-hostname": app_name,
+        "service-name": app_name,
+        "service-port": "80",
+        "tls-secret-name": "tls_secret",
+    }

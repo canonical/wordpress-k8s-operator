@@ -301,9 +301,7 @@ class WordpressCharm(CharmBase):
 
         replica_relation_data = self._replica_relation_data()
         for secret_key in self._wordpress_secret_key_fields():
-            secret_value = replica_relation_data.get(secret_key)
-            if not secret_value:
-                raise ValueError(f"{secret_key} value is empty")
+            secret_value = replica_relation_data[secret_key]
             wp_config.append(f"define( '{secret_key.upper()}', '{secret_value}' );")
 
         # make WordPress immutable, user can not install or update any plugins or themes from
@@ -571,7 +569,6 @@ class WordpressCharm(CharmBase):
             WordPressStatusException: If unrecoverable error happens.
         """
         logger.debug("Ensure WordPress server is up")
-        self._init_pebble_layer()
         if self.unit.is_leader():
             msg = ""
             for _ in range(max(1, self._DB_CHECK_TIMEOUT // self._DB_CHECK_INTERVAL)):
@@ -584,11 +581,22 @@ class WordpressCharm(CharmBase):
 
             if not self._wp_is_installed():
                 self._wp_install()
-            if self._current_wp_config() is None:
-                # For security reasons, never start WordPress server if wp-config.php not exists
-                raise FileNotFoundError(
-                    "required file (wp-config.php) for starting WordPress server not exists"
+        else:
+            for _ in range(60):
+                if self._wp_is_installed():
+                    break
+                else:
+                    time.sleep(5)
+            else:
+                raise exceptions.WordPressBlockedStatusException(
+                    "leader unit failed to initialize WordPress database in given time."
                 )
+        if self._current_wp_config() is None:
+            # For security reasons, never start WordPress server if wp-config.php not exists
+            raise FileNotFoundError(
+                "required file (wp-config.php) for starting WordPress server not exists"
+            )
+        self._init_pebble_layer()
         if not self._container().get_service(self._SERVICE_NAME).is_running():
             self._container().start(self._SERVICE_NAME)
 
@@ -667,16 +675,14 @@ class WordpressCharm(CharmBase):
             logger.info("Changes detected in wp-config.php, updating")
             self._stop_server()
             self._push_wp_config(wp_config)
-        if self._current_wp_config() is not None:
-            self._start_server()
+        self._start_server()
 
     def _check_addon_type(self, addon_type):
         """Check if addon_type is one of the accepted addon types (theme/plugin).
 
-        Raise a ValueException if not.
+        Raise a AssertError if not.
         """
-        if addon_type not in ("theme", "plugin"):
-            raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
+        assert addon_type in ("theme", "plugin")
 
     def _wp_addon_list(self, addon_type):
         """List all installed WordPress addons.
@@ -849,11 +855,7 @@ class WordpressCharm(CharmBase):
         Returns:
             An instance of :attr:`charm.WordpressCharm._ExecResult`.
         """
-        if action not in ("activate", "deactivate"):
-            raise ValueError(
-                f"Unknown activation_status {repr(action)}, " "accept (activate, deactivate)"
-            )
-
+        assert action in ("activate", "deactivate")
         current_plugins = self._wp_addon_list("plugin")
         if not current_plugins.success:
             return self._ExecResult(

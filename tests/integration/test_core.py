@@ -17,9 +17,9 @@ import requests
 import swiftclient
 import swiftclient.exceptions
 import swiftclient.service
-from wordpress_client_for_test import WordpressClient
 
 from charm import WordpressCharm
+from tests.integration.wordpress_client_for_test import WordpressClient
 
 
 @pytest.mark.asyncio
@@ -151,6 +151,7 @@ async def test_wordpress_default_themes(unit_ip_list, get_theme_list_from_ip):
         ), "default themes installed should match default themes defined in WordpressCharm"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_themes(
     ops_test: pytest_operator.plugin.OpsTest,
@@ -183,6 +184,7 @@ async def test_wordpress_install_uninstall_themes(
             ), f"theme installed {themes} should match themes setting in config"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_theme_installation_error(
     ops_test: pytest_operator.plugin.OpsTest, application_name
@@ -215,6 +217,7 @@ async def test_wordpress_theme_installation_error(
         ), "status should back to active after invalid theme removed from config"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_plugins(
     ops_test: pytest_operator.plugin.OpsTest,
@@ -246,6 +249,7 @@ async def test_wordpress_install_uninstall_plugins(
             ), f"plugin installed {plugins} should match plugins setting in config"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_plugin_installation_error(
     ops_test: pytest_operator.plugin.OpsTest, application_name

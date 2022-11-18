@@ -586,6 +586,9 @@ class WordpressCharm(CharmBase):
                 if self._wp_is_installed():
                     break
                 else:
+                    self.unit.status = WaitingStatus(
+                        "Waiting for leader unit to initialize database"
+                    )
                     time.sleep(5)
             else:
                 raise exceptions.WordPressBlockedStatusException(
@@ -594,7 +597,7 @@ class WordpressCharm(CharmBase):
         if self._current_wp_config() is None:
             # For security reasons, never start WordPress server if wp-config.php not exists
             raise FileNotFoundError(
-                "required file (wp-config.php) for starting WordPress server not exists"
+                "required file (wp-config.php) for starting WordPress server does not exists"
             )
         self._init_pebble_layer()
         if not self._container().get_service(self._SERVICE_NAME).is_running():

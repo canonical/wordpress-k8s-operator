@@ -602,9 +602,16 @@ def test_ingress(
     }
 
 
-def test_defensive_programing(
-    harness: ops.testing.Harness,
-):
+@pytest.mark.parametrize(
+    "method,test_args",
+    [
+        ("_wp_addon_install", ("not theme/plugin", "name")),
+        ("_wp_addon_list", ("not theme/plugin",)),
+        ("_wp_addon_uninstall", ("not theme/plugin", "name")),
+        ("_perform_plugin_activate_or_deactivate", ("name", "not activate/deactivate")),
+    ],
+)
+def test_defensive_programing(harness: ops.testing.Harness, method: str, test_args: list):
     """
     arrange: no arrange.
     act: invoke some method with incorrect arguments.
@@ -612,10 +619,4 @@ def test_defensive_programing(
     """
     harness.begin()
     with pytest.raises(ValueError):
-        harness.charm._wp_addon_install("not theme/plugin", "name")
-    with pytest.raises(ValueError):
-        harness.charm._wp_addon_list("not theme/plugin")
-    with pytest.raises(ValueError):
-        harness.charm._wp_addon_uninstall("not theme/plugin", "name")
-    with pytest.raises(ValueError):
-        harness.charm._perform_plugin_activate_or_deactivate("", "not activate/deactivate")
+        getattr(harness.charm, method)(*test_args)

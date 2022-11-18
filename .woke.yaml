@@ -1,2 +1,0 @@
-ignore_files:
-  - lib/charms/nginx_ingress_integrator/v0/ingress.py

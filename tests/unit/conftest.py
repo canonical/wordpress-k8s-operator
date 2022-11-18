@@ -1,5 +1,6 @@
 # Copyright 2022 Canonical Ltd.
-# Licensed under the GPLv3, see LICENCE file for details.
+# See LICENSE file for licensing details.
+
 import typing
 import unittest
 import unittest.mock
@@ -114,6 +115,7 @@ def run_standard_plugin_test(
         additional_check_after_install=None,
     ):
         plugin_config_keys = list(plugin_config.keys())
+        harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
         setup_replica_consensus()
         db_config = {
             "db_host": "config_db_host",

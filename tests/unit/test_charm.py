@@ -1,5 +1,5 @@
 # Copyright 2022 Canonical Ltd.
-# Licensed under the GPLv3, see LICENCE file for details.
+# See LICENSE file for licensing details.
 
 import json
 import typing
@@ -231,6 +231,7 @@ def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Har
     act: run core reconciliation
     assert: core reconciliation should "fail" and status should be waiting
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
     # core reconciliation should fail
     with pytest.raises(WordPressWaitingStatusException):
@@ -251,6 +252,7 @@ def test_core_reconciliation_before_database_ready(
     act: run core reconciliation
     assert: core reconciliation should "fail" and status should be waiting
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     # core reconciliation should fail
     with pytest.raises(WordPressBlockedStatusException):
@@ -275,6 +277,7 @@ def test_core_reconciliation(
     assert: core reconciliation should update config files to match current config and
         application state
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     db_config = {
         "db_host": "config_db_host",
@@ -319,8 +322,10 @@ def test_get_initial_password_action_before_replica_consensus(
     harness.begin_with_initial_hooks()
     harness.charm._on_get_initial_password_action(action_event_mock)
 
-    assert len(action_event_mock.set_results.mock_calls) == 0
-    assert len(action_event_mock.fail.mock_calls) == 1
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once_with(
+        "Default admin password has not been generated yet."
+    )
 
 
 def test_get_initial_password_action(
@@ -336,10 +341,94 @@ def test_get_initial_password_action(
     consensus = setup_replica_consensus()
     harness.charm._on_get_initial_password_action(action_event_mock)
 
-    assert len(action_event_mock.fail.mock_calls) == 0
-    assert action_event_mock.set_results.mock_calls == [
-        unittest.mock.call({"password": consensus["default_admin_password"]})
-    ]
+    action_event_mock.fail.assert_not_called()
+    action_event_mock.set_results.assert_called_once_with(
+        {"password": consensus["default_admin_password"]}
+    )
+
+
+def test_rotate_wordpress_secrets_before_pebble_connect(
+    harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
+):
+    """
+    arrange: before connection to pebble is established
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should fail
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], False)
+    harness.begin_with_initial_hooks()
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once_with("Secrets have not been initialized yet.")
+
+
+def test_rotate_wordpress_secrets_before_replica_consensus(
+    harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
+):
+    """
+    arrange: before peer relation is established
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should fail
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.begin_with_initial_hooks()
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once_with("Secrets have not been initialized yet.")
+
+
+def test_rotate_wordpress_secrets_as_follower(
+    harness: ops.testing.Harness,
+    action_event_mock: unittest.mock.MagicMock,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
+    """
+    arrange: after peer relation is established, is follower
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should succeed and secrets updated
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    setup_replica_consensus()
+    harness.set_leader(False)
+
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    action_event_mock.set_results.assert_not_called()
+    action_event_mock.fail.assert_called_once_with(
+        "This unit is not leader."
+        " Use <application>/leader to specify the leader unit when running action."
+    )
+
+
+def test_rotate_wordpress_secrets(
+    harness: ops.testing.Harness,
+    action_event_mock: unittest.mock.MagicMock,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
+    """
+    arrange: after peer relation is established, is leader
+    act: run rotate-wordpress-secrets action
+    assert: rotate-wordpress-secrets action should succeed and secrets updated
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    setup_replica_consensus()
+
+    old_relation_data = dict(
+        harness.model.get_relation("wordpress-replica").data[harness.charm.app]
+    )
+
+    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+
+    # Technically possible to generate the same passwords, but extremely unlikely.
+    assert (
+        old_relation_data
+        != harness.model.get_relation("wordpress-replica").data[harness.charm.app]
+    ), "password are same from before rotate"
+
+    action_event_mock.set_results.assert_called_once_with({"result": "ok"})
+    action_event_mock.fail.assert_not_called()
 
 
 def test_theme_reconciliation(
@@ -352,6 +441,7 @@ def test_theme_reconciliation(
     act: update themes configuration
     assert: themes installed in WordPress should update according to the themes config
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     db_config = {
         "db_host": "config_db_host",
@@ -394,6 +484,7 @@ def test_plugin_reconciliation(
     act: update plugins configuration
     assert: plugin installed in WordPress should update according to the plugin config
     """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     db_config = {
         "db_host": "config_db_host",
@@ -605,6 +696,7 @@ def test_ingress(
 @pytest.mark.parametrize(
     "method,test_args",
     [
+        ("_check_addon_type", ("not theme/plugin",)),
         ("_wp_addon_install", ("not theme/plugin", "name")),
         ("_wp_addon_list", ("not theme/plugin",)),
         ("_wp_addon_uninstall", ("not theme/plugin", "name")),
@@ -620,3 +712,9 @@ def test_defensive_programing(harness: ops.testing.Harness, method: str, test_ar
     harness.begin()
     with pytest.raises(ValueError):
         getattr(harness.charm, method)(*test_args)
+
+
+def test_missing_peer_relation(harness: ops.testing.Harness):
+    harness.begin()
+    with pytest.raises(WordpressCharm._ReplicaRelationNotReady):
+        harness.charm._replica_relation_data()

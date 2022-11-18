@@ -1,5 +1,5 @@
 # Copyright 2022 Canonical Ltd.
-# Licensed under the GPLv3, see LICENCE file for details.
+# See LICENSE file for licensing details.
 
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
@@ -62,6 +62,8 @@ class WordpressCharm(ops.charm.CharmBase):
     _WORDPRESS_DEFAULT_THEMES: List[str]
     _WORDPRESS_DEFAULT_PLUGINS: List[str]
 
+    def _on_get_initial_password_action(self, event: ops.charm.ActionEvent): ...
+    def _on_rotate_wordpress_secrets_action(self, event: ops.charm.ActionEvent): ...
     @staticmethod
     def _wordpress_secret_key_fields() -> List[str]: ...
     def _generate_wp_secret_keys(self) -> Dict[str, str]: ...

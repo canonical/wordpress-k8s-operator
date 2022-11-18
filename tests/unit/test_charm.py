@@ -558,3 +558,65 @@ def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Ca
         excepted_options_after_removed={"users_can_register": "0"},
         additional_check_after_install=additional_check_after_install,
     )
+
+
+def test_ingress(
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    example_db_info: dict,
+    setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]],
+    app_name: str,
+):
+    """
+    arrange: after peer relation established and database ready.
+    act: create a relation between wordpress and nginx ingress integrator, and update the
+        tls_secret_name configuration.
+    assert: ingress relation data should be set up according to the configuration and application
+        name.
+    """
+    setup_replica_consensus()
+    patch.database.prepare_database(
+        host=example_db_info["host"],
+        database=example_db_info["database"],
+        user=example_db_info["user"],
+        password=example_db_info["password"],
+    )
+    setup_db_relation()
+    ingress_relation_id = harness.add_relation("ingress", "ingress")
+    harness.add_relation_unit(ingress_relation_id, "ingress/0")
+
+    assert harness.charm.ingress.config_dict == {
+        "service-hostname": app_name,
+        "service-name": app_name,
+        "service-port": "80",
+    }
+
+    harness.update_config({"tls_secret_name": "tls_secret"})
+
+    assert harness.charm.ingress.config_dict == {
+        "service-hostname": app_name,
+        "service-name": app_name,
+        "service-port": "80",
+        "tls-secret-name": "tls_secret",
+    }
+
+
+@pytest.mark.parametrize(
+    "method,test_args",
+    [
+        ("_wp_addon_install", ("not theme/plugin", "name")),
+        ("_wp_addon_list", ("not theme/plugin",)),
+        ("_wp_addon_uninstall", ("not theme/plugin", "name")),
+        ("_perform_plugin_activate_or_deactivate", ("name", "not activate/deactivate")),
+    ],
+)
+def test_defensive_programing(harness: ops.testing.Harness, method: str, test_args: list):
+    """
+    arrange: no arrange.
+    act: invoke some method with incorrect arguments.
+    assert: ValueError should be raised to prevent further execution.
+    """
+    harness.begin()
+    with pytest.raises(ValueError):
+        getattr(harness.charm, method)(*test_args)

@@ -696,6 +696,7 @@ def test_ingress(
 @pytest.mark.parametrize(
     "method,test_args",
     [
+        ("_check_addon_type", ("not theme/plugin",)),
         ("_wp_addon_install", ("not theme/plugin", "name")),
         ("_wp_addon_list", ("not theme/plugin",)),
         ("_wp_addon_uninstall", ("not theme/plugin", "name")),
@@ -711,3 +712,9 @@ def test_defensive_programing(harness: ops.testing.Harness, method: str, test_ar
     harness.begin()
     with pytest.raises(ValueError):
         getattr(harness.charm, method)(*test_args)
+
+
+def test_missing_peer_relation(harness: ops.testing.Harness):
+    harness.begin()
+    with pytest.raises(WordpressCharm._ReplicaRelationNotReady):
+        harness.charm._replica_relation_data()

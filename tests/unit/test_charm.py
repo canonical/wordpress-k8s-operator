@@ -323,7 +323,9 @@ def test_get_initial_password_action_before_replica_consensus(
     harness.charm._on_get_initial_password_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
-    action_event_mock.fail.assert_called_once()
+    action_event_mock.fail.assert_called_once_with(
+        "Default admin password has not been generated yet."
+    )
 
 
 def test_get_initial_password_action(
@@ -340,9 +342,9 @@ def test_get_initial_password_action(
     harness.charm._on_get_initial_password_action(action_event_mock)
 
     action_event_mock.fail.assert_not_called()
-    assert action_event_mock.set_results.mock_calls == [
-        unittest.mock.call({"password": consensus["default_admin_password"]})
-    ]
+    action_event_mock.set_results.assert_called_once_with(
+        {"password": consensus["default_admin_password"]}
+    )
 
 
 def test_rotate_wordpress_secrets_before_pebble_connect(
@@ -358,7 +360,7 @@ def test_rotate_wordpress_secrets_before_pebble_connect(
     harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
-    action_event_mock.fail.assert_called_once()
+    action_event_mock.fail.assert_called_once_with("Secrets have not been initialized yet.")
 
 
 def test_rotate_wordpress_secrets_before_replica_consensus(
@@ -374,7 +376,7 @@ def test_rotate_wordpress_secrets_before_replica_consensus(
     harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
-    action_event_mock.fail.assert_called_once()
+    action_event_mock.fail.assert_called_once_with("Secrets have not been initialized yet.")
 
 
 def test_rotate_wordpress_secrets_as_follower(
@@ -394,7 +396,10 @@ def test_rotate_wordpress_secrets_as_follower(
     harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
-    action_event_mock.fail.assert_called_once()
+    action_event_mock.fail.assert_called_once_with(
+        "This unit is not leader."
+        " Use <application>/leader to specify the leader unit when running action."
+    )
 
 
 def test_rotate_wordpress_secrets(
@@ -422,7 +427,7 @@ def test_rotate_wordpress_secrets(
         != harness.model.get_relation("wordpress-replica").data[harness.charm.app]
     ), "password are same from before rotate"
 
-    assert action_event_mock.set_results.mock_calls == [unittest.mock.call({"result": "ok"})]
+    action_event_mock.set_results.assert_called_once_with({"result": "ok"})
     action_event_mock.fail.assert_not_called()
 
 

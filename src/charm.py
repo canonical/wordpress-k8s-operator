@@ -179,7 +179,7 @@ class WordpressCharm(CharmBase):
             default_admin_password = self._replica_relation_data().get("default_admin_password")
             event.set_results({"password": default_admin_password})
         else:
-            logger.error("Action get-initial-password failed. Replica consensus not exists")
+            logger.error("Action get-initial-password failed. Replica consensus not reached.")
             event.fail("Default admin password has not been generated yet.")
 
     def _on_rotate_wordpress_secrets_action(self, event):
@@ -193,7 +193,9 @@ class WordpressCharm(CharmBase):
             event: Used for returning result or failure of action.
         """
         if not self._replica_consensus_reached():
-            logger.error("Action on-rotate-wordpress-secrets failed. Replica consensus not exists")
+            logger.error(
+                "Action on-rotate-wordpress-secrets failed. Replica consensus not reached."
+            )
             event.fail("Secrets have not been initialized yet.")
             return
 

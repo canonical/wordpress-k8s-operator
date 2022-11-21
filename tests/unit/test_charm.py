@@ -1,9 +1,12 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+"""WordPress charm unit tests."""
+
+# pylint:disable=protected-access
+
 import json
 import typing
-import unittest
 import unittest.mock
 
 import ops.pebble
@@ -22,7 +25,8 @@ def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     assert: generated secrets should be safe.
     """
     harness.begin()
-    secrets = harness.charm._generate_wp_secret_keys()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    secrets = charm._generate_wp_secret_keys()
     assert (
         "default_admin_password" in secrets
     ), "wordpress should generate a default admin password"
@@ -30,7 +34,7 @@ def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     del secrets["default_admin_password"]
     key_values = list(secrets.values())
     assert set(secrets.keys()) == set(
-        harness.charm._wordpress_secret_key_fields()
+        charm._wordpress_secret_key_fields()
     ), "generated wordpress secrets should contain all required fields"
     assert len(key_values) == len(set(key_values)), "no two secret values should be the same"
     for value in key_values:
@@ -46,9 +50,9 @@ def test_replica_consensus(
     assert: units should reach consensus after leader elected.
     """
     setup_replica_consensus()
-
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     assert (
-        harness.charm._replica_consensus_reached()
+        charm._replica_consensus_reached()
     ), "units in application should reach consensus once leadership established"
 
 
@@ -64,13 +68,14 @@ def test_replica_consensus_stable_after_leader_reelection(
     non_leader_peer_name = "wordpress-k8s/1"
     harness.add_relation_unit(replica_relation_id, non_leader_peer_name)
     harness.begin_with_initial_hooks()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
     assert (
-        not harness.charm._replica_consensus_reached()
+        not charm._replica_consensus_reached()
     ), "units in application should not reach consensus before leadership established"
     harness.set_leader()
     assert (
-        harness.charm._replica_consensus_reached()
+        charm._replica_consensus_reached()
     ), "units in application should reach consensus once leadership established"
     consensus = harness.get_relation_data(replica_relation_id, app_name)
     # The harness will emit a leader-elected event when calling ``set_leader(True)`` no matter
@@ -94,13 +99,14 @@ def test_mysql_relation(
 
     def get_db_info_from_state():
         return {
-            "host": harness.charm.state.relation_db_host,
-            "database": harness.charm.state.relation_db_name,
-            "user": harness.charm.state.relation_db_user,
-            "password": harness.charm.state.relation_db_password,
+            "host": charm.state.relation_db_host,
+            "database": charm.state.relation_db_name,
+            "user": charm.state.relation_db_user,
+            "password": charm.state.relation_db_password,
         }
 
     harness.begin_with_initial_hooks()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
     assert set(get_db_info_from_state().values()) == {
         None
@@ -109,22 +115,18 @@ def test_mysql_relation(
     db_relation_id, db_info = setup_db_relation()
 
     db_info_in_state = get_db_info_from_state()
-    for db_info_key in db_info_in_state:
+    for db_info_key, db_info_value in db_info_in_state.items():
         assert (
-            db_info_in_state[db_info_key] == db_info[db_info_key]
-        ), "database info {} in charm state should be updated after database relation changed".format(
-            db_info_key
-        )
+            db_info_value == db_info[db_info_key]
+        ), f"database info {db_info_key} in charm state should be updated after database relation changed"
 
     harness.remove_relation(db_relation_id)
 
     db_info_in_state = get_db_info_from_state()
-    for db_info_key in db_info_in_state:
+    for db_info_key, db_info_value in db_info_in_state.items():
         assert (
-            db_info_in_state[db_info_key] is None
-        ), "database info {} should be reset to None after database relation broken".format(
-            db_info_key
-        )
+            db_info_value is None
+        ), f"database info {db_info_key} should be reset to None after database relation broken"
 
 
 def test_wp_config(
@@ -144,21 +146,23 @@ def test_wp_config(
                 return True
         return False
 
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     # generating a config before consensus should raise an exception for security reasons
     with pytest.raises(Exception):
-        harness.charm._gen_wp_config()
+        charm._gen_wp_config()
 
     replica_consensus = setup_replica_consensus()
-    wp_config = harness.charm._gen_wp_config()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    wp_config = charm._gen_wp_config()
 
-    for secret_key in harness.charm._wordpress_secret_key_fields():
+    for secret_key in charm._wordpress_secret_key_fields():
         secret_value = replica_consensus[secret_key]
         assert in_same_line(
             wp_config, "define(", secret_key.upper(), secret_value
-        ), "wp-config.php should contain a valid {}".format(secret_key)
+        ), f"wp-config.php should contain a valid {secret_key}"
 
     _, db_info = setup_db_relation()
-    wp_config = harness.charm._gen_wp_config()
+    wp_config = charm._gen_wp_config()
 
     db_field_conversion = {
         "db_host": "host",
@@ -172,9 +176,7 @@ def test_wp_config(
             "define(",
             db_info_field.upper(),
             db_info[db_field_conversion[db_info_field]],
-        ), "wp-config.php should contain database setting {} from the db relation".format(
-            db_info_field
-        )
+        ), f"wp-config.php should contain database setting {db_info_field} from the db relation"
 
     db_info_in_config = {
         "db_host": "config_db_host",
@@ -183,11 +185,11 @@ def test_wp_config(
         "db_password": "config_db_password",
     }
     harness.update_config(db_info_in_config)
-    wp_config = harness.charm._gen_wp_config()
+    wp_config = charm._gen_wp_config()
 
-    for db_info_field in db_info_in_config.keys():
+    for db_info_field, db_info_value in db_info_in_config.items():
         assert in_same_line(
-            wp_config, "define(", db_info_field.upper(), db_info_in_config[db_info_field]
+            wp_config, "define(", db_info_field.upper(), db_info_value
         ), "db info in config should takes precedence over the db relation"
 
 
@@ -200,13 +202,14 @@ def test_wp_install_cmd(
     assert: generated command should match current config and status.
     """
     consensus = setup_replica_consensus()
-    install_cmd = harness.charm._wp_install_cmd()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    install_cmd = charm._wp_install_cmd()
 
     assert (
         "--admin_user=admin" in install_cmd
     ), 'admin user should be "admin" with the default configuration'
     assert (
-        "--admin_password={}".format(consensus["default_admin_password"]) in install_cmd
+        f"--admin_password={consensus['default_admin_password']}" in install_cmd
     ), "admin password should be the same as the default_admin_password in peer relation data"
 
     harness.update_config(
@@ -218,7 +221,7 @@ def test_wp_install_cmd(
         """
         }
     )
-    install_cmd = harness.charm._wp_install_cmd()
+    install_cmd = charm._wp_install_cmd()
 
     assert "--admin_user=test_admin_username" in install_cmd
     assert "--admin_email=test@test.com" in install_cmd
@@ -233,9 +236,11 @@ def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Har
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+
     # core reconciliation should fail
     with pytest.raises(WordPressWaitingStatusException):
-        harness.charm._core_reconciliation()
+        charm._core_reconciliation()
     assert isinstance(
         harness.model.unit.status, ops.charm.model.WaitingStatus
     ), "unit should be in WaitingStatus"
@@ -254,9 +259,11 @@ def test_core_reconciliation_before_database_ready(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+
     # core reconciliation should fail
     with pytest.raises(WordPressBlockedStatusException):
-        harness.charm._core_reconciliation()
+        charm._core_reconciliation()
 
     assert isinstance(
         harness.model.unit.status, ops.charm.model.BlockedStatus
@@ -320,7 +327,8 @@ def test_get_initial_password_action_before_replica_consensus(
     assert: get-initial-password action should fail
     """
     harness.begin_with_initial_hooks()
-    harness.charm._on_get_initial_password_action(action_event_mock)
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    charm._on_get_initial_password_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
     action_event_mock.fail.assert_called_once_with(
@@ -339,7 +347,8 @@ def test_get_initial_password_action(
     assert: get-initial-password action should success and return default admin password
     """
     consensus = setup_replica_consensus()
-    harness.charm._on_get_initial_password_action(action_event_mock)
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    charm._on_get_initial_password_action(action_event_mock)
 
     action_event_mock.fail.assert_not_called()
     action_event_mock.set_results.assert_called_once_with(
@@ -357,7 +366,8 @@ def test_rotate_wordpress_secrets_before_pebble_connect(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], False)
     harness.begin_with_initial_hooks()
-    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
     action_event_mock.fail.assert_called_once_with("Secrets have not been initialized yet.")
@@ -373,7 +383,8 @@ def test_rotate_wordpress_secrets_before_replica_consensus(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
-    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
     action_event_mock.fail.assert_called_once_with("Secrets have not been initialized yet.")
@@ -392,8 +403,9 @@ def test_rotate_wordpress_secrets_as_follower(
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     harness.set_leader(False)
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+    charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     action_event_mock.set_results.assert_not_called()
     action_event_mock.fail.assert_called_once_with(
@@ -414,18 +426,18 @@ def test_rotate_wordpress_secrets(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    old_relation_data = dict(
-        harness.model.get_relation("wordpress-replica").data[harness.charm.app]
-    )
+    relation = harness.model.get_relation("wordpress-replica")
+    assert relation
+    old_relation_data = dict(relation.data[charm.app])
 
-    harness.charm._on_rotate_wordpress_secrets_action(action_event_mock)
+    charm._on_rotate_wordpress_secrets_action(action_event_mock)
 
     # Technically possible to generate the same passwords, but extremely unlikely.
-    assert (
-        old_relation_data
-        != harness.model.get_relation("wordpress-replica").data[harness.charm.app]
-    ), "password are same from before rotate"
+    relation = harness.model.get_relation("wordpress-replica")
+    assert relation
+    assert old_relation_data != relation.data[charm.app], "password are same from before rotate"
 
     action_event_mock.set_results.assert_called_once_with({"result": "ok"})
     action_event_mock.fail.assert_not_called()
@@ -443,6 +455,7 @@ def test_theme_reconciliation(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     db_config = {
         "db_host": "config_db_host",
         "db_name": "config_db_name",
@@ -458,19 +471,19 @@ def test_theme_reconciliation(
     harness.update_config(db_config)
 
     assert patch.container.installed_themes == set(
-        harness.charm._WORDPRESS_DEFAULT_THEMES
+        charm._WORDPRESS_DEFAULT_THEMES
     ), "installed themes should match the default installed themes with the default themes config"
 
     harness.update_config({"themes": "123, abc"})
 
     assert patch.container.installed_themes == set(
-        harness.charm._WORDPRESS_DEFAULT_THEMES + ["abc", "123"]
+        charm._WORDPRESS_DEFAULT_THEMES + ["abc", "123"]
     ), "adding themes to themes config should trigger theme installation"
 
     harness.update_config({"themes": "123"})
 
     assert patch.container.installed_themes == set(
-        harness.charm._WORDPRESS_DEFAULT_THEMES + ["123"]
+        charm._WORDPRESS_DEFAULT_THEMES + ["123"]
     ), "removing themes from themes config should trigger theme deletion"
 
 
@@ -486,6 +499,7 @@ def test_plugin_reconciliation(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     db_config = {
         "db_host": "config_db_host",
         "db_name": "config_db_name",
@@ -501,23 +515,28 @@ def test_plugin_reconciliation(
     harness.update_config(db_config)
 
     assert patch.container.installed_plugins == set(
-        harness.charm._WORDPRESS_DEFAULT_PLUGINS
+        charm._WORDPRESS_DEFAULT_PLUGINS
     ), "installed plugins should match the default installed plugins with the default plugins config"
 
     harness.update_config({"plugins": "123, abc"})
 
     assert patch.container.installed_plugins == set(
-        harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]
+        charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]
     ), "adding plugins to plugins config should trigger plugin installation"
 
     harness.update_config({"plugins": "123"})
 
     assert patch.container.installed_plugins == set(
-        harness.charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]
+        charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]
     ), "removing plugins from plugins config should trigger plugin deletion"
 
 
 def test_team_map():
+    """
+    arrange: no arrange
+    act: convert the team_map config using _encode_openid_team_map method.
+    assert: the converted result should be a valid PHP array with the meaning matching the config.
+    """
     team_map = "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
     option = WordpressCharm._encode_openid_team_map(team_map)
     assert (
@@ -676,8 +695,9 @@ def test_ingress(
     setup_db_relation()
     ingress_relation_id = harness.add_relation("ingress", "ingress")
     harness.add_relation_unit(ingress_relation_id, "ingress/0")
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    assert harness.charm.ingress.config_dict == {
+    assert charm.ingress.config_dict == {
         "service-hostname": app_name,
         "service-name": app_name,
         "service-port": "80",
@@ -685,7 +705,7 @@ def test_ingress(
 
     harness.update_config({"tls_secret_name": "tls_secret"})
 
-    assert harness.charm.ingress.config_dict == {
+    assert charm.ingress.config_dict == {
         "service-hostname": app_name,
         "service-name": app_name,
         "service-port": "80",
@@ -715,6 +735,12 @@ def test_defensive_programing(harness: ops.testing.Harness, method: str, test_ar
 
 
 def test_missing_peer_relation(harness: ops.testing.Harness):
+    """
+    arrange: charm peer relation is not ready.
+    act: invoke _replica_relation_data method.
+    assert: _ReplicaRelationNotReady should be raised to signal peer relation is not ready.
+    """
     harness.begin()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     with pytest.raises(WordpressCharm._ReplicaRelationNotReady):
-        harness.charm._replica_relation_data()
+        charm._replica_relation_data()

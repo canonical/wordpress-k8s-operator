@@ -42,3 +42,10 @@ copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
 markers = [
     "slow: marks slow and not very important tests"
 ]
+
+[tool.mypy]
+ignore_missing_imports = true
+allow_redefinition = true
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = "too-few-public-methods,too-many-arguments,too-many-lines,line-too-long,fixme"

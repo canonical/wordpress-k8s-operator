@@ -1,11 +1,17 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# pylint: disable=protected-access,too-many-locals
+
+"""Integration tests for WordPress charm."""
+
+
 import io
 import json
 import secrets
 import socket
 import tempfile
+import typing
 import unittest.mock
 import urllib.parse
 
@@ -32,6 +38,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
         database info hasn't been provided yet.
     """
     my_charm = await ops_test.build_charm(".")
+    assert ops_test.model
     await ops_test.model.deploy(
         my_charm,
         resources={"wordpress-image": "localhost:32000/wordpress:test"},
@@ -41,7 +48,10 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
     await ops_test.model.wait_for_idle()
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.BlockedStatus.name
+            # mypy has trouble to inferred types for variables that are initialized in subclasses,
+            # same for all status name down below.
+            unit.workload_status
+            == ops.model.BlockedStatus.name  # type: ignore
         ), "status should be 'blocked' since the default database info is empty"
 
         assert (
@@ -51,6 +61,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("app_config")
 @pytest.mark.parametrize(
     "app_config",
     [
@@ -64,9 +75,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
     indirect=True,
     scope="function",
 )
-async def test_incorrect_db_config(
-    ops_test: pytest_operator.plugin.OpsTest, app_config: dict, application_name
-):
+async def test_incorrect_db_config(ops_test: pytest_operator.plugin.OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed.
     act: provide incorrect database info via config.
@@ -76,11 +85,12 @@ async def test_incorrect_db_config(
     # Database configuration can retry for up to 60 seconds before giving up and showing an error.
     # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
     # db config.
+    assert ops_test.model
     await ops_test.model.wait_for_idle(idle_period=60)
 
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.BlockedStatus.name
+            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
         ), "unit status should be blocked"
         msg = unit.workload_status_message
         assert "MySQL error" in msg and (
@@ -96,11 +106,12 @@ async def test_mysql_relation(ops_test: pytest_operator.plugin.OpsTest, applicat
     act: deploy a mariadb charm and add a relation between WordPress and mariadb.
     assert: WordPress should be active.
     """
+    assert ops_test.model
     await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
     app_status = ops_test.model.applications[application_name].status
-    assert app_status == ops.model.ActiveStatus.name, (
+    assert app_status == ops.model.ActiveStatus.name, (  # type: ignore
         "application status should be active once correct database connection info "
         "being provided via relation"
     )
@@ -114,13 +125,13 @@ async def test_default_wordpress_themes_and_plugins(unit_ip_list, default_admin_
     assert: default plugins and themes should match default themes and plugins defined in charm.py.
     """
     for unit_ip in unit_ip_list:
-        wp = WordpressClient(
+        wordpress_client = WordpressClient(
             host=unit_ip, username="admin", password=default_admin_password, is_admin=True
         )
-        assert set(wp.list_themes()) == set(
+        assert set(wordpress_client.list_themes()) == set(
             WordpressCharm._WORDPRESS_DEFAULT_THEMES
         ), "themes installed on WordPress should match default themes defined in charm.py"
-        assert set(wp.list_plugins()) == set(
+        assert set(wordpress_client.list_plugins()) == set(
             WordpressCharm._WORDPRESS_DEFAULT_PLUGINS
         ), "plugins installed on WordPress should match default plugins defined in charm.py"
 
@@ -164,7 +175,8 @@ async def test_wordpress_install_uninstall_themes(
     act: change themes setting in config.
     assert: themes should be installed and uninstalled accordingly.
     """
-    theme_change_list = [
+    assert ops_test.model
+    theme_change_list: typing.List[typing.Set[str]] = [
         {"twentyfifteen", "classic"},
         {"tt1-blocks", "twentyfifteen"},
         {"tt1-blocks"},
@@ -195,13 +207,14 @@ async def test_wordpress_theme_installation_error(
     assert: charm should switch to blocked state and the reason should be included in the status
         message.
     """
+    assert ops_test.model
     invalid_theme = "invalid-theme-sgkeahrgalejr"
     await ops_test.model.applications[application_name].set_config({"themes": invalid_theme})
     await ops_test.model.wait_for_idle()
 
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.BlockedStatus.name
+            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
         ), "status should be 'blocked' since the theme in themes config does not exist"
 
         assert (
@@ -210,10 +223,9 @@ async def test_wordpress_theme_installation_error(
 
     await ops_test.model.applications[application_name].set_config({"themes": ""})
     await ops_test.model.wait_for_idle()
-
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.ActiveStatus.name
+            unit.workload_status == ops.model.ActiveStatus.name  # type: ignore
         ), "status should back to active after invalid theme removed from config"
 
 
@@ -230,7 +242,8 @@ async def test_wordpress_install_uninstall_plugins(
     act: change plugins setting in config.
     assert: plugins should be installed and uninstalled accordingly.
     """
-    plugin_change_list = [
+    assert ops_test.model
+    plugin_change_list: typing.List[typing.Set[str]] = [
         {"classic-editor", "classic-widgets"},
         {"classic-editor"},
         {"classic-widgets"},
@@ -260,13 +273,14 @@ async def test_wordpress_plugin_installation_error(
     assert: charm should switch to blocked state and the reason should be included in the status
         message.
     """
+    assert ops_test.model
     invalid_plugin = "invalid-plugin-sgkeahrgalejr"
     await ops_test.model.applications[application_name].set_config({"plugins": invalid_plugin})
     await ops_test.model.wait_for_idle()
 
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.BlockedStatus.name
+            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
         ), "status should be 'blocked' since the plugin in plugins config does not exist"
 
         assert (
@@ -278,7 +292,7 @@ async def test_wordpress_plugin_installation_error(
 
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.ActiveStatus.name
+            unit.workload_status == ops.model.ActiveStatus.name  # type: ignore
         ), "status should back to active after invalid plugin removed from config"
 
 
@@ -301,14 +315,14 @@ async def test_ingress(
         def patched_getaddrinfo(*args):
             if args[0] == host:
                 return original_getaddrinfo(resolve_to, *args[1:])
-            else:
-                return original_getaddrinfo(*args)
+            return original_getaddrinfo(*args)
 
         return patched_getaddrinfo
 
+    assert ops_test.model
     await ops_test.model.deploy("nginx-ingress-integrator", "ingress", trust=True)
     await ops_test.model.add_relation(application_name, "ingress:ingress")
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     response = requests.get("http://127.0.0.1", headers={"Host": application_name}, timeout=5)
     assert (
@@ -318,15 +332,15 @@ async def test_ingress(
     tls_secret_name, tls_cert = create_self_signed_tls_secret(application_name)
     application = ops_test.model.applications[application_name]
     await application.set_config({"tls_secret_name": tls_secret_name})
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
-    with tempfile.NamedTemporaryFile(mode="wb+") as f:
+    with tempfile.NamedTemporaryFile(mode="wb+") as file:
         with unittest.mock.patch.multiple(
             socket, getaddrinfo=gen_patch_getaddrinfo(application_name, "127.0.0.1")
         ):
-            f.write(tls_cert)
-            f.flush()
-            response = requests.get(f"https://{application_name}", verify=f.name, timeout=5)
+            file.write(tls_cert)
+            file.flush()
+            response = requests.get(f"https://{application_name}", verify=file.name, timeout=5)
             assert (
                 response.status_code == 200 and "wordpress" in response.text.lower()
             ), "Ingress should accept HTTPS requests after tls_secret_name being set"
@@ -337,15 +351,15 @@ async def test_ingress(
     await application.set_config(
         {"tls_secret_name": tls_secret_name, "blog_hostname": new_hostname}
     )
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
-    with tempfile.NamedTemporaryFile(mode="wb+") as f:
+    with tempfile.NamedTemporaryFile(mode="wb+") as file:
         with unittest.mock.patch.multiple(
             socket, getaddrinfo=gen_patch_getaddrinfo(new_hostname, "127.0.0.1")
         ):
-            f.write(tls_cert)
-            f.flush()
-            response = requests.get(f"https://{new_hostname}", verify=f.name, timeout=5)
+            file.write(tls_cert)
+            file.flush()
+            response = requests.get(f"https://{new_hostname}", verify=file.name, timeout=5)
             assert (
                 response.status_code == 200 and "wordpress" in response.text.lower()
             ), "Ingress should update the server name indication based routing after blog_hostname updated"
@@ -367,6 +381,7 @@ async def test_openstack_object_storage_plugin(
         After openstack swift plugin activated, an image file uploaded to one unit through
         WordPress media uploader should be accessible from all units.
     """
+    assert ops_test.model
     swift_conn = swiftclient.Connection(
         authurl=openstack_environment["OS_AUTH_URL"],
         auth_version="3",
@@ -382,11 +397,11 @@ async def test_openstack_object_storage_plugin(
     container = "WordPress"
     try:
         swift_conn.head_container(container)
-    except swiftclient.exceptions.ClientException as e:
-        if e.http_status == 404:
+    except swiftclient.exceptions.ClientException as exc:
+        if exc.http_status == 404:
             container_exists = False
         else:
-            raise e
+            raise exc
     if container_exists:
         for swift_object in swift_conn.get_container(container, full_listing=True)[1]:
             swift_conn.delete_object(container, swift_object["name"])
@@ -433,10 +448,10 @@ async def test_openstack_object_storage_plugin(
         image_buf = io.BytesIO()
         image.save(image_buf, format="jpeg")
         image = image_buf.getvalue()
-        wp = WordpressClient(
+        wordpress_client = WordpressClient(
             host=unit_ip, username="admin", password=default_admin_password, is_admin=True
         )
-        image_urls = wp.upload_media(filename=filename, content=image)
+        image_urls = wordpress_client.upload_media(filename=filename, content=image)
         swift_object_list = [
             o["name"] for o in swift_conn.get_container(container, full_listing=True)[1]
         ]
@@ -446,14 +461,14 @@ async def test_openstack_object_storage_plugin(
         source_url = min(image_urls, key=len)
         for image_url in image_urls:
             assert (
-                requests.get(image_url).status_code == 200
+                requests.get(image_url, timeout=10).status_code == 200
             ), "the original image and resized images should be accessible from the WordPress site"
         for host in unit_ip_list:
             url_components = list(urllib.parse.urlsplit(source_url))
             url_components[1] = host
             url = urllib.parse.urlunsplit(url_components)
             assert (
-                requests.get(url).content == image
+                requests.get(url, timeout=10).content == image
             ), "image downloaded from WordPress should match the image uploaded"
 
 
@@ -470,24 +485,27 @@ async def test_openstack_akismet_plugin(
     act: update charm configuration for Akismet plugin.
     assert: Akismet plugin should be activated and spam detection function should be working.
     """
+    assert ops_test.model
     application = ops_test.model.applications[application_name]
     await application.set_config({"wp_plugin_akismet_key": akismet_api_key})
     await ops_test.model.wait_for_idle()
 
     for unit_ip in unit_ip_list:
-        wp = WordpressClient(
+        wordpress_client = WordpressClient(
             host=unit_ip, username="admin", password=default_admin_password, is_admin=True
         )
-        post = wp.create_post(secrets.token_hex(8), secrets.token_hex(8))
-        wp.create_comment(
+        post = wordpress_client.create_post(secrets.token_hex(8), secrets.token_hex(8))
+        wordpress_client.create_comment(
             post_id=post["id"], post_link=post["link"], content="akismet-guaranteed-spam"
         )
-        wp.create_comment(post_id=post["id"], post_link=post["link"], content="test comment")
+        wordpress_client.create_comment(
+            post_id=post["id"], post_link=post["link"], content="test comment"
+        )
         assert (
-            len(wp.list_comments(status="spam", post_id=post["id"])) == 1
+            len(wordpress_client.list_comments(status="spam", post_id=post["id"])) == 1
         ), "Akismet plugin should move the triggered spam comment to the spam section"
         assert (
-            len(wp.list_comments(post_id=post["id"])) == 1
+            len(wordpress_client.list_comments(post_id=post["id"])) == 1
         ), "Akismet plugin should keep the normal comment"
 
 
@@ -505,6 +523,7 @@ async def test_openstack_openid_plugin(
     act: update charm configuration for OpenID plugin.
     assert: A WordPress user should be created with correct roles according to the config.
     """
+    assert ops_test.model
     application = ops_test.model.applications[application_name]
     await application.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})
     await ops_test.model.wait_for_idle()
@@ -514,7 +533,7 @@ async def test_openstack_openid_plugin(
         # the user when first-time login. Login twice by creating the WordPressClient client twice
         # for the very first time.
         for _ in range(2 if idx == 0 else 1):
-            wp = WordpressClient(
+            wordpress_client = WordpressClient(
                 host=unit_ip,
                 username=openid_username,
                 password=openid_password,
@@ -522,5 +541,5 @@ async def test_openstack_openid_plugin(
                 use_launchpad_login=True,
             )
         assert (
-            "administrator" in wp.list_roles()
+            "administrator" in wordpress_client.list_roles()
         ), "An launchpad OpenID account should be associated with the WordPress admin user"

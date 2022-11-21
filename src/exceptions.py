@@ -27,9 +27,12 @@ class WordPressStatusException(Exception):  # noqa: N818
     _status_class = ops.model.StatusBase
 
     def __init__(self, message):
+        """Initialize the instance."""
+        # Using type is necessary to check types between subclasses and superclass.
+        # pylint: disable=unidiomatic-typecheck
         if type(self) is WordPressStatusException:
             raise TypeError("Instantiating a base class: WordPressStatusException")
-        super(WordPressStatusException, self).__init__(message)
+        super().__init__(message)
         self.status = self._status_class(message)
 
 
@@ -53,5 +56,3 @@ class WordPressMaintenanceStatusException(WordPressStatusException):  # noqa: N8
 
 class WordPressInstallError(Exception):
     """Exception for unrecoverable errors during WordPress installation."""
-
-    pass

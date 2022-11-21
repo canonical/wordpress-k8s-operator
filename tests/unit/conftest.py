@@ -1,6 +1,8 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+"""Fixtures for WordPress charm unit tests."""
+
 import typing
 import unittest
 import unittest.mock
@@ -13,8 +15,8 @@ from charm import WordpressCharm
 from tests.unit.wordpress_mock import WordpressPatch
 
 
-@pytest.fixture(scope="function")
-def patch():
+@pytest.fixture(scope="function", name="patch")
+def patch_fixture():
     """Enable WordPress patch system, used in combine with :class:`ops.testing.Harness`.
 
     Yields:
@@ -27,22 +29,22 @@ def patch():
     patch.stop()
 
 
-@pytest.fixture(scope="function")
-def harness(patch: WordpressPatch):
+@pytest.fixture(scope="function", name="harness")
+def harness_fixture(patch: WordpressPatch):  # pylint: disable=unused-argument
     """Enable ops test framework harness."""
     harness = ops.testing.Harness(WordpressCharm)
     yield harness
     harness.cleanup()
 
 
-@pytest.fixture(scope="function")
-def app_name():
+@pytest.fixture(scope="function", name="app_name")
+def app_name_fixture():
     """The name of the charm application."""
     return "wordpress-k8s"
 
 
-@pytest.fixture(scope="function")
-def setup_replica_consensus(harness: ops.testing.Harness, app_name: str):
+@pytest.fixture(scope="function", name="setup_replica_consensus")
+def setup_replica_consensus_fixture(harness: ops.testing.Harness, app_name: str):
     """Yields a function that can be used to set up peer relation.
 
     After calling the yielded function, the replica consensus including WordPress salt keys and
@@ -59,8 +61,8 @@ def setup_replica_consensus(harness: ops.testing.Harness, app_name: str):
     return _setup_replica_consensus
 
 
-@pytest.fixture(scope="function")
-def example_db_info():
+@pytest.fixture(scope="function", name="example_db_info")
+def example_db_info_fixture():
     """An example database connection info."""
     return {
         "host": "test_database_host",

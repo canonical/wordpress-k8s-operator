@@ -1,10 +1,12 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# pylint: disable=missing-module-docstring
 import pytest
 
 
 def pytest_addoption(parser: pytest.Parser):
+    """Parse additional pytest options."""
     # --openstack-rc points to an openstack credential file in the "rc" file style
     # Here's an example of that file
     # $ echo ~/openrc

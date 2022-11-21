@@ -1,6 +1,10 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# pylint:disable=invalid-name,protected-access,unused-argument
+
+"""Mocking and patching system for testing WordPress charm."""
+
 import io
 import json
 import re
@@ -18,14 +22,15 @@ class WordPressDatabaseInstanceMock:
     """The simulation of a WordPress installed MySQL database."""
 
     def __init__(
-        self, builtin_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None
+        self,
+        builtin_options: typing.Optional[typing.Dict[str, typing.Union[typing.Dict, str]]] = None,
     ) -> None:
         """Initialize the instance.
 
         Args:
             builtin_options: some builtin WordPress options come with the WordPress installation.
         """
-        self.activated_plugins = set()
+        self.activated_plugins: typing.Set[str] = set()
         self.default_theme = ""
         self.activated_theme = self.default_theme
         self.options = {}
@@ -56,7 +61,7 @@ class WordPressDatabaseInstanceMock:
         """
         self.activated_theme = theme
 
-    def update_option(self, name: str, value: str | dict) -> None:
+    def update_option(self, name: str, value: typing.Union[str, dict]) -> None:
         """Simulate update a WordPress option.
 
         Args:
@@ -82,7 +87,9 @@ class WordpressDatabaseMock:
 
     def __init__(
         self,
-        builtin_wordpress_options: typing.Optional[typing.Dict[str, typing.Dict | str]] = None,
+        builtin_wordpress_options: typing.Optional[
+            typing.Dict[str, typing.Union[typing.Dict, str]]
+        ] = None,
     ) -> None:
         """Initialize the instance.
 
@@ -90,8 +97,10 @@ class WordpressDatabaseMock:
             builtin_wordpress_options: some builtin WordPress options come with the
                 WordPress installation.
         """
-        self._databases = {}
-        self._database_credentials = {}
+        self._databases: typing.Dict[
+            typing.Tuple[str, str], typing.Optional[WordPressDatabaseInstanceMock]
+        ] = {}
+        self._database_credentials: typing.Dict[typing.Tuple[str, str], dict] = {}
         self._builtin_wordpress_options = builtin_wordpress_options
 
     @staticmethod
@@ -183,7 +192,9 @@ class WordpressDatabaseMock:
             raise KeyError(f"Database ({host=!r}, {database=!r} does not exist")
         return self._databases[key] is not None
 
-    def get_wordpress_database(self, host, database) -> WordPressDatabaseInstanceMock:
+    def get_wordpress_database(
+        self, host, database
+    ) -> typing.Optional[WordPressDatabaseInstanceMock]:
         """Get the simulated WordPress installed database.
 
         Args:
@@ -243,7 +254,9 @@ class HandlerRegistry:
 
     def __init__(self) -> None:
         """Initialize the instance."""
-        self.registered_handler = []
+        self.registered_handler: typing.List[
+            typing.Tuple[typing.Callable[[typing.Sequence[str]], bool], typing.Callable]
+        ] = []
 
     def register(
         self, match: typing.Callable[[typing.Sequence[str]], bool]
@@ -307,7 +320,7 @@ class WordpressContainerMock:
         self._wordpress_database_mock = wordpress_database_mock
         self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
-        self.wp_eval_history = []
+        self.wp_eval_history: typing.List[str] = []
 
     def exec(
         self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
@@ -355,7 +368,9 @@ class WordpressContainerMock:
                 return
             raise
 
-    def _get_current_database_config(self) -> typing.Optional[dict]:
+    def _get_current_database_config(
+        self,
+    ) -> typing.Optional[typing.Dict[str, str]]:
         """Extract the db connection info from the wp-config.php file in the mock file system.
 
         Returns:
@@ -381,9 +396,11 @@ class WordpressContainerMock:
             A tuple of database host and database name.
         """
         db_info = self._get_current_database_config()
+        if db_info is None:
+            raise KeyError("wp-config.php dose not exist")
         return db_info["db_host"], db_info["db_name"]
 
-    def _current_database(self) -> WordPressDatabaseInstanceMock:
+    def _current_database(self) -> typing.Optional[WordPressDatabaseInstanceMock]:
         """Retrieve the current connected mock wordpress database instance as in the wp-config.php.
 
         Returns:
@@ -483,9 +500,8 @@ class WordpressContainerMock:
             return ExecProcessMock(
                 return_code=1, stdout="", stderr="Error, activate an active plugin"
             )
-        else:
-            db.activate_plugin(plugin)
-            return ExecProcessMock(return_code=0, stdout="", stderr="")
+        db.activate_plugin(plugin)
+        return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "deactivate"])
     def _mock_wp_plugin_deactivate(self, cmd):
@@ -496,9 +512,8 @@ class WordpressContainerMock:
             return ExecProcessMock(
                 return_code=1, stdout="", stderr="Error, deactivate an inactive plugin"
             )
-        else:
-            db.deactivate_plugin(plugin)
-            return ExecProcessMock(return_code=0, stdout="", stderr="")
+        db.deactivate_plugin(plugin)
+        return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "option", "update"])
     def _mock_wp_option_update(self, cmd):
@@ -566,7 +581,7 @@ class WordpressPatch:
         )
         self.container = WordpressContainerMock(wordpress_database_mock=self.database)
         self.mysql_connector = MysqlConnectorMock(wordpress_database_mock=self.database)
-        self._patches = []
+        self._patches = []  # type: ignore
 
     def start(self):
         """Start patching."""

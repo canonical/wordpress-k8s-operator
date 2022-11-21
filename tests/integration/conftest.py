@@ -1,6 +1,8 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+"""Fixtures for WordPress charm integration tests."""
+
 import base64
 import configparser
 import datetime
@@ -22,8 +24,9 @@ from tests.integration.wordpress_client_for_test import WordpressClient
 
 
 @pytest_asyncio.fixture(scope="function", name="app_config")
-async def fixture_app_config(request, ops_test: pytest_operator.plugin.OpsTest):
+async def app_config_fixture(request, ops_test: pytest_operator.plugin.OpsTest):
     """Change the charm config to specific values and revert that after test"""
+    assert ops_test.model
     config = request.param
     application: juju.application.Application = ops_test.model.applications["wordpress"]
     original_config: dict = await application.get_config()
@@ -39,6 +42,7 @@ async def fixture_app_config(request, ops_test: pytest_operator.plugin.OpsTest):
 
 @pytest.fixture(scope="module", name="application_name")
 def fixture_application_name():
+    """Default application name."""
     return "wordpress"
 
 
@@ -46,7 +50,9 @@ def fixture_application_name():
 async def fixture_default_admin_password(
     ops_test: pytest_operator.plugin.OpsTest, application_name
 ):
-    application: juju.application = ops_test.model.applications[application_name]
+    """Get the default admin password using the get-initial-password action."""
+    assert ops_test.model
+    application: juju.application.Application = ops_test.model.applications[application_name]
     action: juju.action.Action = await application.units[0].run_action("get-initial-password")
     await action.wait()
 
@@ -107,8 +113,8 @@ def openstack_environment(request):
     Return a dictionary of environment variables and values.
     """
     rc_file = request.config.getoption("--openstack-rc")
-    with open(rc_file) as f:
-        rc_file = f.read()
+    with open(rc_file, encoding="utf-8") as rc_fo:
+        rc_file = rc_fo.read()
     rc_file = re.sub("^export ", "", rc_file, flags=re.MULTILINE)
     openstack_conf = configparser.ConfigParser()
     openstack_conf.read_string("[DEFAULT]\n" + rc_file)
@@ -125,8 +131,8 @@ def akismet_api_key(request):
     return api_key
 
 
-@pytest.fixture
-def openid_username(request):
+@pytest.fixture(name="openid_username")
+def openid_username_fixture(request):
     """The OpenID username for testing the OpenID plugin"""
     openid_username = request.config.getoption("--openid-username")
     assert (
@@ -135,8 +141,8 @@ def openid_username(request):
     return openid_username
 
 
-@pytest.fixture
-def openid_password(request):
+@pytest.fixture(name="openid_password")
+def openid_password_fixture(request):
     """The OpenID username for testing the OpenID plugin"""
     openid_password = request.config.getoption("--openid-password")
     assert (
@@ -145,8 +151,8 @@ def openid_password(request):
     return openid_password
 
 
-@pytest.fixture
-def launchpad_team(request):
+@pytest.fixture(name="launchpad_team")
+def launchpad_team_fixture(request):
     """The launchpad team for the OpenID account"""
     launchpad_team = request.config.getoption("--launchpad-team")
     assert (
@@ -155,8 +161,8 @@ def launchpad_team(request):
     return launchpad_team
 
 
-@pytest.fixture
-def kube_config(request):
+@pytest.fixture(name="kube_config")
+def kube_config_fixture(request):
     """The Kubernetes cluster configuration file"""
     openid_password = request.config.getoption("--kube-config")
     assert openid_password, (
@@ -169,6 +175,7 @@ def kube_config(request):
 @pytest.fixture(scope="function", name="create_self_signed_tls_secret")
 def create_self_signed_tls_secret_fixture(kube_config, ops_test: pytest_operator.plugin.OpsTest):
     """Create a self-signed TLS certificate as a Kubernetes secret."""
+    assert ops_test.model
     created_secrets = []
     namespace = ops_test.model.info["name"]
     kubernetes.config.load_kube_config(config_file=kube_config)

@@ -5,6 +5,7 @@ requests
 kubernetes
 pytest-cov
 cryptography
+types-requests
 pytest-operator
 python-swiftclient
 python-keystoneclient

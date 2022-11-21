@@ -121,9 +121,10 @@ class WordpressCharm(CharmBase):
     state = StoredState()
 
     def __init__(self, *args, **kwargs):
+        """Initialize the instance."""
         super().__init__(*args, **kwargs)
 
-        self.db = MySQLClient(self, "db")
+        self.database = MySQLClient(self, "db")
 
         self.state.set_default(
             relation_db_host=None,
@@ -144,12 +145,14 @@ class WordpressCharm(CharmBase):
         self.framework.observe(
             self.on.leader_elected, self._on_leader_elected_replica_data_handler
         )
-        self.framework.observe(self.db.on.database_changed, self._on_relation_database_changed)
+        self.framework.observe(
+            self.database.on.database_changed, self._on_relation_database_changed
+        )
         self.framework.observe(self.on.config_changed, self._update_ingress_config)
         self.framework.observe(self.on.config_changed, self._reconciliation)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
-        self.framework.observe(self.db.on.database_changed, self._reconciliation)
+        self.framework.observe(self.database.on.database_changed, self._reconciliation)
 
     @property
     def ingress_config(self):
@@ -208,8 +211,8 @@ class WordpressCharm(CharmBase):
 
         # Update the secrets in peer relation.
         replica_relation_data = self._replica_relation_data()
-        secrets = self._generate_wp_secret_keys()
-        for secret_key, secret_value in secrets.items():
+        wordpress_secrets = self._generate_wp_secret_keys()
+        for secret_key, secret_value in wordpress_secrets.items():
             replica_relation_data[secret_key] = secret_value
 
         # Leader need to call `_reconciliation` manually.
@@ -248,8 +251,7 @@ class WordpressCharm(CharmBase):
             raise self._ReplicaRelationNotReady(
                 "Access replica peer relation data before relation established"
             )
-        else:
-            return relation.data[self.app]
+        return relation.data[self.app]
 
     def _replica_consensus_reached(self):
         """Test if the synchronized data required for WordPress replication are initialized.
@@ -264,7 +266,7 @@ class WordpressCharm(CharmBase):
             return False
         return all(replica_data.get(f) for f in fields)
 
-    def _on_leader_elected_replica_data_handler(self, event):
+    def _on_leader_elected_replica_data_handler(self, _event):
         """Initialize the synchronized data required for WordPress replication.
 
         Only the leader can update the data shared with all replicas. Leader should check if
@@ -272,7 +274,7 @@ class WordpressCharm(CharmBase):
         the peer relation if not.
 
         Args:
-            event: required by ops framework, not used.
+            _event: required by ops framework, not used.
 
         Returns:
             None.
@@ -284,7 +286,7 @@ class WordpressCharm(CharmBase):
                 replica_relation_data[secret_key] = secret_value
 
     def _on_relation_database_changed(self, event):
-        """Callback function to handle db relation changes (data changes/relation breaks).
+        """Handle db relation changes (data changes/relation breaks).
 
         This method will set all db relation related states ``relation_db_*`` when db relation
         changes and will reset all that to ``None`` after db relation is broken.
@@ -423,8 +425,8 @@ class WordpressCharm(CharmBase):
         try:
             stdout, stderr = process.wait_output()
             result = Result(0, stdout, stderr)
-        except ops.pebble.ExecError as e:
-            result = Result(e.exit_code, e.stdout, e.stderr)
+        except ops.pebble.ExecError as error:
+            result = Result(error.exit_code, error.stdout, error.stderr)
         return_code = result.return_code
         if combine_stderr:
             logger.debug(
@@ -482,8 +484,7 @@ class WordpressCharm(CharmBase):
                 result=None,
                 message=f"command {cmd} failed" if not error_message else error_message,
             )
-        else:
-            return self._ExecResult(success=True, result=None, message="")
+        return self._ExecResult(success=True, result=None, message="")
 
     def _wp_is_installed(self):
         """Check if WordPress is installed (check if WordPress related tables exist in database).
@@ -624,11 +625,8 @@ class WordpressCharm(CharmBase):
             for _ in range(60):
                 if self._wp_is_installed():
                     break
-                else:
-                    self.unit.status = WaitingStatus(
-                        "Waiting for leader unit to initialize database"
-                    )
-                    time.sleep(5)
+                self.unit.status = WaitingStatus("Waiting for leader unit to initialize database")
+                time.sleep(5)
             else:
                 raise exceptions.WordPressBlockedStatusException(
                     "leader unit failed to initialize WordPress database in given time."
@@ -794,9 +792,9 @@ class WordpressCharm(CharmBase):
             addon_type (str): ``"theme"`` or ``"plugin"``.
         """
         self._check_addon_type(addon_type)
-        logger.debug(f"Start {addon_type} reconciliation process")
+        logger.debug("Start %s reconciliation process", addon_type)
         current_installed_addons = set(t["name"] for t in self._wp_addon_list(addon_type).result)
-        logger.debug(f"Currently installed {addon_type}s %s", current_installed_addons)
+        logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
         addons_in_config = [
             t.strip() for t in self.model.config[f"{addon_type}s"].split(",") if t.strip()
         ]
@@ -809,14 +807,14 @@ class WordpressCharm(CharmBase):
         install_addons = desired_addons - current_installed_addons
         uninstall_addons = current_installed_addons - desired_addons
         for addon in install_addons:
-            logger.debug(f"Install {addon_type}: %s", repr(addon))
+            logger.debug("Install %s: %s", addon_type, repr(addon))
             result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
             if not result.success:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to install {addon_type} {repr(addon)}"
                 )
         for addon in uninstall_addons:
-            logger.debug(f"Uninstall {addon}: %s", repr(addon))
+            logger.debug("Uninstall %s: %s", addon_type, repr(addon))
             result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
             if not result.success:
                 raise exceptions.WordPressBlockedStatusException(
@@ -830,7 +828,7 @@ class WordpressCharm(CharmBase):
         """
         self._addon_reconciliation("theme")
 
-    def _wp_option_update(self, option, value, format="plaintext"):
+    def _wp_option_update(self, option, value, format_="plaintext"):
         """Create or update a WordPress option value.
 
         If the option does not exist, wp option update will create one.
@@ -840,13 +838,13 @@ class WordpressCharm(CharmBase):
             value (Union[str, dict]): WordPress option value. If the format is ``"plaintext"``,
                 then it's a str. If the format is ``"json"``, the value should be a json compatible
                 dict.
-            format (str): ``"plaintext"`` or ``"json"``
+            format_ (str): ``"plaintext"`` or ``"json"``
 
         Returns:
             An instance of :attr:`charm.WordpressCharm._ExecResult`.
         """
         return self._wrapped_run_wp_cli(
-            ["wp", "option", "update", option, value, f"--format={format}"]
+            ["wp", "option", "update", option, value, f"--format={format_}"]
         )
 
     def _wp_option_delete(self, option):
@@ -948,7 +946,7 @@ class WordpressCharm(CharmBase):
         for option, value in options.items():
             if isinstance(value, dict):
                 option_update_result = self._wp_option_update(
-                    option=option, value=json.dumps(value), format="json"
+                    option=option, value=json.dumps(value), format_="json"
                 )
             else:
                 option_update_result = self._wp_option_update(option=option, value=value)
@@ -1006,7 +1004,7 @@ class WordpressCharm(CharmBase):
             )
 
     def _wp_eval(self, php_code):
-        """Executes arbitrary PHP code.
+        """Execute arbitrary PHP code.
 
         Args:
             php_code: PHP code to be executed.
@@ -1094,9 +1092,7 @@ class WordpressCharm(CharmBase):
         Returns:
             True if certain apache config is enabled.
         """
-        enabled_config = [
-            name for name in self._container().list_files("/etc/apache2/conf-enabled")
-        ]
+        enabled_config = self._container().list_files("/etc/apache2/conf-enabled")
         return f"{conf_name}.conf" in enabled_config
 
     def _apache_enable_config(self, conf_name, conf):

@@ -7,6 +7,7 @@ import ops
 import ops.framework
 import ops.model
 import opslib.mysql
+from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 
 class DBInfoDict(TypedDict):
     DB_HOST: str
@@ -49,6 +50,7 @@ class WordpressCharm(ops.charm.CharmBase):
         result: Any
         message: str
     state: ops.framework.StoredState
+    ingress: IngressRequires
     _WP_CONFIG_PATH: str
     _CONTAINER_NAME: str
     _SERVICE_NAME: str
@@ -111,7 +113,7 @@ class WordpressCharm(ops.charm.CharmBase):
     def _addon_reconciliation(self, addon_type: str) -> None: ...
     def _theme_reconciliation(self) -> None: ...
     def _wp_option_update(
-        self, option: str, value: str, format: str = "plaintext"
+        self, option: str, value: str, format_: str = "plaintext"
     ) -> ExecResultNone: ...
     def _wp_option_delete(self, option: str) -> ExecResultNone: ...
     def _wp_plugin_activate(self, plugin: str) -> ExecResultNone: ...

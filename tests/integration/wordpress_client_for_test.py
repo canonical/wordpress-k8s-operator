@@ -1,6 +1,8 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+"""A WordPress HTTP client for test purpose only."""
+
 import html
 import json
 import mimetypes
@@ -12,6 +14,8 @@ import requests
 
 
 class WordPressPost(typing.TypedDict):
+    """Typing for a WordPress post object."""
+
     id: int
     link: str
 
@@ -81,9 +85,11 @@ class WordpressClient:
         # is exposed, and expose that with a permalink setting if not
         try:
             self._get(f"http://{self.host}/wp-json/").json()
-        except requests.exceptions.JSONDecodeError:
+        except requests.exceptions.JSONDecodeError as exc:
             if not is_admin:
-                raise ValueError("set options-permalink manually or login with an admin account")
+                raise ValueError(
+                    "set options-permalink manually or login with an admin account"
+                ) from exc
             self._set_options_permalink()
 
     def _get(
@@ -114,7 +120,7 @@ class WordpressClient:
     def _post(
         self,
         url: str,
-        json: typing.Optional[dict] = None,
+        json_: typing.Optional[dict] = None,
         data: typing.Optional[typing.Union[bytes, typing.Dict[str, typing.Any]]] = None,
         headers: typing.Optional[typing.Dict[str, str]] = None,
         except_status_code: typing.Optional[int] = None,
@@ -126,7 +132,7 @@ class WordpressClient:
 
         Args:
             url: Same as the ``url`` argument in :meth:`requests.Session.post`.
-            json: Same as the ``json`` argument in :meth:`requests.Session.post`.
+            json_: Same as the ``json`` argument in :meth:`requests.Session.post`.
             data: Same as the ``data`` argument in :meth:`requests.Session.post`.
             headers: Same as the ``url``  in :meth:`requests.Session.post`.
             except_status_code: Except the response http status code,
@@ -136,7 +142,7 @@ class WordpressClient:
             An instance of :class:`requests.Response`.
         """
         response = self._session.post(
-            url, json=json, data=data, headers=headers, timeout=self.timeout
+            url, json=json_, data=data, headers=headers, timeout=self.timeout
         )
         if except_status_code is not None and response.status_code != except_status_code:
             raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
@@ -164,8 +170,9 @@ class WordpressClient:
 
     def _set_options_permalink(self) -> None:
         """Set WordPress permalink option to /%postname%/"""
-        options_permalink_page = self._get(f"http://{self.host}/wp-admin/options-permalink.php")
-        options_permalink_page = options_permalink_page.text
+        options_permalink_page = self._get(
+            f"http://{self.host}/wp-admin/options-permalink.php"
+        ).text
         wp_nonce = re.findall('name="_wpnonce" value="([a-zA-Z0-9]+)"', options_permalink_page)[0]
         self._post(
             f"http://{self.host}/wp-admin/options-permalink.php",
@@ -185,9 +192,10 @@ class WordpressClient:
         Returns:
             (str) A WordPress nonce for WordPress JSON REST API.
         """
-        new_post_page = self._get(f"http://{self.host}/wp-admin/post-new.php")
-        new_post_page = new_post_page.text
-        nonce = json.loads(re.findall("var wpApiSettings = ([^;]+);", new_post_page)[0])["nonce"]
+        new_post_page = self._get(f"http://{self.host}/wp-admin/post-new.php").text
+        nonce: str = json.loads(re.findall("var wpApiSettings = ([^;]+);", new_post_page)[0])[
+            "nonce"
+        ]
         return nonce
 
     def create_post(self, title: str, content: str) -> WordPressPost:
@@ -202,7 +210,7 @@ class WordpressClient:
         """
         response = self._post(
             f"http://{self.host}/wp-json/wp/v2/posts/",
-            json={"status": "publish", "title": title, "content": content},
+            json_={"status": "publish", "title": title, "content": content},
             headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
             except_status_code=201,
         )
@@ -303,7 +311,7 @@ class WordpressClient:
         return response.json()
 
     def upload_media(
-        self, filename: str, content: bytes, mimetype: str = None
+        self, filename: str, content: bytes, mimetype: typing.Optional[str] = None
     ) -> typing.List[str]:
         """Upload a media file (image/video).
 
@@ -354,11 +362,12 @@ class WordpressClient:
                 "testcookie": "1",
             },
         )
-        openid_args = re.findall(
-            '<input type="hidden" name="([^"]+)" value="([^"]+)" />',
-            html.unescape(openid_redirect.text),
+        openid_args = dict(
+            re.findall(
+                '<input type="hidden" name="([^"]+)" value="([^"]+)" />',
+                html.unescape(openid_redirect.text),
+            )
         )
-        openid_args = dict(openid_args)
         login_page = self._post(
             "https://login.launchpad.net/+openid",
             data=openid_args,
@@ -427,6 +436,6 @@ class WordpressClient:
         usernames = re.findall('users\\.php">([^<]+)</a>', user_page)
         roles = re.findall('data-colname="Role">([^<]+)</td>', user_page)
         for email, username, role in zip(emails, usernames, roles):
-            if email == self.username or username == self.username:
+            if self.username in (email, username):
                 return [r.strip() for r in role.lower().split(",")]
         raise ValueError(f"User {self.username} not found")

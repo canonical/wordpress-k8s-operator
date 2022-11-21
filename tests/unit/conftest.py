@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=missing-module-docstring
+"""Fixtures for WordPress charm unit tests."""
 
 import typing
 import unittest

@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=missing-module-docstring,missing-function-docstring
+"""Fixtures for WordPress charm integration tests."""
 
 import base64
 import configparser
@@ -42,6 +42,7 @@ async def app_config_fixture(request, ops_test: pytest_operator.plugin.OpsTest):
 
 @pytest.fixture(scope="module", name="application_name")
 def fixture_application_name():
+    """Default application name."""
     return "wordpress"
 
 
@@ -49,6 +50,7 @@ def fixture_application_name():
 async def fixture_default_admin_password(
     ops_test: pytest_operator.plugin.OpsTest, application_name
 ):
+    """Get the default admin password using the get-initial-password action."""
     assert ops_test.model
     application: juju.application.Application = ops_test.model.applications[application_name]
     action: juju.action.Action = await application.units[0].run_action("get-initial-password")

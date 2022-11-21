@@ -48,7 +48,10 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
     await ops_test.model.wait_for_idle()
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
+            # mypy has trouble to inferred types for variables that are initialized in subclasses,
+            # same for all status name down below.
+            unit.workload_status
+            == ops.model.BlockedStatus.name  # type: ignore
         ), "status should be 'blocked' since the default database info is empty"
 
         assert (

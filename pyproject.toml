@@ -48,5 +48,5 @@ ignore_missing_imports = true
 allow_redefinition = true
 
 [tool.pylint.'MESSAGES CONTROL']
-max-line-length = 120
+max-line-length = 99
 disable = "too-few-public-methods,too-many-arguments,too-many-lines,fixme"

@@ -172,14 +172,30 @@ def kube_config_fixture(request):
     return openid_password
 
 
+@pytest.fixture(name="kube_core_client")
+def kube_core_client_fixture(kube_config):
+    """Create a kubernetes client for core API v1"""
+    kubernetes.config.load_kube_config(config_file=kube_config)
+    kubernetes_client_v1 = kubernetes.client.CoreV1Api()
+    return kubernetes_client_v1
+
+
+@pytest.fixture(name="kube_networking_client")
+def kube_networking_client_fixture(kube_config):
+    """Create a kubernetes client for networking API v1"""
+    kubernetes.config.load_kube_config(config_file=kube_config)
+    kubernetes_client_v1 = kubernetes.client.NetworkingV1Api()
+    return kubernetes_client_v1
+
+
 @pytest.fixture(scope="function", name="create_self_signed_tls_secret")
-def create_self_signed_tls_secret_fixture(kube_config, ops_test: pytest_operator.plugin.OpsTest):
+def create_self_signed_tls_secret_fixture(
+    kube_core_client, ops_test: pytest_operator.plugin.OpsTest
+):
     """Create a self-signed TLS certificate as a Kubernetes secret."""
     assert ops_test.model
     created_secrets = []
     namespace = ops_test.model.info["name"]
-    kubernetes.config.load_kube_config(config_file=kube_config)
-    kubernetes_client_v1 = kubernetes.client.CoreV1Api()
 
     def create_self_signed_tls_secret(host):
         """Function to create a self-signed TLS certificate as a Kubernetes secret.
@@ -227,7 +243,7 @@ def create_self_signed_tls_secret_fixture(kube_config, ops_test: pytest_operator
         public_key_pem = cert.public_bytes(
             cryptography.hazmat.primitives.serialization.Encoding.PEM
         )
-        kubernetes_client_v1.create_namespaced_secret(
+        kube_core_client.create_namespaced_secret(
             namespace=namespace,
             body=kubernetes.client.V1Secret(
                 metadata={"name": secret_name, "namespace": namespace},
@@ -244,4 +260,4 @@ def create_self_signed_tls_secret_fixture(kube_config, ops_test: pytest_operator
     yield create_self_signed_tls_secret
 
     for secret in created_secrets:
-        kubernetes_client_v1.delete_namespaced_secret(name=secret, namespace=namespace)
+        kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)

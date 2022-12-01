@@ -133,6 +133,7 @@ async def test_openstack_object_storage_plugin(
         WordPress media uploader should be accessible from all units.
     """
     assert ops_test.model
+    # create the swift client
     swift_conn = swiftclient.Connection(
         authurl=openstack_environment["OS_AUTH_URL"],
         auth_version="3",
@@ -146,6 +147,8 @@ async def test_openstack_object_storage_plugin(
     )
     container_exists = True
     container = "WordPress"
+    # check if the swift container exists, if the container exists,
+    # remove every object and delete the container
     try:
         swift_conn.head_container(container)
     except swiftclient.exceptions.ClientException as exc:
@@ -157,7 +160,11 @@ async def test_openstack_object_storage_plugin(
         for swift_object in swift_conn.get_container(container, full_listing=True)[1]:
             swift_conn.delete_object(container, swift_object["name"])
         swift_conn.delete_container(container)
+    # create a swift container for our test
     swift_conn.put_container(container)
+    # create a different swift client and use that to change container ACL
+    # the new ACL will allow get an object by HTTP request without any authentication
+    # the swift server will act as a static HTTP server
     swift_service = swiftclient.service.SwiftService(
         options=dict(
             auth_version="3",
@@ -169,6 +176,7 @@ async def test_openstack_object_storage_plugin(
         )
     )
     swift_service.post(container=container, options={"read_acl": ".r:*,.rlistings"})
+
     application = ops_test.model.applications[application_name]
     await application.set_config(
         {

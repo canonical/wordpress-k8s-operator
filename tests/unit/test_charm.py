@@ -129,6 +129,19 @@ def test_mysql_relation(
         ), f"database info {db_info_key} should be reset to None after database relation broken"
 
 
+def test_wp_config_before_consensus(harness: ops.testing.Harness):
+    """
+    arrange: before WordPress application unit consensus has been reached.
+    act: generate wp-config.php.
+    assert: an exception should be raised.
+    """
+    harness.begin()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    # generating a config before consensus should raise an exception for security reasons
+    with pytest.raises(WordpressCharm._ReplicaRelationNotReady):
+        charm._gen_wp_config()
+
+
 def test_wp_config(
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
@@ -145,11 +158,6 @@ def test_wp_config(
             if all(match in line for match in matches):
                 return True
         return False
-
-    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    # generating a config before consensus should raise an exception for security reasons
-    with pytest.raises(Exception):
-        charm._gen_wp_config()
 
     replica_consensus = setup_replica_consensus()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
@@ -699,16 +707,51 @@ def test_ingress(
 
     assert charm.ingress.config_dict == {
         "service-hostname": app_name,
+        "host": app_name,
         "service-name": app_name,
+        "name": app_name,
         "service-port": "80",
+        "port": "80",
+        "owasp-modsecurity-crs": True,
+        "owasp-modsecurity-custom-rules": 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n',
     }
 
     harness.update_config({"tls_secret_name": "tls_secret"})
 
     assert charm.ingress.config_dict == {
         "service-hostname": app_name,
+        "host": app_name,
         "service-name": app_name,
+        "name": app_name,
         "service-port": "80",
+        "port": "80",
+        "tls-secret-name": "tls_secret",
+        "owasp-modsecurity-crs": True,
+        "owasp-modsecurity-custom-rules": 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n',
+    }
+
+    harness.update_config({"use_nginx_ingress_modsec": False})
+
+    assert charm.ingress.config_dict == {
+        "service-hostname": app_name,
+        "host": app_name,
+        "service-name": app_name,
+        "name": app_name,
+        "service-port": "80",
+        "port": "80",
+        "tls-secret-name": "tls_secret",
+    }
+
+    new_hostname = "new-hostname"
+    harness.update_config({"blog_hostname": new_hostname})
+
+    assert charm.ingress.config_dict == {
+        "service-hostname": new_hostname,
+        "host": new_hostname,
+        "service-name": app_name,
+        "name": app_name,
+        "service-port": "80",
+        "port": "80",
         "tls-secret-name": "tls_secret",
     }
 

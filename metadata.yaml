@@ -8,7 +8,9 @@ maintainers:
 tags:
   - applications
   - blog
-
+assumes:
+  - k8s-api
+  
 containers:
   wordpress:
     resource: wordpress-image

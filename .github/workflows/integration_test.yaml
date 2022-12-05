@@ -7,6 +7,7 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         module: [test_core, test_error]
         args:

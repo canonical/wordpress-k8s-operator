@@ -35,7 +35,9 @@ async def test_incorrect_db_config(ops_test: pytest_operator.plugin.OpsTest, app
     # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
     # db config.
     assert ops_test.model
-    await ops_test.model.wait_for_idle(idle_period=60, status=ops.model.BlockedStatus.name)  # type: ignore
+    await ops_test.model.wait_for_idle(
+        idle_period=60, status=ops.model.BlockedStatus.name, apps=[application_name]  # type: ignore
+    )
 
     for unit in ops_test.model.applications[application_name].units:
         assert (

@@ -636,6 +636,7 @@ def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Ca
                 conf_found = True
         assert conf_found
 
+    assert not any(file.endswith("docker-php-swift-proxy.conf") for file in patch.container.fs)
     run_standard_plugin_test(
         plugin="openstack-objectstorage-k8s",
         plugin_config={

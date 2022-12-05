@@ -28,6 +28,7 @@ from charm import WordpressCharm
 from tests.integration.wordpress_client_for_test import WordpressClient
 
 
+@pytest.mark.usefixtures("build_and_deploy")
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, application_name):
@@ -37,15 +38,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
     assert: building and deploying should success and status should be "blocked" since the
         database info hasn't been provided yet.
     """
-    my_charm = await ops_test.build_charm(".")
     assert ops_test.model
-    await ops_test.model.deploy(
-        my_charm,
-        resources={"wordpress-image": "localhost:32000/wordpress:test"},
-        application_name="wordpress",
-        series="jammy",
-    )
-    await ops_test.model.wait_for_idle()
     for unit in ops_test.model.applications[application_name].units:
         assert (
             # mypy has trouble to inferred types for variables that are initialized in subclasses,
@@ -60,53 +53,48 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("app_config")
-@pytest.mark.parametrize(
-    "app_config",
-    [
-        {
-            "db_host": "test_db_host",
-            "db_name": "test_db_name",
-            "db_user": "test_db_user",
-            "db_password": "test_db_password",
-        }
-    ],
-    indirect=True,
-    scope="function",
-)
-async def test_incorrect_db_config(ops_test: pytest_operator.plugin.OpsTest, application_name):
+@pytest.mark.abort_on_fail
+async def test_mysql_config(
+    request, ops_test: pytest_operator.plugin.OpsTest, application_name, kube_core_client
+):
     """
-    arrange: after WordPress charm has been deployed.
-    act: provide incorrect database info via config.
-    assert: charm should be blocked by WordPress installation errors, instead of lacking
-        of database connection info.
+    arrange: after WordPress charm has been deployed, and a mysql pod is deployed in kubernetes.
+    act: config the WordPress charm with the database configuration from a mysql pod.
+    assert: WordPress should be active.
     """
-    # Database configuration can retry for up to 60 seconds before giving up and showing an error.
-    # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
-    # db config.
+    if not request.config.getoption("--test-db-from-config"):
+        pytest.skip()
     assert ops_test.model
-    await ops_test.model.wait_for_idle(idle_period=60)
-
-    for unit in ops_test.model.applications[application_name].units:
-        assert (
-            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
-        ), "unit status should be blocked"
-        msg = unit.workload_status_message
-        assert "MySQL error" in msg and (
-            "2003" in msg or "2005" in msg
-        ), "unit status message should show detailed installation failure"
+    application = ops_test.model.applications[application_name]
+    await application.set_config(
+        {
+            "db_host": kube_core_client.read_namespaced_pod(
+                name="mysql", namespace=ops_test.model_name
+            ).status.pod_ip,
+            "db_name": "wordpress",
+            "db_user": "wordpress",
+            "db_password": "wordpress-password",
+        }
+    )
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    app_status = ops_test.model.applications[application_name].status
+    assert app_status == ops.model.ActiveStatus.name, (  # type: ignore
+        "application status should be active once correct database connection info "
+        "being provided via config"
+    )
 
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(ops_test: pytest_operator.plugin.OpsTest, application_name):
+async def test_mysql_relation(request, ops_test: pytest_operator.plugin.OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed.
     act: deploy a mariadb charm and add a relation between WordPress and mariadb.
     assert: WordPress should be active.
     """
+    if request.config.getoption("--test-db-from-config"):
+        pytest.skip()
     assert ops_test.model
-    await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
     app_status = ops_test.model.applications[application_name].status
@@ -185,7 +173,7 @@ async def test_openstack_object_storage_plugin(
             )
         }
     )
-    await ops_test.model.wait_for_idle()
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     for idx, unit_ip in enumerate(unit_ip_list):
         image = PIL.Image.new("RGB", (500, 500), color=(idx, 0, 0))
@@ -423,7 +411,6 @@ async def test_ingress(
         return patched_getaddrinfo
 
     assert ops_test.model
-    await ops_test.model.deploy("nginx-ingress-integrator", "ingress", trust=True, channel="edge")
     await ops_test.model.add_relation(application_name, "ingress:ingress")
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 

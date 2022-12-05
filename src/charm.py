@@ -1143,22 +1143,23 @@ class WordpressCharm(CharmBase):
             "remove-local-file",
         ]
         enable_swift = bool(swift_config_str.strip())
-        if not enable_swift:
-            result = self._deactivate_plugin("openstack-objectstorage-k8s", ["object_storage"])
-        else:
-            swift_config = safe_load(swift_config_str)
-            for key in swift_config_key:
-                if key not in swift_config:
-                    raise exceptions.WordPressBlockedStatusException(
-                        f"missing {key} in wp_plugin_openstack-objectstorage_config"
-                    )
-            result = self._activate_plugin(
-                "openstack-objectstorage-k8s", {"object_storage": swift_config}
-            )
-        if not result.success:
-            raise exceptions.WordPressBlockedStatusException(
-                f"Unable to config openstack-objectstorage-k8s plugin, {result.message}"
-            )
+        swift_config = safe_load(swift_config_str)
+        if self.unit.is_leader():
+            if not enable_swift:
+                result = self._deactivate_plugin("openstack-objectstorage-k8s", ["object_storage"])
+            else:
+                for key in swift_config_key:
+                    if key not in swift_config:
+                        raise exceptions.WordPressBlockedStatusException(
+                            f"missing {key} in wp_plugin_openstack-objectstorage_config"
+                        )
+                result = self._activate_plugin(
+                    "openstack-objectstorage-k8s", {"object_storage": swift_config}
+                )
+            if not result.success:
+                raise exceptions.WordPressBlockedStatusException(
+                    f"Unable to config openstack-objectstorage-k8s plugin, {result.message}"
+                )
         apache_swift_conf = "docker-php-swift-proxy"
         swift_apache_config_enabled = self._apache_config_is_enabled(apache_swift_conf)
         if enable_swift and not swift_apache_config_enabled:
@@ -1186,10 +1187,10 @@ class WordpressCharm(CharmBase):
         and adjust plugin options for these three plugins according to charm config.
         """
         self._addon_reconciliation("plugin")
+        self._plugin_swift_reconciliation()
         if self.unit.is_leader():
             self._plugin_akismet_reconciliation()
             self._plugin_openid_reconciliation()
-            self._plugin_swift_reconciliation()
 
     def _reconciliation(self, _event):
         logger.info("Start reconciliation process, triggered by %s", _event)

@@ -8,7 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        includes:
+        module: [test_core, test_error]
+        include:
           - name: num_units=3, db_from_config
             args: "--test-db-from-config --num-units=3"
           - name: num_units=1, db_from_config
@@ -17,7 +18,6 @@ jobs:
             args: "--num-units=3"
           - name: num_units=1, db_from_relation
             args: "--num-units=1"
-        module: [test_core, test_error]
     name: Integration Tests (${{ matrix.module }}, ${{ matrix.name }})
     steps:
       - uses: actions/checkout@v3

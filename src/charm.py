@@ -1162,6 +1162,9 @@ class WordpressCharm(CharmBase):
         Args:
             swift_config: swift configuration parsed from wp_plugin_openstack-objectstorage_config
                 config. Use :meth:`WordpressCharm._swift_config` to get the parsed swift config.
+
+        Raises:
+            exceptions.WordPressBlockedStatusException: openstack plugin setup process failed.
         """
         if not swift_config:
             result = self._deactivate_plugin("openstack-objectstorage-k8s", ["object_storage"])

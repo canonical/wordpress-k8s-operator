@@ -332,8 +332,14 @@ async def build_and_deploy_fixture(
         ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
         # temporary fix for the CharmHub problem
         ops_test.juju(
-            "deploy", "nginx-ingress-integrator", "--channel", "edge", "--series", "focal",
-            check=True
+            "deploy",
+            "nginx-ingress-integrator",
+            "ingress",
+            "--channel",
+            "edge",
+            "--series",
+            "focal",
+            check=True,
         ),
     )
     await ops_test.model.wait_for_idle()

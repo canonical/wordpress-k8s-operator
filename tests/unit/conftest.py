@@ -53,8 +53,10 @@ def setup_replica_consensus_fixture(harness: ops.testing.Harness, app_name: str)
 
     def _setup_replica_consensus():
         replica_relation_id = harness.add_relation("wordpress-replica", app_name)
+        harness.add_storage("uploads")
         harness.set_leader()
         harness.begin_with_initial_hooks()
+        harness.framework.reemit()
         consensus = harness.get_relation_data(replica_relation_id, app_name)
         return consensus
 

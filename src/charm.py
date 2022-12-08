@@ -10,6 +10,7 @@ import itertools
 import json
 import logging
 import os
+import re
 import secrets
 import string
 import textwrap
@@ -131,6 +132,8 @@ class WordpressCharm(CharmBase):
             relation_db_name=None,
             relation_db_user=None,
             relation_db_password=None,
+            started=False,
+            storage_attached=False,
         )
 
         self.ingress = IngressRequires(self, self.ingress_config)
@@ -142,17 +145,26 @@ class WordpressCharm(CharmBase):
             self.on.rotate_wordpress_secrets_action, self._on_rotate_wordpress_secrets_action
         )
 
-        self.framework.observe(
-            self.on.leader_elected, self._on_leader_elected_replica_data_handler
-        )
+        self.framework.observe(self.on.leader_elected, self._setup_replica_data)
+        self.framework.observe(self.on.start, self._on_start)
+        self.framework.observe(self.on.uploads_storage_attached, self._on_storage_attached)
         self.framework.observe(
             self.database.on.database_changed, self._on_relation_database_changed
         )
         self.framework.observe(self.on.config_changed, self._update_ingress_config)
         self.framework.observe(self.on.config_changed, self._reconciliation)
+        self.framework.observe(self.on.upgrade_charm, self._setup_replica_data)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
         self.framework.observe(self.database.on.database_changed, self._reconciliation)
+
+    def _on_start(self, _event):
+        """Record if the start event is emitted."""
+        self.state.started = True
+
+    def _on_storage_attached(self, _event):
+        """Record if the storage for WordPress uploads dir is attached."""
+        self.state.storage_attached = True
 
     @property
     def ingress_config(self):
@@ -271,7 +283,7 @@ class WordpressCharm(CharmBase):
             return False
         return all(replica_data.get(f) for f in fields)
 
-    def _on_leader_elected_replica_data_handler(self, _event):
+    def _setup_replica_data(self, _event):
         """Initialize the synchronized data required for WordPress replication.
 
         Only the leader can update the data shared with all replicas. Leader should check if
@@ -392,7 +404,7 @@ class WordpressCharm(CharmBase):
         Returns:
             None.
         """
-        logger.debug("Ensure WordPress (apache) server is down")
+        logger.info("Ensure WordPress (apache) server is down")
         if (
             self._wordpress_service_exists()
             and self._container().get_service(self._SERVICE_NAME).is_running()
@@ -573,7 +585,7 @@ class WordpressCharm(CharmBase):
         Raises:
             exceptions.WordPressInstallError: If WordPress installation fails.
         """
-        logger.debug("Install WordPress, create WordPress related table in the database")
+        logger.info("Install WordPress, create WordPress related table in the database")
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
         process = self._run_wp_cli(self._wp_install_cmd(), combine_stderr=True, timeout=60)
         if process.return_code != 0:
@@ -613,7 +625,7 @@ class WordpressCharm(CharmBase):
         Raises:
             WordPressStatusException: If unrecoverable error happens.
         """
-        logger.debug("Ensure WordPress server is up")
+        logger.info("Ensure WordPress server is up")
         if self.unit.is_leader():
             msg = ""
             for _ in range(max(1, self._DB_CHECK_TIMEOUT // self._DB_CHECK_INTERVAL)):
@@ -665,7 +677,7 @@ class WordpressCharm(CharmBase):
         Args:
             wp_config (str): the content of wp-config.php file.
         """
-        logger.debug("Update wp-config.php content in container")
+        logger.info("Update wp-config.php content in container")
         self._container().push(
             self._WP_CONFIG_PATH,
             wp_config,
@@ -721,6 +733,7 @@ class WordpressCharm(CharmBase):
             self._stop_server()
             self._push_wp_config(wp_config)
         self._start_server()
+        logger.info("Wait until the pebble container exists")
 
     def _check_addon_type(self, addon_type):
         """Check if addon_type is one of the accepted addon types (theme/plugin).
@@ -797,7 +810,7 @@ class WordpressCharm(CharmBase):
             addon_type (str): ``"theme"`` or ``"plugin"``.
         """
         self._check_addon_type(addon_type)
-        logger.debug("Start %s reconciliation process", addon_type)
+        logger.info("Start %s reconciliation process", addon_type)
         current_installed_addons = set(t["name"] for t in self._wp_addon_list(addon_type).result)
         logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
         addons_in_config = [
@@ -812,14 +825,14 @@ class WordpressCharm(CharmBase):
         install_addons = desired_addons - current_installed_addons
         uninstall_addons = current_installed_addons - desired_addons
         for addon in install_addons:
-            logger.debug("Install %s: %s", addon_type, repr(addon))
+            logger.info("Install %s: %s", addon_type, repr(addon))
             result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
             if not result.success:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to install {addon_type} {repr(addon)}"
                 )
         for addon in uninstall_addons:
-            logger.debug("Uninstall %s: %s", addon_type, repr(addon))
+            logger.info("Uninstall %s: %s", addon_type, repr(addon))
             result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
             if not result.success:
                 raise exceptions.WordPressBlockedStatusException(
@@ -1149,6 +1162,26 @@ class WordpressCharm(CharmBase):
         swift_config = safe_load(swift_config_str)
         if not swift_config:
             return {}
+        if "url" in swift_config:
+            swift_url = swift_config["url"]
+            swift_url = re.sub("/wp-content/uploads/?$", "", swift_url)
+            swift_url = swift_url[: -(1 + len(swift_config.get("bucket", "")))]
+            logger.info(
+                "Convert legacy openstack object storage configuration url (%s) to swift-url (%s)",
+                swift_config["url"],
+                swift_url,
+            )
+            del swift_config["url"]
+            swift_config["swift-url"] = swift_url
+        if "prefix" in swift_config:
+            object_prefix = swift_config["prefix"]
+            logger.info(
+                "Convert legacy openstack object storage configuration prefix (%s) to object-prefix (%s)",
+                object_prefix,
+                object_prefix,
+            )
+            del swift_config["prefix"]
+            swift_config["object-prefix"] = object_prefix
         for key in swift_config_key:
             if key not in swift_config:
                 raise exceptions.WordPressBlockedStatusException(
@@ -1166,7 +1199,6 @@ class WordpressCharm(CharmBase):
         if not swift_config:
             result = self._deactivate_plugin("openstack-objectstorage-k8s", ["object_storage"])
         else:
-
             result = self._activate_plugin(
                 "openstack-objectstorage-k8s", {"object_storage": swift_config}
             )
@@ -1213,6 +1245,16 @@ class WordpressCharm(CharmBase):
             self._plugin_openid_reconciliation()
 
     def _reconciliation(self, _event):
+        if not self.state.started:
+            logger.info("Charm hasn't started yet, reconciliation deferred")
+            self.unit.status = WaitingStatus("Waiting for charm start")
+            _event.defer()
+            return
+        if not self.state.storage_attached:
+            logger.info("Storage is not ready, reconciliation deferred")
+            self.unit.status = WaitingStatus("Waiting for storage")
+            _event.defer()
+            return
         logger.info("Start reconciliation process, triggered by %s", _event)
         if not self._container().can_connect():
             logger.info("Reconciliation process terminated early, pebble is not ready")

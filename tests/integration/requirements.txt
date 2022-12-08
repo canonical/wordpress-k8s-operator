@@ -7,5 +7,6 @@ pytest-cov
 cryptography
 types-requests
 pytest-operator
+pytest-playwright
 python-swiftclient
 python-keystoneclient

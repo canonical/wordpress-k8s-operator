@@ -339,6 +339,7 @@ async def build_and_deploy_fixture(
             "edge",
             "--series",
             "focal",
+            "--trust",
             check=True,
         ),
     )

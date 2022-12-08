@@ -112,8 +112,8 @@ async def fixture_get_plugin_list_from_ip(default_admin_password):
     return _get_plugin_list_from_ip
 
 
-@pytest.fixture(scope="module")
-def openstack_environment(request, num_units):
+@pytest.fixture(scope="module", name="openstack_environment")
+def openstack_environment_fixture(request, num_units):
     """Parse the openstack rc style configuration file from the --openstack-rc argument
 
     Returns: a dictionary of environment variables and values, or None if --openstack-rc isn't
@@ -358,10 +358,8 @@ async def build_and_deploy_fixture(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
     deploy_and_wait_for_mysql_pod,
-    openstack_environment,
 ):
     """Deploy all required charms and kubernetes pods for tests."""
-
     assert ops_test.model
 
     async def build_and_deploy_wordpress():

@@ -40,8 +40,8 @@ POST_COMMENT = "I am a comment."
 
 async def screenshot(url, path):
     """Create a screenshot of a website."""
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch()
         page = await browser.new_page()
         await page.goto(url)
         time.sleep(10)
@@ -69,7 +69,7 @@ def gen_upgrade_test_charm_config_fixture(ops_test, swift_config, kube_core_clie
             "db_password": "wordpress-password",
         }
         if swift_config:
-            logger.info(f"deploy with swift: {swift_config}")
+            logger.info("deploy with swift: %s", swift_config)
             charm_config["wp_plugin_openstack-objectstorage_config"] = json.dumps(swift_config)
         return charm_config
 
@@ -81,7 +81,6 @@ async def test_deploy_old_version(
     num_units,
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
-    kube_core_client,
     deploy_and_wait_for_mysql_pod,
     gen_upgrade_test_charm_config,
 ):
@@ -114,7 +113,6 @@ async def test_create_example_blog(
     ops_test,
     default_admin_password,
     unit_ip_list,
-    application_name,
     test_image,
     screenshot_dir,
     kube_core_client,
@@ -137,7 +135,7 @@ async def test_create_example_blog(
     wordpress_pod = get_wordpress_podspec_pod()
 
     def kubernetes_exec(cmd):
-        logger.info(f"exec {cmd} on {wordpress_pod}")
+        logger.info("exec %s on %s", cmd, wordpress_pod)
         resp = kubernetes.stream.stream(
             kube_core_client.connect_get_namespaced_pod_exec,
             name=wordpress_pod,
@@ -149,7 +147,7 @@ async def test_create_example_blog(
             stdout=True,
             tty=False,
         )
-        logger.info("Response: " + resp)
+        logger.info("Response: %s", resp)
 
     kubernetes_exec(
         [
@@ -167,7 +165,7 @@ async def test_create_example_blog(
 
     wp_cli_exec(["wp", "plugin", "activate", "openstack-objectstorage-k8s"])
     wp_cli_exec(
-        ["wp", "option", "update", "object_storage", json.dumps(swift_config), f"--format=json"]
+        ["wp", "option", "update", "object_storage", json.dumps(swift_config), "--format=json"]
     )
     unit_ip = unit_ip_list[0]
     client = WordpressClient(
@@ -195,7 +193,7 @@ async def test_build_and_upgrade(
     act: build WordPress charm from source and upgrade the WordPress charm.
     assert: all operations finished without error.
     """
-
+    assert ops_test.model
     charm = await ops_test.build_charm(".")
     await ops_test.model.remove_application(application_name)
 
@@ -218,7 +216,7 @@ async def test_build_and_upgrade(
 
 
 @pytest.mark.abort_on_fail
-async def test_wordpress_after_upgrade(unit_ip_list, application_name, screenshot_dir):
+async def test_wordpress_after_upgrade(unit_ip_list, screenshot_dir):
     """
     arrange: the WordPress charm has been upgraded.
     act: browser the WordPress website powered by the new charm.
@@ -234,8 +232,10 @@ async def test_wordpress_after_upgrade(unit_ip_list, application_name, screensho
             ), f"access image {url} should return status 200"
             try:
                 PIL.Image.open(io.BytesIO(image_response.content), formats=(url.split(".")[-1],))
-            except PIL.UnidentifiedImageError:
-                raise AssertionError(f"access image {url} should return a valid image file")
+            except PIL.UnidentifiedImageError as exc:
+                raise AssertionError(
+                    f"access image {url} should return a valid image file"
+                ) from exc
 
     for idx, unit_ip in enumerate(unit_ip_list):
         await screenshot(f"http://{unit_ip}", screenshot_dir / f"wordpress-after-{idx}.png")
@@ -249,7 +249,7 @@ async def test_wordpress_after_upgrade(unit_ip_list, application_name, screensho
         comparison_image.save(screenshot_dir / f"wordpress-comparison-{idx}.png")
         homepage = requests.get(f"http://{unit_ip}", timeout=10).text
         assert POST_TITLE in homepage
-        assert POST_CONTENT.split(".")[0] in homepage
+        assert POST_CONTENT.split(".", maxsplit=1)[0] in homepage
         check_images(homepage)
         post = requests.get(f"http://{unit_ip}/wordpress-post-1/", timeout=10).text
         assert POST_CONTENT in post

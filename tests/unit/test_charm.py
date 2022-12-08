@@ -601,7 +601,6 @@ def test_team_map():
 
 
 def test_swift_config(
-    patch: WordpressPatch,
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
 ):

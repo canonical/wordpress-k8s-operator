@@ -55,7 +55,13 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
 async def test_mysql_config(
-    request, ops_test: pytest_operator.plugin.OpsTest, application_name, kube_core_client
+    request,
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name,
+    kube_core_client,
+    pod_db_database,
+    pod_db_user,
+    pod_db_password,
 ):
     """
     arrange: after WordPress charm has been deployed, and a mysql pod is deployed in kubernetes.
@@ -71,9 +77,9 @@ async def test_mysql_config(
             "db_host": kube_core_client.read_namespaced_pod(
                 name="mysql", namespace=ops_test.model_name
             ).status.pod_ip,
-            "db_name": "wordpress",
-            "db_user": "wordpress",
-            "db_password": "wordpress-password",
+            "db_name": pod_db_database,
+            "db_user": pod_db_user,
+            "db_password": pod_db_password,
         }
     )
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore

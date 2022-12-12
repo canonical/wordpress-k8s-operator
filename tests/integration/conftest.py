@@ -264,9 +264,33 @@ def create_self_signed_tls_secret_fixture(
         kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)
 
 
+@pytest.fixture(name="pod_db_database")
+def pod_db_database_fixture():
+    """MYSQL database name for create the test database pod."""
+    return "wordpress"
+
+
+@pytest.fixture(name="pod_db_user")
+def pod_db_user_fixture():
+    """MYSQL database username for create the test database pod."""
+    return "wordpress"
+
+
+@pytest.fixture(name="pod_db_password")
+def pod_db_password_fixture():
+    """MYSQL database password for create the test database pod."""
+    return "wordpress-password"
+
+
 @pytest_asyncio.fixture(scope="module", name="build_and_deploy")
 async def build_and_deploy_fixture(
-    request, ops_test: pytest_operator.plugin.OpsTest, application_name, kube_core_client
+    request,
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name,
+    kube_core_client,
+    pod_db_database,
+    pod_db_user,
+    pod_db_password,
 ):
     """Deploy all required charms and kubernetes pods for tests."""
     assert ops_test.model
@@ -302,9 +326,9 @@ async def build_and_deploy_fixture(
                         ),
                         env=[
                             kubernetes.client.V1EnvVar("MYSQL_ROOT_PASSWORD", "root-password"),
-                            kubernetes.client.V1EnvVar("MYSQL_DATABASE", "wordpress"),
-                            kubernetes.client.V1EnvVar("MYSQL_USER", "wordpress"),
-                            kubernetes.client.V1EnvVar("MYSQL_PASSWORD", "wordpress-password"),
+                            kubernetes.client.V1EnvVar("MYSQL_DATABASE", pod_db_database),
+                            kubernetes.client.V1EnvVar("MYSQL_USER", pod_db_user),
+                            kubernetes.client.V1EnvVar("MYSQL_PASSWORD", pod_db_password),
                         ],
                     )
                 ]

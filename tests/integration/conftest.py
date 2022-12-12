@@ -291,6 +291,7 @@ def create_self_signed_tls_secret_fixture(
     for secret in created_secrets:
         kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)
 
+
 @pytest.fixture(scope="module", name="pod_db_database")
 def pod_db_database_fixture():
     """MYSQL database name for create the test database pod."""
@@ -310,7 +311,9 @@ def pod_db_password_fixture():
 
 
 @pytest.fixture(scope="module", name="deploy_and_wait_for_mysql_pod")
-def deploy_and_wait_for_mysql_pod_fixture(ops_test, kube_core_client, pod_db_database, pod_db_user, pod_db_password):
+def deploy_and_wait_for_mysql_pod_fixture(
+    ops_test, kube_core_client, pod_db_database, pod_db_user, pod_db_password
+):
     """Return an async function that deploy and wait for a mysql pod ready in current namespace.
 
     This is used for testing WordPress charm's capability of interacting with an external non-charm

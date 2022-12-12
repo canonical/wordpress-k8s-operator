@@ -49,11 +49,6 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
         ), "status message should contain the reason why it's blocked"
 
 
-@pytest.mark.asyncio
-@pytest.mark.abort_on_fail
-async def test_mysql_config(
-    request, ops_test: pytest_operator.plugin.OpsTest, application_name, kube_core_client
-):
 @pytest.mark.abort_on_fail
 async def test_mysql_config(
     request,

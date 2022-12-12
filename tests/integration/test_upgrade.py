@@ -202,7 +202,7 @@ async def test_build_and_upgrade(
     def wordpress_removed():
         status = subprocess.check_output(
             ["juju", "status", "-m", ops_test.model_name, "--format", "json"]
-        )
+        )  # nosec
         return application_name not in json.loads(status)["applications"]
 
     await ops_test.model.block_until(wordpress_removed, wait_period=5, timeout=600)

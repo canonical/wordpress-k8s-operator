@@ -1175,7 +1175,7 @@ class WordpressCharm(CharmBase):
             swift_url = swift_config["url"]
             swift_url = re.sub("/wp-content/uploads/?$", "", swift_url)
             swift_url = swift_url[: -(1 + len(swift_config.get("bucket", "")))]
-            logger.warn(
+            logger.warning(
                 "Convert legacy openstack object storage configuration url (%s) to swift-url (%s)",
                 swift_config["url"],
                 swift_url,
@@ -1185,7 +1185,7 @@ class WordpressCharm(CharmBase):
         # rename the prefix in swift config to object-prefix as it's in the swift plugin option
         if "prefix" in swift_config:
             object_prefix = swift_config["prefix"]
-            logger.warn(
+            logger.warning(
                 "Convert legacy openstack object storage configuration prefix (%s) to object-prefix (%s)",
                 object_prefix,
                 object_prefix,

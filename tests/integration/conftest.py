@@ -201,6 +201,12 @@ def screenshot_dir_fixture(request):
     return pathlib.Path(screenshot_dir)
 
 
+@pytest.fixture(scope="module", name="wordpress_image")
+def wordpress_image_fixture(request):
+    """WordPress docker image built for the WordPress charm."""
+    return request.config.getoption("--wordpress-image")
+
+
 @pytest.fixture(scope="module", name="kube_core_client")
 def kube_core_client_fixture(kube_config):
     """Create a kubernetes client for core API v1"""
@@ -382,6 +388,7 @@ async def build_and_deploy_fixture(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
     deploy_and_wait_for_mysql_pod,
+    wordpress_image,
 ):
     """Deploy all required charms and kubernetes pods for tests."""
     assert ops_test.model
@@ -390,7 +397,7 @@ async def build_and_deploy_fixture(
         my_charm = await ops_test.build_charm(".")
         await ops_test.model.deploy(
             my_charm,
-            resources={"wordpress-image": "localhost:32000/wordpress:test"},
+            resources={"wordpress-image": wordpress_image},
             application_name=application_name,
             series="jammy",
             num_units=num_units,

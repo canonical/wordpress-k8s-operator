@@ -203,7 +203,7 @@ def screenshot_dir_fixture(request):
 
 @pytest.fixture(scope="module", name="wordpress_image")
 def wordpress_image_fixture(request):
-    """WordPress docker image built for the WordPress charm."""
+    """Wordpress docker image built for the WordPress charm."""
     return request.config.getoption("--wordpress-image")
 
 

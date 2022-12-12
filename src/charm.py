@@ -1125,8 +1125,12 @@ class WordpressCharm(CharmBase):
         self._run_cli(["a2disconf", conf_name])
         self._start_server()
 
-    def _plugin_swift_reconciliation(self):
-        """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin."""
+    def _swift_config(self):
+        """Load swift configuration from charm config.
+
+        Returns:
+            Swift configuration in dict.
+        """
         swift_config_str = self.model.config["wp_plugin_openstack-objectstorage_config"]
         swift_config_key = [
             "auth-url",
@@ -1142,16 +1146,30 @@ class WordpressCharm(CharmBase):
             "serve-from-swift",
             "remove-local-file",
         ]
-        enable_swift = bool(swift_config_str.strip())
-        if not enable_swift:
+        swift_config = safe_load(swift_config_str)
+        if not swift_config:
+            return {}
+        for key in swift_config_key:
+            if key not in swift_config:
+                raise exceptions.WordPressBlockedStatusException(
+                    f"missing {key} in wp_plugin_openstack-objectstorage_config"
+                )
+        return swift_config
+
+    def _config_swift_plugin(self, swift_config):
+        """Activate or deactivate the swift plugin based on the swift config in the charm config.
+
+        Args:
+            swift_config: swift configuration parsed from wp_plugin_openstack-objectstorage_config
+                config. Use :meth:`WordpressCharm._swift_config` to get the parsed swift config.
+
+        Raises:
+            exceptions.WordPressBlockedStatusException: openstack plugin setup process failed.
+        """
+        if not swift_config:
             result = self._deactivate_plugin("openstack-objectstorage-k8s", ["object_storage"])
         else:
-            swift_config = safe_load(swift_config_str)
-            for key in swift_config_key:
-                if key not in swift_config:
-                    raise exceptions.WordPressBlockedStatusException(
-                        f"missing {key} in wp_plugin_openstack-objectstorage_config"
-                    )
+
             result = self._activate_plugin(
                 "openstack-objectstorage-k8s", {"object_storage": swift_config}
             )
@@ -1159,9 +1177,15 @@ class WordpressCharm(CharmBase):
             raise exceptions.WordPressBlockedStatusException(
                 f"Unable to config openstack-objectstorage-k8s plugin, {result.message}"
             )
+
+    def _plugin_swift_reconciliation(self):
+        """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin."""
+        swift_config = self._swift_config()
+        if self.unit.is_leader():
+            self._config_swift_plugin(swift_config)
         apache_swift_conf = "docker-php-swift-proxy"
         swift_apache_config_enabled = self._apache_config_is_enabled(apache_swift_conf)
-        if enable_swift and not swift_apache_config_enabled:
+        if swift_config and not swift_apache_config_enabled:
             swift_url = swift_config.get("swift-url")
             bucket = swift_config.get("bucket")
             object_prefix = swift_config.get("object-prefix")
@@ -1175,7 +1199,7 @@ class WordpressCharm(CharmBase):
             """
             )
             self._apache_enable_config(apache_swift_conf, conf)
-        elif not enable_swift and swift_apache_config_enabled:
+        elif not swift_config and swift_apache_config_enabled:
             self._apache_disable_config(apache_swift_conf)
 
     def _plugin_reconciliation(self):
@@ -1186,10 +1210,10 @@ class WordpressCharm(CharmBase):
         and adjust plugin options for these three plugins according to charm config.
         """
         self._addon_reconciliation("plugin")
+        self._plugin_swift_reconciliation()
         if self.unit.is_leader():
             self._plugin_akismet_reconciliation()
             self._plugin_openid_reconciliation()
-            self._plugin_swift_reconciliation()
 
     def _reconciliation(self, _event):
         logger.info("Start reconciliation process, triggered by %s", _event)

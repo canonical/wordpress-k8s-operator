@@ -31,3 +31,7 @@ def pytest_addoption(parser: pytest.Parser):
     parser.addoption("--launchpad-team", action="store", default="")
     # Kubernetes cluster configuration file
     parser.addoption("--kube-config", action="store", default="")
+    # Config WordPress with a mysql database deployed as a pod in kubernetes instead of mysql charm
+    parser.addoption("--test-db-from-config", action="store_true", default=False)
+    # Number of WordPress units should the test deploy
+    parser.addoption("--num-units", action="store", type=int, default=1)

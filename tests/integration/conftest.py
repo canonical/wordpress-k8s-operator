@@ -3,6 +3,7 @@
 
 """Fixtures for WordPress charm integration tests."""
 
+import asyncio
 import base64
 import configparser
 import datetime
@@ -161,7 +162,7 @@ def launchpad_team_fixture(request):
     return launchpad_team
 
 
-@pytest.fixture(name="kube_config")
+@pytest.fixture(scope="module", name="kube_config")
 def kube_config_fixture(request):
     """The Kubernetes cluster configuration file"""
     openid_password = request.config.getoption("--kube-config")
@@ -172,7 +173,7 @@ def kube_config_fixture(request):
     return openid_password
 
 
-@pytest.fixture(name="kube_core_client")
+@pytest.fixture(scope="module", name="kube_core_client")
 def kube_core_client_fixture(kube_config):
     """Create a kubernetes client for core API v1"""
     kubernetes.config.load_kube_config(config_file=kube_config)
@@ -261,3 +262,111 @@ def create_self_signed_tls_secret_fixture(
 
     for secret in created_secrets:
         kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)
+
+
+@pytest.fixture(scope="module", name="pod_db_database")
+def pod_db_database_fixture():
+    """MYSQL database name for create the test database pod."""
+    return "wordpress"
+
+
+@pytest.fixture(scope="module", name="pod_db_user")
+def pod_db_user_fixture():
+    """MYSQL database username for create the test database pod."""
+    return "wordpress"
+
+
+@pytest.fixture(scope="module", name="pod_db_password")
+def pod_db_password_fixture():
+    """MYSQL database password for create the test database pod."""
+    return "wordpress-password"
+
+
+@pytest_asyncio.fixture(scope="module", name="build_and_deploy")
+async def build_and_deploy_fixture(
+    request,
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name,
+    kube_core_client,
+    pod_db_database,
+    pod_db_user,
+    pod_db_password,
+):
+    """Deploy all required charms and kubernetes pods for tests."""
+    assert ops_test.model
+    num_units = request.config.getoption("--num-units")
+
+    async def build_and_deploy_wordpress():
+        my_charm = await ops_test.build_charm(".")
+        await ops_test.model.deploy(
+            my_charm,
+            resources={"wordpress-image": "localhost:32000/wordpress:test"},
+            application_name=application_name,
+            series="jammy",
+            num_units=num_units,
+        )
+
+    # create a pod to test the capability of the WordPress charm to interactive with an external
+    # MYSQL database via charm db configurations.
+    kube_core_client.create_namespaced_pod(
+        namespace=ops_test.model_name,
+        body=kubernetes.client.V1Pod(
+            metadata=kubernetes.client.V1ObjectMeta(name="mysql", namespace=ops_test.model_name),
+            kind="Pod",
+            api_version="v1",
+            spec=kubernetes.client.V1PodSpec(
+                containers=[
+                    kubernetes.client.V1Container(
+                        name="mysql",
+                        image="mysql:latest",
+                        readiness_probe=kubernetes.client.V1Probe(
+                            kubernetes.client.V1ExecAction(
+                                ["mysqladmin", "ping", "-h", "localhost"]
+                            ),
+                            initial_delay_seconds=10,
+                            period_seconds=5,
+                        ),
+                        env=[
+                            kubernetes.client.V1EnvVar("MYSQL_ROOT_PASSWORD", "root-password"),
+                            kubernetes.client.V1EnvVar("MYSQL_DATABASE", pod_db_database),
+                            kubernetes.client.V1EnvVar("MYSQL_USER", pod_db_user),
+                            kubernetes.client.V1EnvVar("MYSQL_PASSWORD", pod_db_password),
+                        ],
+                    )
+                ]
+            ),
+        ),
+    )
+
+    async def wait_mysql_pod_ready():
+        def is_mysql_ready():
+            mysql_status = kube_core_client.read_namespaced_pod(
+                name="mysql", namespace=ops_test.model_name
+            ).status
+            if mysql_status.conditions is None:
+                return False
+            for condition in mysql_status.conditions:
+                if condition.type == "Ready" and condition.status == "True":
+                    return True
+            return False
+
+        await ops_test.model.block_until(is_mysql_ready, timeout=300, wait_period=3)
+
+    await asyncio.gather(
+        build_and_deploy_wordpress(),
+        wait_mysql_pod_ready(),
+        ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
+        # temporary fix for the CharmHub problem
+        ops_test.juju(
+            "deploy",
+            "nginx-ingress-integrator",
+            "ingress",
+            "--channel",
+            "edge",
+            "--series",
+            "focal",
+            "--trust",
+            check=True,
+        ),
+    )
+    await ops_test.model.wait_for_idle()

@@ -126,11 +126,13 @@ async def test_create_example_blog(
     namespace = ops_test.model_name
 
     def get_wordpress_podspec_pod():
-        for pod in kube_core_client.list_namespaced_pod(namespace=namespace).items:
-            name = pod.metadata.name
-            if name.startswith("wordpress") and not name.endswith("-0"):
-                return name
-        raise KeyError("can not find wordpress pod")
+        return (
+            kube_core_client.list_namespaced_pod(
+                namespace=namespace, label_selector="app.kubernetes.io/name=wordpress-k8s"
+            )
+            .items[0]
+            .metadata.name
+        )
 
     wordpress_pod = get_wordpress_podspec_pod()
 

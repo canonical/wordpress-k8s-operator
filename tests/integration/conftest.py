@@ -264,19 +264,19 @@ def create_self_signed_tls_secret_fixture(
         kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)
 
 
-@pytest.fixture(name="pod_db_database")
+@pytest.fixture(scope="module", name="pod_db_database")
 def pod_db_database_fixture():
     """MYSQL database name for create the test database pod."""
     return "wordpress"
 
 
-@pytest.fixture(name="pod_db_user")
+@pytest.fixture(scope="module", name="pod_db_user")
 def pod_db_user_fixture():
     """MYSQL database username for create the test database pod."""
     return "wordpress"
 
 
-@pytest.fixture(name="pod_db_password")
+@pytest.fixture(scope="module", name="pod_db_password")
 def pod_db_password_fixture():
     """MYSQL database password for create the test database pod."""
     return "wordpress-password"

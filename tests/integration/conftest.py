@@ -291,9 +291,26 @@ def create_self_signed_tls_secret_fixture(
     for secret in created_secrets:
         kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)
 
+@pytest.fixture(scope="module", name="pod_db_database")
+def pod_db_database_fixture():
+    """MYSQL database name for create the test database pod."""
+    return "wordpress"
+
+
+@pytest.fixture(scope="module", name="pod_db_user")
+def pod_db_user_fixture():
+    """MYSQL database username for create the test database pod."""
+    return "wordpress"
+
+
+@pytest.fixture(scope="module", name="pod_db_password")
+def pod_db_password_fixture():
+    """MYSQL database password for create the test database pod."""
+    return "wordpress-password"
+
 
 @pytest.fixture(scope="module", name="deploy_and_wait_for_mysql_pod")
-def deploy_and_wait_for_mysql_pod_fixture(ops_test, kube_core_client):
+def deploy_and_wait_for_mysql_pod_fixture(ops_test, kube_core_client, pod_db_database, pod_db_user, pod_db_password):
     """Return an async function that deploy and wait for a mysql pod ready in current namespace.
 
     This is used for testing WordPress charm's capability of interacting with an external non-charm
@@ -330,9 +347,9 @@ def deploy_and_wait_for_mysql_pod_fixture(ops_test, kube_core_client):
                             ),
                             env=[
                                 kubernetes.client.V1EnvVar("MYSQL_ROOT_PASSWORD", "root-password"),
-                                kubernetes.client.V1EnvVar("MYSQL_DATABASE", "wordpress"),
-                                kubernetes.client.V1EnvVar("MYSQL_USER", "wordpress"),
-                                kubernetes.client.V1EnvVar("MYSQL_PASSWORD", "wordpress-password"),
+                                kubernetes.client.V1EnvVar("MYSQL_DATABASE", pod_db_database),
+                                kubernetes.client.V1EnvVar("MYSQL_USER", pod_db_user),
+                                kubernetes.client.V1EnvVar("MYSQL_PASSWORD", pod_db_password),
                             ],
                         )
                     ]
@@ -380,8 +397,17 @@ async def build_and_deploy_fixture(
         build_and_deploy_wordpress(),
         deploy_and_wait_for_mysql_pod(),
         ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
-        ops_test.model.deploy(
-            "nginx-ingress-integrator", "ingress", trust=True, channel="edge", series="focal"
+        # temporary fix for the CharmHub problem
+        ops_test.juju(
+            "deploy",
+            "nginx-ingress-integrator",
+            "ingress",
+            "--channel",
+            "edge",
+            "--series",
+            "focal",
+            "--trust",
+            check=True,
         ),
     )
     await ops_test.model.wait_for_idle()

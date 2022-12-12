@@ -1141,11 +1141,14 @@ class WordpressCharm(CharmBase):
     def _swift_config(self):
         """Load swift configuration from charm config.
 
+        The legacy swift plugin options ``url`` or ``prefix`` will be converted to ``swift-url``
+        and ``object-prefix`` by this function.
+
         Returns:
             Swift configuration in dict.
         """
         swift_config_str = self.model.config["wp_plugin_openstack-objectstorage_config"]
-        swift_config_key = [
+        required_swift_config_key = [
             "auth-url",
             "bucket",
             "password",
@@ -1162,27 +1165,34 @@ class WordpressCharm(CharmBase):
         swift_config = safe_load(swift_config_str)
         if not swift_config:
             return {}
+        # legacy version of the WordPress charm accepts the ``url`` options
+        # here's an example of the ``url`` option:
+        # http://10.126.72.107:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd/WordPress/wp-content/uploads/
+        # which is a combination of swift url, container name, and object prefix
+        # the new WordPress charm will only take the swift url
+        # TODO: instead of user input, lookup swift url using swift client automatically
         if "url" in swift_config:
             swift_url = swift_config["url"]
             swift_url = re.sub("/wp-content/uploads/?$", "", swift_url)
             swift_url = swift_url[: -(1 + len(swift_config.get("bucket", "")))]
-            logger.info(
+            logger.warn(
                 "Convert legacy openstack object storage configuration url (%s) to swift-url (%s)",
                 swift_config["url"],
                 swift_url,
             )
             del swift_config["url"]
             swift_config["swift-url"] = swift_url
+        # rename the prefix in swift config to object-prefix as it's in the swift plugin option
         if "prefix" in swift_config:
             object_prefix = swift_config["prefix"]
-            logger.info(
+            logger.warn(
                 "Convert legacy openstack object storage configuration prefix (%s) to object-prefix (%s)",
                 object_prefix,
                 object_prefix,
             )
             del swift_config["prefix"]
             swift_config["object-prefix"] = object_prefix
-        for key in swift_config_key:
+        for key in required_swift_config_key:
             if key not in swift_config:
                 raise exceptions.WordPressBlockedStatusException(
                     f"missing {key} in wp_plugin_openstack-objectstorage_config"

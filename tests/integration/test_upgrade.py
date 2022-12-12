@@ -9,7 +9,7 @@ import io
 import json
 import logging
 import re
-import subprocess
+import subprocess  # nosec
 import time
 
 import kubernetes
@@ -200,9 +200,9 @@ async def test_build_and_upgrade(
     await ops_test.model.remove_application(application_name)
 
     def wordpress_removed():
-        status = subprocess.check_output(
+        status = subprocess.check_output(  # nosec
             ["juju", "status", "-m", ops_test.model_name, "--format", "json"]
-        )  # nosec
+        )
         return application_name not in json.loads(status)["applications"]
 
     await ops_test.model.block_until(wordpress_removed, wait_period=5, timeout=600)

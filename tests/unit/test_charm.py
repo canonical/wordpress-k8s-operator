@@ -615,7 +615,7 @@ def test_swift_config(
         {
             "wp_plugin_openstack-objectstorage_config": json.dumps(
                 {
-                    "auth-url": "http://10.126.72.107/identity/v3",
+                    "auth-url": "http://swift.test/identity/v3",
                     "bucket": "wordpress_tests.integration.test_upgrade",
                     "password": "nomoresecret",
                     "region": "RegionOne",
@@ -625,7 +625,7 @@ def test_swift_config(
                     "copy-to-swift": "1",
                     "serve-from-swift": "1",
                     "remove-local-file": "0",
-                    "url": "http://10.126.72.107:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd/wordpress_tests.integration.test_upgrade/wp-content/uploads/",
+                    "url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd/wordpress_tests.integration.test_upgrade/wp-content/uploads/",
                     "prefix": "wp-content/uploads/",
                 }
             )
@@ -633,7 +633,7 @@ def test_swift_config(
     )
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     assert charm._swift_config() == {
-        "auth-url": "http://10.126.72.107/identity/v3",
+        "auth-url": "http://swift.test/identity/v3",
         "bucket": "wordpress_tests.integration.test_upgrade",
         "password": "nomoresecret",
         "region": "RegionOne",
@@ -643,7 +643,7 @@ def test_swift_config(
         "copy-to-swift": "1",
         "serve-from-swift": "1",
         "remove-local-file": "0",
-        "swift-url": "http://10.126.72.107:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd",
+        "swift-url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd",
         "object-prefix": "wp-content/uploads/",
     }
 

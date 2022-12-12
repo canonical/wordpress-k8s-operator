@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [test_core, test_error]
+        module: [test_core, test_error, test_upgrade]
         args:
           - name: num_units=3, db_from_config
             value: "--test-db-from-config --num-units=3"
@@ -28,6 +28,14 @@ jobs:
             args:
               name: num_units=1, db_from_config
               value: "--test-db-from-config --num-units=1"
+          - module: test_upgrade
+            args:
+              name: num_units=3, db_from_relation
+              value: "--num-units=3"
+          - module: test_upgrade
+            args:
+              name: num_units=1, db_from_relation
+              value: "--num-units=1"
 
     name: Integration Tests (${{ matrix.module }}, ${{ matrix.args.name }})
     steps:

@@ -305,6 +305,7 @@ async def build_and_deploy_fixture(
             series="jammy",
             num_units=num_units,
         )
+
     # create a pod to test the capability of the WordPress charm to interactive with an external
     # MYSQL database via charm db configurations.
     kube_core_client.create_namespaced_pod(

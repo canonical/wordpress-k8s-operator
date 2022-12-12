@@ -294,7 +294,11 @@ def create_self_signed_tls_secret_fixture(
 
 @pytest.fixture(scope="module", name="deploy_and_wait_for_mysql_pod")
 def deploy_and_wait_for_mysql_pod_fixture(ops_test, kube_core_client):
-    """Return an async function that deploy and wait for a mysql pod ready in current namespace."""
+    """Return an async function that deploy and wait for a mysql pod ready in current namespace.
+
+    This is used for testing WordPress charm's capability of interacting with an external non-charm
+    MySQL database.
+    """
 
     async def wait_mysql_pod_ready():
         kube_core_client.create_namespaced_pod(

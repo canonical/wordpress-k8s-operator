@@ -117,6 +117,7 @@ async def test_create_example_blog(
     screenshot_dir,
     kube_core_client,
     swift_config,
+    application_name,
 ):
     """
     arrange: all charms and pods are deployed successfully.
@@ -128,7 +129,7 @@ async def test_create_example_blog(
     def get_wordpress_podspec_pod():
         return (
             kube_core_client.list_namespaced_pod(
-                namespace=namespace, label_selector="app.kubernetes.io/name=wordpress-k8s"
+                namespace=namespace, label_selector=f"app.kubernetes.io/name={application_name}"
             )
             .items[0]
             .metadata.name

@@ -63,6 +63,9 @@ jobs:
       - name: Dump microk8s config
         run: sudo microk8s config > kube-config
 
+      - name: Install test dependencies
+        run: sudo apt-get update && sudo apt-get install libgbm1 libasound2 -y
+
       - name: Install tox
         run: python3 -m pip install tox
 

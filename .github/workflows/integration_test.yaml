@@ -78,5 +78,6 @@ jobs:
           --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
           --kube-config ${GITHUB_WORKSPACE}/kube-config
           --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
+          --screenshot-dir /tmp
           -k ${{ matrix.module }}
           ${{ matrix.args.value }}

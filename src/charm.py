@@ -1146,6 +1146,9 @@ class WordpressCharm(CharmBase):
 
         Returns:
             Swift configuration in dict.
+
+        Raises:
+            exceptions.WordPressBlockedStatusException: openstack plugin setup process failed.
         """
         swift_config_str = self.model.config["wp_plugin_openstack-objectstorage_config"]
         required_swift_config_key = [

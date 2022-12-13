@@ -242,6 +242,8 @@ async def test_wordpress_after_upgrade(unit_ip_list, screenshot_dir):
 
     for idx, unit_ip in enumerate(unit_ip_list):
         await screenshot(f"http://{unit_ip}", screenshot_dir / f"wordpress-after-{idx}.png")
+        # create a side-by-side comparison of the before and after screenshots
+        # for now, the comparison image is checked by a human
         after_image = PIL.Image.open(screenshot_dir / f"wordpress-after-{idx}.png")
         before_image = PIL.Image.open(screenshot_dir / f"wordpress-before-{idx}.png")
         comparison_width = before_image.width + after_image.width

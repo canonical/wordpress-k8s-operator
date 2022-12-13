@@ -7,9 +7,11 @@ import asyncio
 import base64
 import configparser
 import datetime
+import logging
 import pathlib
 import re
 import secrets
+import typing
 
 import cryptography.hazmat.primitives.asymmetric.rsa
 import cryptography.hazmat.primitives.hashes
@@ -27,6 +29,8 @@ import swiftclient.exceptions
 import swiftclient.service
 
 from tests.integration.wordpress_client_for_test import WordpressClient
+
+logger = logging.getLogger()
 
 
 @pytest_asyncio.fixture(scope="function", name="app_config")
@@ -120,9 +124,10 @@ def openstack_environment_fixture(request, num_units):
         provided.
     """
     rc_file = request.config.getoption("--openstack-rc")
-    assert (
-        num_units == 1 or rc_file
-    ), "swift plugin is required for multi-unit deployment, please include an openstack configuration in the --openstack-rc parameter "
+    assert num_units == 1 or rc_file, (
+        "swift plugin is required for multi-unit deployment, "
+        "please include an openstack configuration in the --openstack-rc parameter "
+    )
     if not rc_file:
         return None
     with open(rc_file, encoding="utf-8") as rc_fo:
@@ -327,6 +332,8 @@ def deploy_and_wait_for_mysql_pod_fixture(
     """
 
     async def wait_mysql_pod_ready():
+        # create a pod to test the capability of the WordPress charm to interactive with an
+        # external MYSQL database via charm db configurations.
         kube_core_client.create_namespaced_pod(
             namespace=ops_test.model_name,
             body=kubernetes.client.V1Pod(
@@ -453,7 +460,9 @@ def swift_conn_fixture(openstack_environment):
 
 
 @pytest.fixture(scope="module", name="swift_config")
-def swift_config_fixture(request: pytest.FixtureRequest, swift_conn, openstack_environment):
+def swift_config_fixture(
+    request: pytest.FixtureRequest, swift_conn, openstack_environment
+) -> typing.Dict[str, str]:
     """Create a swift config dict that can be used for wp_plugin_openstack-objectstorage_config."""
     if openstack_environment is None:
         return None
@@ -468,7 +477,7 @@ def swift_config_fixture(request: pytest.FixtureRequest, swift_conn, openstack_e
         )
     )
     container = f"wordpress_{request.module.__name__}"
-    print(f"Use container {container}")
+    logger.info(f"Use container {container}")
     # if the container exists, remove the container
     swift_service.delete(container=container)
     # create a swift container for our test

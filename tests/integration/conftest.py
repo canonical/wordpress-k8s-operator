@@ -461,7 +461,9 @@ def swift_conn_fixture(openstack_environment):
 
 @pytest.fixture(scope="module", name="swift_config")
 def swift_config_fixture(
-    request: pytest.FixtureRequest, swift_conn, openstack_environment
+    request: pytest.FixtureRequest,
+    swift_conn: swiftclient.Connection,
+    openstack_environment: typing.Optional[typing.Dict[str, str]],
 ) -> typing.Optional[typing.Dict[str, str]]:
     """Create a swift config dict that can be used for wp_plugin_openstack-objectstorage_config."""
     if openstack_environment is None:

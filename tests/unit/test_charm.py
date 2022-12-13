@@ -611,28 +611,7 @@ def test_swift_config(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
-    harness.update_config(
-        {
-            "wp_plugin_openstack-objectstorage_config": json.dumps(
-                {
-                    "auth-url": "http://swift.test/identity/v3",
-                    "bucket": "wordpress_tests.integration.test_upgrade",
-                    "password": "nomoresecret",
-                    "region": "RegionOne",
-                    "tenant": "demo",
-                    "domain": "default",
-                    "username": "demo",
-                    "copy-to-swift": "1",
-                    "serve-from-swift": "1",
-                    "remove-local-file": "0",
-                    "url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd/wordpress_tests.integration.test_upgrade/wp-content/uploads/",
-                    "prefix": "wp-content/uploads/",
-                }
-            )
-        }
-    )
-    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    assert charm._swift_config() == {
+    swift_config = {
         "auth-url": "http://swift.test/identity/v3",
         "bucket": "wordpress_tests.integration.test_upgrade",
         "password": "nomoresecret",
@@ -643,9 +622,21 @@ def test_swift_config(
         "copy-to-swift": "1",
         "serve-from-swift": "1",
         "remove-local-file": "0",
-        "swift-url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd",
-        "object-prefix": "wp-content/uploads/",
+        "url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd/"
+        "wordpress_tests.integration.test_upgrade/wp-content/uploads/",
+        "prefix": "wp-content/uploads/",
     }
+    harness.update_config({"wp_plugin_openstack-objectstorage_config": json.dumps(swift_config)})
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    del swift_config["url"]
+    del swift_config["prefix"]
+    swift_config.update(
+        {
+            "swift-url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd",
+            "object-prefix": "wp-content/uploads/",
+        }
+    )
+    assert charm._swift_config() == swift_config
 
 
 def test_akismet_plugin(run_standard_plugin_test: typing.Callable):

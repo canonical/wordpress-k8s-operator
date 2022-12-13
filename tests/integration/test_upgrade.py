@@ -177,7 +177,7 @@ async def test_create_example_blog(
         password=default_admin_password,
         is_admin=True,
     )
-    media_id = client.upload_media(filename="wordpress.png", content=test_image)["id"]
+    media_id = client.upload_media(filename="canonical.jpg", content=test_image)["id"]
     post = client.create_post(title=POST_TITLE, content=POST_CONTENT, featured_media=media_id)
     client.create_comment(post_id=post["id"], post_link=post["link"], content=POST_COMMENT)
     for idx, unit_ip in enumerate(unit_ip_list):
@@ -227,14 +227,19 @@ async def test_wordpress_after_upgrade(unit_ip_list, screenshot_dir):
     """
 
     def check_images(html):
-        for url in re.findall('<img[^>]+src="([^"]+)"[^>]*>', html):
+        image_urls = re.findall('<img[^>]+src="([^"]+)"[^>]*>', html)
+        assert image_urls
+        for url in image_urls:
             logger.info("check image %s", url)
             image_response = requests.get(url, timeout=10)
             assert (
                 image_response.status_code == 200
             ), f"access image {url} should return status 200"
             try:
-                PIL.Image.open(io.BytesIO(image_response.content), formats=(url.split(".")[-1],))
+                PIL.Image.open(
+                    io.BytesIO(image_response.content),
+                    formats=(url.split(".")[-1].upper().replace("JPG", "JPEG"),),
+                )
             except PIL.UnidentifiedImageError as exc:
                 raise AssertionError(
                     f"access image {url} should return a valid image file"

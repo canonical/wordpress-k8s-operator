@@ -23,7 +23,6 @@ import kubernetes
 import pytest
 import pytest_asyncio
 import pytest_operator.plugin
-import requests
 import swiftclient
 import swiftclient.exceptions
 import swiftclient.service
@@ -432,12 +431,8 @@ async def build_and_deploy_fixture(
 
 @pytest.fixture(scope="module", name="test_image")
 def image_fixture():
-    """A PNG image that can be used in tests."""
-    image_response = requests.get(
-        "https://s.w.org/style/images/about/WordPress-logotype-wmark.png", timeout=10
-    )
-    assert image_response.status_code == 200
-    return image_response.content
+    """A JPG image that can be used in tests."""
+    return open("tests/integration/files/canonical_aubergine_hex.jpg", "rb").read()
 
 
 @pytest.fixture(scope="module", name="swift_conn")

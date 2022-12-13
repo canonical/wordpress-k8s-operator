@@ -462,7 +462,7 @@ def swift_conn_fixture(openstack_environment):
 @pytest.fixture(scope="module", name="swift_config")
 def swift_config_fixture(
     request: pytest.FixtureRequest, swift_conn, openstack_environment
-) -> typing.Dict[str, str]:
+) -> typing.Optional[typing.Dict[str, str]]:
     """Create a swift config dict that can be used for wp_plugin_openstack-objectstorage_config."""
     if openstack_environment is None:
         return None
@@ -476,8 +476,8 @@ def swift_config_fixture(
             os_project_domain_name=openstack_environment["OS_PROJECT_DOMAIN_ID"],
         )
     )
-    container = f"wordpress_{request.module.__name__}"
-    logger.info(f"Use container {container}")
+    container = f"wordpress_{request.module.__name__.split('.')[-1]}"
+    logger.info("Use container %s", container)
     # if the container exists, remove the container
     swift_service.delete(container=container)
     # create a swift container for our test

@@ -1,6 +1,8 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# pylint: disable=too-many-locals
+
 """Integration tests for upgrading WordPress charm."""
 
 import asyncio

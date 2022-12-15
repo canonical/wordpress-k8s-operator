@@ -20,9 +20,6 @@ import PIL.Image
 import pytest
 import pytest_operator.plugin
 import requests
-import swiftclient
-import swiftclient.exceptions
-import swiftclient.service
 
 from charm import WordpressCharm
 from tests.integration.wordpress_client_for_test import WordpressClient
@@ -52,7 +49,6 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
         ), "status message should contain the reason why it's blocked"
 
 
-@pytest.mark.asyncio
 @pytest.mark.abort_on_fail
 async def test_mysql_config(
     request,
@@ -116,7 +112,8 @@ async def test_openstack_object_storage_plugin(
     application_name,
     default_admin_password,
     unit_ip_list,
-    openstack_environment,
+    swift_conn,
+    swift_config,
 ):
     """
     arrange: after charm deployed, db relation established and openstack swift server ready.
@@ -126,61 +123,16 @@ async def test_openstack_object_storage_plugin(
         After openstack swift plugin activated, an image file uploaded to one unit through
         WordPress media uploader should be accessible from all units.
     """
+    if swift_config is None:
+        pytest.skip("no openstack configuration provided, skip openstack swift plugin setup")
     assert ops_test.model
-    # create the swift clients
-    swift_conn = swiftclient.Connection(
-        authurl=openstack_environment["OS_AUTH_URL"],
-        auth_version="3",
-        user=openstack_environment["OS_USERNAME"],
-        key=openstack_environment["OS_PASSWORD"],
-        os_options={
-            "user_domain_name": openstack_environment["OS_USER_DOMAIN_ID"],
-            "project_domain_name": openstack_environment["OS_PROJECT_DOMAIN_ID"],
-            "project_name": openstack_environment["OS_PROJECT_NAME"],
-        },
-    )
-    swift_service = swiftclient.service.SwiftService(
-        options=dict(
-            auth_version="3",
-            os_auth_url=openstack_environment["OS_AUTH_URL"],
-            os_username=openstack_environment["OS_USERNAME"],
-            os_password=openstack_environment["OS_PASSWORD"],
-            os_project_name=openstack_environment["OS_PROJECT_NAME"],
-            os_project_domain_name=openstack_environment["OS_PROJECT_DOMAIN_ID"],
-        )
-    )
-    container = "WordPress"
-    # if the container exists, remove the container
-    swift_service.delete(container=container)
-    # create a swift container for our test
-    swift_conn.put_container(container)
-    # change container ACL to allow us getting an object by HTTP request without any authentication
-    # the swift server will act as a static HTTP server after this
-    swift_service.post(container=container, options={"read_acl": ".r:*,.rlistings"})
-
     application = ops_test.model.applications[application_name]
     await application.set_config(
-        {
-            "wp_plugin_openstack-objectstorage_config": json.dumps(
-                {
-                    "auth-url": openstack_environment["OS_AUTH_URL"] + "/v3",
-                    "bucket": container,
-                    "password": openstack_environment["OS_PASSWORD"],
-                    "object-prefix": "wp-content/uploads/",
-                    "region": openstack_environment["OS_REGION_NAME"],
-                    "tenant": openstack_environment["OS_PROJECT_NAME"],
-                    "domain": openstack_environment["OS_PROJECT_DOMAIN_ID"],
-                    "swift-url": swift_conn.url,
-                    "username": openstack_environment["OS_USERNAME"],
-                    "copy-to-swift": "1",
-                    "serve-from-swift": "1",
-                    "remove-local-file": "0",
-                }
-            )
-        }
+        {"wp_plugin_openstack-objectstorage_config": json.dumps(swift_config)}
     )
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
+    container = swift_config["bucket"]
     for idx, unit_ip in enumerate(unit_ip_list):
         image = PIL.Image.new("RGB", (500, 500), color=(idx, 0, 0))
         nonce = secrets.token_hex(8)
@@ -191,7 +143,7 @@ async def test_openstack_object_storage_plugin(
         wordpress_client = WordpressClient(
             host=unit_ip, username="admin", password=default_admin_password, is_admin=True
         )
-        image_urls = wordpress_client.upload_media(filename=filename, content=image)
+        image_urls = wordpress_client.upload_media(filename=filename, content=image)["urls"]
         swift_object_list = [
             o["name"] for o in swift_conn.get_container(container, full_listing=True)[1]
         ]
@@ -482,7 +434,7 @@ async def test_ingress_modsecurity(
     kube = kubernetes.client.NetworkingV1Api()
 
     def get_ingress_annotation():
-        ingress_list = kube.list_namespaced_ingress(namespace=ops_test.model.name).items
+        ingress_list = kube.list_namespaced_ingress(namespace=ops_test.model_name).items
         return ingress_list[0].metadata.annotations
 
     ingress_annotations = get_ingress_annotation()

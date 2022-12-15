@@ -198,19 +198,29 @@ class WordpressClient:
         ]
         return nonce
 
-    def create_post(self, title: str, content: str) -> WordPressPost:
+    def create_post(
+        self, title: str, content: str, featured_media: typing.Optional[int] = None
+    ) -> WordPressPost:
         """Create a WordPress post using wp-json API, return post object.
 
         Args:
             title (str): Title of the post.
             content (str): Content of the post.
+            featured_media (Optional[int]): Media ID for the featured media of the post.
 
         Returns:
             Post object returned from WordPress REST API.
         """
+        body: typing.Dict[str, typing.Union[str, int]] = {
+            "status": "publish",
+            "title": title,
+            "content": content,
+        }
+        if featured_media is not None:
+            body["featured_media"] = featured_media
         response = self._post(
             f"http://{self.host}/wp-json/wp/v2/posts/",
-            json_={"status": "publish", "title": title, "content": content},
+            json_=body,
             headers={"X-WP-Nonce": self._gen_wp_rest_nonce()},
             except_status_code=201,
         )
@@ -312,7 +322,7 @@ class WordpressClient:
 
     def upload_media(
         self, filename: str, content: bytes, mimetype: typing.Optional[str] = None
-    ) -> typing.List[str]:
+    ) -> dict:
         """Upload a media file (image/video).
 
         Args:
@@ -321,6 +331,7 @@ class WordpressClient:
             mimetype: Mimetype of the media file, will infer from the filename if not provided.
 
         Returns:
+             A dict with two keys: id and urls. Id is the WordPress media id and urls is a list of
              URL of the original image and resized images for the uploaded file on WordPress.
         """
         if mimetype is None:
@@ -343,7 +354,7 @@ class WordpressClient:
             image_urls.append(size["source_url"])
         if media["source_url"] not in image_urls:
             image_urls.append(media["source_url"])
-        return image_urls
+        return {"id": media["id"], "urls": image_urls}
 
     def login_using_launchpad(self, username: str, password: str) -> None:
         """Use Launchpad OpenID to login the WordPress site, require launchpad related plugins.

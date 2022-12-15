@@ -236,6 +236,25 @@ def test_wp_install_cmd(
     assert "--admin_password=test_admin_password" in install_cmd
 
 
+def test_core_reconciliation_before_storage_ready(harness: ops.testing.Harness):
+    """
+    arrange: before storage attached
+    act: run core reconciliation
+    assert: core reconciliation should be deferred and status should be waiting
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.begin_with_initial_hooks()
+    harness.framework.reemit()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+
+    with pytest.raises(WordPressWaitingStatusException):
+        charm._core_reconciliation()
+    assert isinstance(
+        harness.model.unit.status, ops.charm.model.WaitingStatus
+    ), "unit should be in WaitingStatus"
+    assert "storage" in harness.model.unit.status.message, "unit should wait for storage"
+
+
 def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Harness):
     """
     arrange: before peer relation established but after charm created
@@ -243,7 +262,9 @@ def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Har
     assert: core reconciliation should "fail" and status should be waiting
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.add_storage("uploads")
     harness.begin_with_initial_hooks()
+    harness.framework.reemit()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
     # core reconciliation should fail
@@ -577,6 +598,45 @@ def test_team_map():
             "\n", ""
         )
     )
+
+
+def test_swift_config(
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
+    """
+    arrange: after peer relation established and database ready
+    act: update legacy version of the wp_plugin_openstack-objectstorage_config configuration
+    assert: parsed swift configuration should update all legacy fields.
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    setup_replica_consensus()
+    swift_config = {
+        "auth-url": "http://swift.test/identity/v3",
+        "bucket": "wordpress_tests.integration.test_upgrade",
+        "password": "nomoresecret",
+        "region": "RegionOne",
+        "tenant": "demo",
+        "domain": "default",
+        "username": "demo",
+        "copy-to-swift": "1",
+        "serve-from-swift": "1",
+        "remove-local-file": "0",
+        "url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd/"
+        "wordpress_tests.integration.test_upgrade/wp-content/uploads/",
+        "prefix": "wp-content/uploads/",
+    }
+    harness.update_config({"wp_plugin_openstack-objectstorage_config": json.dumps(swift_config)})
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    del swift_config["url"]
+    del swift_config["prefix"]
+    swift_config.update(
+        {
+            "swift-url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd",
+            "object-prefix": "wp-content/uploads/",
+        }
+    )
+    assert charm._swift_config() == swift_config
 
 
 def test_akismet_plugin(run_standard_plugin_test: typing.Callable):

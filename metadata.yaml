@@ -1,6 +1,6 @@
 name: wordpress-k8s
 display-name: WordPress
-summary: "WordPress is open source software you can use to create a beautiful website, blog, or app."
+summary: WordPress is an OSS to create a beautiful website.
 description: "WordPress is open source software you can use to create a beautiful website, blog, or app. https://wordpress.org/"
 docs: https://discourse.charmhub.io/t/wordpress-documentation-overview/4052
 maintainers:

@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,unused-argument
 
 """Integration tests for upgrading WordPress charm."""
 
@@ -18,6 +18,7 @@ import kubernetes
 import ops.model
 import PIL.Image
 import pytest
+import pytest_asyncio
 import pytest_operator.plugin
 import requests
 from playwright.async_api import async_playwright
@@ -78,8 +79,8 @@ def gen_upgrade_test_charm_config_fixture(ops_test, swift_config, kube_core_clie
     return _gen_upgrade_test_charm_config
 
 
-@pytest.mark.abort_on_fail
-async def test_deploy_old_version(
+@pytest_asyncio.fixture(scope="module", name="deploy_old_version")
+async def deploy_old_version_fixture(
     num_units,
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
@@ -110,8 +111,9 @@ async def test_deploy_old_version(
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
 
-@pytest.mark.abort_on_fail
-async def test_create_example_blog(
+@pytest_asyncio.fixture(scope="module", name="create_example_blog")
+async def create_example_blog_fixture(
+    deploy_old_version,
     ops_test,
     default_admin_password,
     unit_ip_list,
@@ -186,8 +188,9 @@ async def test_create_example_blog(
         await screenshot(f"http://{unit_ip}", screenshot_dir / f"wordpress-before-{idx}.png")
 
 
-@pytest.mark.abort_on_fail
-async def test_build_and_upgrade(
+@pytest_asyncio.fixture(scope="module", name="build_and_upgrade")
+async def build_and_upgrade_fixture(
+    create_example_blog,
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
     gen_upgrade_test_charm_config,
@@ -220,8 +223,8 @@ async def test_build_and_upgrade(
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
 
-@pytest.mark.abort_on_fail
-async def test_wordpress_after_upgrade(unit_ip_list, screenshot_dir):
+@pytest.mark.usefixtures("build_and_upgrade")
+async def test_wordpress_upgrade(unit_ip_list, screenshot_dir):
     """
     arrange: the WordPress charm has been upgraded.
     act: browser the WordPress website powered by the new charm.

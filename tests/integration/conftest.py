@@ -55,17 +55,26 @@ def fixture_application_name():
     return "wordpress"
 
 
-@pytest_asyncio.fixture(scope="function", name="default_admin_password")
-async def fixture_default_admin_password(
+@pytest_asyncio.fixture(scope="function", name="get_default_admin_password")
+async def fixture_get_default_admin_password(
     ops_test: pytest_operator.plugin.OpsTest, application_name
 ):
-    """Get the default admin password using the get-initial-password action."""
+    """Create a function to get the default admin password using get-initial-password action."""
     assert ops_test.model
-    application: juju.application.Application = ops_test.model.applications[application_name]
-    action: juju.action.Action = await application.units[0].run_action("get-initial-password")
-    await action.wait()
 
-    yield action.results["password"]
+    async def _get_default_admin_password():
+        application: juju.application.Application = ops_test.model.applications[application_name]
+        action: juju.action.Action = await application.units[0].run_action("get-initial-password")
+        await action.wait()
+        return action.results["password"]
+
+    return _get_default_admin_password
+
+
+@pytest_asyncio.fixture(scope="function", name="default_admin_password")
+async def fixture_default_admin_password(get_default_admin_password):
+    """Get the default admin password using the get-initial-password action."""
+    return await get_default_admin_password()
 
 
 @pytest_asyncio.fixture(scope="function", name="get_unit_ip_list")

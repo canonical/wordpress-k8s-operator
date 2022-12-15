@@ -115,7 +115,7 @@ async def deploy_old_version_fixture(
 async def create_example_blog_fixture(
     deploy_old_version,
     ops_test,
-    default_admin_password,
+    get_default_admin_password,
     unit_ip_list,
     test_image,
     screenshot_dir,
@@ -178,7 +178,7 @@ async def create_example_blog_fixture(
     client = WordpressClient(
         host=unit_ip,
         username="admin",
-        password=default_admin_password,
+        password=await get_default_admin_password(),
         is_admin=True,
     )
     media_id = client.upload_media(filename="canonical.jpg", content=test_image)["id"]

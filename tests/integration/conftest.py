@@ -77,7 +77,7 @@ async def fixture_default_admin_password(get_default_admin_password):
     return await get_default_admin_password()
 
 
-@pytest_asyncio.fixture(scope="function", name="get_unit_ip_list")
+@pytest_asyncio.fixture(scope="module", name="get_unit_ip_list")
 async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, application_name):
     """Helper function to retrieve unit ip addresses, similar to fixture_get_unit_status_list"""
 

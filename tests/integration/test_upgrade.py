@@ -116,7 +116,7 @@ async def create_example_blog_fixture(
     deploy_old_version,
     ops_test,
     get_default_admin_password,
-    unit_ip_list,
+    get_unit_ip_list,
     test_image,
     screenshot_dir,
     kube_core_client,
@@ -174,6 +174,7 @@ async def create_example_blog_fixture(
     wp_cli_exec(
         ["wp", "option", "update", "object_storage", json.dumps(swift_config), "--format=json"]
     )
+    unit_ip_list = await get_unit_ip_list()
     unit_ip = unit_ip_list[0]
     client = WordpressClient(
         host=unit_ip,

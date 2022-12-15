@@ -55,7 +55,7 @@ def fixture_application_name():
     return "wordpress"
 
 
-@pytest_asyncio.fixture(scope="function", name="get_default_admin_password")
+@pytest_asyncio.fixture(scope="module", name="get_default_admin_password")
 async def fixture_get_default_admin_password(
     ops_test: pytest_operator.plugin.OpsTest, application_name
 ):

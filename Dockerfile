@@ -44,8 +44,8 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
         chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
 
 # Configure PHP and apache2 - mod_php requires us to use mpm_prefork
-COPY ./image-builder/files/docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf
-COPY ./image-builder/files/docker-php-swift-proxy.conf $APACHE_CONFDIR/conf-available/docker-php-swift-proxy.conf
+COPY ./files/docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf
+COPY ./files/docker-php-swift-proxy.conf $APACHE_CONFDIR/conf-available/docker-php-swift-proxy.conf
 
 RUN a2enconf docker-php && \
     a2dismod mpm_event && \

@@ -1,0 +1,4 @@
+*
+.*
+!files/docker-php.conf
+!files/docker-php-swift-proxy.conf

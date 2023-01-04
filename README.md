@@ -17,9 +17,9 @@ For DevOps or SRE teams this charm will make operating WordPress simple and stra
 It will allow easy deployment into multiple environments for testing of changes, 
 and supports scaling out for enterprise deployments.
 
-Project and community
+## Project and community
 
-The Indico Operator is a member of the Ubuntu family. 
+The WordPress Operator is a member of the Ubuntu family. 
 It's an open source project that warmly welcomes community projects, contributions, suggestions, fixes and constructive feedback.
 
 * [Code of conduct](https://ubuntu.com/community/code-of-conduct)
@@ -27,4 +27,4 @@ It's an open source project that warmly welcomes community projects, contributio
 * [Join our online chat](https://chat.charmhub.io/charmhub/channels/charm-dev)
 * [Contribute](https://charmhub.io/wordpress-k8s/docs/contributing-hacking)
 
-Thinking about using the Indico Operator for your next project? [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
+Thinking about using the WordPress Operator for your next project? [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!

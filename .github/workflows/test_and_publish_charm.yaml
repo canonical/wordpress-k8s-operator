@@ -1,0 +1,20 @@
+name: Publish to edge
+
+# On push to a "special" branch, we:
+# * always publish to charmhub at latest/edge/branchname
+# * always run tests
+# where a "special" branch is one of main or track/**, as
+# by convention these branches are the source for a corresponding
+# charmhub edge channel.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - track/**
+
+jobs:
+  publish-to-edge:
+    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml@main
+    secrets: inherit

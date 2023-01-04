@@ -1,48 +1,30 @@
 # WordPress Operator
 
-A Juju charm for a Kubernetes deployment of WordPress, configurable to use a
-MySQL backend.
+A Juju charm deploying and managing WordPress on Kubernetes.
+WordPress is the world's most popular website builder, and it's free and open-source.
 
-## Overview
+This charm simplifies initial deployment and "day N" operations of WordPress on Kubernetes,
+including scaling the number of instances, integration with SSO, 
+access to OpenStack Swift object storage for redundant file storage and more.
+It allows for deployment on many different Kubernetes platforms, 
+from [MicroK8s](https://microk8s.io/) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) 
+to public cloud Kubernetes offerings.
 
-WordPress powers more than 39% of the web — a figure that rises every day.
-Everything from simple websites, to blogs, to complex portals and enterprise
-websites, and even applications, are built with WordPress. WordPress combines
-simplicity for users and publishers with under-the-hood complexity for
-developers. This makes it flexible while still being easy-to-use.
+As such, the charm makes it easy for those looking to take control of their own content management system whilst keeping operations simple, 
+and gives them the freedom to deploy on the Kubernetes platform of their choice.
 
-## Usage
+For DevOps or SRE teams this charm will make operating WordPress simple and straightforward through Juju's clean interface.
+It will allow easy deployment into multiple environments for testing of changes, 
+and supports scaling out for enterprise deployments.
 
-For details on using Kubernetes with Juju [see here](https://juju.is/docs/kubernetes), and for
-details on using Juju with MicroK8s for easy local testing [see here](https://juju.is/docs/microk8s-cloud).
+Project and community
 
-To deploy the charm and relate it to the [MariaDB K8s charm](https://charmhub.io/mariadb) within a Juju
-Kubernetes model:
+The Indico Operator is a member of the Ubuntu family. 
+It's an open source project that warmly welcomes community projects, contributions, suggestions, fixes and constructive feedback.
 
-    juju deploy nginx-ingress-integrator ingress
-    juju deploy charmed-osm-mariadb-k8s mariadb
-    juju deploy wordpress-k8s --resource wordpress-image=wordpresscharmers/wordpress:bionic-5.7
-    juju relate wordpress-k8s mariadb:mysql
-    juju relate wordpress-k8s ingress:ingress
+* [Code of conduct](https://ubuntu.com/community/code-of-conduct)
+* [Get support](https://discourse.charmhub.io/)
+* [Join our online chat](https://chat.charmhub.io/charmhub/channels/charm-dev)
+* [Contribute](https://charmhub.io/wordpress-k8s/docs/contributing-hacking)
 
-It will take about 2 to 5 minutes for Juju hooks to discover the site is live
-and perform the initial setup for you. Once the "Workload" status is "active",
-your WordPress site is configured.
-
-To retrieve the auto-generated admin password, run the following:
-
-    juju run-action --wait wordpress-k8s/0 get-initial-password
-
-You should now be able to browse to the site hostname. Here's some
-sample output from `juju status`:
-
-    Unit                Workload     Agent  Address      Ports     Message
-    mariadb/0*          active       idle   10.1.234.43  3306/TCP  ready
-    wordpress-k8s/0*    active       idle   10.1.234.13  80/TCP    Pod configured
-
-In this case our `UNIT_IP` is 10.1.234.13. If we visit `http://${UNIT_IP}/`
-you'll see the WordPress site itself, or you can log in to the admin site
-at `http://{$UNIT_IP}/wp-admin` using a username of `admin` and the password
-from the `get-initial-password` action above.
-
-For further details, [see here](https://charmhub.io/wordpress-k8s/docs).
+Thinking about using the Indico Operator for your next project? [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!

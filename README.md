@@ -1,7 +1,7 @@
 # WordPress Operator
 
 A Juju charm deploying and managing WordPress on Kubernetes.
-WordPress is the world's most popular website builder, and it's free and open-source.
+[WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
 
 This charm simplifies initial deployment and "day N" operations of WordPress on Kubernetes,
 including scaling the number of instances, integration with SSO, 

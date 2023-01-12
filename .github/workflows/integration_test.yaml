@@ -2,14 +2,77 @@ name: Integration tests
 
 on:
   pull_request:
+  workflow_call:
+    outputs:
+      images:
+        description: Pushed docker images
+        value: ${{ jobs.get-images.outputs.images }}
 
 jobs:
+  get-runner-image:
+    name: Get runner image
+    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
+  get-images:
+    name: Get images
+    runs-on: ubuntu-22.04
+    outputs:
+      images: ${{ env.DOCKER_IMAGES }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get dockerfiles
+        run: echo "DOCKER_IMAGES=$(ls *.Dockerfile 2> /dev/null | sed s/\.Dockerfile// |  jq -Rsc '. / "\n" - [""]')" >> $GITHUB_ENV
+  build-images:
+    name: Build image
+    runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+    needs: [get-images, get-runner-image]
+    if: ${{ needs.get-images.outputs.images != '[]' }}
+    strategy:
+      matrix:
+        image: ${{ fromJSON(needs.get-images.outputs.images) }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to the Container registry
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v3
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}:${{ github.run_id }}
+          file: ${{ matrix.image }}.Dockerfile
+      # GitHub doesn't currently support pushing images in the Docker registry when opening a PR from a fork
+      # so an artifact is published instead
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        if: ${{ github.event.pull_request.head.repo.fork }}
+      - name: Build image as tarball
+        uses: docker/build-push-action@v3
+        if: ${{ github.event.pull_request.head.repo.fork }}
+        with:
+          context: .
+          file: ${{ matrix.image }}.Dockerfile
+          tags: localhost:32000/${{ matrix.image }}:latest
+          outputs: type=docker,dest=/tmp/${{ matrix.image }}.tar
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ github.event.pull_request.head.repo.fork }}
+        with:
+          name: ${{ matrix.image }}
+          path: /tmp/${{ matrix.image }}.tar
   integration-tests:
     runs-on: ubuntu-latest
+    needs: [get-images]
     strategy:
       fail-fast: false
       matrix:
         module: [test_core, test_error, test_upgrade]
+        image: ${{ fromJSON(needs.get-images.outputs.images) }}
         args:
           - name: num_units=3, db_from_config
             value: "--test-db-from-config --num-units=3"
@@ -23,55 +86,41 @@ jobs:
           - module: test_error
             args:
               name: num_units=3, db_from_config
-              value: "--test-db-from-config --num-units=3"
           - module: test_error
             args:
               name: num_units=1, db_from_config
-              value: "--test-db-from-config --num-units=1"
           - module: test_upgrade
             args:
               name: num_units=3, db_from_relation
-              value: "--num-units=3"
           - module: test_upgrade
             args:
               name: num_units=1, db_from_relation
-              value: "--num-units=1"
-
     name: Integration Tests (${{ matrix.module }}, ${{ matrix.args.name }})
-
     steps:
       - uses: actions/checkout@v3
-
       - name: Setup Devstack Swift
         id: setup-devstack-swift
         uses: canonical/setup-devstack-swift@v1
-
       - name: Create OpenStack credential file
         run: echo "${{ steps.setup-devstack-swift.outputs.credentials }}" > openrc
-
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-
       - name: Enable microk8s plugins
         run: |
           sudo microk8s enable registry hostpath-storage ingress
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s kubectl -n container-registry rollout status -w deployment/registry
           sudo microk8s kubectl -n ingress rollout status -w daemonset.apps/nginx-ingress-microk8s-controller
-
       - name: Dump microk8s config
         run: sudo microk8s config > kube-config
-
       - name: Install tox
         run: python3 -m pip install tox
-
       - name: Build docker image
         run: tox -e test-build
-
       - name: Run integration tests
-        run: > 
+        run: >
           tox -e integration -- 
           --openstack-rc ${GITHUB_WORKSPACE}/openrc
           --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}

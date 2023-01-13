@@ -56,12 +56,9 @@ jobs:
           ]
         }
       extra-arguments: |
+        -m "not (requires_secret)"
         --openstack-rc ${GITHUB_WORKSPACE}/openrc
-        --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
-        --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
-        --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
         --kube-config ${GITHUB_WORKSPACE}/kube-config
-        --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
         --screenshot-dir /tmp
         -k ${{ matrix.module }}
         ${{ matrix.args.value }}

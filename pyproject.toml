@@ -40,7 +40,8 @@ copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
 
 [tool.pytest.ini_options]
 markers = [
-    "slow: marks slow and not very important tests"
+    "slow: marks slow and not very important tests",
+    "requires_secret: marks tests that requires external secrets"
 ]
 
 [tool.mypy]

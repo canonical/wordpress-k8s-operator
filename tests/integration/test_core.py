@@ -448,6 +448,7 @@ async def test_ingress_modsecurity(
     )
 
 
+@pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_akismet_plugin(
     ops_test: pytest_operator.plugin.OpsTest,
@@ -485,6 +486,7 @@ async def test_akismet_plugin(
         ), "Akismet plugin should keep the normal comment"
 
 
+@pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_openid_plugin(
     ops_test: pytest_operator.plugin.OpsTest,

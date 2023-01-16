@@ -51,7 +51,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
 
 @pytest.mark.abort_on_fail
 async def test_mysql_config(
-    request,
+    db_from_config,
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
     kube_core_client,
@@ -64,7 +64,7 @@ async def test_mysql_config(
     act: config the WordPress charm with the database configuration from a mysql pod.
     assert: WordPress should be active.
     """
-    if not request.config.getoption("--test-db-from-config"):
+    if not db_from_config:
         pytest.skip()
     assert ops_test.model
     application = ops_test.model.applications[application_name]

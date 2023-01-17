@@ -434,7 +434,7 @@ async def build_and_deploy_fixture(
             "nginx-ingress-integrator",
             "ingress",
             "--channel",
-            "edge",
+            "stable",
             "--series",
             "focal",
             "--trust",

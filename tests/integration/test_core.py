@@ -464,6 +464,9 @@ async def test_akismet_plugin(
     assert: Akismet plugin should be activated and spam detection function should be working.
     """
     assert ops_test.model
+    await ops_test.model.add_relation("wordpress", "mariadb:mysql")
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+
     application = ops_test.model.applications[application_name]
     await application.set_config({"wp_plugin_akismet_key": akismet_api_key})
     await ops_test.model.wait_for_idle()

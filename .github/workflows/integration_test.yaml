@@ -22,7 +22,10 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     with:
       setup-devstack-swift: true
-      pre-run-script: -c 'sudo microk8s config > kube-config'
+      pre-run-script: |
+        -c "sudo microk8s config > kube-config && \
+        sudo microk8s enable registry hostpath-storage ingress && \
+        tox -e test-build"
       modules: '["test_core", "test_error", "test_upgrade"]'
       extra-arguments: |
         -m "not (requires_secret)" \

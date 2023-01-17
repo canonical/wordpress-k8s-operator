@@ -197,16 +197,16 @@ def kube_config_fixture(request):
     return openid_password
 
 
-@pytest.fixture(scope="module", name="num_units", params=[1, 3])
+@pytest.fixture(scope="module", name="num_units")
 def num_units_fixture(request):
     """Number of units to be deployed in tests."""
-    return request.param
+    return request.config.getoption("--num-units")
 
 
-@pytest.fixture(scope="module", name="db_from_config", params=[True, False])
+@pytest.fixture(scope="module", name="db_from_config")
 def db_from_config_fixture(request):
     """Whether to use database configuration config file or from relation."""
-    return request.param
+    return request.config.getoption("--test-db-from-config")
 
 
 @pytest.fixture(scope="module", name="screenshot_dir")

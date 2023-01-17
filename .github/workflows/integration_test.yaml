@@ -4,12 +4,29 @@ on:
   pull_request:
 
 jobs:
+  test-with-secrets:
+    uses: ./.github/workflows/integration_test_secrets.yaml
+    secrets: inherit
   integration-tests:
+    strategy:
+      matrix:
+        args:
+          - name: num_units=3, db_from_config
+            value: "--test-db-from-config --num-units=3"
+          - name: num_units=1, db_from_config
+            value: "--test-db-from-config --num-units=1"
+          - name: num_units=3, db_from_relation
+            value: "--num-units=3"
+          - name: num_units=1, db_from_relation
+            value: "--num-units=1"
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     with:
+      setup-devstack-swift: true
+      pre-run-script: -c 'sudo microk8s config > kube-config'
       modules: '["test_core", "test_error", "test_upgrade"]'
       extra-arguments: |
         -m "not (requires_secret)" \
-        --openstack-rc ${GITHUB_WORKSPACE}/openrc \
-        --kube-config ${GITHUB_WORKSPACE}/kube-config \
+        --openstack-rc ./openrc \
+        --kube-config ./kube-config \
         --screenshot-dir /tmp
+        --${{ matrix.args.value }}

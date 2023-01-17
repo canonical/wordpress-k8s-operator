@@ -448,6 +448,7 @@ async def test_ingress_modsecurity(
     )
 
 
+@pytest.mark.usefixtures("build_and_deploy")
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_akismet_plugin(
@@ -486,6 +487,7 @@ async def test_akismet_plugin(
         ), "Akismet plugin should keep the normal comment"
 
 
+@pytest.mark.usefixtures("build_and_deploy")
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_openid_plugin(

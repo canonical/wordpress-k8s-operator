@@ -28,5 +28,5 @@ jobs:
         -m "not (requires_secret)" \
         --openstack-rc ./openrc \
         --kube-config ./kube-config \
-        --screenshot-dir /tmp
-        --${{ matrix.args.value }}
+        --screenshot-dir /tmp \
+        ${{ matrix.args.value }}

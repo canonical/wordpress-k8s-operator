@@ -378,6 +378,9 @@ async def test_ingress(
         def patched_getaddrinfo(*args):
             """Helper function to patch getaddrinfo to point to desired ip address.
 
+            Args:
+                args: original arguments to getaddrinfo when creating network connection.
+
             Returns:
                 Patched getaddrinfo function.
             """

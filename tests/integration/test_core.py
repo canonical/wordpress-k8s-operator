@@ -550,4 +550,3 @@ async def test_openid_plugin(
         assert (
             "administrator" in wordpress_client.list_roles()
         ), "An launchpad OpenID account should be associated with the WordPress admin user"
-.

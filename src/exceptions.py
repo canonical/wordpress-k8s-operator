@@ -27,7 +27,14 @@ class WordPressStatusException(Exception):  # noqa: N818
     _status_class = ops.model.StatusBase
 
     def __init__(self, message):
-        """Initialize the instance."""
+        """Initialize the instance.
+
+        Args:
+            message: A message explaining the reason for given exception.
+
+        Raises:
+            TypeError: if same base class is used to instantiate base class.
+        """
         # Using type is necessary to check types between subclasses and superclass.
         # pylint: disable=unidiomatic-typecheck
         if type(self) is WordPressStatusException:

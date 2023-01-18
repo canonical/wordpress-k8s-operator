@@ -208,7 +208,8 @@ class WordpressDatabaseMock:
 
 
 class MysqlConnectorMock:
-    """A mock for :py:mod:`mysql.connector`."""
+    # Mocked Error attribute can be ignored.
+    """A mock for :py:mod:`mysql.connector`."""  # noqa: DCO060
 
     # Mock for :class:`mysql.connector.Error`
     Error = mysql.connector.Error
@@ -261,13 +262,14 @@ class HandlerRegistry:
     def register(
         self, match: typing.Callable[[typing.Sequence[str]], bool]
     ) -> typing.Callable[[typing.Callable], typing.Callable]:
-        """The decorator to collector the match pattern and handler, see class docstring for usage.
+        """The decorator to collect the match pattern and handler, see class docstring for usage.
 
         Args:
             match: A match function takes input and output matching result as bool.
         """
 
         def decorator(func):
+            """Decorator to collect match pattern and handler."""
             self.registered_handler.append((match, func))
             return func
 
@@ -360,7 +362,8 @@ class WordpressContainerMock:
         return file_list
 
     def remove_path(self, path: str, recursive: bool = False) -> None:
-        """Mock method for :meth:`ops.charm.model.Container.remove_path`."""
+        # Reraise documentation for mocked path removal can be ignored.
+        """Mock method for :meth:`ops.charm.model.Container.remove_path`."""  # noqa: DCO055
         try:
             del self.fs[path]
         except KeyError:
@@ -517,9 +520,10 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "option", "update"])
     def _mock_wp_option_update(self, cmd):
+        # Ignore 1 line summary requirement
         """Simulate ``wp option update <option> <value> [--format=json]`` command execution in the
         container.
-        """
+        """  # noqa: D205, D415
         db = self._current_database()
         option = cmd[3]
         value = cmd[4]
@@ -576,6 +580,7 @@ class WordpressPatch:
     """The combined mocking and patching system for WordPress unit tests."""
 
     def __init__(self) -> None:
+        """Initialize the instance."""
         self.database = WordpressDatabaseMock(
             builtin_wordpress_options={"users_can_register": "0"}
         )
@@ -588,6 +593,7 @@ class WordpressPatch:
         original_container_method = WordpressCharm._container
 
         def mock_container(_self):
+            """Mocked wordpress container."""
             container = original_container_method(_self)
             self.container.original_pebble = container
             return self.container

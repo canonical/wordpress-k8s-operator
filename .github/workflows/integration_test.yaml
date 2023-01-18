@@ -33,3 +33,10 @@ jobs:
         --kube-config ./kube-config \
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
+  required_status_checks:
+    name: Required Integration Test Status Checks
+    runs-on: ubuntu-latest
+    needs:
+      - integration-tests
+    steps:
+      - run: echo required checks passed

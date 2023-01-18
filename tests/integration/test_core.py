@@ -88,13 +88,15 @@ async def test_mysql_config(
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(request, ops_test: pytest_operator.plugin.OpsTest, application_name):
+async def test_mysql_relation(
+    db_from_config, ops_test: pytest_operator.plugin.OpsTest, application_name
+):
     """
     arrange: after WordPress charm has been deployed.
     act: deploy a mariadb charm and add a relation between WordPress and mariadb.
     assert: WordPress should be active.
     """
-    if request.config.getoption("--test-db-from-config"):
+    if db_from_config:
         pytest.skip()
     assert ops_test.model
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
@@ -347,7 +349,7 @@ async def test_wordpress_plugin_installation_error(
 async def test_ingress(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name: str,
-    create_self_signed_tls_secret,
+    create_self_signed_tls_secret: typing.Callable[[str], tuple[str, bytes]],
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established.
@@ -358,10 +360,27 @@ async def test_ingress(
         after configuration tls_secret_name be set.
     """
 
-    def gen_patch_getaddrinfo(host, resolve_to):
+    def gen_patch_getaddrinfo(host: str, resolve_to: str):
+        """Helper function to generate patched getaddrinfo function.
+
+        This function is used to generate a patched getaddrinfo function that will resolve to the
+        resolve_to address without having to actually register a host.
+
+        Args:
+            host: intended hostname of a given application.
+            resolve_to: destination address for host to resolve to.
+
+        Returns:
+            A patching function for getaddrinfo.
+        """
         original_getaddrinfo = socket.getaddrinfo
 
         def patched_getaddrinfo(*args):
+            """Helper function to patch getaddrinfo to point to desired ip address.
+
+            Returns:
+                Patched getaddrinfo function.
+            """
             if args[0] == host:
                 return original_getaddrinfo(resolve_to, *args[1:])
             return original_getaddrinfo(*args)
@@ -434,6 +453,11 @@ async def test_ingress_modsecurity(
     kube = kubernetes.client.NetworkingV1Api()
 
     def get_ingress_annotation():
+        """Helper function to get ingress annotations from kubernetes.
+
+        Returns:
+            Nginx ingress annotations.
+        """
         ingress_list = kube.list_namespaced_ingress(namespace=ops_test.model_name).items
         return ingress_list[0].metadata.annotations
 
@@ -526,3 +550,4 @@ async def test_openid_plugin(
         assert (
             "administrator" in wordpress_client.list_roles()
         ), "An launchpad OpenID account should be associated with the WordPress admin user"
+.

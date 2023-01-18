@@ -14,7 +14,12 @@ import requests
 
 
 class WordPressPost(typing.TypedDict):
-    """Typing for a WordPress post object."""
+    """Typing for a WordPress post object.
+
+    Attrs:
+        id: A numeric identifier of a given post.
+        link: A url path to given post.
+    """
 
     id: int
     link: str
@@ -70,6 +75,11 @@ class WordpressClient:
             password: WordPress user password.
             is_admin: If this user is a WordPress admin.
             use_launchpad_login: Use Launchpad OpenID to login instead of WordPress userpass.
+
+        Raises:
+            RuntimeError: if invalid credentials were used to login to wordpress.
+            ValueError: if non-admin account was used to access /wp-json/ endpoint or the /wp-json/
+                endpoint was not set through permalink.
         """
         self.host = host
         self.username = username
@@ -109,6 +119,9 @@ class WordpressClient:
             except_status_code: Except the response http status code,
                 raise :exc:`requests.HTTPError` if not match.
 
+        Raises:
+            HTTPError: if unexpected status code was returned.
+
         Returns:
             An instance of :class:`requests.Response`.
         """
@@ -137,6 +150,9 @@ class WordpressClient:
             headers: Same as the ``url``  in :meth:`requests.Session.post`.
             except_status_code: Except the response http status code,
                 raise :exc:`requests.HTTPError` if not match.
+
+        Raises:
+            HTTPError: if unexpected status code was returned.
 
         Returns:
             An instance of :class:`requests.Response`.
@@ -234,7 +250,10 @@ class WordpressClient:
             post_link: URL of the post that the new comment will be attached to.
             content: Content of the new comment.
 
-        Return:
+        Raises:
+            ValueError: if same comment already exists.
+
+        Returns:
             (str) URL pointed to the comment created.
         """
         post_page = self._get(post_link)
@@ -329,6 +348,9 @@ class WordpressClient:
             filename: Filename of the media file.
             content: Content of the media file, bytes.
             mimetype: Mimetype of the media file, will infer from the filename if not provided.
+
+        Raises:
+            ValueError: if filename has invalid mimetype that cannot be automatically deduced.
 
         Returns:
              A dict with two keys: id and urls. Id is the WordPress media id and urls is a list of
@@ -438,6 +460,9 @@ class WordpressClient:
 
     def list_roles(self) -> typing.List[str]:
         """List all WordPress roles of the current user.
+
+        Raises:
+            ValueError: No valid user to call list_roles was found.
 
         Returns:
             WordPress roles as a list of str.

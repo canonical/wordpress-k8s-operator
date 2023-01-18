@@ -98,6 +98,11 @@ def test_mysql_relation(
     """
 
     def get_db_info_from_state():
+        """Wrapper for getting database relation state information.
+
+        Returns:
+            Wrapped dictionary of database relation information.
+        """
         return {
             "host": charm.state.relation_db_host,
             "database": charm.state.relation_db_name,
@@ -153,7 +158,16 @@ def test_wp_config(
     assert: generated wp-config.php should be valid.
     """
 
-    def in_same_line(content, *matches):
+    def in_same_line(content: str, *matches: str):
+        """Helper function to check if matches belong in same line within a content.
+
+        Args:
+            content: Target string to check for matches within same line.
+            matches: Strings that should belong in the same line.
+
+        Returns:
+            True if a line containing all matches is found. False otherwise.
+        """
         for line in content.splitlines():
             if all(match in line for match in matches):
                 return True
@@ -690,6 +704,7 @@ def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Ca
     """
 
     def additional_check_after_install():
+        """Helper function to assert swift proxy configuration file is correctly installed."""
         conf_found = False
         for file in patch.container.fs:
             if file.endswith("docker-php-swift-proxy.conf"):

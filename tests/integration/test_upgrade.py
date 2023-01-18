@@ -13,6 +13,7 @@ import logging
 import re
 import subprocess  # nosec
 import time
+from pathlib import Path
 
 import kubernetes
 import ops.model
@@ -41,8 +42,13 @@ POST_TITLE = "WordPress Post #1"
 POST_COMMENT = "I am a comment."
 
 
-async def screenshot(url, path):
-    """Create a screenshot of a website."""
+async def screenshot(url: str, path: Path):
+    """Create a screenshot of a website.
+
+    Args:
+        url: URL of a path to take a screenshot of.
+        path: Filepath to save the screenshot to.
+    """
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch()
         page = await browser.new_page()
@@ -63,6 +69,11 @@ def gen_upgrade_test_charm_config_fixture(ops_test, swift_config, kube_core_clie
     del swift_config["object-prefix"]
 
     def _gen_upgrade_test_charm_config():
+        """Helper function to get wordpress charm config with currently deployed db & swift state.
+
+        Returns:
+            Charm config containing currently deployed configurations.
+        """
         charm_config = {
             "db_host": kube_core_client.read_namespaced_pod(
                 name="mysql", namespace=ops_test.model_name
@@ -95,6 +106,7 @@ async def deploy_old_version_fixture(
     assert ops_test.model
 
     async def deploy_wordpress():
+        """Helper function to deploy wordpress charm."""
         await ops_test.model.deploy(
             "wordpress-k8s",
             resources={"wordpress-image": "wordpresscharmers/wordpress:v5.9.4-20.04_edge"},
@@ -131,6 +143,11 @@ async def create_example_blog_fixture(
     namespace = ops_test.model_name
 
     def get_wordpress_podspec_pod():
+        """Helper function to get name of podspec version of wordpress.
+
+        Returns:
+            Name of pod of podspec version of wordpress.
+        """
         return (
             kube_core_client.list_namespaced_pod(
                 namespace=namespace, label_selector=f"app.kubernetes.io/name={application_name}"
@@ -141,7 +158,12 @@ async def create_example_blog_fixture(
 
     wordpress_pod = get_wordpress_podspec_pod()
 
-    def kubernetes_exec(cmd):
+    def kubernetes_exec(cmd: list[str]):
+        """Helper function to execute a command in wordpress pod.
+
+        Args:
+            cmd: Command to execute on podspec version of wordpress pod.
+        """
         logger.info("exec %s on %s", cmd, wordpress_pod)
         resp = kubernetes.stream.stream(
             kube_core_client.connect_get_namespaced_pod_exec,
@@ -168,6 +190,11 @@ async def create_example_blog_fixture(
     kubernetes_exec(["chmod", "+x", "/usr/local/bin/wp"])
 
     def wp_cli_exec(wp_cli_cmd):
+        """Helper function to execute wordpress cli command in podspec version wordpress pod.
+
+        Args:
+            wp_cli_cmd: Wordpress cli command to execute.
+        """
         kubernetes_exec(wp_cli_cmd + ["--allow-root", "--path=/var/www/html"])
 
     wp_cli_exec(["wp", "plugin", "activate", "openstack-objectstorage-k8s"])
@@ -206,7 +233,13 @@ async def build_and_upgrade_fixture(
     charm = await ops_test.build_charm(".")
     await ops_test.model.remove_application(application_name)
 
-    def wordpress_removed():
+    def wordpress_removed() -> bool:
+        """Helper function to check if wordpress charm was fully removed.
+
+        Returns:
+            True if wordpress is removed, False otherwise.
+        """
+        assert ops_test.model_name  # to let mypy know it's not None
         status = subprocess.check_output(  # nosec
             ["juju", "status", "-m", ops_test.model_name, "--format", "json"]
         )
@@ -232,7 +265,15 @@ async def test_wordpress_upgrade(unit_ip_list, screenshot_dir):
     assert: the website should have the same content as the old one.
     """
 
-    def check_images(html):
+    def check_images(html) -> None:
+        """Helper function to check image contents of a newly upgraded wordpress.
+
+        Args:
+            html: Stringified html contents of a page to check for images.
+
+        Raises:
+            AssertionError: If invalid image was found in page.
+        """
         image_urls = re.findall('<img[^>]+src="([^"]+)"[^>]*>', html)
         assert image_urls
         for url in image_urls:

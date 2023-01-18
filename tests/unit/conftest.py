@@ -52,6 +52,11 @@ def setup_replica_consensus_fixture(harness: ops.testing.Harness, app_name: str)
     """
 
     def _setup_replica_consensus():
+        """Function to set up peer relation. See fixture docstring for more information.
+
+        Returns:
+            Relation data for wordpress peers. Includes WordPress salt keys and secrets.
+        """
         replica_relation_id = harness.add_relation("wordpress-replica", app_name)
         harness.add_storage("uploads")
         harness.set_leader()
@@ -85,6 +90,11 @@ def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict):
     """
 
     def _setup_db_relation():
+        """Function to set up db relation. See fixture docstring for more information.
+
+        Returns:
+            Tuple of relation id and relation data.
+        """
         db_info = example_db_info
         db_relation_id = harness.add_relation("db", "mysql")
         harness.add_relation_unit(db_relation_id, "mysql/0")
@@ -112,12 +122,24 @@ def run_standard_plugin_test(
     """Yields a function that can be used to perform some general test for different plugins."""
 
     def _run_standard_plugin_test(
-        plugin,
-        plugin_config,
-        excepted_options,
-        excepted_options_after_removed=None,
-        additional_check_after_install=None,
+        plugin: str,
+        plugin_config: dict[str, str],
+        excepted_options: dict[str, typing.Any],
+        excepted_options_after_removed: dict[str, str] | None = None,
+        additional_check_after_install: typing.Callable | None = None,
     ):
+        """Function to perform standard plugins test.
+
+        Args:
+            plugin: Name of WordPress standard plugin to test.
+            plugin_config: Configurable parameters for WordPress plugins. See config.yaml for
+                configuration details.
+            excepted_options: Expected configurations of a given plugin.
+            excepted_options_after_removed: Remaining options after plugin deactivation.
+                Defaults to None.
+            additional_check_after_install: Callback to additional checks to perform after
+                installation. Defaults to None.
+        """
         plugin_config_keys = list(plugin_config.keys())
         harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
         setup_replica_consensus()
@@ -141,6 +163,7 @@ def run_standard_plugin_test(
         database_instance = patch.database.get_wordpress_database(
             host="config_db_host", database="config_db_name"
         )
+        assert database_instance
         assert (
             database_instance.activated_plugins == {plugin}
             if isinstance(plugin, str)

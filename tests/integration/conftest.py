@@ -85,7 +85,7 @@ async def fixture_default_admin_password(get_default_admin_password):
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ip_list")
 async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, application_name):
-    """Helper function to retrieve unit ip addresses, similar to fixture_get_unit_status_list"""
+    """Retrieve unit ip addresses, similar to fixture_get_unit_status_list"""
 
     async def _get_unit_ip_list():
         """Retrieve unit ip addresses, similar to fixture_get_unit_status_list
@@ -115,7 +115,7 @@ async def fixture_unit_ip_list(get_unit_ip_list):
 
 @pytest_asyncio.fixture(scope="function", name="get_theme_list_from_ip")
 async def fixture_get_theme_list_from_ip(default_admin_password):
-    """Helper function to retrieve installed themes from the WordPress instance"""
+    """Retrieve installed themes from the WordPress instance"""
 
     def _get_theme_list_from_ip(unit_ip: str):
         """Retrieve installed themes from the WordPress instance

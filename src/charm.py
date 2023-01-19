@@ -39,8 +39,12 @@ logger = logging.getLogger()
 
 
 class WordpressCharm(CharmBase):
-    # Ignore class attributes in docstring since each methods should cover it's own.
-    """Charm for WordPress on kubernetes."""  # noqa: DCO060
+    """Charm for WordPress on kubernetes.
+
+    Attrs:
+        state: Persistent charm state used to store metadata after various events.
+        ingress_config: Ingress configuration data based on current charm configuration.
+    """
 
     class _ReplicaRelationNotReady(Exception):
         """Replica databag was accessed before peer relations are established."""
@@ -123,8 +127,12 @@ class WordpressCharm(CharmBase):
     state = StoredState()
 
     def __init__(self, *args, **kwargs):
-        # Ignore arguments for Charmbase in docstring.
-        """Initialize the instance."""  # noqa: E731, DCO020
+        """Initialize the instance.
+
+        Args:
+            args: arguments passed into Charmbase superclass.
+            kwargs: keyword arguments passed into Charmbase superclass.
+        """  # noqa: E731, DCO020
         super().__init__(*args, **kwargs)
 
         self.database = MySQLClient(self, "db")
@@ -272,7 +280,7 @@ class WordpressCharm(CharmBase):
         """
 
         def _wp_generate_password(length=64) -> str:
-            """Generate password helper function.
+            """Generate password.
 
             Args:
                 length: Desired length of password. Defaults to 64.

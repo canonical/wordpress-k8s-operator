@@ -363,7 +363,11 @@ class WordpressContainerMock:
 
     def remove_path(self, path: str, recursive: bool = False) -> None:
         # Reraise documentation for mocked path removal can be ignored.
-        """Mock method for :meth:`ops.charm.model.Container.remove_path`."""  # noqa: DCO055
+        """Mock method for :meth:`ops.charm.model.Container.remove_path`.
+
+        Raises:
+            KeyError: if path is not found in the mock filesystem.
+        """  # noqa: DCO055
         try:
             del self.fs[path]
         except KeyError:
@@ -520,10 +524,14 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "option", "update"])
     def _mock_wp_option_update(self, cmd):
-        # Ignore 1 line summary requirement
-        """Simulate ``wp option update <option> <value> [--format=json]`` command execution in the
-        container.
-        """  # noqa: D205, D415
+        """Simulate command execution in the container.
+
+        Simulate wordpress option update command which is equivalent to:
+        ``wp option update <option> <value> [--format=json]``
+
+        Args:
+            cmd: Command to simulate the execution in container.
+        """
         db = self._current_database()
         option = cmd[3]
         value = cmd[4]

@@ -136,9 +136,8 @@ def run_standard_plugin_test(
                 configuration details.
             excepted_options: Expected configurations of a given plugin.
             excepted_options_after_removed: Remaining options after plugin deactivation.
-                Defaults to None.
             additional_check_after_install: Callback to additional checks to perform after
-                installation. Defaults to None.
+                installation.
         """
         plugin_config_keys = list(plugin_config.keys())
         harness.set_can_connect(harness.model.unit.containers["wordpress"], True)

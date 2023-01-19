@@ -159,7 +159,7 @@ def test_wp_config(
     """
 
     def in_same_line(content: str, *matches: str):
-        """Helper function to check if matches belong in same line within a content.
+        """Check if matches belong in same line within a content.
 
         Args:
             content: Target string to check for matches within same line.
@@ -704,7 +704,7 @@ def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Ca
     """
 
     def additional_check_after_install():
-        """Helper function to assert swift proxy configuration file is correctly installed."""
+        """Assert swift proxy configuration file is correctly installed."""
         conf_found = False
         for file in patch.container.fs:
             if file.endswith("docker-php-swift-proxy.conf"):

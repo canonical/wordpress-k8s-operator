@@ -69,7 +69,7 @@ def gen_upgrade_test_charm_config_fixture(ops_test, swift_config, kube_core_clie
     del swift_config["object-prefix"]
 
     def _gen_upgrade_test_charm_config():
-        """Helper function to get wordpress charm config with currently deployed db & swift state.
+        """Get wordpress charm config with currently deployed db & swift state.
 
         Returns:
             Charm config containing currently deployed configurations.
@@ -106,7 +106,7 @@ async def deploy_old_version_fixture(
     assert ops_test.model
 
     async def deploy_wordpress():
-        """Helper function to deploy wordpress charm."""
+        """Deploy wordpress charm to juju."""
         await ops_test.model.deploy(
             "wordpress-k8s",
             resources={"wordpress-image": "wordpresscharmers/wordpress:v5.9.4-20.04_edge"},
@@ -143,7 +143,7 @@ async def create_example_blog_fixture(
     namespace = ops_test.model_name
 
     def get_wordpress_podspec_pod():
-        """Helper function to get name of podspec version of wordpress.
+        """Get name of podspec version of wordpress.
 
         Returns:
             Name of pod of podspec version of wordpress.
@@ -159,7 +159,7 @@ async def create_example_blog_fixture(
     wordpress_pod = get_wordpress_podspec_pod()
 
     def kubernetes_exec(cmd: list[str]):
-        """Helper function to execute a command in wordpress pod.
+        """Execute a command in wordpress pod.
 
         Args:
             cmd: Command to execute on podspec version of wordpress pod.
@@ -190,7 +190,7 @@ async def create_example_blog_fixture(
     kubernetes_exec(["chmod", "+x", "/usr/local/bin/wp"])
 
     def wp_cli_exec(wp_cli_cmd):
-        """Helper function to execute wordpress cli command in podspec version wordpress pod.
+        """Execute wordpress cli command in podspec version wordpress pod.
 
         Args:
             wp_cli_cmd: Wordpress cli command to execute.
@@ -234,7 +234,7 @@ async def build_and_upgrade_fixture(
     await ops_test.model.remove_application(application_name)
 
     def wordpress_removed() -> bool:
-        """Helper function to check if wordpress charm was fully removed.
+        """Check if wordpress charm was fully removed.
 
         Returns:
             True if wordpress is removed, False otherwise.
@@ -266,7 +266,7 @@ async def test_wordpress_upgrade(unit_ip_list, screenshot_dir):
     """
 
     def check_images(html) -> None:
-        """Helper function to check image contents of a newly upgraded wordpress.
+        """Check image contents of a newly upgraded wordpress.
 
         Args:
             html: Stringified html contents of a page to check for images.

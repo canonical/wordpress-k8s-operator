@@ -15,40 +15,20 @@ on:
       - track/**
 
 jobs:
-  lib-check:
-    # This job is the precondition of all jobs that need the Charmhub token.
-    # By disabling this job on forked repositories, we can achieve
-    # disabling the publishing to Charmhub action on forked repositories
-    # while still running tests on push events
-    if: github.repository_owner == 'canonical'
-    name: Check libraries
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check libs
-        uses: canonical/charming-actions/check-libraries@2.1.1
-        with:
-          credentials: ${{ secrets.CHARMHUB_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-  unit-tests:
-    uses: canonical/operator-workflows/.github/workflows/test.yaml@main
-    secrets: inherit
   integration-tests:
     uses: ./.github/workflows/integration_test.yaml
-  select-channel:
-    name: Select target channel
-    runs-on: ubuntu-22.04
-    outputs:
-      channel: ${{ steps.channel.outputs.name }}
-    steps:
-      - name: Select charmhub channel
-        id: channel
-        uses: canonical/charming-actions/channel@2.1.1
-  publish-charm:
-    name: Publish
-    uses: canonical/operator-workflows/.github/workflows/publish_charm.yaml@main
-    needs: [unit-tests, integration-tests, select-channel]
+  test-and-publish-charm:
+    needs: integration-tests
+    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml
     with:
-      channel: ${{ needs.select-channel.outputs.channel }}
-      images: ${{ needs.integration-tests.outputs.images }}
-    secrets: inherit
+      integration-test-modules: '["test_core"]'
+      integration-test-pre-run-script: |
+        -c "sudo microk8s config > kube-config && \
+        sudo microk8s enable registry hostpath-storage ingress && \
+        tox -e test-build"
+      integration-test-extra-arguments: |
+        -m "not (requires_secret)" \
+        --openstack-rc ./openrc \
+        --kube-config ./kube-config \
+        --screenshot-dir /tmp \
+        --test-db-from-config --num-units=3

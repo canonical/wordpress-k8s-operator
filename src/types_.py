@@ -1,13 +1,13 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Module for commonly used internal types in wordpress charm."""
+"""Module for commonly used internal types in WordPress charm."""
 
 from typing import Any, NamedTuple, Union
 
 
 class CommandExecResult(NamedTuple):
-    """Result of executed command from wordpress container.
+    """Result of executed command from WordPress container.
 
     Attrs:
         return_code: exit code from executed command.
@@ -21,12 +21,12 @@ class CommandExecResult(NamedTuple):
 
 
 class ExecResult(NamedTuple):
-    """Wrapper for executed command result from wordpress container.
+    """Wrapper for executed command result from WordPress container.
 
     Attrs:
         success: True if command successful, else False.
         result: returned value from execution command, parsed in desired format.
-        message: Error message output of executed command.
+        message: error message output of executed command.
     """
 
     success: bool

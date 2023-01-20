@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """User-defined exceptions used by WordPress charm."""
@@ -26,7 +26,7 @@ class WordPressStatusException(Exception):  # noqa: N818
 
     _status_class = ops.model.StatusBase
 
-    def __init__(self, message):
+    def __init__(self, message: str):
         """Initialize the instance.
 
         Args:

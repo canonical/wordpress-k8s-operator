@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """A WordPress HTTP client for test purpose only."""
@@ -73,11 +73,11 @@ class WordpressClient:
             host: ip address or hostname of the WordPress instance.
             username: WordPress user username.
             password: WordPress user password.
-            is_admin: If this user is a WordPress admin.
+            is_admin: if this user is a WordPress admin.
             use_launchpad_login: Use Launchpad OpenID to login instead of WordPress userpass.
 
         Raises:
-            RuntimeError: if invalid credentials were used to login to wordpress.
+            RuntimeError: if invalid credentials were used to login to WordPress.
             ValueError: if non-admin account was used to access /wp-json/ endpoint or the /wp-json/
                 endpoint was not set through permalink.
         """

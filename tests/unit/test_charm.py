@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """WordPress charm unit tests."""
@@ -29,13 +29,13 @@ def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     secrets = charm._generate_wp_secret_keys()
     assert (
         "default_admin_password" in secrets
-    ), "wordpress should generate a default admin password"
+    ), "WordPress should generate a default admin password"
 
     del secrets["default_admin_password"]
     key_values = list(secrets.values())
     assert set(secrets.keys()) == set(
         charm._wordpress_secret_key_fields()
-    ), "generated wordpress secrets should contain all required fields"
+    ), "generated WordPress secrets should contain all required fields"
     assert len(key_values) == len(set(key_values)), "no two secret values should be the same"
     for value in key_values:
         assert not (value.isalnum() or len(value) < 64), "secret values should not be too simple"
@@ -345,7 +345,7 @@ def test_core_reconciliation(
 
     assert patch.database.is_wordpress_installed(
         db_config["db_host"], db_config["db_name"]
-    ), "wordpress should be installed after core reconciliation"
+    ), "WordPress should be installed after core reconciliation"
 
     db_config.update({"db_host": "config_db_host_2"})
     patch.database.prepare_database(
@@ -358,7 +358,7 @@ def test_core_reconciliation(
 
     assert patch.database.is_wordpress_installed(
         "config_db_host_2", db_config["db_name"]
-    ), "wordpress should be installed after database config changed"
+    ), "WordPress should be installed after database config changed"
 
 
 def test_get_initial_password_action_before_replica_consensus(
@@ -764,7 +764,7 @@ def test_ingress(
 ):
     """
     arrange: after peer relation established and database ready.
-    act: create a relation between wordpress and nginx ingress integrator, and update the
+    act: create a relation between wordpress-k8s and nginx ingress integrator, and update the
         tls_secret_name configuration.
     assert: ingress relation data should be set up according to the configuration and application
         name.

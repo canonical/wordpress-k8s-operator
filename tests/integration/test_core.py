@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # pylint: disable=protected-access,too-many-locals
@@ -364,8 +364,8 @@ async def test_ingress(
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: deploy the nginx-ingress-integrator charm and create the relation between ingress charm
-        and wordpress charm. After that, update some ingress related configuration of the
-        wordpress charm.
+        and WordPress charm. After that, update some ingress related configuration of the
+        WordPress charm.
     assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections
         after configuration tls_secret_name be set.
     """

@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # pylint:disable=invalid-name,protected-access,unused-argument
@@ -408,10 +408,10 @@ class WordpressContainerMock:
         return db_info["db_host"], db_info["db_name"]
 
     def _current_database(self) -> typing.Optional[WordPressDatabaseInstanceMock]:
-        """Retrieve the current connected mock wordpress database instance as in the wp-config.php.
+        """Retrieve the current connected mock WordPress database instance as in the wp-config.php.
 
         Returns:
-            The current connected mock wordpress database instance as in the wp-config.php.
+            The current connected mock WordPress database instance as in the wp-config.php.
         """
         return self._wordpress_database_mock.get_wordpress_database(
             *self._current_database_host_and_database()
@@ -526,7 +526,7 @@ class WordpressContainerMock:
     def _mock_wp_option_update(self, cmd):
         """Simulate command execution in the container.
 
-        Simulate wordpress option update command which is equivalent to:
+        Simulate WordPress option update command which is equivalent to:
         ``wp option update <option> <value> [--format=json]``
 
         Args:
@@ -601,7 +601,7 @@ class WordpressPatch:
         original_container_method = WordpressCharm._container
 
         def mock_container(_self):
-            """Mocked wordpress container."""
+            """Mocked WordPress container."""
             container = original_container_method(_self)
             self.container.original_pebble = container
             return self.container

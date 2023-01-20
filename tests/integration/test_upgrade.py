@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # pylint: disable=too-many-locals,unused-argument
@@ -69,7 +69,7 @@ def gen_upgrade_test_charm_config_fixture(ops_test, swift_config, kube_core_clie
     del swift_config["object-prefix"]
 
     def _gen_upgrade_test_charm_config():
-        """Get wordpress charm config with currently deployed db & swift state.
+        """Get WordPress charm config with currently deployed db & swift state.
 
         Returns:
             Charm config containing currently deployed configurations.
@@ -106,7 +106,7 @@ async def deploy_old_version_fixture(
     assert ops_test.model
 
     async def deploy_wordpress():
-        """Deploy wordpress charm to juju."""
+        """Deploy WordPress charm to juju."""
         await ops_test.model.deploy(
             "wordpress-k8s",
             resources={"wordpress-image": "wordpresscharmers/wordpress:v5.9.4-20.04_edge"},
@@ -143,10 +143,10 @@ async def create_example_blog_fixture(
     namespace = ops_test.model_name
 
     def get_wordpress_podspec_pod():
-        """Get name of podspec version of wordpress.
+        """Get name of podspec version of WordPress.
 
         Returns:
-            Name of pod of podspec version of wordpress.
+            Name of pod of podspec version of WordPress.
         """
         return (
             kube_core_client.list_namespaced_pod(
@@ -159,10 +159,10 @@ async def create_example_blog_fixture(
     wordpress_pod = get_wordpress_podspec_pod()
 
     def kubernetes_exec(cmd: list[str]):
-        """Execute a command in wordpress pod.
+        """Execute a command in WordPress pod.
 
         Args:
-            cmd: Command to execute on podspec version of wordpress pod.
+            cmd: Command to execute on podspec version of WordPress pod.
         """
         logger.info("exec %s on %s", cmd, wordpress_pod)
         resp = kubernetes.stream.stream(
@@ -190,10 +190,10 @@ async def create_example_blog_fixture(
     kubernetes_exec(["chmod", "+x", "/usr/local/bin/wp"])
 
     def wp_cli_exec(wp_cli_cmd):
-        """Execute wordpress cli command in podspec version wordpress pod.
+        """Execute WordPress cli command in podspec version WordPress pod.
 
         Args:
-            wp_cli_cmd: Wordpress cli command to execute.
+            wp_cli_cmd: WordPress cli command to execute.
         """
         kubernetes_exec(wp_cli_cmd + ["--allow-root", "--path=/var/www/html"])
 
@@ -223,6 +223,7 @@ async def build_and_upgrade_fixture(
     application_name,
     gen_upgrade_test_charm_config,
     num_units,
+    wordpress_image,
 ):
     """
     arrange: an old version of the WordPress is deployed.
@@ -234,10 +235,10 @@ async def build_and_upgrade_fixture(
     await ops_test.model.remove_application(application_name)
 
     def wordpress_removed() -> bool:
-        """Check if wordpress charm was fully removed.
+        """Check if WordPress charm was fully removed.
 
         Returns:
-            True if wordpress is removed, False otherwise.
+            True if WordPress is removed, False otherwise.
         """
         assert ops_test.model_name  # to let mypy know it's not None
         status = subprocess.check_output(  # nosec
@@ -248,7 +249,7 @@ async def build_and_upgrade_fixture(
     await ops_test.model.block_until(wordpress_removed, wait_period=5, timeout=600)
     await ops_test.model.deploy(
         str(charm),
-        resources={"wordpress-image": "localhost:32000/wordpress:test"},
+        resources={"wordpress-image": wordpress_image},
         application_name=application_name,
         series="jammy",
         num_units=num_units,
@@ -266,13 +267,13 @@ async def test_wordpress_upgrade(unit_ip_list, screenshot_dir):
     """
 
     def check_images(html) -> None:
-        """Check image contents of a newly upgraded wordpress.
+        """Check image contents of a newly upgraded WordPress.
 
         Args:
             html: Stringified html contents of a page to check for images.
 
         Raises:
-            AssertionError: If invalid image was found in page.
+            AssertionError: if invalid image was found in page.
         """
         image_urls = re.findall('<img[^>]+src="([^"]+)"[^>]*>', html)
         assert image_urls

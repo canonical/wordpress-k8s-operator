@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for WordPress charm unit tests."""
@@ -55,7 +55,7 @@ def setup_replica_consensus_fixture(harness: ops.testing.Harness, app_name: str)
         """Function to set up peer relation. See fixture docstring for more information.
 
         Returns:
-            Relation data for wordpress peers. Includes WordPress salt keys and secrets.
+            Relation data for WordPress peers. Includes WordPress salt keys and secrets.
         """
         replica_relation_id = harness.add_relation("wordpress-replica", app_name)
         harness.add_storage("uploads")

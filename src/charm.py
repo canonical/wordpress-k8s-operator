@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Charm for WordPress on kubernetes."""
@@ -16,18 +16,19 @@ import string
 import textwrap
 import time
 import traceback
+import typing
 
 import mysql.connector
 import ops.charm
 import ops.pebble
 import yaml
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
-from ops.charm import CharmBase
-from ops.framework import StoredState
+from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, StartEvent, StorageAttachedEvent
+from ops.framework import EventBase, StoredState
 from ops.main import main
 from ops.model import ActiveStatus, RelationDataContent, WaitingStatus
 from ops.pebble import ExecProcess
-from opslib.mysql import MySQLClient
+from opslib.mysql import MySQLClient, MySQLDatabaseChangedEvent
 from yaml import safe_load
 
 import exceptions
@@ -132,7 +133,7 @@ class WordpressCharm(CharmBase):
         Args:
             args: arguments passed into Charmbase superclass.
             kwargs: keyword arguments passed into Charmbase superclass.
-        """  # noqa: E731, DCO020
+        """
         super().__init__(*args, **kwargs)
 
         self.database = MySQLClient(self, "db")
@@ -168,11 +169,11 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
         self.framework.observe(self.database.on.database_changed, self._reconciliation)
 
-    def _on_start(self, _event):
+    def _on_start(self, _event: StartEvent):
         """Record if the start event is emitted."""
         self.state.started = True
 
-    def _on_storage_attached(self, _event):
+    def _on_storage_attached(self, _event: StorageAttachedEvent):
         """Record if the storage for WordPress uploads dir is attached."""
         self.state.storage_attached = True
 
@@ -203,7 +204,7 @@ class WordpressCharm(CharmBase):
         """
         self.ingress.update_config(self.ingress_config)
 
-    def _on_get_initial_password_action(self, event):
+    def _on_get_initial_password_action(self, event: ActionEvent):
         """Handle the get-initial-password action.
 
         Args:
@@ -216,10 +217,10 @@ class WordpressCharm(CharmBase):
             logger.error("Action get-initial-password failed. Replica consensus not reached.")
             event.fail("Default admin password has not been generated yet.")
 
-    def _on_rotate_wordpress_secrets_action(self, event):
+    def _on_rotate_wordpress_secrets_action(self, event: ActionEvent):
         """Handle the rotate-wordpress_secrets action.
 
-        This action is for rotating the secrets of wordpress. The leader unit is the one handling
+        This action is for rotating the secrets of WordPress. The leader unit is the one handling
         the rotation by updating the application relation data. The followers will pick up the
         event and update the secrets via the application `relation_changed` event.
 
@@ -253,12 +254,12 @@ class WordpressCharm(CharmBase):
 
     @staticmethod
     def _wordpress_secret_key_fields():
-        """Field names of secrets required for instantiation of wordpress.
+        """Field names of secrets required for instantiation of WordPress.
 
-        These secrets are used by wordpress to enhance the security by encrypting information.
+        These secrets are used by WordPress to enhance the security by encrypting information.
 
         Returns:
-            Secret key fields required for wordpress to encrypt information.
+            Secret key fields required for WordPress to encrypt information.
         """
         return [
             "auth_key",
@@ -273,20 +274,20 @@ class WordpressCharm(CharmBase):
         ]
 
     def _generate_wp_secret_keys(self) -> dict[str, str]:
-        """Generate random secure secrets for each secrets required by wordpress.
+        """Generate random secure secrets for each secret required by WordPress.
 
         Returns:
-            Wordpress secret to value pair.
+            WordPress secret-value pairs.
         """
 
-        def _wp_generate_password(length=64) -> str:
+        def _wp_generate_password(length: int = 64) -> str:
             """Generate password.
 
             Args:
-                length: Desired length of password. Defaults to 64.
+                length: Desired length of the password.
 
             Returns:
-                Generated password string.
+                Generated password.
             """
             characters = string.ascii_letters + "!@#$%^&*()" + "-_ []{}<>~`+=,.;:/?|"
             return "".join(secrets.choice(characters) for _ in range(length))
@@ -298,9 +299,9 @@ class WordpressCharm(CharmBase):
         return wp_secrets
 
     def _replica_relation_data(self) -> RelationDataContent:
-        """Retrieve data shared with WordPress peers(replicas).
+        """Retrieve data shared with WordPress peers (replicas).
 
-        The relation data content object is used to share(read and write) necessary secret data
+        The relation data content object is used to share (read and write) necessary secret data
         used by WordPress to enhance security and must be synchronized.
 
         Raises:
@@ -329,7 +330,7 @@ class WordpressCharm(CharmBase):
             return False
         return all(replica_data.get(f) for f in fields)
 
-    def _setup_replica_data(self, _event) -> None:
+    def _setup_replica_data(self, _event: LeaderElectedEvent) -> None:
         """Initialize the synchronized data required for WordPress replication.
 
         Only the leader can update the data shared with all replicas. Leader should check if
@@ -345,7 +346,7 @@ class WordpressCharm(CharmBase):
             for secret_key, secret_value in new_replica_data.items():
                 replica_relation_data[secret_key] = secret_value
 
-    def _on_relation_database_changed(self, event) -> None:
+    def _on_relation_database_changed(self, event: MySQLDatabaseChangedEvent) -> None:
         """Handle db relation changes (data changes/relation breaks).
 
         This method will set all db relation related states ``relation_db_*`` when db relation
@@ -448,7 +449,13 @@ class WordpressCharm(CharmBase):
             self._container().stop(self._SERVICE_NAME)
 
     def _run_cli(
-        self, cmd, user=None, group=None, working_dir=None, combine_stderr=False, timeout=60
+        self,
+        cmd: list[str],
+        user: typing.Union[str, None] = None,
+        group: typing.Union[str, None] = None,
+        working_dir: typing.Union[str, None] = None,
+        combine_stderr: bool = False,
+        timeout: int = 60,
     ) -> types_.CommandExecResult:
         """Execute a command in WordPress container.
 
@@ -503,12 +510,12 @@ class WordpressCharm(CharmBase):
 
         Args:
             cmd: WordPress command to execute.
-            timeout: timeout in seconds to allow the execution of command. Defaults to 60.
+            timeout: timeout in seconds for the execution of command.
             combine_stderr: Redirect stderr to stdout, when enabled, stderr in the result
-                will always be empty. Defaults to False.
+                will always be empty.
 
         Returns:
-            Result of executed command in wordpress. See :meth:`charm.WordpressCharm._run_cli`.
+            Result of executed command in WordPress. See :meth:`charm.WordpressCharm._run_cli`.
         """
         result = self._run_cli(
             cmd,
@@ -628,7 +635,7 @@ class WordpressCharm(CharmBase):
         """Install WordPress (create WordPress required tables in DB).
 
         Raises:
-            WordPressInstallError: If WordPress installation fails.
+            WordPressInstallError: if WordPress installation fails.
         """
         logger.info("Install WordPress, create WordPress related table in the database")
         self.unit.status = ops.model.MaintenanceStatus("Initializing WordPress DB")
@@ -669,7 +676,7 @@ class WordpressCharm(CharmBase):
 
         Raises:
             WordPressBlockedStatusException: If unrecoverable error happens.
-            FileNotFoundError: if wordpress configuration file does not exist.
+            FileNotFoundError: if WordPress configuration file does not exist.
         """
         logger.info("Ensure WordPress server is up")
         if self.unit.is_leader():
@@ -715,7 +722,7 @@ class WordpressCharm(CharmBase):
             return self._container().pull(wp_config_path).read()
         return None
 
-    def _push_wp_config(self, wp_config):
+    def _push_wp_config(self, wp_config: str):
         """Update the content of wp-config.php on server.
 
         Write the wp-config.php file in :attr:`charm.WordpressCharm._WP_CONFIG_PATH`.
@@ -750,7 +757,7 @@ class WordpressCharm(CharmBase):
         during the update for security reasons.
 
         Raises:
-            WordPressWaitingStatusException: if replication data has not synchronized yet.
+            WordPressWaitingStatusException: if replication data has not been synchronized yet.
             WordPressBlockedStatusException: if database relation/config has not been set yet.
         """
         logger.info("Start core reconciliation process")
@@ -797,7 +804,7 @@ class WordpressCharm(CharmBase):
         if addon_type not in ("theme", "plugin"):
             raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
 
-    def _wp_addon_list(self, addon_type):
+    def _wp_addon_list(self, addon_type: str):
         """List all installed WordPress addons.
 
         Args:
@@ -844,7 +851,7 @@ class WordpressCharm(CharmBase):
             cmd = ["wp", "plugin", "install", addon_name]
         return self._wrapped_run_wp_cli(cmd, timeout=600)
 
-    def _wp_addon_uninstall(self, addon_type, addon_name) -> types_.ExecResult:
+    def _wp_addon_uninstall(self, addon_type: str, addon_name: str) -> types_.ExecResult:
         """Uninstall WordPress addon (theme/plugin).
 
         Args:
@@ -861,7 +868,7 @@ class WordpressCharm(CharmBase):
             cmd = ["wp", "plugin", "uninstall", addon_name, "--deactivate"]
         return self._wrapped_run_wp_cli(cmd, timeout=600)
 
-    def _addon_reconciliation(self, addon_type) -> None:
+    def _addon_reconciliation(self, addon_type: str) -> None:
         """Reconciliation process for WordPress addons (theme/plugin).
 
         Install and uninstall themes/plugins to match the themes/plugins setting in config.
@@ -909,7 +916,9 @@ class WordpressCharm(CharmBase):
         """
         self._addon_reconciliation("theme")
 
-    def _wp_option_update(self, option, value, format_="plaintext") -> types_.ExecResult:
+    def _wp_option_update(
+        self, option: str, value: typing.Union[str, dict], format_: str = "plaintext"
+    ) -> types_.ExecResult:
         """Create or update a WordPress option value.
 
         If the option does not exist, wp option update will create one.
@@ -928,7 +937,7 @@ class WordpressCharm(CharmBase):
             ["wp", "option", "update", option, value, f"--format={format_}"]
         )
 
-    def _wp_option_delete(self, option):
+    def _wp_option_delete(self, option: str):
         """Delete a WordPress option.
 
         It's not an error to delete a non-existent option (it's a warning though).
@@ -941,7 +950,7 @@ class WordpressCharm(CharmBase):
         """
         return self._wrapped_run_wp_cli(["wp", "option", "delete", option])
 
-    def _wp_plugin_activate(self, plugin):
+    def _wp_plugin_activate(self, plugin: str):
         """Activate a WordPress plugin.
 
         Args:
@@ -953,7 +962,7 @@ class WordpressCharm(CharmBase):
         logger.info("activate plugin %s", repr(plugin))
         return self._wrapped_run_wp_cli(["wp", "plugin", "activate", plugin])
 
-    def _wp_plugin_deactivate(self, plugin):
+    def _wp_plugin_deactivate(self, plugin: str):
         """Deactivate a WordPress plugin.
 
         Args:
@@ -1012,7 +1021,7 @@ class WordpressCharm(CharmBase):
                 )
         return types_.ExecResult(success=True, result=None, message="")
 
-    def _activate_plugin(self, plugin, options):
+    def _activate_plugin(self, plugin: str, options: dict[str, typing.Union[str, dict]]):
         """Activate a WordPress plugin and set WordPress options after activation.
 
         Args:
@@ -1042,12 +1051,12 @@ class WordpressCharm(CharmBase):
                 )
         return types_.ExecResult(success=True, result=None, message="")
 
-    def _deactivate_plugin(self, plugin, options):
+    def _deactivate_plugin(self, plugin: str, options: list[str]):
         """Deactivate a WordPress plugin and delete WordPress options after deactivation.
 
         Args:
-            plugin (str): plugin slug.
-            options (List[str]): options related to the plugin that need to be removed.
+            plugin: plugin slug.
+            options: options related to the plugin that need to be removed.
 
         Returns:
             An instance of :attr:`types_.ExecResult`.
@@ -1091,7 +1100,7 @@ class WordpressCharm(CharmBase):
                 f"Unable to config akismet plugin, {result.message}"
             )
 
-    def _wp_eval(self, php_code):
+    def _wp_eval(self, php_code: str):
         """Execute arbitrary PHP code.
 
         Args:
@@ -1103,7 +1112,7 @@ class WordpressCharm(CharmBase):
         return self._wrapped_run_wp_cli(["wp", "eval", php_code])
 
     @staticmethod
-    def _encode_openid_team_map(team_map):
+    def _encode_openid_team_map(team_map: str):
         """Convert wp_plugin_openid_team_map setting to openid_teams_trust_list WordPress option.
 
         example input: site-sysadmins=administrator,site-editors=editor,site-executives=editor
@@ -1176,7 +1185,7 @@ class WordpressCharm(CharmBase):
             result = self._wp_option_update("users_can_register", "1")
             check_result()
 
-    def _apache_config_is_enabled(self, conf_name):
+    def _apache_config_is_enabled(self, conf_name: str):
         """Check if a specified apache configuration file is enabled.
 
         Args:
@@ -1188,7 +1197,7 @@ class WordpressCharm(CharmBase):
         enabled_config = self._container().list_files("/etc/apache2/conf-enabled")
         return f"{conf_name}.conf" in enabled_config
 
-    def _apache_enable_config(self, conf_name, conf):
+    def _apache_enable_config(self, conf_name: str, conf: str):
         """Create and enable an apache2 configuration file.
 
         Args:
@@ -1200,7 +1209,7 @@ class WordpressCharm(CharmBase):
         self._run_cli(["a2enconf", conf_name])
         self._start_server()
 
-    def _apache_disable_config(self, conf_name):
+    def _apache_disable_config(self, conf_name: str):
         """Remove and disable a specified apache2 configuration file.
 
         Args:
@@ -1213,14 +1222,14 @@ class WordpressCharm(CharmBase):
         self._run_cli(["a2disconf", conf_name])
         self._start_server()
 
-    def _swift_config(self):
+    def _swift_config(self) -> dict[str, typing.Any]:
         """Load swift configuration from charm config.
 
         The legacy swift plugin options ``url`` or ``prefix`` will be converted to ``swift-url``
         and ``object-prefix`` by this function.
 
         Raises:
-            WordPressBlockedStatusException: openstack plugin setup process failed.
+            WordPressBlockedStatusException: if openstack plugin setup process failed.
 
         Returns:
             Swift configuration in dict.
@@ -1277,7 +1286,7 @@ class WordpressCharm(CharmBase):
                 )
         return swift_config
 
-    def _config_swift_plugin(self, swift_config) -> None:
+    def _config_swift_plugin(self, swift_config: dict[str, typing.Any]) -> None:
         """Activate or deactivate the swift plugin based on the swift config in the charm config.
 
         Args:
@@ -1335,11 +1344,11 @@ class WordpressCharm(CharmBase):
             self._plugin_akismet_reconciliation()
             self._plugin_openid_reconciliation()
 
-    def _reconciliation(self, _event) -> None:
-        """Reconcile the wordpress charm on juju event.
+    def _reconciliation(self, _event: EventBase) -> None:
+        """Reconcile the WordPress charm on juju event.
 
         Args:
-            _event: Event fired by juju on wordpress charm related state change.
+            _event: Event fired by juju on WordPress charm related state change.
         """
         if not self.state.started:
             logger.info("Charm hasn't started yet, reconciliation deferred")

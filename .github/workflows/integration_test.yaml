@@ -27,7 +27,7 @@ jobs:
         tox -e test-build"
       modules: '["test_core", "test_error", "test_upgrade"]'
       extra-arguments: |
-        -m "not (require_secret)" \
+        -m "not (requires_secret)" \
         --openstack-rc ./openrc \
         --kube-config ./kube-config \
         --screenshot-dir /tmp \

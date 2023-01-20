@@ -27,7 +27,7 @@ jobs:
         sudo microk8s enable registry hostpath-storage ingress && \
         tox -e test-build"
       integration-test-extra-arguments: |
-        -m "not (require_secret)" \
+        -m "not (requires_secret)" \
         --openstack-rc ./openrc \
         --kube-config ./kube-config \
         --screenshot-dir /tmp \

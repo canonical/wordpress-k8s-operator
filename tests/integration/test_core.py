@@ -490,7 +490,7 @@ async def test_ingress_modsecurity(
 
 
 @pytest.mark.usefixtures("build_and_deploy")
-@pytest.mark.require_secret
+@pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_akismet_plugin(
     ops_test: pytest_operator.plugin.OpsTest,
@@ -533,7 +533,7 @@ async def test_akismet_plugin(
 
 
 @pytest.mark.usefixtures("build_and_deploy")
-@pytest.mark.require_secret
+@pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_openid_plugin(
     ops_test: pytest_operator.plugin.OpsTest,

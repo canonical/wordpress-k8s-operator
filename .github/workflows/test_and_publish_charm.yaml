@@ -22,13 +22,9 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml
     with:
       integration-test-modules: '["test_core"]'
-      integration-test-pre-run-script: |
-        -c "sudo microk8s config > kube-config && \
-        sudo microk8s enable registry hostpath-storage ingress && \
-        tox -e test-build"
       integration-test-extra-arguments: |
         -m "not (requires_secret)" \
         --openstack-rc ./openrc \
-        --kube-config ./kube-config \
+        --kube-config ~/.kube/config \
         --screenshot-dir /tmp \
         --test-db-from-config --num-units=3

@@ -440,7 +440,7 @@ class WordpressCharm(CharmBase):
         return self._SERVICE_NAME in self._container().get_plan().services
 
     def _stop_server(self) -> None:
-        """Stop WordPress (apache) server, this operation is idempotence."""
+        """Stop WordPress (apache) server, this operation is idempotent."""
         logger.info("Ensure WordPress (apache) server is down")
         if (
             self._wordpress_service_exists()
@@ -502,7 +502,9 @@ class WordpressCharm(CharmBase):
             )
         return result
 
-    def _run_wp_cli(self, cmd, timeout=60, combine_stderr=False) -> types_.CommandExecResult:
+    def _run_wp_cli(
+        self, cmd: list[str], timeout: int = 60, combine_stderr: bool = False
+    ) -> types_.CommandExecResult:
         """Execute a wp-cli command, this is a wrapper of :meth:`charm.WordpressCharm._run_cli`.
 
         See :meth:`charm.WordpressCharm._run_cli` for documentation of the arguments and return
@@ -527,7 +529,9 @@ class WordpressCharm(CharmBase):
         )
         return result
 
-    def _wrapped_run_wp_cli(self, cmd, timeout=60, error_message=None) -> types_.ExecResult:
+    def _wrapped_run_wp_cli(
+        self, cmd: list[str], timeout: int = 60, error_message: typing.Union[str, None] = None
+    ) -> types_.ExecResult:
         """Run wp cli command and return the result as ``types_.ExecResult``.
 
         Stdout and stderr are discarded, the result field of ExecResult is always none. The
@@ -722,7 +726,7 @@ class WordpressCharm(CharmBase):
             return self._container().pull(wp_config_path).read()
         return None
 
-    def _push_wp_config(self, wp_config: str):
+    def _push_wp_config(self, wp_config: str) -> None:
         """Update the content of wp-config.php on server.
 
         Write the wp-config.php file in :attr:`charm.WordpressCharm._WP_CONFIG_PATH`.
@@ -937,7 +941,7 @@ class WordpressCharm(CharmBase):
             ["wp", "option", "update", option, value, f"--format={format_}"]
         )
 
-    def _wp_option_delete(self, option: str):
+    def _wp_option_delete(self, option: str) -> types_.ExecResult:
         """Delete a WordPress option.
 
         It's not an error to delete a non-existent option (it's a warning though).
@@ -950,7 +954,7 @@ class WordpressCharm(CharmBase):
         """
         return self._wrapped_run_wp_cli(["wp", "option", "delete", option])
 
-    def _wp_plugin_activate(self, plugin: str):
+    def _wp_plugin_activate(self, plugin: str) -> types_.ExecResult:
         """Activate a WordPress plugin.
 
         Args:
@@ -962,7 +966,7 @@ class WordpressCharm(CharmBase):
         logger.info("activate plugin %s", repr(plugin))
         return self._wrapped_run_wp_cli(["wp", "plugin", "activate", plugin])
 
-    def _wp_plugin_deactivate(self, plugin: str):
+    def _wp_plugin_deactivate(self, plugin: str) -> types_.ExecResult:
         """Deactivate a WordPress plugin.
 
         Args:
@@ -974,7 +978,9 @@ class WordpressCharm(CharmBase):
         logger.info("deactivate plugin %s", repr(plugin))
         return self._wrapped_run_wp_cli(["wp", "plugin", "deactivate", plugin])
 
-    def _perform_plugin_activate_or_deactivate(self, plugin: str, action: str):
+    def _perform_plugin_activate_or_deactivate(
+        self, plugin: str, action: str
+    ) -> types_.ExecResult:
         """Activate a WordPress plugin or deactivate a WordPress plugin.
 
         It's not an error to activate an active plugin or deactivate an inactive plugin.
@@ -1021,7 +1027,9 @@ class WordpressCharm(CharmBase):
                 )
         return types_.ExecResult(success=True, result=None, message="")
 
-    def _activate_plugin(self, plugin: str, options: dict[str, typing.Union[str, dict]]):
+    def _activate_plugin(
+        self, plugin: str, options: dict[str, typing.Union[str, dict]]
+    ) -> types_.ExecResult:
         """Activate a WordPress plugin and set WordPress options after activation.
 
         Args:
@@ -1051,7 +1059,7 @@ class WordpressCharm(CharmBase):
                 )
         return types_.ExecResult(success=True, result=None, message="")
 
-    def _deactivate_plugin(self, plugin: str, options: list[str]):
+    def _deactivate_plugin(self, plugin: str, options: list[str]) -> types_.ExecResult:
         """Deactivate a WordPress plugin and delete WordPress options after deactivation.
 
         Args:
@@ -1112,7 +1120,7 @@ class WordpressCharm(CharmBase):
         return self._wrapped_run_wp_cli(["wp", "eval", php_code])
 
     @staticmethod
-    def _encode_openid_team_map(team_map: str):
+    def _encode_openid_team_map(team_map: str) -> str:
         """Convert wp_plugin_openid_team_map setting to openid_teams_trust_list WordPress option.
 
         example input: site-sysadmins=administrator,site-editors=editor,site-executives=editor
@@ -1137,7 +1145,7 @@ class WordpressCharm(CharmBase):
             )
         return f"array({''.join(array_items)})"
 
-    def _plugin_openid_reconciliation(self):
+    def _plugin_openid_reconciliation(self) -> None:
         """Reconciliation process for the openid plugin."""
         openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
         result = None
@@ -1185,7 +1193,7 @@ class WordpressCharm(CharmBase):
             result = self._wp_option_update("users_can_register", "1")
             check_result()
 
-    def _apache_config_is_enabled(self, conf_name: str):
+    def _apache_config_is_enabled(self, conf_name: str) -> bool:
         """Check if a specified apache configuration file is enabled.
 
         Args:
@@ -1197,7 +1205,7 @@ class WordpressCharm(CharmBase):
         enabled_config = self._container().list_files("/etc/apache2/conf-enabled")
         return f"{conf_name}.conf" in enabled_config
 
-    def _apache_enable_config(self, conf_name: str, conf: str):
+    def _apache_enable_config(self, conf_name: str, conf: str) -> None:
         """Create and enable an apache2 configuration file.
 
         Args:
@@ -1209,7 +1217,7 @@ class WordpressCharm(CharmBase):
         self._run_cli(["a2enconf", conf_name])
         self._start_server()
 
-    def _apache_disable_config(self, conf_name: str):
+    def _apache_disable_config(self, conf_name: str) -> None:
         """Remove and disable a specified apache2 configuration file.
 
         Args:
@@ -1307,7 +1315,7 @@ class WordpressCharm(CharmBase):
                 f"Unable to config openstack-objectstorage-k8s plugin, {result.message}"
             )
 
-    def _plugin_swift_reconciliation(self):
+    def _plugin_swift_reconciliation(self) -> None:
         """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin."""
         swift_config = self._swift_config()
         if self.unit.is_leader():

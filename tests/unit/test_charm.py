@@ -159,7 +159,7 @@ def test_wp_config(
     """
 
     def in_same_line(content: str, *matches: str):
-        """Check if matches belong in same line within a content.
+        """Check if all matches are found within the same content line.
 
         Args:
             content: Target string to check for matches within same line.

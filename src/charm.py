@@ -16,7 +16,7 @@ import string
 import textwrap
 import time
 import traceback
-import typing
+from typing import Any, Union
 
 import mysql.connector
 import ops.charm
@@ -451,9 +451,9 @@ class WordpressCharm(CharmBase):
     def _run_cli(
         self,
         cmd: list[str],
-        user: typing.Union[str, None] = None,
-        group: typing.Union[str, None] = None,
-        working_dir: typing.Union[str, None] = None,
+        user: Union[str, None] = None,
+        group: Union[str, None] = None,
+        working_dir: Union[str, None] = None,
         combine_stderr: bool = False,
         timeout: int = 60,
     ) -> types_.CommandExecResult:
@@ -530,7 +530,7 @@ class WordpressCharm(CharmBase):
         return result
 
     def _wrapped_run_wp_cli(
-        self, cmd: list[str], timeout: int = 60, error_message: typing.Union[str, None] = None
+        self, cmd: list[str], timeout: int = 60, error_message: Union[str, None] = None
     ) -> types_.ExecResult:
         """Run wp cli command and return the result as ``types_.ExecResult``.
 
@@ -921,7 +921,7 @@ class WordpressCharm(CharmBase):
         self._addon_reconciliation("theme")
 
     def _wp_option_update(
-        self, option: str, value: typing.Union[str, dict], format_: str = "plaintext"
+        self, option: str, value: Union[str, dict], format_: str = "plaintext"
     ) -> types_.ExecResult:
         """Create or update a WordPress option value.
 
@@ -1028,7 +1028,7 @@ class WordpressCharm(CharmBase):
         return types_.ExecResult(success=True, result=None, message="")
 
     def _activate_plugin(
-        self, plugin: str, options: dict[str, typing.Union[str, dict]]
+        self, plugin: str, options: dict[str, Union[str, dict]]
     ) -> types_.ExecResult:
         """Activate a WordPress plugin and set WordPress options after activation.
 
@@ -1230,7 +1230,7 @@ class WordpressCharm(CharmBase):
         self._run_cli(["a2disconf", conf_name])
         self._start_server()
 
-    def _swift_config(self) -> dict[str, typing.Any]:
+    def _swift_config(self) -> dict[str, Any]:
         """Load swift configuration from charm config.
 
         The legacy swift plugin options ``url`` or ``prefix`` will be converted to ``swift-url``
@@ -1294,7 +1294,7 @@ class WordpressCharm(CharmBase):
                 )
         return swift_config
 
-    def _config_swift_plugin(self, swift_config: dict[str, typing.Any]) -> None:
+    def _config_swift_plugin(self, swift_config: dict[str, Any]) -> None:
         """Activate or deactivate the swift plugin based on the swift config in the charm config.
 
         Args:

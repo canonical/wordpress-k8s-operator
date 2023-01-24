@@ -12,16 +12,13 @@ jobs:
     steps:
       - name: Get extra arguments
         run: |
-          echo 'ARGUMENTS<<EOF' >> $GITHUB_ENV
-          echo ' --openstack-rc ./openrc --kube-config ~/.kube/config' >> $GITHUB_ENV
-          echo ' --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }}' >> $GITHUB_ENV
-          echo ' --openid-username ${{ env.TEST_OPENID_USERNAME }}' >> $GITHUB_ENV
-          echo ' --openid-password ${{ env.TEST_OPENID_PASSWORD }}' >> $GITHUB_ENV
-          echo ' --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }}' >> $GITHUB_ENV
-          echo ' --screenshot-dir /tmp' >> $GITHUB_ENV
-          echo ' ${{ matrix.args.value }}' >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
-            " >> $GITHUB_ENV
+          echo 'ARGUMENTS=--openstack-rc ./openrc --kube-config ~/.kube/config 
+            --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }} 
+            --openid-username ${{ env.TEST_OPENID_USERNAME }} 
+            --openid-password ${{ env.TEST_OPENID_PASSWORD }} 
+            --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }} 
+            --screenshot-dir /tmp 
+            ${{ matrix.args.value }}' >> $GITHUB_ENV
         env:
           TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
           TEST_OPENID_USERNAME: ${{ secrets.TEST_OPENID_USERNAME }}

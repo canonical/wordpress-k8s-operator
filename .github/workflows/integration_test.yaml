@@ -21,14 +21,18 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     with:
       extra-arguments: |
-        -m "not (requires_secret)" \
         --openstack-rc ./openrc \
         --kube-config ~/.kube/config \
+        --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
+        --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
+        --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
+        --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
       modules: '["test_core", "test_error", "test_upgrade"]'
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml
+    secrets: inherit
   required_status_checks:
     name: Required Integration Test Status Checks
     runs-on: ubuntu-latest

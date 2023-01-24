@@ -15,17 +15,17 @@ on:
       - track/**
 
 jobs:
-  integration-tests:
-    uses: ./.github/workflows/integration_test.yaml
   test-and-publish-charm:
     needs: integration-tests
     uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml
     with:
-      integration-test-modules: '["test_core"]'
       integration-test-extra-arguments: |
-        -m "not (requires_secret)" \
         --openstack-rc ./openrc \
         --kube-config ~/.kube/config \
+        --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
+        --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
+        --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
+        --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
         --screenshot-dir /tmp \
-        --test-db-from-config --num-units=3
+        ${{ matrix.args.value }}
       trivy-image-config: trivy.yaml

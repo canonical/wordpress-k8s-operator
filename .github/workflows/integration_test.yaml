@@ -26,6 +26,7 @@ jobs:
           TEST_LAUNCHPAD_TEAM: ${{ secrets.TEST_LAUNCHPAD_TEAM }}
   integration-tests:
     strategy:
+      fail-fast: false
       matrix:
         args:
           - name: num_units=3, db_from_config

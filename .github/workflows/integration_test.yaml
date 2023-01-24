@@ -40,7 +40,7 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     needs: get-extra-arguments
     with:
-      extra-arguments : ${{ jobs.get-extra-arguments.outputs.arguments }}
+      extra-arguments : ${{ needs.get-extra-arguments.outputs.arguments }}
       modules: '["test_core", "test_error", "test_upgrade"]'
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml

@@ -175,9 +175,6 @@ class WordpressCharm(CharmBase):
             "service-name": self.app.name,
             "service-port": "80",
         }
-        tls_secret_name = self.model.config["tls_secret_name"]
-        if tls_secret_name:
-            ingress_config["tls-secret-name"] = tls_secret_name
         if self.model.config["use_nginx_ingress_modsec"]:
             ingress_config["owasp-modsecurity-crs"] = True
             ingress_config[

@@ -1,8 +1,4 @@
 options:
-  tls_secret_name:
-    type: string
-    description: "The Kubernetes TLS secret resource name."
-    default: ""
   db_host:
     type: string
     description: "MySQL database host"

@@ -4,7 +4,6 @@ Pillow
 requests
 kubernetes
 pytest-cov
-cryptography
 types-requests
 pytest-operator
 pytest-playwright

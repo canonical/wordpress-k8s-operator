@@ -749,8 +749,7 @@ def test_ingress(
 ):
     """
     arrange: after peer relation established and database ready.
-    act: create a relation between wordpress and nginx ingress integrator, and update the
-        tls_secret_name configuration.
+    act: create a relation between wordpress and nginx ingress integrator.
     assert: ingress relation data should be set up according to the configuration and application
         name.
     """
@@ -777,8 +776,6 @@ def test_ingress(
         "owasp-modsecurity-custom-rules": 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n',
     }
 
-    harness.update_config({"tls_secret_name": "tls_secret"})
-
     assert charm.ingress.config_dict == {
         "service-hostname": app_name,
         "host": app_name,
@@ -786,7 +783,6 @@ def test_ingress(
         "name": app_name,
         "service-port": "80",
         "port": "80",
-        "tls-secret-name": "tls_secret",
         "owasp-modsecurity-crs": True,
         "owasp-modsecurity-custom-rules": 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n',
     }
@@ -800,7 +796,6 @@ def test_ingress(
         "name": app_name,
         "service-port": "80",
         "port": "80",
-        "tls-secret-name": "tls_secret",
     }
 
     new_hostname = "new-hostname"
@@ -813,7 +808,6 @@ def test_ingress(
         "name": app_name,
         "service-port": "80",
         "port": "80",
-        "tls-secret-name": "tls_secret",
     }
 
 

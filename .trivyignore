@@ -1,4 +1,4 @@
-# Ignore wordpress know vulnerabilities for version 5.5.9 (last mayor version 5)
+# Ignore WordPress known vulnerabilities for version 5.5.9 (last mayor version 5)
 CVE-2022-29248
 CVE-2022-31042
 CVE-2022-31043

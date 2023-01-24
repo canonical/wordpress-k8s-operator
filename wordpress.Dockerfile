@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ARG VERSION=5.9.3
 ENV APACHE_CONFDIR=/etc/apache2
@@ -11,7 +11,6 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
     apt-get update \
         && apt-get --purge autoremove -y \
         && apt-get install -y apache2 \
-            bzr \
             curl \
             git \
             libapache2-mod-php \
@@ -27,7 +26,6 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
             python3 \
             python3-yaml \
             ssl-cert \
-            wget \
             unzip && \
         sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' "$APACHE_ENVVARS" && \
         . "$APACHE_ENVVARS" && \

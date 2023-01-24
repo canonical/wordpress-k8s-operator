@@ -33,8 +33,6 @@ jobs:
       modules: '["test_core", "test_error", "test_upgrade"]'
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml
-    secrets:
-      TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
   required_status_checks:
     name: Required Integration Test Status Checks
     runs-on: ubuntu-latest

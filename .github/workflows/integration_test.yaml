@@ -3,9 +3,6 @@ name: Integration tests
 on:
   pull_request:
 
-env:
-  EXAMPLE: asdf
-
 jobs:
   get-extra-arguments:
     name: Get extra arguments
@@ -17,7 +14,7 @@ jobs:
         run: |
           echo "ARGUMENTS=--openstack-rc ./openrc \
           --kube-config ~/.kube/config \
-          --akismet-api-key ${{ env.EXAMPLE }}
+          --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }}
           --openid-username ${{ env.TEST_OPENID_USERNAME }}
           --openid-password ${{ env.TEST_OPENID_PASSWORD }}
           --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }}

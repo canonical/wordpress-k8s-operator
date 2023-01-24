@@ -41,14 +41,6 @@ jobs:
     needs: get-extra-arguments
     with:
       extra-arguments: ${{ needs.get-extra-arguments.outputs.arguments }}
-        --openstack-rc ./openrc \
-        --kube-config ~/.kube/config \
-        --akismet-api-key ${{ env.EXAMPLE }}
-        --openid-username ${{ env.TEST_OPENID_USERNAME }}
-        --openid-password ${{ env.TEST_OPENID_PASSWORD }}
-        --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }}
-        --screenshot-dir /tmp \
-        ${{ matrix.args.value }}
       modules: '["test_core", "test_error", "test_upgrade"]'
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml

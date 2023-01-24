@@ -2,6 +2,15 @@ name: Integration tests
 
 on:
   pull_request:
+    secrets:
+      TEST_AKISMET_API_KEY:
+        required: true
+      TEST_OPENID_USERNAME:
+        required: true
+      TEST_OPENID_PASSWORD:
+        required: true
+      TEST_LAUNCHPAD_TEAM:
+        required: true
 
 jobs:
   integration-tests:

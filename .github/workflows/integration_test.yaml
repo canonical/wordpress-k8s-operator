@@ -14,20 +14,20 @@ jobs:
       arguments: ${{ env.ARGUMENTS }}
     steps:
       - name: Get extra arguments
-      run: |
-        echo "ARGUMENTS=--openstack-rc ./openrc \
-        --kube-config ~/.kube/config \
-        --akismet-api-key ${{ env.EXAMPLE }}
-        --openid-username ${{ env.TEST_OPENID_USERNAME }}
-        --openid-password ${{ env.TEST_OPENID_PASSWORD }}
-        --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }}
-        --screenshot-dir /tmp \
-        ${{ matrix.args.value }}" >> $GITHUB_ENV
-      env:
-        TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
-        TEST_OPENID_USERNAME: ${{ secrets.TEST_OPENID_USERNAME }}
-        TEST_OPENID_PASSWORD: ${{ secrets.TEST_OPENID_PASSWORD }}
-        TEST_LAUNCHPAD_TEAM: ${{ secrets.TEST_LAUNCHPAD_TEAM }}
+        run: |
+          echo "ARGUMENTS=--openstack-rc ./openrc \
+          --kube-config ~/.kube/config \
+          --akismet-api-key ${{ env.EXAMPLE }}
+          --openid-username ${{ env.TEST_OPENID_USERNAME }}
+          --openid-password ${{ env.TEST_OPENID_PASSWORD }}
+          --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }}
+          --screenshot-dir /tmp \
+          ${{ matrix.args.value }}" >> $GITHUB_ENV
+        env:
+          TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
+          TEST_OPENID_USERNAME: ${{ secrets.TEST_OPENID_USERNAME }}
+          TEST_OPENID_PASSWORD: ${{ secrets.TEST_OPENID_PASSWORD }}
+          TEST_LAUNCHPAD_TEAM: ${{ secrets.TEST_LAUNCHPAD_TEAM }}
   integration-tests:
     strategy:
       matrix:

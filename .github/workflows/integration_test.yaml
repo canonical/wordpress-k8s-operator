@@ -2,15 +2,9 @@ name: Integration tests
 
 on:
   pull_request:
-    secrets:
-      TEST_AKISMET_API_KEY:
-        required: true
-      TEST_OPENID_USERNAME:
-        required: true
-      TEST_OPENID_PASSWORD:
-        required: true
-      TEST_LAUNCHPAD_TEAM:
-        required: true
+
+env:
+  TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
 
 jobs:
   integration-tests:
@@ -30,7 +24,7 @@ jobs:
       extra-arguments: |
         --openstack-rc ./openrc \
         --kube-config ~/.kube/config \
-        --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
+        --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }}
         --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
         --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
         --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}

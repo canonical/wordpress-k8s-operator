@@ -110,6 +110,8 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Returns: host and database
         """
         return host, database
 
@@ -121,6 +123,9 @@ class WordpressDatabaseMock:
             database: database name.
             user: database user.
             password: database password.
+
+        Raises:
+            KeyError: if database already exists.
         """
         key = self._database_identifier(host, database)
         if key in self._databases:
@@ -170,6 +175,9 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Raises:
+            KeyError: if database does not exist or WordPress is already installed in the database.
         """
         key = self._database_identifier(host, database)
         if key not in self._databases:
@@ -186,6 +194,11 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Returns: ``True`` if WordPress is installed.
+
+        Raises:
+            KeyError: if database does not exist.
         """
         key = self._database_identifier(host, database)
         if key not in self._databases:
@@ -200,6 +213,11 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Returns: The Wordpress database.
+
+        Raises:
+            KeyError: if WordPress is not installed in the database.
         """
         key = self._database_identifier(host, database)
         if not self.is_wordpress_installed(host, database):
@@ -223,7 +241,11 @@ class MysqlConnectorMock:
         self._wordpress_database_mock = wordpress_database_mock
 
     def connect(self, host: str, database: str, user: str, password: str, charset: str):
-        """Mock method for :meth:`mysql.connector.connect`."""
+        """Mock method for :meth:`mysql.connector.connect`.
+
+        Raises:
+            Error: if the user can't connect to the database.
+        """
         if not self._wordpress_database_mock.database_can_connect(host, database):
             raise self.Error(
                 msg=f"Can't connect to MySQL server on '{host}:3306' (2003)",
@@ -266,10 +288,18 @@ class HandlerRegistry:
 
         Args:
             match: A match function takes input and output matching result as bool.
+
+        Returns: the decorator.
         """
 
         def decorator(func):
-            """Decorator to collect match pattern and handler."""
+            """Decorator to collect match pattern and handler.
+
+            Args:
+                func: A function takes input and output matching result as bool.
+
+            Returns: the decorator.
+            """
             self.registered_handler.append((match, func))
             return func
 
@@ -292,7 +322,11 @@ class ExecProcessMock:
         self._stderr = stderr
 
     def wait_output(self) -> typing.Tuple[str, str]:
-        """Mock method for :meth:`ops.pebble.ExecProcess.wait_output`."""
+        """Mock method for :meth:`ops.pebble.ExecProcess.wait_output`.
+
+        Raises:
+            ExecError: if the command execution fails.
+        """
         if self._return_code != 0:
             raise ops.pebble.ExecError(
                 [], exit_code=self._return_code, stdout=self._stdout, stderr=self._stderr
@@ -327,7 +361,11 @@ class WordpressContainerMock:
     def exec(
         self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
     ):
-        """Mock method for :meth:`ops.charm.model.Container.exec`."""
+        """Mock method for :meth:`ops.charm.model.Container.exec`.
+
+        Raises:
+            ValueError: if not exactly one handler is registered for the cmd.
+        """
         handler = None
         for match, potential_handler in self._exec_handler.registered_handler:
             is_match = match(cmd)
@@ -382,6 +420,9 @@ class WordpressContainerMock:
 
         Returns:
             A dict with four keys: db_host, db_name, db_user, db_password.
+
+        Raises:
+            ValueError: if the db key is not defined exactly once.
         """
         wp_config = self.fs.get(WordpressCharm._WP_CONFIG_PATH)
         if wp_config is None:
@@ -401,6 +442,9 @@ class WordpressContainerMock:
 
         Returns:
             A tuple of database host and database name.
+
+        Raises:
+            KeyError: if the database configuration files does not exist.
         """
         db_info = self._get_current_database_config()
         if db_info is None:
@@ -557,7 +601,11 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[0] == "a2enconf")
     def _mock_a2enconf(self, cmd):
-        """Simulate ``a2enconf <conf>`` command execution in the container."""
+        """Simulate ``a2enconf <conf>`` command execution in the container.
+
+        Raises:
+            FileNotFoundError: if the apache configuration file does not exist.
+        """
         conf = cmd[1]
         conf_src = f"/etc/apache2/conf-available/{conf}.conf"
         if conf_src not in self.fs:

@@ -1,7 +1,8 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=missing-module-docstring
+"""Fixtures for Wordpress charm tests."""
+
 import pytest
 
 

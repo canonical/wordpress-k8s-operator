@@ -252,9 +252,9 @@ def test_wp_install_cmd(
 
 def test_core_reconciliation_before_storage_ready(harness: ops.testing.Harness):
     """
-    arrange: before storage attached
-    act: run core reconciliation
-    assert: core reconciliation should be deferred and status should be waiting
+    arrange: before storage attached.
+    act: run core reconciliation.
+    assert: core reconciliation should be deferred and status should be waiting.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
@@ -271,9 +271,9 @@ def test_core_reconciliation_before_storage_ready(harness: ops.testing.Harness):
 
 def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Harness):
     """
-    arrange: before peer relation established but after charm created
-    act: run core reconciliation
-    assert: core reconciliation should "fail" and status should be waiting
+    arrange: before peer relation established but after charm created.
+    act: run core reconciliation.
+    assert: core reconciliation should "fail" and status should be waiting.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.add_storage("uploads")
@@ -296,9 +296,9 @@ def test_core_reconciliation_before_database_ready(
     harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
 ):
     """
-    arrange: before database connection info ready but after peer relation established
-    act: run core reconciliation
-    assert: core reconciliation should "fail" and status should be waiting
+    arrange: before database connection info ready but after peer relation established.
+    act: run core reconciliation.
+    assert: core reconciliation should "fail" and status should be waiting.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
@@ -322,10 +322,10 @@ def test_core_reconciliation(
     setup_replica_consensus: typing.Callable[[], dict],
 ):
     """
-    arrange: after peer relation established and database configured
-    act: run core reconciliation
+    arrange: after peer relation established and database configured.
+    act: run core reconciliation.
     assert: core reconciliation should update config files to match current config and
-        application state
+        application state.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
@@ -365,9 +365,9 @@ def test_get_initial_password_action_before_replica_consensus(
     harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
 ):
     """
-    arrange: before peer relation established but after charm created
-    act: run get-initial-password action
-    assert: get-initial-password action should fail
+    arrange: before peer relation established but after charm created.
+    act: run get-initial-password action.
+    assert: get-initial-password action should fail.
     """
     harness.begin_with_initial_hooks()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
@@ -385,9 +385,9 @@ def test_get_initial_password_action(
     action_event_mock: unittest.mock.MagicMock,
 ):
     """
-    arrange: after peer relation established
-    act: run get-initial-password action
-    assert: get-initial-password action should success and return default admin password
+    arrange: after peer relation established.
+    act: run get-initial-password action.
+    assert: get-initial-password action should success and return default admin password.
     """
     consensus = setup_replica_consensus()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
@@ -403,9 +403,9 @@ def test_rotate_wordpress_secrets_before_pebble_connect(
     harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
 ):
     """
-    arrange: before connection to pebble is established
-    act: run rotate-wordpress-secrets action
-    assert: rotate-wordpress-secrets action should fail
+    arrange: before connection to pebble is established.
+    act: run rotate-wordpress-secrets action.
+    assert: rotate-wordpress-secrets action should fail.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], False)
     harness.begin_with_initial_hooks()
@@ -420,9 +420,9 @@ def test_rotate_wordpress_secrets_before_replica_consensus(
     harness: ops.testing.Harness, action_event_mock: unittest.mock.MagicMock
 ):
     """
-    arrange: before peer relation is established
-    act: run rotate-wordpress-secrets action
-    assert: rotate-wordpress-secrets action should fail
+    arrange: before peer relation is established.
+    act: run rotate-wordpress-secrets action.
+    assert: rotate-wordpress-secrets action should fail.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
@@ -439,9 +439,9 @@ def test_rotate_wordpress_secrets_as_follower(
     setup_replica_consensus: typing.Callable[[], dict],
 ):
     """
-    arrange: after peer relation is established, is follower
-    act: run rotate-wordpress-secrets action
-    assert: rotate-wordpress-secrets action should succeed and secrets updated
+    arrange: after peer relation is established, is follower.
+    act: run rotate-wordpress-secrets action.
+    assert: rotate-wordpress-secrets action should succeed and secrets updated.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
@@ -463,9 +463,9 @@ def test_rotate_wordpress_secrets(
     setup_replica_consensus: typing.Callable[[], dict],
 ):
     """
-    arrange: after peer relation is established, is leader
-    act: run rotate-wordpress-secrets action
-    assert: rotate-wordpress-secrets action should succeed and secrets updated
+    arrange: after peer relation is established, is leader.
+    act: run rotate-wordpress-secrets action.
+    assert: rotate-wordpress-secrets action should succeed and secrets updated.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
@@ -492,9 +492,9 @@ def test_theme_reconciliation(
     setup_replica_consensus: typing.Callable[[], dict],
 ):
     """
-    arrange: after peer relation established and database ready
-    act: update themes configuration
-    assert: themes installed in WordPress should update according to the themes config
+    arrange: after peer relation established and database ready.
+    act: update themes configuration.
+    assert: themes installed in WordPress should update according to the themes config.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
@@ -536,9 +536,9 @@ def test_plugin_reconciliation(
     setup_replica_consensus: typing.Callable[[], dict],
 ):
     """
-    arrange: after peer relation established and database ready
-    act: update plugins configuration
-    assert: plugin installed in WordPress should update according to the plugin config
+    arrange: after peer relation established and database ready.
+    act: update plugins configuration.
+    assert: plugin installed in WordPress should update according to the plugin config.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
@@ -576,7 +576,7 @@ def test_plugin_reconciliation(
 
 def test_team_map():
     """
-    arrange: no arrange
+    arrange: no arrange.
     act: convert the team_map config using _encode_openid_team_map method.
     assert: the converted result should be a valid PHP array with the meaning matching the config.
     """
@@ -619,8 +619,8 @@ def test_swift_config(
     setup_replica_consensus: typing.Callable[[], dict],
 ):
     """
-    arrange: after peer relation established and database ready
-    act: update legacy version of the wp_plugin_openstack-objectstorage_config configuration
+    arrange: after peer relation established and database ready.
+    act: update legacy version of the wp_plugin_openstack-objectstorage_config configuration.
     assert: parsed swift configuration should update all legacy fields.
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
@@ -655,10 +655,10 @@ def test_swift_config(
 
 def test_akismet_plugin(run_standard_plugin_test: typing.Callable):
     """
-    arrange: after peer relation established and database ready
-    act: update akismet plugin configuration
+    arrange: after peer relation established and database ready.
+    act: update akismet plugin configuration.
     assert: plugin should be activated with WordPress options being set correctly, and plugin
-        should be deactivated with options removed after config being reset
+        should be deactivated with options removed after config being reset.
     """
     run_standard_plugin_test(
         plugin="akismet",
@@ -675,10 +675,10 @@ def test_akismet_plugin(run_standard_plugin_test: typing.Callable):
 
 def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
     """
-    arrange: after peer relation established and database ready
-    act: update openid plugin configuration
+    arrange: after peer relation established and database ready.
+    act: update openid plugin configuration.
     assert: plugin should be activated with WordPress options being set correctly, and plugin
-        should be deactivated with options removed after config being reset
+        should be deactivated with options removed after config being reset.
     """
     run_standard_plugin_test(
         plugin={"openid", "wordpress-launchpad-integration", "wordpress-teams-integration"},
@@ -695,8 +695,8 @@ def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.C
 
 def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
     """
-    arrange: after peer relation established and database ready
-    act: update openid plugin configuration
+    arrange: after peer relation established and database ready.
+    act: update openid plugin configuration.
     assert: plugin should be activated with WordPress options being set correctly, and plugin
         should be deactivated with options removed after config being reset. Apache
         configuration for swift integration should be enabled after swift plugin activated

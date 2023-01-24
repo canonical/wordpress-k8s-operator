@@ -454,8 +454,7 @@ async def test_ingress_modsecurity(
     kube_config: str,
 ):
     """
-    arrange: after WordPress charm is up and running and Nginx ingress integrator charm is deployed
-        and related to the WordPress charm.
+    arrange: WordPress charm is running and Nginx ingress integrator deployed and related to it.
     act: update the use_nginx_ingress_modsec WordPress charm config.
     assert: A Kubernetes ingress modsecurity should be enabled and proper rules should be set up
         for WordPress.

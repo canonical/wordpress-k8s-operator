@@ -185,7 +185,7 @@ class WordpressClient:
         return response.url == f"http://{self.host}/wp-admin/"
 
     def _set_options_permalink(self) -> None:
-        """Set WordPress permalink option to /%postname%/"""
+        """Set WordPress permalink option to /%postname%/."""
         options_permalink_page = self._get(
             f"http://{self.host}/wp-admin/options-permalink.php"
         ).text

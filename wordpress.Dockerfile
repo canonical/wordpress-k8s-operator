@@ -25,7 +25,7 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
             pwgen \
             python3 \
             python3-yaml \
-            unzip && \
+            unzip \
         && rm -rf /var/lib/apt/lists/* \
         sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' "$APACHE_ENVVARS" && \
         . "$APACHE_ENVVARS" && \

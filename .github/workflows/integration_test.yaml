@@ -24,7 +24,7 @@ jobs:
       extra-arguments: |
         --openstack-rc ./openrc \
         --kube-config ~/.kube/config \
-        --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }}
+        --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
         --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
         --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
         --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
@@ -33,7 +33,8 @@ jobs:
       modules: '["test_core", "test_error", "test_upgrade"]'
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml
-    secrets: inherit
+    secrets:
+      TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
   required_status_checks:
     name: Required Integration Test Status Checks
     runs-on: ubuntu-latest

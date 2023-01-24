@@ -7,6 +7,24 @@ env:
   TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
 
 jobs:
+  get-extra-arguments:
+    name: Get extra arguments
+    runs-on: ubuntu-22.04
+    outputs:
+      arguments: ${{ env.ARGUMENTS }}
+    steps:
+      - name: Get extra arguments
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          args = --openstack-rc ./openrc \
+            --kube-config ~/.kube/config \
+            --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
+            --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
+            --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
+            --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
+            --screenshot-dir /tmp \
+            ${{ matrix.args.value }}
+          echo "ARGUMENTS=$args" >> $GITHUB_ENV
   integration-tests:
     strategy:
       matrix:
@@ -20,16 +38,9 @@ jobs:
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    needs: get-extra-arguments
     with:
-      extra-arguments: |
-        --openstack-rc ./openrc \
-        --kube-config ~/.kube/config \
-        --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
-        --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
-        --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
-        --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
-        --screenshot-dir /tmp \
-        ${{ matrix.args.value }}
+      extra-arguments : ${{ jobs.get-extra-arguments.outputs.arguments }}
       modules: '["test_core", "test_error", "test_upgrade"]'
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml

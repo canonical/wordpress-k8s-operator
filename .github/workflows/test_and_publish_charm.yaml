@@ -28,3 +28,4 @@ jobs:
         --kube-config ~/.kube/config \
         --screenshot-dir /tmp \
         --test-db-from-config --num-units=3
+      trivy-image-config: trivy.yaml

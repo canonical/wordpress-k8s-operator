@@ -20,14 +20,15 @@ jobs:
             value: "--num-units=1"
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     with:
-      setup-devstack-swift: true
-      modules: '["test_core", "test_error", "test_upgrade"]'
       extra-arguments: |
         -m "not (requires_secret)" \
         --openstack-rc ./openrc \
         --kube-config ~/.kube/config \
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
+      modules: '["test_core", "test_error", "test_upgrade"]'
+      setup-devstack-swift: true
+      trivy-image-config: trivy.yaml
   required_status_checks:
     name: Required Integration Test Status Checks
     runs-on: ubuntu-latest

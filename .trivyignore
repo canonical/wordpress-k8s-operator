@@ -5,7 +5,3 @@ CVE-2022-31043
 CVE-2022-31090
 CVE-2022-31091
 CVE-2022-24775
-
-# Ignore these rules
-# ssl-cert lib ships with a certificate and it's identified by trivy as a vunerability
-private-key

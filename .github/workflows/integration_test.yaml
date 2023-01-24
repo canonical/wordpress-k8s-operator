@@ -3,9 +3,6 @@ name: Integration tests
 on: [pull_request, workflow_call]
 
 jobs:
-  test-with-secrets:
-    uses: ./.github/workflows/integration_test_secrets.yaml
-    secrets: inherit
   integration-tests:
     strategy:
       matrix:

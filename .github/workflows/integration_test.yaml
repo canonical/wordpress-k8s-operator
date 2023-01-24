@@ -26,6 +26,7 @@ jobs:
             --screenshot-dir /tmp \
             ${{ matrix.args.value }}
           END
+          )
           echo "ARGUMENTS=$args" >> $GITHUB_ENV
   integration-tests:
     strategy:

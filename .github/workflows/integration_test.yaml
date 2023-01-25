@@ -4,27 +4,9 @@ on:
   pull_request:
 
 jobs:
-  get-extra-arguments:
-    name: Get extra arguments
-    runs-on: ubuntu-22.04
-    outputs:
-      arguments: ${{ env.ARGUMENTS }}
-    steps:
-      - name: Get extra arguments
-        run: |
-          arguments="--openstack-rc ./openrc --kube-config ./kube-config \
-          --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }} \
-          --openid-username ${{ env.TEST_OPENID_USERNAME }} \
-          --openid-password ${{ env.TEST_OPENID_PASSWORD }} \
-          --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }} \
-          --screenshot-dir /tmp ${{ matrix.args.value }}"
-          echo $arguments
-          echo "ARGUMENTS=$arguments" >> $GITHUB_ENV
-        env:
-          TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
-          TEST_OPENID_USERNAME: ${{ secrets.TEST_OPENID_USERNAME }}
-          TEST_OPENID_PASSWORD: ${{ secrets.TEST_OPENID_PASSWORD }}
-          TEST_LAUNCHPAD_TEAM: ${{ secrets.TEST_LAUNCHPAD_TEAM }}
+  integration-test-with-secrets:
+    uses: ./.github/workflows/integration_test_secrets.yaml
+    secrets: inherit
   integration-tests:
     strategy:
       fail-fast: false
@@ -39,9 +21,16 @@ jobs:
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
-    needs: get-extra-arguments
     with:
-      extra-arguments: ${{ needs.get-extra-arguments.outputs.arguments }}
+      extra-arguments: |
+        -m "not (requires_secret)"
+        --openstack-rc ./openrc --kube-config ./kube-config
+        --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }}
+        --openid-username ${{ env.TEST_OPENID_USERNAME }}
+        --openid-password ${{ env.TEST_OPENID_PASSWORD }}
+        --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }}
+        --screenshot-dir /tmp
+        -k ${{ matrix.args.value }}"
       modules: '["test_core", "test_error", "test_upgrade"]'
       pre-run-script: |
         -c "sudo microk8s config > kube-config && \
@@ -53,5 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - integration-tests
+      - integration-tests-with-secrets
     steps:
       - run: echo required checks passed

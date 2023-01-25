@@ -27,7 +27,7 @@ jobs:
         ${{ matrix.args.value }}"
       modules: '["test_core", "test_error", "test_upgrade"]'
       pre-run-script: |
-        sudo microk8s enable registry hostpath-storage
+        -c "sudo microk8s enable registry hostpath-storage"
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml
   required_status_checks:

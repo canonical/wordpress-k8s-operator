@@ -28,10 +28,11 @@ max-complexity = 10
 exclude = [".git", "__pycache__", ".tox", "build", "dist", "*.egg_info", "venv"]
 select = ["E", "W", "F", "C", "N", "R", "D", "H"]
 # Ignore W503, E501 because using black creates errors with this
-# Ignore D107 Missing docstring in __init__
-ignore = ["W503", "E501", "D107"]
+ignore = ["W503", "E501"]
+# Ignore D104 Missing docstring in public package __init__
 # DCO020, DCO030: Ignore missing args in docstring in mocks
 per-file-ignores = [
+    "tests/unit/__init__.py:D104",
     "tests/*:D205,D212",
     "tests/unit/wordpress_mock.py:DCO020,DCO030"
 ]

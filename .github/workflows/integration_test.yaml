@@ -4,9 +4,6 @@ on:
   pull_request:
 
 jobs:
-  integration-test-with-secrets:
-    uses: ./.github/workflows/integration_test_secrets.yaml
-    secrets: inherit
   integration-tests:
     strategy:
       fail-fast: false

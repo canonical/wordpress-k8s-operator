@@ -42,6 +42,9 @@ jobs:
     with:
       extra-arguments: ${{ needs.get-extra-arguments.outputs.arguments }}
       modules: '["test_core", "test_error", "test_upgrade"]'
+      pre-run-script: |
+        -c "sudo microk8s config > ~/.kube/config && \
+        sudo microk8s enable registry hostpath-storage"
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml
   required_status_checks:

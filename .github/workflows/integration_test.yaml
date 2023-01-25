@@ -23,13 +23,13 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     with:
       extra-arguments: |
-        -m "not (requires_secret)"
-        --openstack-rc ./openrc --kube-config ./kube-config
-        --screenshot-dir /tmp
-        -k ${{ matrix.args.value }}"
+        -m "not (requires_secret)" \
+        --openstack-rc ${GITHUB_WORKSPACE}/openrc \
+        --kube-config ./kube/config \
+        --screenshot-dir /tmp \
+        ${{ matrix.args.value }}"
       modules: '["test_core", "test_error", "test_upgrade"]'
       pre-run-script: |
-        -c "sudo microk8s config > kube-config && \
         sudo microk8s enable registry hostpath-storage"
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml

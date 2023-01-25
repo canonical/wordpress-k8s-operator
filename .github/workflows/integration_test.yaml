@@ -24,7 +24,7 @@ jobs:
         --openstack-rc ${GITHUB_WORKSPACE}/openrc \
         --kube-config ./kube/config \
         --screenshot-dir /tmp \
-        ${{ matrix.args.value }}"
+        ${{ matrix.args.value }}
       modules: '["test_core", "test_error", "test_upgrade"]'
       pre-run-script: |
         -c "sudo microk8s enable registry hostpath-storage"

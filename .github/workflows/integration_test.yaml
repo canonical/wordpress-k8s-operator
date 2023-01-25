@@ -25,10 +25,6 @@ jobs:
       extra-arguments: |
         -m "not (requires_secret)"
         --openstack-rc ./openrc --kube-config ./kube-config
-        --akismet-api-key ${{ env.TEST_AKISMET_API_KEY }}
-        --openid-username ${{ env.TEST_OPENID_USERNAME }}
-        --openid-password ${{ env.TEST_OPENID_PASSWORD }}
-        --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }}
         --screenshot-dir /tmp
         -k ${{ matrix.args.value }}"
       modules: '["test_core", "test_error", "test_upgrade"]'

@@ -18,7 +18,7 @@ jobs:
           --openid-password ${{ env.TEST_OPENID_PASSWORD }} \
           --launchpad-team ${{ env.TEST_LAUNCHPAD_TEAM }} \
           --screenshot-dir /tmp ${{ matrix.args.value }}"
-          echo 'ARGUMENTS=$args' >> $GITHUB_ENV
+          echo "ARGUMENTS=$args" >> $GITHUB_ENV
         env:
           TEST_AKISMET_API_KEY: ${{ secrets.TEST_AKISMET_API_KEY }}
           TEST_OPENID_USERNAME: ${{ secrets.TEST_OPENID_USERNAME }}

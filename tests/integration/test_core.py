@@ -414,7 +414,7 @@ async def test_ingress(
     with unittest.mock.patch.multiple(
         socket, getaddrinfo=gen_patch_getaddrinfo(new_hostname, "127.0.0.1")
     ):
-        response = requests.get(f"https://{new_hostname}", timeout=5, verify=False)
+        response = requests.get(f"https://{new_hostname}", timeout=5, verify=False)  # nosec
         assert (
             response.status_code == 200 and "wordpress" in response.text.lower()
         ), "Ingress should update the server name indication based routing after blog_hostname updated"

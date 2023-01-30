@@ -9,6 +9,7 @@ import io
 import json
 import secrets
 import socket
+import tempfile
 import typing
 import unittest.mock
 import urllib.parse

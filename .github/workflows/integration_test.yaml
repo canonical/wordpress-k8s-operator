@@ -27,7 +27,8 @@ jobs:
         ${{ matrix.args.value }}
       modules: '["test_core", "test_error", "test_upgrade"]'
       pre-run-script: |
-        -c "sudo microk8s enable registry hostpath-storage"
+        -c "sudo microk8s enable registry hostpath-storage
+          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner"
       setup-devstack-swift: true
       trivy-image-config: trivy.yaml
   required_status_checks:

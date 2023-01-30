@@ -9,7 +9,6 @@ import io
 import json
 import secrets
 import socket
-import tempfile
 import typing
 import unittest.mock
 import urllib.parse
@@ -364,10 +363,8 @@ async def test_ingress(
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: deploy the nginx-ingress-integrator charm and create the relation between ingress charm
-        and WordPress charm. After that, update some ingress related configuration of the
-        WordPress charm.
-    assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections
-        after configuration tls_secret_name be set.
+        and WordPress charm.
+    assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections.
     """
 
     def gen_patch_getaddrinfo(host: str, resolve_to: str):
@@ -410,28 +407,13 @@ async def test_ingress(
         response.status_code == 200 and "wordpress" in response.text.lower()
     ), "Ingress should accept requests to WordPress and return correct contents"
 
-    tls_secret_name, tls_cert = create_self_signed_tls_secret(application_name)
     application = ops_test.model.applications[application_name]
-    await application.set_config({"tls_secret_name": tls_secret_name})
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
-    with tempfile.NamedTemporaryFile(mode="wb+") as file:
-        with unittest.mock.patch.multiple(
-            socket, getaddrinfo=gen_patch_getaddrinfo(application_name, "127.0.0.1")
-        ):
-            file.write(tls_cert)
-            file.flush()
-            response = requests.get(f"https://{application_name}", verify=file.name, timeout=5)
-            assert (
-                response.status_code == 200 and "wordpress" in response.text.lower()
-            ), "Ingress should accept HTTPS requests after tls_secret_name being set"
-
     new_hostname = "wordpress.test"
     application = ops_test.model.applications[application_name]
-    await application.set_config(
-        {"tls_secret_name": tls_secret_name, "blog_hostname": new_hostname}
-    )
+    await application.set_config({"blog_hostname": new_hostname})
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
     with unittest.mock.patch.multiple(

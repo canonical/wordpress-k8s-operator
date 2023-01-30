@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # pylint: disable=protected-access,too-many-locals
@@ -38,9 +38,8 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
     assert ops_test.model
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            # mypy has trouble to inferred types for variables that are initialized in subclasses,
-            # same for all status name down below.
             unit.workload_status
+            # mypy has trouble to inferred types for variables that are initialized in subclasses.
             == ops.model.BlockedStatus.name  # type: ignore
         ), "status should be 'blocked' since the default database info is empty"
 
@@ -51,7 +50,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
 
 @pytest.mark.abort_on_fail
 async def test_mysql_config(
-    request,
+    db_from_config,
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
     kube_core_client,
@@ -64,7 +63,7 @@ async def test_mysql_config(
     act: config the WordPress charm with the database configuration from a mysql pod.
     assert: WordPress should be active.
     """
-    if not request.config.getoption("--test-db-from-config"):
+    if not db_from_config:
         pytest.skip()
     assert ops_test.model
     application = ops_test.model.applications[application_name]
@@ -78,6 +77,7 @@ async def test_mysql_config(
             "db_password": pod_db_password,
         }
     )
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
     app_status = ops_test.model.applications[application_name].status
     assert app_status == ops.model.ActiveStatus.name, (  # type: ignore
@@ -88,16 +88,19 @@ async def test_mysql_config(
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(request, ops_test: pytest_operator.plugin.OpsTest, application_name):
+async def test_mysql_relation(
+    db_from_config, ops_test: pytest_operator.plugin.OpsTest, application_name
+):
     """
     arrange: after WordPress charm has been deployed.
     act: deploy a mariadb charm and add a relation between WordPress and mariadb.
     assert: WordPress should be active.
     """
-    if request.config.getoption("--test-db-from-config"):
+    if db_from_config:
         pytest.skip()
     assert ops_test.model
     await ops_test.model.add_relation("wordpress", "mariadb:mysql")
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
     app_status = ops_test.model.applications[application_name].status
     assert app_status == ops.model.ActiveStatus.name, (  # type: ignore
@@ -130,6 +133,7 @@ async def test_openstack_object_storage_plugin(
     await application.set_config(
         {"wp_plugin_openstack-objectstorage_config": json.dumps(swift_config)}
     )
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     container = swift_config["bucket"]
@@ -261,7 +265,9 @@ async def test_wordpress_theme_installation_error(
 
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
+            # mypy has trouble to inferred types for variables that are initialized in subclasses.
+            unit.workload_status
+            == ops.model.BlockedStatus.name  # type: ignore
         ), "status should be 'blocked' since the theme in themes config does not exist"
 
         assert (
@@ -272,7 +278,9 @@ async def test_wordpress_theme_installation_error(
     await ops_test.model.wait_for_idle()
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.ActiveStatus.name  # type: ignore
+            # mypy has trouble to inferred types for variables that are initialized in subclasses.
+            unit.workload_status
+            == ops.model.ActiveStatus.name  # type: ignore
         ), "status should back to active after invalid theme removed from config"
 
 
@@ -327,7 +335,9 @@ async def test_wordpress_plugin_installation_error(
 
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
+            # mypy has trouble to inferred types for variables that are initialized in subclasses.
+            unit.workload_status
+            == ops.model.BlockedStatus.name  # type: ignore
         ), "status should be 'blocked' since the plugin in plugins config does not exist"
 
         assert (
@@ -339,7 +349,9 @@ async def test_wordpress_plugin_installation_error(
 
     for unit in ops_test.model.applications[application_name].units:
         assert (
-            unit.workload_status == ops.model.ActiveStatus.name  # type: ignore
+            # mypy has trouble to inferred types for variables that are initialized in subclasses.
+            unit.workload_status
+            == ops.model.ActiveStatus.name  # type: ignore
         ), "status should back to active after invalid plugin removed from config"
 
 
@@ -347,21 +359,41 @@ async def test_wordpress_plugin_installation_error(
 async def test_ingress(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name: str,
-    create_self_signed_tls_secret,
+    create_self_signed_tls_secret: typing.Callable[[str], tuple[str, bytes]],
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: deploy the nginx-ingress-integrator charm and create the relation between ingress charm
-        and wordpress charm. After that, update some ingress related configuration of the
-        wordpress charm.
+        and WordPress charm. After that, update some ingress related configuration of the
+        WordPress charm.
     assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections
         after configuration tls_secret_name be set.
     """
 
-    def gen_patch_getaddrinfo(host, resolve_to):
+    def gen_patch_getaddrinfo(host: str, resolve_to: str):
+        """Generate patched getaddrinfo function.
+
+        This function is used to generate a patched getaddrinfo function that will resolve to the
+        resolve_to address without having to actually register a host.
+
+        Args:
+            host: intended hostname of a given application.
+            resolve_to: destination address for host to resolve to.
+
+        Returns:
+            A patching function for getaddrinfo.
+        """
         original_getaddrinfo = socket.getaddrinfo
 
         def patched_getaddrinfo(*args):
+            """Patch getaddrinfo to point to desired ip address.
+
+            Args:
+                args: original arguments to getaddrinfo when creating network connection.
+
+            Returns:
+                Patched getaddrinfo function.
+            """
             if args[0] == host:
                 return original_getaddrinfo(resolve_to, *args[1:])
             return original_getaddrinfo(*args)
@@ -370,6 +402,7 @@ async def test_ingress(
 
     assert ops_test.model
     await ops_test.model.add_relation(application_name, "ingress:ingress")
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     response = requests.get("http://127.0.0.1", headers={"Host": application_name}, timeout=5)
@@ -380,6 +413,7 @@ async def test_ingress(
     tls_secret_name, tls_cert = create_self_signed_tls_secret(application_name)
     application = ops_test.model.applications[application_name]
     await application.set_config({"tls_secret_name": tls_secret_name})
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     with tempfile.NamedTemporaryFile(mode="wb+") as file:
@@ -399,6 +433,7 @@ async def test_ingress(
     await application.set_config(
         {"tls_secret_name": tls_secret_name, "blog_hostname": new_hostname}
     )
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
     with tempfile.NamedTemporaryFile(mode="wb+") as file:
         with unittest.mock.patch.multiple(
@@ -419,8 +454,7 @@ async def test_ingress_modsecurity(
     kube_config: str,
 ):
     """
-    arrange: after WordPress charm is up and running and Nginx ingress integrator charm is deployed
-        and related to the WordPress charm.
+    arrange: WordPress charm is running and Nginx ingress integrator deployed and related to it.
     act: update the use_nginx_ingress_modsec WordPress charm config.
     assert: A Kubernetes ingress modsecurity should be enabled and proper rules should be set up
         for WordPress.
@@ -428,12 +462,18 @@ async def test_ingress_modsecurity(
     assert ops_test.model
     application = ops_test.model.applications[application_name]
     await application.set_config({"use_nginx_ingress_modsec": "true"})
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     kubernetes.config.load_kube_config(config_file=kube_config)
     kube = kubernetes.client.NetworkingV1Api()
 
     def get_ingress_annotation():
+        """Get ingress annotations from kubernetes.
+
+        Returns:
+            Nginx ingress annotations.
+        """
         ingress_list = kube.list_namespaced_ingress(namespace=ops_test.model_name).items
         return ingress_list[0].metadata.annotations
 
@@ -448,6 +488,8 @@ async def test_ingress_modsecurity(
     )
 
 
+@pytest.mark.usefixtures("build_and_deploy")
+@pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_akismet_plugin(
     ops_test: pytest_operator.plugin.OpsTest,
@@ -462,6 +504,10 @@ async def test_akismet_plugin(
     assert: Akismet plugin should be activated and spam detection function should be working.
     """
     assert ops_test.model
+    await ops_test.model.add_relation("wordpress", "mariadb:mysql")
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+
     application = ops_test.model.applications[application_name]
     await application.set_config({"wp_plugin_akismet_key": akismet_api_key})
     await ops_test.model.wait_for_idle()
@@ -485,6 +531,8 @@ async def test_akismet_plugin(
         ), "Akismet plugin should keep the normal comment"
 
 
+@pytest.mark.usefixtures("build_and_deploy")
+@pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_openid_plugin(
     ops_test: pytest_operator.plugin.OpsTest,

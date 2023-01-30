@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # Licensed under the Apache2.0, see LICENCE file in charm source for details.
 """Library for the ingress relation.
 

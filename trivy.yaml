@@ -1,0 +1,4 @@
+disable-rules:
+# Ignore these rules
+# ssl-cert lib ships with a certificate and it's identified by trivy as a vulnerability
+  - private-key

@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # pylint:disable=invalid-name,protected-access,unused-argument
@@ -110,6 +110,8 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Returns: host and database
         """
         return host, database
 
@@ -121,6 +123,9 @@ class WordpressDatabaseMock:
             database: database name.
             user: database user.
             password: database password.
+
+        Raises:
+            KeyError: if database already exists.
         """
         key = self._database_identifier(host, database)
         if key in self._databases:
@@ -170,6 +175,9 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Raises:
+            KeyError: if database does not exist or WordPress is already installed in the database.
         """
         key = self._database_identifier(host, database)
         if key not in self._databases:
@@ -186,6 +194,11 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Returns: ``True`` if WordPress is installed.
+
+        Raises:
+            KeyError: if database does not exist.
         """
         key = self._database_identifier(host, database)
         if key not in self._databases:
@@ -200,6 +213,11 @@ class WordpressDatabaseMock:
         Args:
             host: database host.
             database: database name.
+
+        Returns: The Wordpress database.
+
+        Raises:
+            KeyError: if WordPress is not installed in the database.
         """
         key = self._database_identifier(host, database)
         if not self.is_wordpress_installed(host, database):
@@ -208,7 +226,8 @@ class WordpressDatabaseMock:
 
 
 class MysqlConnectorMock:
-    """A mock for :py:mod:`mysql.connector`."""
+    # Mocked Error attribute can be ignored.
+    """A mock for :py:mod:`mysql.connector`."""  # noqa: DCO060
 
     # Mock for :class:`mysql.connector.Error`
     Error = mysql.connector.Error
@@ -222,7 +241,11 @@ class MysqlConnectorMock:
         self._wordpress_database_mock = wordpress_database_mock
 
     def connect(self, host: str, database: str, user: str, password: str, charset: str):
-        """Mock method for :meth:`mysql.connector.connect`."""
+        """Mock method for :meth:`mysql.connector.connect`.
+
+        Raises:
+            Error: if the user can't connect to the database.
+        """
         if not self._wordpress_database_mock.database_can_connect(host, database):
             raise self.Error(
                 msg=f"Can't connect to MySQL server on '{host}:3306' (2003)",
@@ -261,13 +284,22 @@ class HandlerRegistry:
     def register(
         self, match: typing.Callable[[typing.Sequence[str]], bool]
     ) -> typing.Callable[[typing.Callable], typing.Callable]:
-        """The decorator to collector the match pattern and handler, see class docstring for usage.
+        """The decorator to collect the match pattern and handler, see class docstring for usage.
 
         Args:
             match: A match function takes input and output matching result as bool.
+
+        Returns: the decorator.
         """
 
         def decorator(func):
+            """Decorator to collect match pattern and handler.
+
+            Args:
+                func: A function takes input and output matching result as bool.
+
+            Returns: the decorator.
+            """
             self.registered_handler.append((match, func))
             return func
 
@@ -290,7 +322,11 @@ class ExecProcessMock:
         self._stderr = stderr
 
     def wait_output(self) -> typing.Tuple[str, str]:
-        """Mock method for :meth:`ops.pebble.ExecProcess.wait_output`."""
+        """Mock method for :meth:`ops.pebble.ExecProcess.wait_output`.
+
+        Raises:
+            ExecError: if the command execution fails.
+        """
         if self._return_code != 0:
             raise ops.pebble.ExecError(
                 [], exit_code=self._return_code, stdout=self._stdout, stderr=self._stderr
@@ -325,7 +361,11 @@ class WordpressContainerMock:
     def exec(
         self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
     ):
-        """Mock method for :meth:`ops.charm.model.Container.exec`."""
+        """Mock method for :meth:`ops.charm.model.Container.exec`.
+
+        Raises:
+            ValueError: if not exactly one handler is registered for the cmd.
+        """
         handler = None
         for match, potential_handler in self._exec_handler.registered_handler:
             is_match = match(cmd)
@@ -360,7 +400,12 @@ class WordpressContainerMock:
         return file_list
 
     def remove_path(self, path: str, recursive: bool = False) -> None:
-        """Mock method for :meth:`ops.charm.model.Container.remove_path`."""
+        # Reraise documentation for mocked path removal can be ignored.
+        """Mock method for :meth:`ops.charm.model.Container.remove_path`.
+
+        Raises:
+            KeyError: if path is not found in the mock filesystem.
+        """  # noqa: DCO055
         try:
             del self.fs[path]
         except KeyError:
@@ -375,6 +420,9 @@ class WordpressContainerMock:
 
         Returns:
             A dict with four keys: db_host, db_name, db_user, db_password.
+
+        Raises:
+            ValueError: if the db key is not defined exactly once.
         """
         wp_config = self.fs.get(WordpressCharm._WP_CONFIG_PATH)
         if wp_config is None:
@@ -394,6 +442,9 @@ class WordpressContainerMock:
 
         Returns:
             A tuple of database host and database name.
+
+        Raises:
+            KeyError: if the database configuration files does not exist.
         """
         db_info = self._get_current_database_config()
         if db_info is None:
@@ -401,10 +452,10 @@ class WordpressContainerMock:
         return db_info["db_host"], db_info["db_name"]
 
     def _current_database(self) -> typing.Optional[WordPressDatabaseInstanceMock]:
-        """Retrieve the current connected mock wordpress database instance as in the wp-config.php.
+        """Retrieve the current connected mock WordPress database instance as in the wp-config.php.
 
         Returns:
-            The current connected mock wordpress database instance as in the wp-config.php.
+            The current connected mock WordPress database instance as in the wp-config.php.
         """
         return self._wordpress_database_mock.get_wordpress_database(
             *self._current_database_host_and_database()
@@ -517,8 +568,13 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "option", "update"])
     def _mock_wp_option_update(self, cmd):
-        """Simulate ``wp option update <option> <value> [--format=json]`` command execution in the
-        container.
+        """Simulate command execution in the container.
+
+        Simulate WordPress option update command which is equivalent to:
+        ``wp option update <option> <value> [--format=json]``
+
+        Args:
+            cmd: Command to simulate the execution in container.
         """
         db = self._current_database()
         option = cmd[3]
@@ -545,7 +601,11 @@ class WordpressContainerMock:
 
     @_exec_handler.register(lambda cmd: cmd[0] == "a2enconf")
     def _mock_a2enconf(self, cmd):
-        """Simulate ``a2enconf <conf>`` command execution in the container."""
+        """Simulate ``a2enconf <conf>`` command execution in the container.
+
+        Raises:
+            FileNotFoundError: if the apache configuration file does not exist.
+        """
         conf = cmd[1]
         conf_src = f"/etc/apache2/conf-available/{conf}.conf"
         if conf_src not in self.fs:
@@ -576,6 +636,7 @@ class WordpressPatch:
     """The combined mocking and patching system for WordPress unit tests."""
 
     def __init__(self) -> None:
+        """Initialize the instance."""
         self.database = WordpressDatabaseMock(
             builtin_wordpress_options={"users_can_register": "0"}
         )
@@ -588,6 +649,7 @@ class WordpressPatch:
         original_container_method = WordpressCharm._container
 
         def mock_container(_self):
+            """Mocked WordPress container."""
             container = original_container_method(_self)
             self.container.original_pebble = container
             return self.container

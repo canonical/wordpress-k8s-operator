@@ -358,7 +358,6 @@ async def test_wordpress_plugin_installation_error(
 async def test_ingress(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name: str,
-    create_self_signed_tls_secret: typing.Callable[[str], tuple[str, bytes]],
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established.

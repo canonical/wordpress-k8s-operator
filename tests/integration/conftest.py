@@ -4,19 +4,12 @@
 """Fixtures for WordPress charm integration tests."""
 
 import asyncio
-import base64
 import configparser
-import datetime
 import logging
 import pathlib
 import re
-import secrets
 import typing
 
-import cryptography.hazmat.primitives.asymmetric.rsa
-import cryptography.hazmat.primitives.hashes
-import cryptography.hazmat.primitives.serialization
-import cryptography.x509
 import juju.action
 import juju.application
 import kubernetes
@@ -271,81 +264,6 @@ def kube_networking_client_fixture(kube_config):
     kubernetes.config.load_kube_config(config_file=kube_config)
     kubernetes_client_v1 = kubernetes.client.NetworkingV1Api()
     return kubernetes_client_v1
-
-
-@pytest.fixture(scope="function", name="create_self_signed_tls_secret")
-def create_self_signed_tls_secret_fixture(
-    kube_core_client, ops_test: pytest_operator.plugin.OpsTest
-):
-    """Create a self-signed TLS certificate as a Kubernetes secret."""
-    assert ops_test.model
-    created_secrets = []
-    namespace = ops_test.model.info["name"]
-
-    def create_self_signed_tls_secret(host):
-        """Function to create a self-signed TLS certificate as a Kubernetes secret.
-
-        Args:
-            host: Certificate subject common name.
-
-        Returns:
-            (Tuple[str, bytes]) A tuple of the Kubernetes secret name as str, and certificate
-            public key in bytes.
-        """
-        secret_name = f"tls-secret-{host}-{secrets.token_hex(8)}"
-        key = cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-        )
-        private_key_pem = key.private_bytes(
-            encoding=cryptography.hazmat.primitives.serialization.Encoding.PEM,
-            format=cryptography.hazmat.primitives.serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=cryptography.hazmat.primitives.serialization.NoEncryption(),
-        )
-        issuer = subject = cryptography.x509.Name(
-            [
-                cryptography.x509.NameAttribute(cryptography.x509.NameOID.COUNTRY_NAME, "UK"),
-                cryptography.x509.NameAttribute(
-                    cryptography.x509.NameOID.ORGANIZATION_NAME, "Canonical Group Ltd"
-                ),
-                cryptography.x509.NameAttribute(cryptography.x509.NameOID.COMMON_NAME, host),
-            ]
-        )
-        cert = (
-            cryptography.x509.CertificateBuilder()
-            .subject_name(subject)
-            .issuer_name(issuer)
-            .public_key(key.public_key())
-            .serial_number(cryptography.x509.random_serial_number())
-            .add_extension(
-                cryptography.x509.SubjectAlternativeName([cryptography.x509.DNSName(host)]),
-                critical=False,
-            )
-            .not_valid_before(datetime.datetime.utcnow() - datetime.timedelta(days=10))
-            .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10))
-            .sign(key, cryptography.hazmat.primitives.hashes.SHA256())
-        )
-        public_key_pem = cert.public_bytes(
-            cryptography.hazmat.primitives.serialization.Encoding.PEM
-        )
-        kube_core_client.create_namespaced_secret(
-            namespace=namespace,
-            body=kubernetes.client.V1Secret(
-                metadata={"name": secret_name, "namespace": namespace},
-                data={
-                    "tls.crt": base64.standard_b64encode(public_key_pem).decode(),
-                    "tls.key": base64.standard_b64encode(private_key_pem).decode(),
-                },
-                type="kubernetes.io/tls",
-            ),
-        )
-        created_secrets.append(secret_name)
-        return secret_name, public_key_pem
-
-    yield create_self_signed_tls_secret
-
-    for secret in created_secrets:
-        kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)
 
 
 @pytest.fixture(scope="module", name="pod_db_database")

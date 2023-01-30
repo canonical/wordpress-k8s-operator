@@ -406,10 +406,6 @@ async def test_ingress(
         response.status_code == 200 and "wordpress" in response.text.lower()
     ), "Ingress should accept requests to WordPress and return correct contents"
 
-    application = ops_test.model.applications[application_name]
-    # mypy has trouble to inferred types for variables that are initialized in subclasses.
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
-
     new_hostname = "wordpress.test"
     application = ops_test.model.applications[application_name]
     await application.set_config({"blog_hostname": new_hostname})
@@ -418,7 +414,7 @@ async def test_ingress(
     with unittest.mock.patch.multiple(
         socket, getaddrinfo=gen_patch_getaddrinfo(new_hostname, "127.0.0.1")
     ):
-        response = requests.get(f"https://{new_hostname}", timeout=5)
+        response = requests.get(f"https://{new_hostname}", timeout=5, verify=False)
         assert (
             response.status_code == 200 and "wordpress" in response.text.lower()
         ), "Ingress should update the server name indication based routing after blog_hostname updated"

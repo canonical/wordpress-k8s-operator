@@ -212,13 +212,13 @@ def launchpad_team_fixture(request):
 
 @pytest.fixture(scope="module", name="kube_config")
 def kube_config_fixture(request):
-    """The Kubernetes cluster configuration file."""
-    openid_password = request.config.getoption("--kube-config")
-    assert openid_password, (
+    """The Kubernetes cluster configuration file"""
+    kube_config = request.config.getoption("--kube-config")
+    assert kube_config, (
         "The Kubernetes config file path should not be empty, "
         "please include it in the --kube-config parameter"
     )
-    return openid_password
+    return kube_config
 
 
 @pytest.fixture(scope="module", name="num_units")

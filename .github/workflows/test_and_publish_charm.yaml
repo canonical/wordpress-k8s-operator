@@ -16,10 +16,10 @@ on:
 
 jobs:
   integration-test-with-secrets:
-     uses: ./.github/workflows/integration_test_secrets.yaml
+    uses: ./.github/workflows/integration_test_secrets.yaml
     secrets: inherit
   integration-test:
-     uses: ./.github/workflows/integration_test.yaml
+    uses: ./.github/workflows/integration_test.yaml
     secrets: inherit
   test-and-publish-charm:
     strategy:

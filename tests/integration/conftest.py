@@ -1,22 +1,15 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for WordPress charm integration tests."""
 
 import asyncio
-import base64
 import configparser
-import datetime
 import logging
 import pathlib
 import re
-import secrets
 import typing
 
-import cryptography.hazmat.primitives.asymmetric.rsa
-import cryptography.hazmat.primitives.hashes
-import cryptography.hazmat.primitives.serialization
-import cryptography.x509
 import juju.action
 import juju.application
 import kubernetes
@@ -34,7 +27,7 @@ logger = logging.getLogger()
 
 @pytest_asyncio.fixture(scope="function", name="app_config")
 async def app_config_fixture(request, ops_test: pytest_operator.plugin.OpsTest):
-    """Change the charm config to specific values and revert that after test"""
+    """Change the charm config to specific values and revert that after test."""
     assert ops_test.model
     config = request.param
     application: juju.application.Application = ops_test.model.applications["wordpress"]
@@ -62,7 +55,13 @@ async def fixture_get_default_admin_password(
     """Create a function to get the default admin password using get-initial-password action."""
     assert ops_test.model
 
-    async def _get_default_admin_password():
+    async def _get_default_admin_password() -> str:
+        """Get default admin password using get-initial-password action.
+
+        Returns:
+            WordPress admin account password
+        """
+        assert ops_test.model  # to let mypy know that it's not None
         application: juju.application.Application = ops_test.model.applications[application_name]
         action: juju.action.Action = await application.units[0].run_action("get-initial-password")
         await action.wait()
@@ -79,9 +78,14 @@ async def fixture_default_admin_password(get_default_admin_password):
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ip_list")
 async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, application_name):
-    """Helper function to retrieve unit ip addresses, similar to fixture_get_unit_status_list"""
+    """Retrieve unit ip addresses, similar to fixture_get_unit_status_list."""
 
     async def _get_unit_ip_list():
+        """Retrieve unit ip addresses, similar to fixture_get_unit_status_list.
+
+        Returns:
+            list of WordPress units ip addresses.
+        """
         status = await ops_test.model.get_status()
         units = status.applications[application_name].units
         ip_list = []
@@ -94,15 +98,27 @@ async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, app
 
 @pytest_asyncio.fixture(scope="function", name="unit_ip_list")
 async def fixture_unit_ip_list(get_unit_ip_list):
-    """A fixture containing ip addresses of current units"""
+    """A fixture containing ip addresses of current units.
+
+    Yields:
+        ip addresses of current WordPress units.
+    """
     yield await get_unit_ip_list()
 
 
 @pytest_asyncio.fixture(scope="function", name="get_theme_list_from_ip")
 async def fixture_get_theme_list_from_ip(default_admin_password):
-    """Retrieve installed themes from the WordPress instance"""
+    """Retrieve installed themes from the WordPress instance."""
 
-    def _get_theme_list_from_ip(unit_ip):
+    def _get_theme_list_from_ip(unit_ip: str):
+        """Retrieve installed themes from the WordPress instance.
+
+        Args:
+            unit_ip: target WordPress unit ip address
+
+        Returns:
+            list of installed WordPress themes in given instance
+        """
         wordpress_client = WordpressClient(
             host=unit_ip, username="admin", password=default_admin_password, is_admin=True
         )
@@ -113,9 +129,17 @@ async def fixture_get_theme_list_from_ip(default_admin_password):
 
 @pytest_asyncio.fixture(scope="function", name="get_plugin_list_from_ip")
 async def fixture_get_plugin_list_from_ip(default_admin_password):
-    """Retrieve installed plugins from the WordPress instance"""
+    """Retrieve installed plugins from the WordPress instance."""
 
     def _get_plugin_list_from_ip(unit_ip):
+        """Retrieve installed plugins from the Wordpress instance.
+
+        Args:
+            unit_ip: target WordPress unit ip address
+
+        Returns:
+            list of installed WordPress plugins in given instance
+        """
         wordpress_client = WordpressClient(
             host=unit_ip, username="admin", password=default_admin_password, is_admin=True
         )
@@ -126,7 +150,7 @@ async def fixture_get_plugin_list_from_ip(default_admin_password):
 
 @pytest.fixture(scope="module", name="openstack_environment")
 def openstack_environment_fixture(request, num_units):
-    """Parse the openstack rc style configuration file from the --openstack-rc argument
+    """Parse the openstack rc style configuration file from the --openstack-rc argument.
 
     Returns: a dictionary of environment variables and values, or None if --openstack-rc isn't
         provided.
@@ -148,7 +172,7 @@ def openstack_environment_fixture(request, num_units):
 
 @pytest.fixture
 def akismet_api_key(request):
-    """The Akismet API key, in str"""
+    """The Akismet API key, in str."""
     api_key = request.config.getoption("--akismet-api-key")
     assert (
         api_key
@@ -158,7 +182,7 @@ def akismet_api_key(request):
 
 @pytest.fixture(name="openid_username")
 def openid_username_fixture(request):
-    """The OpenID username for testing the OpenID plugin"""
+    """The OpenID username for testing the OpenID plugin."""
     openid_username = request.config.getoption("--openid-username")
     assert (
         openid_username
@@ -168,7 +192,7 @@ def openid_username_fixture(request):
 
 @pytest.fixture(name="openid_password")
 def openid_password_fixture(request):
-    """The OpenID username for testing the OpenID plugin"""
+    """The OpenID username for testing the OpenID plugin."""
     openid_password = request.config.getoption("--openid-password")
     assert (
         openid_password
@@ -178,7 +202,7 @@ def openid_password_fixture(request):
 
 @pytest.fixture(scope="module", name="launchpad_team")
 def launchpad_team_fixture(request):
-    """The launchpad team for the OpenID account"""
+    """The launchpad team for the OpenID account."""
     launchpad_team = request.config.getoption("--launchpad-team")
     assert (
         launchpad_team
@@ -203,6 +227,12 @@ def num_units_fixture(request):
     return request.config.getoption("--num-units")
 
 
+@pytest.fixture(scope="module", name="db_from_config")
+def db_from_config_fixture(request):
+    """Whether to use database configuration config file or from relation."""
+    return request.config.getoption("--test-db-from-config")
+
+
 @pytest.fixture(scope="module", name="screenshot_dir")
 def screenshot_dir_fixture(request):
     """A directory to store screenshots generated by test_upgrade."""
@@ -222,7 +252,7 @@ def wordpress_image_fixture(request):
 
 @pytest.fixture(scope="module", name="kube_core_client")
 def kube_core_client_fixture(kube_config):
-    """Create a kubernetes client for core API v1"""
+    """Create a kubernetes client for core API v1."""
     kubernetes.config.load_kube_config(config_file=kube_config)
     kubernetes_client_v1 = kubernetes.client.CoreV1Api()
     return kubernetes_client_v1
@@ -230,85 +260,10 @@ def kube_core_client_fixture(kube_config):
 
 @pytest.fixture(name="kube_networking_client")
 def kube_networking_client_fixture(kube_config):
-    """Create a kubernetes client for networking API v1"""
+    """Create a kubernetes client for networking API v1."""
     kubernetes.config.load_kube_config(config_file=kube_config)
     kubernetes_client_v1 = kubernetes.client.NetworkingV1Api()
     return kubernetes_client_v1
-
-
-@pytest.fixture(scope="function", name="create_self_signed_tls_secret")
-def create_self_signed_tls_secret_fixture(
-    kube_core_client, ops_test: pytest_operator.plugin.OpsTest
-):
-    """Create a self-signed TLS certificate as a Kubernetes secret."""
-    assert ops_test.model
-    created_secrets = []
-    namespace = ops_test.model.info["name"]
-
-    def create_self_signed_tls_secret(host):
-        """Function to create a self-signed TLS certificate as a Kubernetes secret.
-
-        Args:
-            host: Certificate subject common name.
-
-        Returns:
-            (Tuple[str, bytes]) A tuple of the Kubernetes secret name as str, and certificate
-            public key in bytes.
-        """
-        secret_name = f"tls-secret-{host}-{secrets.token_hex(8)}"
-        key = cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-        )
-        private_key_pem = key.private_bytes(
-            encoding=cryptography.hazmat.primitives.serialization.Encoding.PEM,
-            format=cryptography.hazmat.primitives.serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=cryptography.hazmat.primitives.serialization.NoEncryption(),
-        )
-        issuer = subject = cryptography.x509.Name(
-            [
-                cryptography.x509.NameAttribute(cryptography.x509.NameOID.COUNTRY_NAME, "UK"),
-                cryptography.x509.NameAttribute(
-                    cryptography.x509.NameOID.ORGANIZATION_NAME, "Canonical Group Ltd"
-                ),
-                cryptography.x509.NameAttribute(cryptography.x509.NameOID.COMMON_NAME, host),
-            ]
-        )
-        cert = (
-            cryptography.x509.CertificateBuilder()
-            .subject_name(subject)
-            .issuer_name(issuer)
-            .public_key(key.public_key())
-            .serial_number(cryptography.x509.random_serial_number())
-            .add_extension(
-                cryptography.x509.SubjectAlternativeName([cryptography.x509.DNSName(host)]),
-                critical=False,
-            )
-            .not_valid_before(datetime.datetime.utcnow() - datetime.timedelta(days=10))
-            .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10))
-            .sign(key, cryptography.hazmat.primitives.hashes.SHA256())
-        )
-        public_key_pem = cert.public_bytes(
-            cryptography.hazmat.primitives.serialization.Encoding.PEM
-        )
-        kube_core_client.create_namespaced_secret(
-            namespace=namespace,
-            body=kubernetes.client.V1Secret(
-                metadata={"name": secret_name, "namespace": namespace},
-                data={
-                    "tls.crt": base64.standard_b64encode(public_key_pem).decode(),
-                    "tls.key": base64.standard_b64encode(private_key_pem).decode(),
-                },
-                type="kubernetes.io/tls",
-            ),
-        )
-        created_secrets.append(secret_name)
-        return secret_name, public_key_pem
-
-    yield create_self_signed_tls_secret
-
-    for secret in created_secrets:
-        kube_core_client.delete_namespaced_secret(name=secret, namespace=namespace)
 
 
 @pytest.fixture(scope="module", name="pod_db_database")
@@ -339,7 +294,8 @@ def deploy_and_wait_for_mysql_pod_fixture(
     MySQL database.
     """
 
-    async def wait_mysql_pod_ready():
+    async def wait_mysql_pod_ready() -> None:
+        """Create a mysql pod and wait for it to become ready."""
         # create a pod to test the capability of the WordPress charm to interactive with an
         # external MYSQL database via charm db configurations.
         kube_core_client.create_namespaced_pod(
@@ -381,7 +337,12 @@ def deploy_and_wait_for_mysql_pod_fixture(
             ),
         )
 
-        def is_mysql_ready():
+        def is_mysql_ready() -> bool:
+            """Check the status of mysql pod.
+
+            Returns:
+                True if ready, False otherwise.
+            """
             mysql_status = kube_core_client.read_namespaced_pod(
                 name="mysql", namespace=ops_test.model_name
             ).status
@@ -409,6 +370,7 @@ async def build_and_deploy_fixture(
     assert ops_test.model
 
     async def build_and_deploy_wordpress():
+        """Build wordpress charm from source and deploy to current testing model."""
         my_charm = await ops_test.build_charm(".")
         await ops_test.model.deploy(
             my_charm,

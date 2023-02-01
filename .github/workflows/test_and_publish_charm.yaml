@@ -35,6 +35,6 @@ jobs:
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
     needs: [integration-test, integration-test-with-secrets]
-    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml
+    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml@main
     with:
       trivy-image-config: trivy.yaml

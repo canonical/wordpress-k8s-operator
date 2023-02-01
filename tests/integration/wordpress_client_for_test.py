@@ -402,17 +402,13 @@ class WordpressClient:
             )
         )
         login_page = self._post(
-            "https://login.launchpad.net/+openid",
+            "https://login.launchpad.net/+login",
             data=openid_args,
         )
         csrf_token = re.findall(
             "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", login_page.text
         )[0]
-        login_link = re.findall(
-            '<a id="login-link" data-qa-id="login_link" href="([^"]+)" class="p-link--soft">',
-            login_page.text,
-        )[0]
-        login_url = f"https://login.launchpad.net{login_link}"
+        login_url = f"https://login.launchpad.net/+login"
         confirm_page = self._post(
             login_url,
             data={

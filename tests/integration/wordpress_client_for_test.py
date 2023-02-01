@@ -395,20 +395,11 @@ class WordpressClient:
                 "testcookie": "1",
             },
         )
-        openid_args = dict(
-            re.findall(
-                '<input type="hidden" name="([^"]+)" value="([^"]+)" />',
-                html.unescape(openid_redirect.text),
-            )
-        )
-        login_page = self._post(
-            "https://login.launchpad.net/+login",
-            data=openid_args,
-        )
+        login_page = self._get("https://login.launchpad.net/+login")
         csrf_token = re.findall(
             "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", login_page.text
         )[0]
-        login_url = f"https://login.launchpad.net/+login"
+        login_url = "https://login.launchpad.net/+login"
         confirm_page = self._post(
             login_url,
             data={

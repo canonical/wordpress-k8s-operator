@@ -21,7 +21,7 @@ jobs:
             value: "--num-units=3"
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@refactor-image-build-job
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     with:
       extra-arguments: |
         -m "not (requires_secret)" \

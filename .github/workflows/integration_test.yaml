@@ -9,6 +9,7 @@ jobs:
     name: Get runner image
     uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
   build-images:
+    name: Build images
     uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
     needs: get-runner-image
     with:
@@ -55,7 +56,6 @@ jobs:
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true
-      trivy-image-config: trivy.yaml
   required_status_checks:
     name: Required Integration Test Status Checks
     runs-on: ubuntu-latest

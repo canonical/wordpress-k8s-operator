@@ -673,7 +673,6 @@ def test_akismet_plugin(run_standard_plugin_test: typing.Callable):
     )
 
 
-@pytest.mark.skip
 def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready.

@@ -15,6 +15,12 @@ on:
       - track/**
 
 jobs:
+  integration-test-with-secrets:
+    uses: ./.github/workflows/integration_test_secrets.yaml
+    secrets: inherit
+  integration-test:
+    uses: ./.github/workflows/integration_test.yaml
+    secrets: inherit
   test-and-publish-charm:
     strategy:
       fail-fast: false
@@ -28,19 +34,7 @@ jobs:
             value: "--num-units=3"
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
-    needs: integration-tests
-    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml
+    needs: [integration-test, integration-test-with-secrets]
+    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml@main
     with:
-      integration-test-extra-arguments: |
-        -m "not (requires_secret)" \
-        --openstack-rc ${GITHUB_WORKSPACE}/openrc \
-        --kube-config ${GITHUB_WORKSPACE}/kube-config \
-        --screenshot-dir /tmp \
-        ${{ matrix.args.value }}
-      integration-test-modules: '["test_core", "test_error", "test_upgrade"]'
-      integration-test-pre-run-script: |
-        -c "sudo microk8s enable registry hostpath-storage
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-          sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
-      setup-devstack-swift: true
       trivy-image-config: trivy.yaml

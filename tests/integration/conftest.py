@@ -212,7 +212,7 @@ def launchpad_team_fixture(request):
 
 @pytest.fixture(scope="module", name="kube_config")
 def kube_config_fixture(request):
-    """The Kubernetes cluster configuration file"""
+    """The Kubernetes cluster configuration file."""
     kube_config = request.config.getoption("--kube-config")
     assert kube_config, (
         "The Kubernetes config file path should not be empty, "
@@ -435,14 +435,14 @@ def swift_config_fixture(
     if openstack_environment is None:
         return None
     swift_service = swiftclient.service.SwiftService(
-        options=dict(
-            auth_version="3",
-            os_auth_url=openstack_environment["OS_AUTH_URL"],
-            os_username=openstack_environment["OS_USERNAME"],
-            os_password=openstack_environment["OS_PASSWORD"],
-            os_project_name=openstack_environment["OS_PROJECT_NAME"],
-            os_project_domain_name=openstack_environment["OS_PROJECT_DOMAIN_ID"],
-        )
+        options={
+            "auth_version": "3",
+            "os_auth_url": openstack_environment["OS_AUTH_URL"],
+            "os_username": openstack_environment["OS_USERNAME"],
+            "os_password": openstack_environment["OS_PASSWORD"],
+            "os_project_name": openstack_environment["OS_PROJECT_NAME"],
+            "os_project_domain_name": openstack_environment["OS_PROJECT_DOMAIN_ID"],
+        }
     )
     container = f"wordpress_{request.module.__name__.split('.')[-1]}"
     logger.info("Use container %s", container)

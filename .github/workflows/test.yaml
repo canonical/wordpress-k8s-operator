@@ -14,7 +14,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: 40,
-              reviewers: ["jdkandersson"]
+              reviewers: ["canonical/is-charms"]
             });
   unit-tests:
     uses: canonical/operator-workflows/.github/workflows/test.yaml@main

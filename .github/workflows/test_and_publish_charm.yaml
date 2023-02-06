@@ -29,7 +29,7 @@ jobs:
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
     needs: integration-tests
-    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml
+    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml@main
     with:
       integration-test-extra-arguments: |
         -m "not (requires_secret)" \

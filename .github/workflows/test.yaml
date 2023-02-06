@@ -6,10 +6,9 @@ on:
 jobs:
   add-reviewers:
     runs-on: ubuntu-latest
-    permissions: read-all
     steps:
       - uses: actions/checkout@v3
-      - run: gh pr edit $BRANCH --add-reviewer canonical/is-charms
+      - run: gh pr edit require-approval-specific-people --add-reviewer canonical/is-charms
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.head_ref }}

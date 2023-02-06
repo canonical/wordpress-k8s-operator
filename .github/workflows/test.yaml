@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: gh pr edit require-approval-specific-people --add-reviewer canonical/is-charms
+      - run: gh pr edit require-approval-specific-people --add-reviewer jdkandersson
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.head_ref }}

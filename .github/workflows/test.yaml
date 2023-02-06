@@ -4,6 +4,13 @@ on:
   pull_request:
 
 jobs:
+  add-reviewers:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh pr edit $BRANCH --add-reviewer canonical/is-charms
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
   unit-tests:
     uses: canonical/operator-workflows/.github/workflows/test.yaml@main
     secrets: inherit

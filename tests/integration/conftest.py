@@ -10,27 +10,29 @@ import pathlib
 import re
 import typing
 
-import juju.action
-import juju.application
-import kubernetes
 import pytest
 import pytest_asyncio
-import pytest_operator.plugin
 import swiftclient
 import swiftclient.exceptions
 import swiftclient.service
+from juju.application import Application
+from juju.unit import Unit
+from kubernetes import kubernetes
+from kubernetes.client import CoreV1Api, NetworkingV1Api
+from ops.model import ActiveStatus
+from pytest_operator.plugin import OpsTest
 
-from tests.integration.wordpress_client_for_test import WordpressClient
+from .types_ import DatabaseConfig
 
 logger = logging.getLogger()
 
 
 @pytest_asyncio.fixture(scope="function", name="app_config")
-async def app_config_fixture(request, ops_test: pytest_operator.plugin.OpsTest):
+async def app_config_fixture(request, ops_test: OpsTest):
     """Change the charm config to specific values and revert that after test."""
     assert ops_test.model
     config = request.param
-    application: juju.application.Application = ops_test.model.applications["wordpress"]
+    application: Application = ops_test.model.applications["wordpress"]
     original_config: dict = await application.get_config()
     original_config = {k: v["value"] for k, v in original_config.items() if k in config}
     await application.set_config(config)
@@ -48,115 +50,15 @@ def fixture_application_name():
     return "wordpress"
 
 
-@pytest_asyncio.fixture(scope="module", name="get_default_admin_password")
-async def fixture_get_default_admin_password(
-    ops_test: pytest_operator.plugin.OpsTest, application_name
-):
-    """Create a function to get the default admin password using get-initial-password action."""
-    assert ops_test.model
-
-    async def _get_default_admin_password() -> str:
-        """Get default admin password using get-initial-password action.
-
-        Returns:
-            WordPress admin account password
-        """
-        assert ops_test.model  # to let mypy know that it's not None
-        application: juju.application.Application = ops_test.model.applications[application_name]
-        action: juju.action.Action = await application.units[0].run_action("get-initial-password")
-        await action.wait()
-        return action.results["password"]
-
-    return _get_default_admin_password
-
-
-@pytest_asyncio.fixture(scope="function", name="default_admin_password")
-async def fixture_default_admin_password(get_default_admin_password):
-    """Get the default admin password using the get-initial-password action."""
-    return await get_default_admin_password()
-
-
-@pytest_asyncio.fixture(scope="module", name="get_unit_ip_list")
-async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, application_name):
-    """Retrieve unit ip addresses, similar to fixture_get_unit_status_list."""
-
-    async def _get_unit_ip_list():
-        """Retrieve unit ip addresses, similar to fixture_get_unit_status_list.
-
-        Returns:
-            list of WordPress units ip addresses.
-        """
-        status = await ops_test.model.get_status()
-        units = status.applications[application_name].units
-        ip_list = []
-        for key in sorted(units.keys(), key=lambda n: int(n.split("/")[-1])):
-            ip_list.append(units[key].address)
-        return ip_list
-
-    yield _get_unit_ip_list
-
-
-@pytest_asyncio.fixture(scope="function", name="unit_ip_list")
-async def fixture_unit_ip_list(get_unit_ip_list):
-    """A fixture containing ip addresses of current units.
-
-    Yields:
-        ip addresses of current WordPress units.
-    """
-    yield await get_unit_ip_list()
-
-
-@pytest_asyncio.fixture(scope="function", name="get_theme_list_from_ip")
-async def fixture_get_theme_list_from_ip(default_admin_password):
-    """Retrieve installed themes from the WordPress instance."""
-
-    def _get_theme_list_from_ip(unit_ip: str):
-        """Retrieve installed themes from the WordPress instance.
-
-        Args:
-            unit_ip: target WordPress unit ip address
-
-        Returns:
-            list of installed WordPress themes in given instance
-        """
-        wordpress_client = WordpressClient(
-            host=unit_ip, username="admin", password=default_admin_password, is_admin=True
-        )
-        return wordpress_client.list_themes()
-
-    return _get_theme_list_from_ip
-
-
-@pytest_asyncio.fixture(scope="function", name="get_plugin_list_from_ip")
-async def fixture_get_plugin_list_from_ip(default_admin_password):
-    """Retrieve installed plugins from the WordPress instance."""
-
-    def _get_plugin_list_from_ip(unit_ip):
-        """Retrieve installed plugins from the Wordpress instance.
-
-        Args:
-            unit_ip: target WordPress unit ip address
-
-        Returns:
-            list of installed WordPress plugins in given instance
-        """
-        wordpress_client = WordpressClient(
-            host=unit_ip, username="admin", password=default_admin_password, is_admin=True
-        )
-        return wordpress_client.list_plugins()
-
-    return _get_plugin_list_from_ip
-
-
 @pytest.fixture(scope="module", name="openstack_environment")
-def openstack_environment_fixture(request, num_units):
+def openstack_environment_fixture(request):
     """Parse the openstack rc style configuration file from the --openstack-rc argument.
 
     Returns: a dictionary of environment variables and values, or None if --openstack-rc isn't
         provided.
     """
     rc_file = request.config.getoption("--openstack-rc")
-    assert num_units == 1 or rc_file, (
+    assert rc_file, (
         "swift plugin is required for multi-unit deployment, "
         "please include an openstack configuration in the --openstack-rc parameter "
     )
@@ -221,12 +123,6 @@ def kube_config_fixture(request):
     return kube_config
 
 
-@pytest.fixture(scope="module", name="num_units")
-def num_units_fixture(request):
-    """Number of units to be deployed in tests."""
-    return request.config.getoption("--num-units")
-
-
 @pytest.fixture(scope="module", name="db_from_config")
 def db_from_config_fixture(request):
     """Whether to use database configuration config file or from relation."""
@@ -250,8 +146,17 @@ def wordpress_image_fixture(request):
     return request.config.getoption("--wordpress-image")
 
 
+@pytest_asyncio.fixture(scope="module", name="charm_path")
+async def charm_path_fixture(ops_test: OpsTest, request: pytest.FixtureRequest):
+    """Path to packed charm, ready for deployment."""
+    input_path = str(request.config.getoption("--wordpress-charm-path"))
+    if input_path:
+        return pathlib.Path(input_path)
+    return await ops_test.build_charm(".")
+
+
 @pytest.fixture(scope="module", name="kube_core_client")
-def kube_core_client_fixture(kube_config):
+def kube_core_client_fixture(kube_config) -> CoreV1Api:
     """Create a kubernetes client for core API v1."""
     kubernetes.config.load_kube_config(config_file=kube_config)
     kubernetes_client_v1 = kubernetes.client.CoreV1Api()
@@ -259,151 +164,105 @@ def kube_core_client_fixture(kube_config):
 
 
 @pytest.fixture(name="kube_networking_client")
-def kube_networking_client_fixture(kube_config):
+def kube_networking_client_fixture(kube_config) -> NetworkingV1Api:
     """Create a kubernetes client for networking API v1."""
     kubernetes.config.load_kube_config(config_file=kube_config)
     kubernetes_client_v1 = kubernetes.client.NetworkingV1Api()
     return kubernetes_client_v1
 
 
-@pytest.fixture(scope="module", name="pod_db_database")
-def pod_db_database_fixture():
-    """MYSQL database name for create the test database pod."""
-    return "wordpress"
+@pytest.fixture(scope="module", name="pod_db_config")
+def pod_db_config_fixture() -> DatabaseConfig:
+    """MYSQL database configurations and credentials to create3 test database pod."""
+    return DatabaseConfig(name="wordpress", user="wordpress", password="wordpress-password")
 
 
-@pytest.fixture(scope="module", name="pod_db_user")
-def pod_db_user_fixture():
-    """MYSQL database username for create the test database pod."""
-    return "wordpress"
+@pytest_asyncio.fixture(name="deploy_app_num_units")
+async def deploy_app_num_units_fixture(
+    ops_test: OpsTest,
+    charm_path: pathlib.Path,
+    wordpress_image: str,
+) -> typing.Callable[[int, str], typing.Awaitable[Application]]:
+    """Deploy given number of WordPress application units."""
+
+    async def deploy_num_units(num_units: int, app_name: str):
+        """Deploy num_units of WordPress application.
 
 
-@pytest.fixture(scope="module", name="pod_db_password")
-def pod_db_password_fixture():
-    """MYSQL database password for create the test database pod."""
-    return "wordpress-password"
+        Args:
+            num_units: number of WordPress units to deploy as a cluster.
+            app_name: name of juju application to deploy WordPress under.
 
-
-@pytest.fixture(scope="module", name="deploy_and_wait_for_mysql_pod")
-def deploy_and_wait_for_mysql_pod_fixture(
-    ops_test, kube_core_client, pod_db_database, pod_db_user, pod_db_password
-):
-    """Return an async function that deploy and wait for a mysql pod ready in current namespace.
-
-    This is used for testing WordPress charm's capability of interacting with an external non-charm
-    MySQL database.
-    """
-
-    async def wait_mysql_pod_ready() -> None:
-        """Create a mysql pod and wait for it to become ready."""
-        # create a pod to test the capability of the WordPress charm to interactive with an
-        # external MYSQL database via charm db configurations.
-        kube_core_client.create_namespaced_pod(
-            namespace=ops_test.model_name,
-            body=kubernetes.client.V1Pod(
-                metadata=kubernetes.client.V1ObjectMeta(
-                    name="mysql", namespace=ops_test.model_name
-                ),
-                kind="Pod",
-                api_version="v1",
-                spec=kubernetes.client.V1PodSpec(
-                    containers=[
-                        kubernetes.client.V1Container(
-                            name="mysql",
-                            image="mysql:latest",
-                            readiness_probe=kubernetes.client.V1Probe(
-                                kubernetes.client.V1ExecAction(
-                                    ["mysqladmin", "ping", "-h", "localhost"]
-                                ),
-                                initial_delay_seconds=10,
-                                period_seconds=5,
-                            ),
-                            liveness_probe=kubernetes.client.V1Probe(
-                                kubernetes.client.V1ExecAction(
-                                    ["mysqladmin", "ping", "-h", "localhost"]
-                                ),
-                                initial_delay_seconds=10,
-                                period_seconds=5,
-                            ),
-                            env=[
-                                kubernetes.client.V1EnvVar("MYSQL_ROOT_PASSWORD", "root-password"),
-                                kubernetes.client.V1EnvVar("MYSQL_DATABASE", pod_db_database),
-                                kubernetes.client.V1EnvVar("MYSQL_USER", pod_db_user),
-                                kubernetes.client.V1EnvVar("MYSQL_PASSWORD", pod_db_password),
-                            ],
-                        )
-                    ]
-                ),
-            ),
-        )
-
-        def is_mysql_ready() -> bool:
-            """Check the status of mysql pod.
-
-            Returns:
-                True if ready, False otherwise.
-            """
-            mysql_status = kube_core_client.read_namespaced_pod(
-                name="mysql", namespace=ops_test.model_name
-            ).status
-            if mysql_status.conditions is None:
-                return False
-            for condition in mysql_status.conditions:
-                if condition.type == "Ready" and condition.status == "True":
-                    return True
-            return False
-
-        await ops_test.model.block_until(is_mysql_ready, timeout=300, wait_period=3)
-
-    return wait_mysql_pod_ready
-
-
-@pytest_asyncio.fixture(scope="module", name="build_and_deploy")
-async def build_and_deploy_fixture(
-    num_units,
-    ops_test: pytest_operator.plugin.OpsTest,
-    application_name,
-    deploy_and_wait_for_mysql_pod,
-    wordpress_image,
-):
-    """Deploy all required charms and kubernetes pods for tests."""
-    assert ops_test.model
-
-    async def build_and_deploy_wordpress():
-        """Build wordpress charm from source and deploy to current testing model."""
-        my_charm = await ops_test.build_charm(".")
-        await ops_test.model.deploy(
-            my_charm,
-            resources={"wordpress-image": wordpress_image},
-            application_name=application_name,
+        Returns:
+            Wordpress application.
+        """
+        assert ops_test.model
+        resources = {"wordpress-image": wordpress_image}
+        app: Application = await ops_test.model.deploy(
+            charm_path,
+            application_name=app_name,
+            resources=resources,
             series="jammy",
             num_units=num_units,
         )
+        await ops_test.model.wait_for_idle(apps=[app_name])
+        return app
 
-    await asyncio.gather(
-        build_and_deploy_wordpress(),
-        deploy_and_wait_for_mysql_pod(),
-        ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
-        # temporary fix for the CharmHub problem
-        ops_test.juju(
-            "deploy",
-            "nginx-ingress-integrator",
-            "ingress",
-            "--channel",
-            "edge",
-            "--series",
-            "focal",
-            "--trust",
-            check=True,
-        ),
+    return deploy_num_units
+
+
+@pytest_asyncio.fixture(scope="module", name="mariadb")
+async def mariadb_fixture(ops_test: OpsTest) -> Application:
+    """MariaDB k8s charm that provides mysql relation interface."""
+    assert ops_test.model
+    return await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
+
+
+@pytest_asyncio.fixture(scope="module", name="nginx")
+async def nginx_fixture(ops_test: OpsTest) -> Application:
+    """Nginx ingress integrator charm that provides ingress relation interface."""
+    assert ops_test.model
+    return await ops_test.model.deploy("nginx-ingress-integrator", application_name="nginx")
+
+
+@pytest_asyncio.fixture(scope="module", name="app")
+async def app_fixture(
+    ops_test: OpsTest,
+    charm_path: pathlib.Path,
+    application_name: str,
+    wordpress_image: str,
+    mariadb: Application,
+    nginx: Application,
+):
+    # D403: WordPress is correctly capitalized.
+    """WordPress charm used for integration testing.
+
+    Builds the charm and deploys it and the relations it depends on. Uses database from relation.
+    """  # noqa: D403
+    assert ops_test.model
+
+    # Build and deploy WordPress charm
+    resources = {"wordpress-image": wordpress_image}
+    app: Application = await ops_test.model.deploy(
+        charm_path,
+        resources=resources,
+        application_name=application_name,
+        series="jammy",
+        num_units=3,
     )
     await ops_test.model.wait_for_idle()
 
+    # Add necessary relations
+    await asyncio.gather(
+        ops_test.model.add_relation(application_name, mariadb.name),
+        ops_test.model.add_relation(application_name, nginx.name),
+    )
+    await ops_test.model.wait_for_idle(apps=[application_name], status="active")
+    unit: Unit = app.units[0]
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
+    assert unit.workload_status == ActiveStatus.name  # type: ignore
 
-@pytest.fixture(scope="module", name="test_image")
-def image_fixture():
-    """A JPG image that can be used in tests."""
-    return open("tests/integration/files/canonical_aubergine_hex.jpg", "rb").read()
+    yield app
 
 
 @pytest.fixture(scope="module", name="swift_conn")

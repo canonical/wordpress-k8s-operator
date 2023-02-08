@@ -7,7 +7,7 @@ from typing import cast
 
 from juju.action import Action
 from juju.application import Application
-from juju.client._definitions import FullStatus, UnitStatus
+from juju.client._definitions import ApplicationStatus, DetailedStatus, FullStatus, UnitStatus
 from juju.unit import Unit
 from kubernetes import kubernetes
 from kubernetes.client import CoreV1Api, V1Pod, V1PodStatus
@@ -22,10 +22,8 @@ def assert_active_status(status: FullStatus, app: Application):
         status: latest model status.
         app: target application to check representative status.
     """
-    app_state = status.applications[app.name]
-    assert app_state
-    detailed_status = app_state.status
-    assert detailed_status
+    app_state = cast(ApplicationStatus, status.applications[app.name])
+    detailed_status = cast(DetailedStatus, app_state.status)
     assert detailed_status.status == "active"
 
 
@@ -39,8 +37,7 @@ def get_unit_ips(status: FullStatus, app: Application) -> tuple[str, ...]:
     Returns:
         Application unit address.
     """
-    app_state = status.applications[app.name]
-    assert app_state
+    app_state = cast(ApplicationStatus, status.applications[app.name])
     return tuple(
         cast(str, unit.address) for unit in cast(dict[str, UnitStatus], app_state.units).values()
     )

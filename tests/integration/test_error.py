@@ -3,6 +3,8 @@
 
 """Integration tests for WordPress charm in error."""
 
+import typing
+
 import ops.model
 import pytest
 import pytest_operator.plugin
@@ -11,20 +13,35 @@ from juju.application import Application
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "invalid_config",
+    "num_units, invalid_config",
     [
-        {
-            "db_host": "test_db_host",
-            "db_name": "test_db_name",
-            "db_user": "test_db_user",
-            "db_password": "test_db_password",
-        }
+        pytest.param(
+            1,
+            {
+                "db_host": "test_db_host",
+                "db_name": "test_db_name",
+                "db_user": "test_db_user",
+                "db_password": "test_db_password",
+            },
+            id="invalid config 1 unit",
+        ),
+        pytest.param(
+            1,
+            {
+                "db_host": "test_db_host",
+                "db_name": "test_db_name",
+                "db_user": "test_db_user",
+                "db_password": "test_db_password",
+            },
+            id="invalid config 3 units",
+        ),
     ],
 )
 async def test_incorrect_db_config(
     ops_test: pytest_operator.plugin.OpsTest,
-    application_name: str,
-    app: Application,
+    nginx: Application,
+    deploy_app_num_units: typing.Callable[[int, str], typing.Awaitable[Application]],
+    num_units: int,
     invalid_config: dict[str, str],
 ):
     """
@@ -34,9 +51,12 @@ async def test_incorrect_db_config(
         of database connection info.
     """
     assert ops_test.model
+    app = await deploy_app_num_units(num_units, "wordpress")
+    await ops_test.model.relate(app.name, nginx.name)
+
     await app.set_config(invalid_config)
     await ops_test.model.wait_for_idle(
-        idle_period=60, status=ops.model.BlockedStatus.name, apps=[application_name]  # type: ignore
+        status=ops.model.BlockedStatus.name, apps=[app.name]  # type: ignore
     )
 
     for unit in app.units:

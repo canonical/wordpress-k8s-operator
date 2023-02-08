@@ -207,13 +207,20 @@ async def nginx_fixture(ops_test: OpsTest) -> Application:
     """Nginx ingress integrator charm that provides ingress relation interface."""
     assert ops_test.model
     # temporary fix for the CharmHub problem
-    return await ops_test.model.deploy(
+    await ops_test.juju(
+        "deploy",
         "nginx-ingress-integrator",
-        channel="edge",
-        series="focal",
-        trust=True,
-        application_name="nginx",
+        "nginx",
+        "--channel",
+        "edge",
+        "--series",
+        "focal",
+        "--trust",
+        check=True,
     )
+    await ops_test.model.wait_for_idle(apps=["nginx"])
+    app = typing.cast(Application, ops_test.model.applications["nginx"])
+    return app
 
 
 @pytest_asyncio.fixture(scope="module", name="app")

@@ -213,7 +213,8 @@ async def deploy_app_num_units_fixture(
 
 @pytest_asyncio.fixture(scope="module", name="mariadb")
 async def mariadb_fixture(ops_test: OpsTest) -> Application:
-    """MariaDB k8s charm that provides mysql relation interface."""
+    # D403: MariaDB is properly capitalized
+    """MariaDB k8s charm that provides mysql relation interface."""  # noqa: D403
     assert ops_test.model
     return await ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb")
 
@@ -222,17 +223,6 @@ async def mariadb_fixture(ops_test: OpsTest) -> Application:
 async def nginx_fixture(ops_test: OpsTest) -> Application:
     """Nginx ingress integrator charm that provides ingress relation interface."""
     assert ops_test.model
-    # return await ops_test.juju(
-    #         "deploy",
-    #         "nginx-ingress-integrator",
-    #         "ingress",
-    #         "--channel",
-    #         "edge",
-    #         "--series",
-    #         "focal",
-    #         "--trust",
-    #         check=True,
-    #     ),
     # temporary fix for the CharmHub problem
     return await ops_test.model.deploy(
         "nginx-ingress-integrator",

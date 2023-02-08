@@ -29,14 +29,14 @@ def assert_active_status(status: FullStatus, app: Application):
     assert detailed_status.status == "active"
 
 
-def get_unit_ips(status: FullStatus, app: Application) -> tuple[str]:
+def get_unit_ips(status: FullStatus, app: Application) -> tuple[str, ...]:
     """Get application unit ips from latest model status.
 
     Args:
         status: latest model status.
         app: target application to get deployed unit ips.
 
-    Yields:
+    Returns:
         Application unit address.
     """
     app_state = status.applications[app.name]
@@ -68,6 +68,9 @@ def deploy_mysql_pod(kube_client: CoreV1Api, db_config: DatabaseConfig, namespac
         kube_client: Kubernetes API client.
         db_config: database configuration for mysql.
         namespace: namespace to deploy mysql pod to.
+
+    Returns:
+        Kubernetes V1Pod.
     """
     pod = kube_client.create_namespaced_pod(
         namespace=namespace,

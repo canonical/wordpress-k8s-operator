@@ -92,7 +92,7 @@ def wp_cli_exec(kube_client: CoreV1Api, namespace: str, pod: str, cmd: list[str]
         kube_client: Kubernetes API client.
         namespace: Kubernetes namespace to look for WordPress pod.
         pod: name of WordPress pod.
-        wp_cli_cmd: WordPress cli command to execute.
+        cmd: WordPress cli command to execute.
     """
     kubernetes_exec(kube_client, namespace, pod, cmd + ["--allow-root", "--path=/var/www/html"])
 
@@ -148,7 +148,16 @@ def check_images(html: str) -> None:
 def get_upgrade_charm_config(
     ops_test: OpsTest, swift_config: dict[str, str], kube_core_client: CoreV1Api
 ):
-    """Create a function that generates charm config for upgrading tests."""
+    """Create a function that generates charm config for upgrading tests.
+
+    Args:
+        ops_test: utility class for testing Operator Charms.
+        swift_config: configuration parameters for WordPress swift plugin.
+        kube_core_client: kubernetes API client.
+
+    Returns:
+        Configuration for upgraded sidecar charm.
+    """
     swift_url = swift_config["swift-url"]
     swift_config = copy.copy(swift_config)
     swift_config["url"] = f"{swift_url}/{swift_config['bucket']}/wp-content/uploads/"
@@ -174,7 +183,7 @@ def get_upgrade_charm_config(
 async def create_example_blog(
     namespace: str,
     admin_password: str,
-    unit_ips: tuple[str],
+    unit_ips: tuple[str, ...],
     kube_core_client: CoreV1Api,
     swift_config: dict[str, str],
     application_name: str,
@@ -185,8 +194,8 @@ async def create_example_blog(
         namespace: kubernetes namespace in which the WordPress k8s charm was deployed to.
         admin_password: credential required to post as WordPress admin.
         unit_ips: WordPress unit IPs.
-        kube_core_client: kubernetes client
-        swift_config: swift config
+        kube_core_client: kubernetes API client.
+        swift_config: swift config.
         application_name: WordPress charm name.
     """
     wordpress_pod = get_wordpress_podspec_pod(
@@ -261,9 +270,6 @@ async def upgrade_wordpress(
         wordpress_image: OCI image name.
         charm_path: Path to charm packed by charmcraft.
         charm_config: migrated configuration from old podspec charm to new sidecar charm.
-
-    Returns:
-        _type_: _description_
     """
     assert ops_test.model
     await ops_test.model.remove_application(application_name)
@@ -304,8 +310,8 @@ async def test_wordpress_upgrade(
     num_units: int,
 ):
     """
-    arrange: given an old WordPress podspec charm with content
-    act: when WordPress is upgraded to a new WordPress sidecar charm
+    arrange: given an old WordPress podspec charm with content.
+    act: when WordPress is upgraded to a new WordPress sidecar charm.
     assert: the website should have the same content as the old one.
     """
     # Deploy Old Version

@@ -67,3 +67,6 @@ async def test_incorrect_db_config(
         assert ("MySQL error" in msg and ("2003" in msg or "2005" in msg)) or (
             "leader unit failed" in msg
         ), "unit status message should show detailed installation failure"
+
+    # cleanup
+    await ops_test.model.remove_application(app.name, block_until_done=True, force=True)

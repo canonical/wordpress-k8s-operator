@@ -222,7 +222,25 @@ async def mariadb_fixture(ops_test: OpsTest) -> Application:
 async def nginx_fixture(ops_test: OpsTest) -> Application:
     """Nginx ingress integrator charm that provides ingress relation interface."""
     assert ops_test.model
-    return await ops_test.model.deploy("nginx-ingress-integrator", application_name="nginx")
+    # return await ops_test.juju(
+    #         "deploy",
+    #         "nginx-ingress-integrator",
+    #         "ingress",
+    #         "--channel",
+    #         "edge",
+    #         "--series",
+    #         "focal",
+    #         "--trust",
+    #         check=True,
+    #     ),
+    # temporary fix for the CharmHub problem
+    return await ops_test.model.deploy(
+        "nginx-ingress-integrator",
+        channel="edge",
+        series="focal",
+        trust=True,
+        application_name="nginx",
+    )
 
 
 @pytest_asyncio.fixture(scope="module", name="app")

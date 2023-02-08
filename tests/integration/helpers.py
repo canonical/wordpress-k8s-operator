@@ -24,7 +24,7 @@ def assert_active_status(status: FullStatus, app: Application):
     """
     app_state = cast(ApplicationStatus, status.applications[app.name])
     detailed_status = cast(DetailedStatus, app_state.status)
-    assert detailed_status.status == "active"
+    assert detailed_status.status == "active"  # nosec
 
 
 def get_unit_ips(status: FullStatus, app: Application) -> tuple[str, ...]:

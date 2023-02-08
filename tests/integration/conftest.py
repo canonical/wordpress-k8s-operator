@@ -157,7 +157,11 @@ def kube_networking_client_fixture(kube_config) -> NetworkingV1Api:
 @pytest.fixture(scope="module", name="pod_db_config")
 def pod_db_config_fixture() -> DatabaseConfig:
     """MYSQL database configurations and credentials to create3 test database pod."""
-    return DatabaseConfig(name="wordpress", user="wordpress", password="wordpress-password")
+    return DatabaseConfig(  # nosec: hardcoded for testing
+        name="wordpress",
+        user="wordpress",
+        password="wordpress-password",
+    )
 
 
 @pytest_asyncio.fixture(name="deploy_app_num_units")

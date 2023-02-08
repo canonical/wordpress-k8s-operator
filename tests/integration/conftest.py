@@ -27,23 +27,6 @@ from .types_ import DatabaseConfig
 logger = logging.getLogger()
 
 
-@pytest_asyncio.fixture(scope="function", name="app_config")
-async def app_config_fixture(request, ops_test: OpsTest):
-    """Change the charm config to specific values and revert that after test."""
-    assert ops_test.model
-    config = request.param
-    application: Application = ops_test.model.applications["wordpress"]
-    original_config: dict = await application.get_config()
-    original_config = {k: v["value"] for k, v in original_config.items() if k in config}
-    await application.set_config(config)
-    await ops_test.model.wait_for_idle()
-
-    yield config
-
-    await application.set_config(original_config)
-    await ops_test.model.wait_for_idle()
-
-
 @pytest.fixture(scope="module", name="application_name")
 def fixture_application_name():
     """Default application name."""

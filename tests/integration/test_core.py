@@ -507,7 +507,6 @@ async def test_akismet_plugin(
 @pytest.mark.usefixtures("build_and_deploy")
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_openid_plugin(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,

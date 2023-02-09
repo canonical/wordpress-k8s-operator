@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 
 ARG VERSION=5.9.3
 ENV APACHE_CONFDIR=/etc/apache2

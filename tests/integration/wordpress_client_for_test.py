@@ -428,7 +428,7 @@ class WordpressClient:
         csrf_token = re.findall(
             "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", confirm_page.text
         )[0]
-        team = re.findall(">Team membership: ([^<]+)<", confirm_page.text)[0]
+        team = re.findall("Team membership: ([^<]+)<", confirm_page.text)[0]
         self._post(
             confirm_page.url,
             data={

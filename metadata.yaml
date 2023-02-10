@@ -18,6 +18,8 @@ containers:
     mounts:
       - storage: uploads
         location: /var/www/html/wp-content/uploads
+  apache-prometheus-exporter:
+    resource: apache-prometheus-exporter-image
 
 storage:
   uploads:
@@ -32,10 +34,17 @@ resources:
   wordpress-image:
     type: oci-image
     description: OCI image for wordpress
+  apache-prometheus-exporter-image:
+    type: oci-image
+    description: Prometheus exporter for apache
+    auto-fetch: true
+    upstream-source: bitnami/apache-exporter:0.11.0
 
 provides:
   website:
     interface: http
+  metrics-endpoint:
+    interface: prometheus_scrape
 
 requires:
   db:

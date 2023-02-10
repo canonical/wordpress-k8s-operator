@@ -374,7 +374,10 @@ async def build_and_deploy_fixture(
         my_charm = await ops_test.build_charm(".")
         await ops_test.model.deploy(
             my_charm,
-            resources={"wordpress-image": wordpress_image},
+            resources={
+                "wordpress-image": wordpress_image,
+                "apache-prometheus-exporter-image": "bitnami/apache-exporter:0.11.0",
+            },
             application_name=application_name,
             series="jammy",
             num_units=num_units,

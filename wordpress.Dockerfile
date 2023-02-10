@@ -43,6 +43,8 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 # Configure PHP and apache2 - mod_php requires us to use mpm_prefork
 COPY ./files/docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf
 COPY ./files/docker-php-swift-proxy.conf $APACHE_CONFDIR/conf-available/docker-php-swift-proxy.conf
+# Configure apache 2 to enable /server-status endpoint
+COPY ./files/apache2.conf $APACHE_CONFDIR/apache2.conf
 
 RUN a2enconf docker-php && \
     a2dismod mpm_event && \

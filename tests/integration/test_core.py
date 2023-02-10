@@ -19,9 +19,13 @@ import PIL.Image
 import pytest
 import pytest_operator.plugin
 import requests
+from juju.client._definitions import FullStatus
+from ops.model import Application
 
 from charm import WordpressCharm
-from tests.integration.wordpress_client_for_test import WordpressClient
+from cos import APACHE_PROMETHEUS_SCRAPE_PORT
+
+from .wordpress_client_for_test import WordpressClient
 
 
 @pytest.mark.usefixtures("build_and_deploy")
@@ -540,3 +544,30 @@ async def test_openid_plugin(
         assert (
             "administrator" in wordpress_client.list_roles()
         ), "An launchpad OpenID account should be associated with the WordPress admin user"
+
+
+async def test_prometheus_integration(
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name: str,
+    unit_ip_list: list[str],
+):
+    """
+    arrange: after WordPress charm has been deployed and relations established.
+    act: prometheus charm joins relation
+    assert: prometheus joins relation successfully and metrics endpoint for prometheus is active.
+    """
+    assert ops_test.model
+    prometheus: Application = await ops_test.model.deploy("prometheus-k8s", channel="stable")
+    await ops_test.model.relate(application_name, prometheus.name)
+    await ops_test.model.wait_for_idle()
+
+    for unit_ip in unit_ip_list:
+        requests.get(f"http://{unit_ip}/server-status", timeout=10).raise_for_status()
+        requests.get(
+            f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10
+        ).raise_for_status()
+
+    status: FullStatus = await ops_test.model.get_status(filters=[prometheus.name])
+    for unit in status.applications[prometheus.name].units.values():
+        query_targets = requests.get(f"http://{unit.address}:9090/api/v1/targets", timeout=10).json()
+        assert len(query_targets["data"]["activeTargets"])

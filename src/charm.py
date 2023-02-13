@@ -22,6 +22,7 @@ import mysql.connector
 import ops.charm
 import ops.pebble
 import yaml
+from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -42,7 +43,7 @@ from yaml import safe_load
 
 import exceptions
 import types_
-from cos import PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
+from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
 
 # MySQL logger prints database credentials on debug level, silence it
 logging.getLogger(mysql.connector.__name__).setLevel(logging.WARNING)
@@ -165,6 +166,7 @@ class WordpressCharm(CharmBase):
         self._logging = LogProxyConsumer(
             self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
         )
+        self._grafana_dashboards = GrafanaDashboardProvider(self)
 
         self.framework.observe(
             self.on.get_initial_password_action, self._on_get_initial_password_action

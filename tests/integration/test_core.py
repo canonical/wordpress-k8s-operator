@@ -13,14 +13,15 @@ import typing
 import unittest.mock
 import urllib.parse
 
-import kubernetes
 import ops.model
 import PIL.Image
 import pytest
 import pytest_operator.plugin
 import requests
+from juju.action import Action
+from juju.application import Application
 from juju.client._definitions import FullStatus
-from ops.model import Application
+from kubernetes import kubernetes
 
 from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
@@ -610,3 +611,41 @@ async def test_loki_integration(
     assert kube_log
 
 
+async def test_grafana_integration(
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name: str,
+):
+    """
+    arrange: after WordPress charm has been deployed and relations established among cos.
+    act: grafana charm joins relation
+    assert: grafana wordpress dashboard can be found
+    """
+    assert ops_test.model
+    grafana: Application = await ops_test.model.deploy("grafana-k8s")
+
+    await ops_test.model.relate(application_name, grafana.name)
+    await ops_test.model.relate("prometheus-k8s:grafana-source", f"{grafana.name}:grafana-source")
+    await ops_test.model.relate("loki-k8s:grafana-source", f"{grafana.name}:grafana-source")
+    await ops_test.model.wait_for_idle(apps=[application_name, grafana.name], status="active")
+
+    action: Action = await grafana.units[0].run_action("get-admin-password")
+    await action.wait()
+    password = action.results["admin-password"]
+    status: FullStatus = await ops_test.model.get_status(filters=[grafana.name])
+    for unit in status.applications[grafana.name].units.values():
+        sess = requests.session()
+        sess.post(
+            f"http://{unit.address}:3000/login",
+            json={
+                "user": "admin",
+                "password": password,
+            },
+        ).raise_for_status()
+        datasources = sess.get(f"http://{unit.address}:3000/api/datasources", timeout=10).json()
+        datasource_types = tuple(datasource["type"] for datasource in datasources)
+        assert "loki" in datasource_types
+        assert "prometheus" in datasource_types
+        dashboard = sess.get(
+            f"http://{unit.address}:3000/api/dashboards/uid/yQ2wKmT4z", timeout=10
+        ).json()
+        assert dashboard["dashboard"]["title"] == "Wordpress Operator Overview"

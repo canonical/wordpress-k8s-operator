@@ -249,7 +249,10 @@ async def build_and_upgrade_fixture(
     await ops_test.model.block_until(wordpress_removed, wait_period=5, timeout=600)
     await ops_test.model.deploy(
         str(charm),
-        resources={"wordpress-image": wordpress_image},
+        resources={
+            "wordpress-image": wordpress_image,
+            "apache-prometheus-exporter-image": "bitnami/apache-exporter:0.11.0",
+        },
         application_name=application_name,
         series="jammy",
         num_units=num_units,

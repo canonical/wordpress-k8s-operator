@@ -646,6 +646,8 @@ async def test_grafana_integration(
         assert "loki" in datasource_types
         assert "prometheus" in datasource_types
         dashboards = sess.get(
-            f"http://{unit.address}:3000/api/search?query=Wordpress Operator Overview", timeout=10
+            f"http://{unit.address}:3000/api/search",
+            timeout=10,
+            params={"query": "Wordpress Operator Overview"},
         ).json()
         assert len(dashboards)

@@ -22,6 +22,7 @@ import mysql.connector
 import ops.charm
 import ops.pebble
 import yaml
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import (
@@ -160,6 +161,9 @@ class WordpressCharm(CharmBase):
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
             jobs=WORDPRESS_SCRAPE_JOBS,
+        )
+        self._logging = LogProxyConsumer(
+            self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
         )
 
         self.framework.observe(

@@ -554,20 +554,59 @@ async def test_prometheus_integration(
     """
     arrange: after WordPress charm has been deployed and relations established.
     act: prometheus charm joins relation
-    assert: prometheus joins relation successfully and metrics endpoint for prometheus is active.
+    assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
+        targets.
     """
     assert ops_test.model
     prometheus: Application = await ops_test.model.deploy("prometheus-k8s", channel="stable")
+
     await ops_test.model.relate(application_name, prometheus.name)
-    await ops_test.model.wait_for_idle()
+    await ops_test.model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
 
     for unit_ip in unit_ip_list:
-        requests.get(f"http://{unit_ip}/server-status", timeout=10).raise_for_status()
         requests.get(
             f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10
         ).raise_for_status()
-
     status: FullStatus = await ops_test.model.get_status(filters=[prometheus.name])
     for unit in status.applications[prometheus.name].units.values():
-        query_targets = requests.get(f"http://{unit.address}:9090/api/v1/targets", timeout=10).json()
+        query_targets = requests.get(
+            f"http://{unit.address}:9090/api/v1/targets", timeout=10
+        ).json()
         assert len(query_targets["data"]["activeTargets"])
+
+
+async def test_loki_integration(
+    ops_test: pytest_operator.plugin.OpsTest,
+    application_name: str,
+    kube_core_client: kubernetes.client.CoreV1Api,
+):
+    """
+    arrange: after WordPress charm has been deployed and relations established.
+    act: loki charm joins relation
+    assert: loki joins relation successfully, logs are being output to container and to files for
+        loki to scrape.
+    """
+    assert ops_test.model
+    loki: Application = await ops_test.model.deploy("loki-k8s", channel="stable")
+
+    await ops_test.model.relate(application_name, loki.name)
+    await ops_test.model.wait_for_idle(apps=[application_name, loki.name], status="active")
+
+    status: FullStatus = await ops_test.model.get_status(filters=[loki.name])
+    for unit in status.applications[loki.name].units.values():
+        series = requests.get(f"http://{unit.address}:3100/loki/api/v1/series", timeout=10).json()
+        log_files = tuple(series_data["filename"] for series_data in series["data"])
+        assert "/var/log/apache2/error.log" in log_files
+        assert "/var/log/apache2/access.log" in log_files
+        log_query = requests.get(
+            f"http://{unit.address}:3100/loki/api/v1/query",
+            timeout=10,
+            params={"query": f'{{juju_application="{application_name}"}}'},
+        ).json()
+        assert len(log_query["data"]["result"])
+    kube_log = kube_core_client.read_namespaced_pod_log(
+        name=f"{application_name}-0", namespace=ops_test.model_name, container="wordpress"
+    )
+    assert kube_log
+
+

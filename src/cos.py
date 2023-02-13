@@ -78,3 +78,8 @@ PROM_EXPORTER_PEBBLE_CONFIG = Layer(
         "checks": {_APACHE_EXPORTER_PEBBLE_CHECK.name: _APACHE_EXPORTER_PEBBLE_CHECK.to_dict()},
     }
 )
+
+APACHE_LOG_PATHS = [
+    "/var/log/apache2/access.log",
+    "/var/log/apache2/error.log",
+]

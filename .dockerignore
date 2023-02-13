@@ -3,3 +3,4 @@
 !files/docker-php.conf
 !files/docker-php-swift-proxy.conf
 !files/apache2.conf
+!files/000-default.conf

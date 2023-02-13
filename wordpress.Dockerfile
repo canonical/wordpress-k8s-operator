@@ -35,8 +35,6 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
             chown "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$dir";  \
             chmod u=rwx,g=rx,o=rx "$dir"; \
         done && \
-        ln -sfT /dev/stderr "$APACHE_LOG_DIR/error.log" && \
-        ln -sfT /dev/stdout "$APACHE_LOG_DIR/access.log" && \
         ln -sfT /dev/stdout "$APACHE_LOG_DIR/other_vhosts_access.log" && \
         chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
 
@@ -45,6 +43,8 @@ COPY ./files/docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf
 COPY ./files/docker-php-swift-proxy.conf $APACHE_CONFDIR/conf-available/docker-php-swift-proxy.conf
 # Configure apache 2 to enable /server-status endpoint
 COPY ./files/apache2.conf $APACHE_CONFDIR/apache2.conf
+# To allow logging to container and logfile
+COPY ./files/000-default.conf $APACHE_CONFDIR/sites-available/000-default.conf
 
 RUN a2enconf docker-php && \
     a2dismod mpm_event && \

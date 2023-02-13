@@ -24,6 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 5,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -387,7 +388,7 @@
           "refId": "A"
         }
       ],
-      "title": "Access Total",
+      "title": "Access Total (req / 5min)",
       "type": "timeseries"
     },
     {
@@ -479,7 +480,7 @@
           "refId": "A"
         }
       ],
-      "title": "Apache CPU load",
+      "title": "Apache CPU load (%)",
       "type": "timeseries"
     },
     {
@@ -573,7 +574,7 @@
           "refId": "A"
         }
       ],
-      "title": "Apache load",
+      "title": "Apache load (%)",
       "type": "timeseries"
     },
     {
@@ -666,7 +667,7 @@
           "refId": "A"
         }
       ],
-      "title": "Current total kbytes sent",
+      "title": "Current total kbytes sent (kb / 5min)",
       "type": "timeseries"
     }
   ],
@@ -694,7 +695,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "juju_cos_9624a31a-de15-472b-8cdd-5f74b9ad0827_prometheus-k8s_0",
           "value": "juju_cos_9624a31a-de15-472b-8cdd-5f74b9ad0827_prometheus-k8s_0"
         },
@@ -742,7 +743,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "wordpress-k8s",
           "value": "wordpress-k8s"
         },

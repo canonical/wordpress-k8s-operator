@@ -102,7 +102,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "# Wordpress Operator for Juju\n\n- Github [URL](https://github.com/canonical/wordpress-k8s-operator)\n\n- For more information, visit wordpress [charmnub](https://charmhub.io/wordpress-k8s)\n\n",
+        "content": "# Wordpress Operator for Juju\n\n- Github [URL](https://github.com/canonical/wordpress-k8s-operator)\n\n- For more information, visit wordpress [charmhub](https://charmhub.io/wordpress-k8s)\n\n",
         "mode": "markdown"
       },
       "pluginVersion": "9.2.1",

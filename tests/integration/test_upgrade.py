@@ -250,8 +250,8 @@ async def build_and_upgrade_fixture(
     await ops_test.model.deploy(
         str(charm),
         resources={
-            "wordpress-image": wordpress_image,
             "apache-prometheus-exporter-image": "bitnami/apache-exporter:0.11.0",
+            "wordpress-image": wordpress_image,
         },
         application_name=application_name,
         series="jammy",

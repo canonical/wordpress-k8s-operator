@@ -559,7 +559,9 @@ async def test_prometheus_integration(
         targets.
     """
     assert ops_test.model
-    prometheus: Application = await ops_test.model.deploy("prometheus-k8s", channel="stable")
+    prometheus: Application = await ops_test.model.deploy(
+        "prometheus-k8s", channel="stable", trust=True
+    )
 
     await ops_test.model.relate(application_name, prometheus.name)
     await ops_test.model.wait_for_idle(apps=[application_name, prometheus.name], status="active")

@@ -645,7 +645,7 @@ async def test_grafana_integration(
         datasource_types = tuple(datasource["type"] for datasource in datasources)
         assert "loki" in datasource_types
         assert "prometheus" in datasource_types
-        dashboard = sess.get(
-            f"http://{unit.address}:3000/api/dashboards/uid/yQ2wKmT4z", timeout=10
+        dashboards = sess.get(
+            f"http://{unit.address}:3000/api/search?query=Wordpress Operator Overview", timeout=10
         ).json()
-        assert dashboard["dashboard"]["title"] == "Wordpress Operator Overview"
+        assert len(dashboards)

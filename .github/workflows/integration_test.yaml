@@ -52,7 +52,7 @@ jobs:
       registry: ghcr.io
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       pre-run-script: |
-        -c "sudo microk8s enable registry hostpath-storage
+        -c "sudo microk8s enable registry hostpath-storage rbac
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true

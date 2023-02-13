@@ -590,7 +590,7 @@ async def test_loki_integration(
         loki to scrape.
     """
     assert ops_test.model
-    loki: Application = await ops_test.model.deploy("loki-k8s", channel="stable")
+    loki: Application = await ops_test.model.deploy("loki-k8s", channel="stable", trust=True)
 
     await ops_test.model.relate(application_name, loki.name)
     await ops_test.model.wait_for_idle(apps=[application_name, loki.name], status="active")

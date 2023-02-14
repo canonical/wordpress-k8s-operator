@@ -418,6 +418,7 @@ async def build_and_deploy_fixture(
 async def prometheus_fixture(model: Model) -> Application:
     """Deploy and return prometheus charm application."""
     prometheus = await model.deploy("prometheus-k8s", channel="stable", trust=True)
+    await model.wait_for_idle(apps=[prometheus.name], status="active")
     return prometheus
 
 
@@ -425,13 +426,15 @@ async def prometheus_fixture(model: Model) -> Application:
 async def loki_fixture(model: Model) -> Application:
     """Deploy and return loki charm application."""
     loki = await model.deploy("loki-k8s", channel="stable", trust=True)
+    await model.wait_for_idle(apps=[loki.name], status="active")
     return loki
 
 
 @pytest_asyncio.fixture(scope="module", name="grafana")
 async def grafana_fixture(model: Model) -> Application:
     """Deploy and return grafana charm application."""
-    grafana = await model.deploy("grafana-k8s", trust=True)
+    grafana = await model.deploy("grafana-k8s", channel="stable", trust=True)
+    await model.wait_for_idle(apps=[grafana.name], status="active")
     return grafana
 
 

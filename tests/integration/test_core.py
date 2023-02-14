@@ -16,7 +16,6 @@ import urllib.parse
 import ops.model
 import PIL.Image
 import pytest
-import pytest_operator.plugin
 import requests
 from juju.action import Action
 from juju.application import Application

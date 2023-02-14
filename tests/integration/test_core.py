@@ -27,6 +27,13 @@ from pytest_operator.plugin import OpsTest
 
 from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
+from lib.charms.grafana_k8s.v0.grafana_dashboard import (
+    DEFAULT_RELATION_NAME as GRAFANA_RELATION_NAME,
+)
+from lib.charms.loki_k8s.v0.loki_push_api import DEFAULT_RELATION_NAME as LOKI_RELATION_NAME
+from lib.charms.prometheus_k8s.v0.prometheus_scrape import (
+    DEFAULT_RELATION_NAME as PROMETHEUS_RELATION_NAME,
+)
 
 from .wordpress_client_for_test import WordpressClient
 
@@ -544,7 +551,8 @@ async def test_openid_plugin(
 
 
 async def test_prometheus_integration(
-    ops_test: pytest_operator.plugin.OpsTest,
+    model: Model,
+    prometheus: Application,
     application_name: str,
     unit_ip_list: list[str],
 ):
@@ -554,28 +562,33 @@ async def test_prometheus_integration(
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
-    assert ops_test.model
-    prometheus: Application = await ops_test.model.deploy(
-        "prometheus-k8s", channel="stable", trust=True
+    await prometheus.relate(
+        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
     )
-
-    await ops_test.model.relate(application_name, prometheus.name)
-    await ops_test.model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
+    await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
 
     for unit_ip in unit_ip_list:
         requests.get(
             f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10
         ).raise_for_status()
-    status: FullStatus = await ops_test.model.get_status(filters=[prometheus.name])
+    status: FullStatus = await model.get_status(filters=[prometheus.name])
     for unit in status.applications[prometheus.name].units.values():
         query_targets = requests.get(
             f"http://{unit.address}:9090/api/v1/targets", timeout=10
         ).json()
         assert len(query_targets["data"]["activeTargets"])
 
+    # cleanup
+    await prometheus.remove_relation(
+        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
+    )
+    await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
+
 
 async def test_loki_integration(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
+    model: Model,
+    loki: Application,
     application_name: str,
     kube_core_client: kubernetes.client.CoreV1Api,
 ):
@@ -585,16 +598,13 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    assert ops_test.model
-    loki: Application = await ops_test.model.deploy("loki-k8s", channel="stable", trust=True)
+    await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
+    await model.wait_for_idle(apps=[application_name, loki.name], status="active")
 
-    await ops_test.model.relate(application_name, loki.name)
-    await ops_test.model.wait_for_idle(apps=[application_name, loki.name], status="active")
-
-    status: FullStatus = await ops_test.model.get_status(filters=[loki.name])
+    status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
         series = requests.get(f"http://{unit.address}:3100/loki/api/v1/series", timeout=10).json()
-        log_files = tuple(series_data["filename"] for series_data in series["data"])
+        log_files = set(series_data["filename"] for series_data in series["data"])
         assert "/var/log/apache2/error.log" in log_files
         assert "/var/log/apache2/access.log" in log_files
         log_query = requests.get(
@@ -608,9 +618,16 @@ async def test_loki_integration(
     )
     assert kube_log
 
+    # cleanup
+    await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
+    await model.wait_for_idle(apps=[application_name, loki.name], status="active")
+
 
 async def test_grafana_integration(
-    ops_test: pytest_operator.plugin.OpsTest,
+    model: Model,
+    prometheus: Application,
+    loki: Application,
+    grafana: Application,
     application_name: str,
 ):
     """
@@ -618,18 +635,21 @@ async def test_grafana_integration(
     act: grafana charm joins relation
     assert: grafana wordpress dashboard can be found
     """
-    assert ops_test.model
-    grafana: Application = await ops_test.model.deploy("grafana-k8s", trust=True)
-
-    await ops_test.model.relate(application_name, grafana.name)
-    await ops_test.model.relate("prometheus-k8s:grafana-source", f"{grafana.name}:grafana-source")
-    await ops_test.model.relate("loki-k8s:grafana-source", f"{grafana.name}:grafana-source")
-    await ops_test.model.wait_for_idle(apps=[application_name, grafana.name], status="active")
+    await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
+    await prometheus.relate(
+        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
+    )
+    await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
+    await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
+    await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
+    await model.wait_for_idle(
+        apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
+    )
 
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()
     password = action.results["admin-password"]
-    status: FullStatus = await ops_test.model.get_status(filters=[grafana.name])
+    status: FullStatus = await model.get_status(filters=[grafana.name])
     for unit in status.applications[grafana.name].units.values():
         sess = requests.session()
         sess.post(
@@ -640,7 +660,7 @@ async def test_grafana_integration(
             },
         ).raise_for_status()
         datasources = sess.get(f"http://{unit.address}:3000/api/datasources", timeout=10).json()
-        datasource_types = tuple(datasource["type"] for datasource in datasources)
+        datasource_types = set(datasource["type"] for datasource in datasources)
         assert "loki" in datasource_types
         assert "prometheus" in datasource_types
         dashboards = sess.get(
@@ -649,3 +669,17 @@ async def test_grafana_integration(
             params={"query": "Wordpress Operator Overview"},
         ).json()
         assert len(dashboards)
+
+    # cleanup
+    await prometheus.remove_relation("grafana-source", f"{grafana.name}:grafana-source")
+    await prometheus.remove_relation(
+        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
+    )
+    await loki.remove_relation("grafana-source", f"{grafana.name}:grafana-source")
+    await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
+    await grafana.remove_relation(
+        GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}"
+    )
+    await model.wait_for_idle(
+        apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
+    )

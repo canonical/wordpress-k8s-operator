@@ -21,7 +21,9 @@ import requests
 from juju.action import Action
 from juju.application import Application
 from juju.client._definitions import FullStatus
+from juju.model import Model
 from kubernetes import kubernetes
+from pytest_operator.plugin import OpsTest
 
 from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
@@ -32,7 +34,7 @@ from .wordpress_client_for_test import WordpressClient
 @pytest.mark.usefixtures("build_and_deploy")
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, application_name):
+async def test_build_and_deploy(ops_test: OpsTest, application_name):
     """
     arrange: no pre-condition.
     act: build charm using charmcraft and deploy charm to test juju model.
@@ -55,7 +57,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
 @pytest.mark.abort_on_fail
 async def test_mysql_config(
     db_from_config,
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     kube_core_client,
     pod_db_database,
@@ -92,9 +94,7 @@ async def test_mysql_config(
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(
-    db_from_config, ops_test: pytest_operator.plugin.OpsTest, application_name
-):
+async def test_mysql_relation(db_from_config, ops_test: OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed.
     act: deploy a mariadb charm and add a relation between WordPress and mariadb.
@@ -115,7 +115,7 @@ async def test_mysql_relation(
 
 @pytest.mark.asyncio
 async def test_openstack_object_storage_plugin(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     default_admin_password,
     unit_ip_list,
@@ -220,7 +220,7 @@ async def test_wordpress_default_themes(unit_ip_list, get_theme_list_from_ip):
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_themes(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     unit_ip_list,
     get_theme_list_from_ip,
@@ -253,9 +253,7 @@ async def test_wordpress_install_uninstall_themes(
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_wordpress_theme_installation_error(
-    ops_test: pytest_operator.plugin.OpsTest, application_name
-):
+async def test_wordpress_theme_installation_error(ops_test: OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: install a nonexistent theme.
@@ -291,7 +289,7 @@ async def test_wordpress_theme_installation_error(
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_plugins(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     unit_ip_list,
     get_plugin_list_from_ip,
@@ -323,9 +321,7 @@ async def test_wordpress_install_uninstall_plugins(
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_wordpress_plugin_installation_error(
-    ops_test: pytest_operator.plugin.OpsTest, application_name
-):
+async def test_wordpress_plugin_installation_error(ops_test: OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: install a nonexistent plugin.
@@ -361,7 +357,7 @@ async def test_wordpress_plugin_installation_error(
 
 @pytest.mark.asyncio
 async def test_ingress(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name: str,
 ):
     """
@@ -427,7 +423,7 @@ async def test_ingress(
 
 @pytest.mark.asyncio
 async def test_ingress_modsecurity(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name: str,
     kube_config: str,
 ):
@@ -470,7 +466,7 @@ async def test_ingress_modsecurity(
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_akismet_plugin(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     default_admin_password,
     unit_ip_list,
@@ -513,7 +509,7 @@ async def test_akismet_plugin(
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_openid_plugin(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     unit_ip_list,
     openid_username,

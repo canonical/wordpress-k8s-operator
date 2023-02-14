@@ -567,9 +567,8 @@ async def test_prometheus_integration(
     await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
 
     for unit_ip in unit_ip_list:
-        requests.get(
-            f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10
-        ).raise_for_status()
+        res = requests.get(f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10)
+        assert res.status_code == 200
     status: FullStatus = await model.get_status(filters=[prometheus.name])
     for unit in status.applications[prometheus.name].units.values():
         query_targets = requests.get(

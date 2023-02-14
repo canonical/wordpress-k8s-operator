@@ -409,6 +409,27 @@ async def build_and_deploy_fixture(
     await model.wait_for_idle()
 
 
+@pytest.fixture(scope="module", name="prometheus")
+def prometheus_fixture(model: Model) -> Application:
+    """Deploy and return prometheus charm application."""
+    prometheus = model.deploy("prometheus-k8s", channel="stable", trust=True)
+    return prometheus
+
+
+@pytest.fixture(scope="module", name="loki")
+def loki_fixture(model: Model) -> Application:
+    """Deploy and return loki charm application."""
+    loki = model.deploy("loki-k8s", channel="stable", trust=True)
+    return loki
+
+
+@pytest.fixture(scope="module", name="grafana")
+def grafana_fixture(model: Model) -> Application:
+    """Deploy and return grafana charm application."""
+    grafana = model.deploy("grafana-k8s", trust=True)
+    return grafana
+
+
 @pytest.fixture(scope="module", name="test_image")
 def image_fixture() -> bytes:
     """A JPG image that can be used in tests."""

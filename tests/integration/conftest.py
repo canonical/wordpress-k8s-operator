@@ -27,27 +27,34 @@ from tests.integration.wordpress_client_for_test import WordpressClient
 logger = logging.getLogger()
 
 
-@pytest.fixture(name="model")
-async def model_fixture(ops_test: OpsTest) -> Model:
-    """Get current valid model created for integraion testing."""
+@pytest.fixture(scope="module", name="model")
+def model_module_scope_fixture(ops_test: OpsTest) -> Model:
+    """Get current valid model created for integraion testing with module scope."""
+    assert ops_test.model
+    return ops_test.model
+
+
+@pytest.fixture(scope="function", name="func_model")
+def model_func_scope_fixture(ops_test: OpsTest) -> Model:
+    """Get current valid model created for integraion testing with function scope."""
     assert ops_test.model
     return ops_test.model
 
 
 @pytest_asyncio.fixture(scope="function", name="app_config")
-async def app_config_fixture(request, ops_test: OpsTest, model: Model):
+async def app_config_fixture(request, func_model: Model):
     """Change the charm config to specific values and revert that after test."""
     config = request.param
-    application: Application = model.applications["wordpress"]
+    application: Application = func_model.applications["wordpress"]
     original_config: dict = await application.get_config()
     original_config = {k: v["value"] for k, v in original_config.items() if k in config}
     await application.set_config(config)
-    await model.wait_for_idle()
+    await func_model.wait_for_idle()
 
     yield config
 
     await application.set_config(original_config)
-    await model.wait_for_idle()
+    await func_model.wait_for_idle()
 
 
 @pytest.fixture(scope="module", name="application_name")
@@ -57,9 +64,7 @@ def fixture_application_name():
 
 
 @pytest_asyncio.fixture(scope="module", name="get_default_admin_password")
-async def fixture_get_default_admin_password(
-    ops_test: OpsTest, model: Model, application_name: str
-):
+async def fixture_get_default_admin_password(model: Model, application_name: str):
     """Create a function to get the default admin password using get-initial-password action."""
 
     async def _get_default_admin_password() -> str:

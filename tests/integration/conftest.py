@@ -10,36 +10,44 @@ import pathlib
 import re
 import typing
 
-import juju.action
-import juju.application
 import kubernetes
 import pytest
 import pytest_asyncio
-import pytest_operator.plugin
 import swiftclient
 import swiftclient.exceptions
 import swiftclient.service
+from juju.action import Action
+from juju.application import Application
+from juju.model import Model
+from pytest import FixtureRequest
+from pytest_operator.plugin import OpsTest
 
 from tests.integration.wordpress_client_for_test import WordpressClient
 
 logger = logging.getLogger()
 
 
-@pytest_asyncio.fixture(scope="function", name="app_config")
-async def app_config_fixture(request, ops_test: pytest_operator.plugin.OpsTest):
-    """Change the charm config to specific values and revert that after test."""
+@pytest.fixture(name="model")
+async def model_fixture(ops_test: OpsTest) -> Model:
+    """Get current valid model created for integraion testing."""
     assert ops_test.model
+    return ops_test.model
+
+
+@pytest_asyncio.fixture(scope="function", name="app_config")
+async def app_config_fixture(request, ops_test: OpsTest, model: Model):
+    """Change the charm config to specific values and revert that after test."""
     config = request.param
-    application: juju.application.Application = ops_test.model.applications["wordpress"]
+    application: Application = model.applications["wordpress"]
     original_config: dict = await application.get_config()
     original_config = {k: v["value"] for k, v in original_config.items() if k in config}
     await application.set_config(config)
-    await ops_test.model.wait_for_idle()
+    await model.wait_for_idle()
 
     yield config
 
     await application.set_config(original_config)
-    await ops_test.model.wait_for_idle()
+    await model.wait_for_idle()
 
 
 @pytest.fixture(scope="module", name="application_name")
@@ -50,10 +58,9 @@ def fixture_application_name():
 
 @pytest_asyncio.fixture(scope="module", name="get_default_admin_password")
 async def fixture_get_default_admin_password(
-    ops_test: pytest_operator.plugin.OpsTest, application_name
+    ops_test: OpsTest, model: Model, application_name: str
 ):
     """Create a function to get the default admin password using get-initial-password action."""
-    assert ops_test.model
 
     async def _get_default_admin_password() -> str:
         """Get default admin password using get-initial-password action.
@@ -61,9 +68,8 @@ async def fixture_get_default_admin_password(
         Returns:
             WordPress admin account password
         """
-        assert ops_test.model  # to let mypy know that it's not None
-        application: juju.application.Application = ops_test.model.applications[application_name]
-        action: juju.action.Action = await application.units[0].run_action("get-initial-password")
+        application: Application = model.applications[application_name]
+        action: Action = await application.units[0].run_action("get-initial-password")
         await action.wait()
         return action.results["password"]
 
@@ -77,7 +83,7 @@ async def fixture_default_admin_password(get_default_admin_password):
 
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ip_list")
-async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, application_name):
+async def fixture_get_unit_ip_list(model: Model, application_name: str):
     """Retrieve unit ip addresses, similar to fixture_get_unit_status_list."""
 
     async def _get_unit_ip_list():
@@ -86,7 +92,7 @@ async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, app
         Returns:
             list of WordPress units ip addresses.
         """
-        status = await ops_test.model.get_status()
+        status = await model.get_status()
         units = status.applications[application_name].units
         ip_list = []
         for key in sorted(units.keys(), key=lambda n: int(n.split("/")[-1])):
@@ -97,7 +103,7 @@ async def fixture_get_unit_ip_list(ops_test: pytest_operator.plugin.OpsTest, app
 
 
 @pytest_asyncio.fixture(scope="function", name="unit_ip_list")
-async def fixture_unit_ip_list(get_unit_ip_list):
+async def fixture_unit_ip_list(get_unit_ip_list: typing.Callable[[], typing.Awaitable[list[str]]]):
     """A fixture containing ip addresses of current units.
 
     Yields:
@@ -107,7 +113,7 @@ async def fixture_unit_ip_list(get_unit_ip_list):
 
 
 @pytest_asyncio.fixture(scope="function", name="get_theme_list_from_ip")
-async def fixture_get_theme_list_from_ip(default_admin_password):
+async def fixture_get_theme_list_from_ip(default_admin_password: str):
     """Retrieve installed themes from the WordPress instance."""
 
     def _get_theme_list_from_ip(unit_ip: str):
@@ -128,10 +134,10 @@ async def fixture_get_theme_list_from_ip(default_admin_password):
 
 
 @pytest_asyncio.fixture(scope="function", name="get_plugin_list_from_ip")
-async def fixture_get_plugin_list_from_ip(default_admin_password):
+async def fixture_get_plugin_list_from_ip(default_admin_password: str):
     """Retrieve installed plugins from the WordPress instance."""
 
-    def _get_plugin_list_from_ip(unit_ip):
+    def _get_plugin_list_from_ip(unit_ip: str):
         """Retrieve installed plugins from the Wordpress instance.
 
         Args:
@@ -149,7 +155,7 @@ async def fixture_get_plugin_list_from_ip(default_admin_password):
 
 
 @pytest.fixture(scope="module", name="openstack_environment")
-def openstack_environment_fixture(request, num_units):
+def openstack_environment_fixture(request: FixtureRequest, num_units: int):
     """Parse the openstack rc style configuration file from the --openstack-rc argument.
 
     Returns: a dictionary of environment variables and values, or None if --openstack-rc isn't
@@ -171,7 +177,7 @@ def openstack_environment_fixture(request, num_units):
 
 
 @pytest.fixture
-def akismet_api_key(request):
+def akismet_api_key(request: FixtureRequest):
     """The Akismet API key, in str."""
     api_key = request.config.getoption("--akismet-api-key")
     assert (
@@ -181,7 +187,7 @@ def akismet_api_key(request):
 
 
 @pytest.fixture(name="openid_username")
-def openid_username_fixture(request):
+def openid_username_fixture(request: FixtureRequest):
     """The OpenID username for testing the OpenID plugin."""
     openid_username = request.config.getoption("--openid-username")
     assert (
@@ -191,7 +197,7 @@ def openid_username_fixture(request):
 
 
 @pytest.fixture(name="openid_password")
-def openid_password_fixture(request):
+def openid_password_fixture(request: FixtureRequest):
     """The OpenID username for testing the OpenID plugin."""
     openid_password = request.config.getoption("--openid-password")
     assert (
@@ -201,7 +207,7 @@ def openid_password_fixture(request):
 
 
 @pytest.fixture(scope="module", name="launchpad_team")
-def launchpad_team_fixture(request):
+def launchpad_team_fixture(request: FixtureRequest):
     """The launchpad team for the OpenID account."""
     launchpad_team = request.config.getoption("--launchpad-team")
     assert (
@@ -211,7 +217,7 @@ def launchpad_team_fixture(request):
 
 
 @pytest.fixture(scope="module", name="kube_config")
-def kube_config_fixture(request):
+def kube_config_fixture(request: FixtureRequest):
     """The Kubernetes cluster configuration file."""
     kube_config = request.config.getoption("--kube-config")
     assert kube_config, (
@@ -222,19 +228,19 @@ def kube_config_fixture(request):
 
 
 @pytest.fixture(scope="module", name="num_units")
-def num_units_fixture(request):
+def num_units_fixture(request: FixtureRequest):
     """Number of units to be deployed in tests."""
     return request.config.getoption("--num-units")
 
 
 @pytest.fixture(scope="module", name="db_from_config")
-def db_from_config_fixture(request):
+def db_from_config_fixture(request: FixtureRequest):
     """Whether to use database configuration config file or from relation."""
     return request.config.getoption("--test-db-from-config")
 
 
 @pytest.fixture(scope="module", name="screenshot_dir")
-def screenshot_dir_fixture(request):
+def screenshot_dir_fixture(request: FixtureRequest):
     """A directory to store screenshots generated by test_upgrade."""
     screenshot_dir = request.config.getoption("--screenshot-dir")
     assert screenshot_dir, (
@@ -245,7 +251,7 @@ def screenshot_dir_fixture(request):
 
 
 @pytest.fixture(scope="module", name="wordpress_image")
-def wordpress_image_fixture(request):
+def wordpress_image_fixture(request: FixtureRequest):
     """Wordpress docker image built for the WordPress charm."""
     return request.config.getoption("--wordpress-image")
 
@@ -361,18 +367,18 @@ def deploy_and_wait_for_mysql_pod_fixture(
 @pytest_asyncio.fixture(scope="module", name="build_and_deploy")
 async def build_and_deploy_fixture(
     num_units,
-    ops_test: pytest_operator.plugin.OpsTest,
-    application_name,
+    ops_test: OpsTest,
+    model: Model,
+    application_name: str,
     deploy_and_wait_for_mysql_pod,
     wordpress_image,
 ):
     """Deploy all required charms and kubernetes pods for tests."""
-    assert ops_test.model
 
     async def build_and_deploy_wordpress():
         """Build wordpress charm from source and deploy to current testing model."""
         my_charm = await ops_test.build_charm(".")
-        await ops_test.model.deploy(
+        await model.deploy(
             my_charm,
             resources={
                 "wordpress-image": wordpress_image,
@@ -386,7 +392,7 @@ async def build_and_deploy_fixture(
     await asyncio.gather(
         build_and_deploy_wordpress(),
         deploy_and_wait_for_mysql_pod(),
-        ops_test.model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
+        model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
         # temporary fix for the CharmHub problem
         ops_test.juju(
             "deploy",
@@ -400,17 +406,17 @@ async def build_and_deploy_fixture(
             check=True,
         ),
     )
-    await ops_test.model.wait_for_idle()
+    await model.wait_for_idle()
 
 
 @pytest.fixture(scope="module", name="test_image")
-def image_fixture():
+def image_fixture() -> bytes:
     """A JPG image that can be used in tests."""
     return open("tests/integration/files/canonical_aubergine_hex.jpg", "rb").read()
 
 
 @pytest.fixture(scope="module", name="swift_conn")
-def swift_conn_fixture(openstack_environment):
+def swift_conn_fixture(openstack_environment) -> swiftclient.Connection | None:
     """Create a swift connection client."""
     if openstack_environment is None:
         return None

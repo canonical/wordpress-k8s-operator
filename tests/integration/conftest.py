@@ -414,24 +414,24 @@ async def build_and_deploy_fixture(
     await model.wait_for_idle()
 
 
-@pytest.fixture(scope="module", name="prometheus")
-def prometheus_fixture(model: Model) -> Application:
+@pytest_asyncio.fixture(scope="module", name="prometheus")
+async def prometheus_fixture(model: Model) -> Application:
     """Deploy and return prometheus charm application."""
-    prometheus = model.deploy("prometheus-k8s", channel="stable", trust=True)
+    prometheus = await model.deploy("prometheus-k8s", channel="stable", trust=True)
     return prometheus
 
 
-@pytest.fixture(scope="module", name="loki")
-def loki_fixture(model: Model) -> Application:
+@pytest_asyncio.fixture(scope="module", name="loki")
+async def loki_fixture(model: Model) -> Application:
     """Deploy and return loki charm application."""
-    loki = model.deploy("loki-k8s", channel="stable", trust=True)
+    loki = await model.deploy("loki-k8s", channel="stable", trust=True)
     return loki
 
 
-@pytest.fixture(scope="module", name="grafana")
-def grafana_fixture(model: Model) -> Application:
+@pytest_asyncio.fixture(scope="module", name="grafana")
+async def grafana_fixture(model: Model) -> Application:
     """Deploy and return grafana charm application."""
-    grafana = model.deploy("grafana-k8s", trust=True)
+    grafana = await model.deploy("grafana-k8s", trust=True)
     return grafana
 
 

@@ -623,7 +623,7 @@ async def test_grafana_integration(
     assert: grafana wordpress dashboard can be found
     """
     assert ops_test.model
-    grafana: Application = await ops_test.model.deploy("grafana-k8s")
+    grafana: Application = await ops_test.model.deploy("grafana-k8s", trust=True)
 
     await ops_test.model.relate(application_name, grafana.name)
     await ops_test.model.relate("prometheus-k8s:grafana-source", f"{grafana.name}:grafana-source")

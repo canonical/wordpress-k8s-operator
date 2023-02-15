@@ -420,7 +420,9 @@ async def prometheus_fixture(
 ) -> typing.AsyncGenerator[Application, None]:
     """Deploy and yield prometheus charm application with relation to WordPress charm."""
     prometheus = await model.deploy("prometheus-k8s", channel="stable", trust=True)
-    prometheus.relate(PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}")
+    await prometheus.relate(
+        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
+    )
     yield prometheus
     await prometheus.remove_relation(
         PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"

@@ -36,7 +36,13 @@ from ops.charm import (
 )
 from ops.framework import EventBase, StoredState
 from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus, RelationDataContent, WaitingStatus
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    MaintenanceStatus,
+    RelationDataContent,
+    WaitingStatus,
+)
 from ops.pebble import ExecProcess
 from opslib.mysql import MySQLClient, MySQLDatabaseChangedEvent
 from yaml import safe_load
@@ -1425,6 +1431,7 @@ class WordpressCharm(CharmBase):
             event: Event triggering the handler.
         """
         if not event.workload:
+            self.unit.status = BlockedStatus("Internal Error, pebble container not found.")
             return
         container = event.workload
         pebble: ops.pebble.Client = container.pebble

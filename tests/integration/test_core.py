@@ -29,10 +29,6 @@ from cos import APACHE_PROMETHEUS_SCRAPE_PORT
 from lib.charms.grafana_k8s.v0.grafana_dashboard import (
     DEFAULT_RELATION_NAME as GRAFANA_RELATION_NAME,
 )
-from lib.charms.loki_k8s.v0.loki_push_api import DEFAULT_RELATION_NAME as LOKI_RELATION_NAME
-from lib.charms.prometheus_k8s.v0.prometheus_scrape import (
-    DEFAULT_RELATION_NAME as PROMETHEUS_RELATION_NAME,
-)
 
 from .wordpress_client_for_test import WordpressClient
 
@@ -587,7 +583,6 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
     await model.wait_for_idle(apps=[application_name, loki.name], status="active")
 
     status: FullStatus = await model.get_status(filters=[loki.name])
@@ -607,10 +602,6 @@ async def test_loki_integration(
     )
     assert kube_log
 
-    # cleanup
-    await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
-    await model.wait_for_idle(apps=[application_name, loki.name], status="active")
-
 
 async def test_grafana_integration(
     model: Model,
@@ -626,7 +617,6 @@ async def test_grafana_integration(
     """
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
     await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
     await model.wait_for_idle(
         apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
@@ -655,14 +645,3 @@ async def test_grafana_integration(
             params={"query": "Wordpress Operator Overview"},
         ).json()
         assert len(dashboards)
-
-    # cleanup
-    await prometheus.remove_relation("grafana-source", f"{grafana.name}:grafana-source")
-    await loki.remove_relation("grafana-source", f"{grafana.name}:grafana-source")
-    await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
-    await grafana.remove_relation(
-        GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}"
-    )
-    await model.wait_for_idle(
-        apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
-    )

@@ -22,6 +22,7 @@ from juju.model import Model
 from pytest import FixtureRequest
 from pytest_operator.plugin import OpsTest
 
+from lib.charms.loki_k8s.v0.loki_push_api import DEFAULT_RELATION_NAME as LOKI_RELATION_NAME
 from lib.charms.prometheus_k8s.v0.prometheus_scrape import (
     DEFAULT_RELATION_NAME as PROMETHEUS_RELATION_NAME,
 )
@@ -424,10 +425,14 @@ async def prometheus_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="loki")
-async def loki_fixture(model: Model) -> Application:
+async def loki_fixture(
+    model: Model, application_name: str
+) -> typing.AsyncGenerator[Application, None]:
     """Deploy and return loki charm application."""
     loki = await model.deploy("loki-k8s", channel="stable", trust=True)
-    return loki
+    await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
+    yield loki
+    await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
 
 
 @pytest_asyncio.fixture(scope="module", name="grafana")

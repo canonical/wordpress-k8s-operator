@@ -22,6 +22,9 @@ from juju.model import Model
 from pytest import FixtureRequest
 from pytest_operator.plugin import OpsTest
 
+from lib.charms.prometheus_k8s.v0.prometheus_scrape import (
+    DEFAULT_RELATION_NAME as PROMETHEUS_RELATION_NAME,
+)
 from tests.integration.wordpress_client_for_test import WordpressClient
 
 logger = logging.getLogger()
@@ -408,10 +411,16 @@ async def build_and_deploy_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="prometheus")
-async def prometheus_fixture(model: Model) -> Application:
-    """Deploy and return prometheus charm application."""
+async def prometheus_fixture(
+    model: Model, application_name: str
+) -> typing.AsyncGenerator[Application, None]:
+    """Deploy and yield prometheus charm application with relation to WordPress charm."""
     prometheus = await model.deploy("prometheus-k8s", channel="stable", trust=True)
+    prometheus.relate(PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}")
     yield prometheus
+    await prometheus.remove_relation(
+        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
+    )
 
 
 @pytest_asyncio.fixture(scope="module", name="loki")

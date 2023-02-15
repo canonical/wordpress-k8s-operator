@@ -556,14 +556,11 @@ async def test_prometheus_integration(
     unit_ip_list: list[str],
 ):
     """
-    arrange: after WordPress charm has been deployed and relations established.
-    act: prometheus charm joins relation
+    arrange: after WordPress charm has been deployed and relations established with prometheus.
+    act: None.
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
-    await prometheus.relate(
-        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
-    )
     await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
 
     for unit_ip in unit_ip_list:
@@ -575,12 +572,6 @@ async def test_prometheus_integration(
             f"http://{unit.address}:9090/api/v1/targets", timeout=10
         ).json()
         assert len(query_targets["data"]["activeTargets"])
-
-    # cleanup
-    await prometheus.remove_relation(
-        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
-    )
-    await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
 
 
 async def test_loki_integration(
@@ -634,9 +625,6 @@ async def test_grafana_integration(
     assert: grafana wordpress dashboard can be found
     """
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await prometheus.relate(
-        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
-    )
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
     await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
@@ -670,9 +658,6 @@ async def test_grafana_integration(
 
     # cleanup
     await prometheus.remove_relation("grafana-source", f"{grafana.name}:grafana-source")
-    await prometheus.remove_relation(
-        PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
-    )
     await loki.remove_relation("grafana-source", f"{grafana.name}:grafana-source")
     await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
     await grafana.remove_relation(

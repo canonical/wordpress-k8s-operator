@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 5,
+  "id": 3,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -193,7 +193,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_JUJU_COS_244D2E79-63C4-434F-853B-9D7DBCCC307B_PROMETHEUS_0}"
+            "uid": "${prometheusds}"
           },
           "editorMode": "builder",
           "expr": "apache_workers{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
@@ -203,6 +203,15 @@
         }
       ],
       "title": "Apache Workers",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*state=\"(\\w+)\".*",
+            "renamePattern": "$1"
+          }
+        }
+      ],
       "type": "stat"
     },
     {
@@ -289,13 +298,22 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "builder",
-          "expr": "apache_scoreboard{juju_application=\"$juju_application\"}",
+          "expr": "apache_scoreboard{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Apache scoreboard statuses",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*state=\"(\\w+)\".*",
+            "renamePattern": "$1"
+          }
+        }
+      ],
       "type": "timeseries"
     },
     {
@@ -354,7 +372,20 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*juju_unit=.*"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "$juju_unit"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -382,7 +413,7 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "code",
-          "expr": "rate(apache_accesses_total{juju_application=\"$juju_application\"}[5m])",
+          "expr": "rate(apache_accesses_total{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -474,13 +505,22 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "builder",
-          "expr": "apache_cpuload{juju_application=\"$juju_application\"}",
+          "expr": "apache_cpuload{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Apache CPU load (%)",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*juju_unit=\"(.*)\".*",
+            "renamePattern": "$1"
+          }
+        }
+      ],
       "type": "timeseries"
     },
     {
@@ -575,6 +615,15 @@
         }
       ],
       "title": "Apache load (%)",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*interval=\"(\\w+)\".*",
+            "renamePattern": "$1"
+          }
+        }
+      ],
       "type": "timeseries"
     },
     {
@@ -661,13 +710,22 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "code",
-          "expr": "rate(apache_sent_kilobytes_total{juju_application=\"$juju_application\"}[5m])",
+          "expr": "rate(apache_sent_kilobytes_total{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Current total kbytes sent (kb / 5min)",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*juju_unit=\"(.*)\".*",
+            "renamePattern": "$1"
+          }
+        }
+      ],
       "type": "timeseries"
     }
   ],
@@ -679,8 +737,8 @@
       {
         "current": {
           "selected": false,
-          "text": "juju_cos_9624a31a-de15-472b-8cdd-5f74b9ad0827_loki-k8s_0",
-          "value": "juju_cos_9624a31a-de15-472b-8cdd-5f74b9ad0827_loki-k8s_0"
+          "text": "No data sources found",
+          "value": ""
         },
         "hide": 0,
         "includeAll": false,
@@ -696,8 +754,8 @@
       {
         "current": {
           "selected": false,
-          "text": "juju_cos_9624a31a-de15-472b-8cdd-5f74b9ad0827_prometheus-k8s_0",
-          "value": "juju_cos_9624a31a-de15-472b-8cdd-5f74b9ad0827_prometheus-k8s_0"
+          "text": "juju_cos_3ffd7d07-d3c0-4dcb-8079-eb8bb5616cff_prometheus-k8s_0",
+          "value": "juju_cos_3ffd7d07-d3c0-4dcb-8079-eb8bb5616cff_prometheus-k8s_0"
         },
         "hide": 0,
         "includeAll": false,
@@ -774,8 +832,8 @@
       {
         "current": {
           "selected": false,
-          "text": "9624a31a-de15-472b-8cdd-5f74b9ad0827",
-          "value": "9624a31a-de15-472b-8cdd-5f74b9ad0827"
+          "text": "3ffd7d07-d3c0-4dcb-8079-eb8bb5616cff",
+          "value": "3ffd7d07-d3c0-4dcb-8079-eb8bb5616cff"
         },
         "datasource": {
           "uid": "${prometheusds}"
@@ -840,6 +898,6 @@
   "timepicker": {},
   "timezone": "",
   "title": "Wordpress Operator Overview",
-  "version": 1,
+  "version": 9,
   "weekStart": ""
 }

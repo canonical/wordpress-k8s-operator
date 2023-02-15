@@ -26,9 +26,6 @@ from pytest_operator.plugin import OpsTest
 
 from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
-from lib.charms.grafana_k8s.v0.grafana_dashboard import (
-    DEFAULT_RELATION_NAME as GRAFANA_RELATION_NAME,
-)
 
 from .wordpress_client_for_test import WordpressClient
 
@@ -617,7 +614,6 @@ async def test_grafana_integration(
     """
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
     await model.wait_for_idle(
         apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
     )

@@ -22,6 +22,9 @@ from juju.model import Model
 from pytest import FixtureRequest
 from pytest_operator.plugin import OpsTest
 
+from lib.charms.grafana_k8s.v0.grafana_dashboard import (
+    DEFAULT_RELATION_NAME as GRAFANA_RELATION_NAME,
+)
 from lib.charms.loki_k8s.v0.loki_push_api import DEFAULT_RELATION_NAME as LOKI_RELATION_NAME
 from lib.charms.prometheus_k8s.v0.prometheus_scrape import (
     DEFAULT_RELATION_NAME as PROMETHEUS_RELATION_NAME,
@@ -428,7 +431,7 @@ async def prometheus_fixture(
 async def loki_fixture(
     model: Model, application_name: str
 ) -> typing.AsyncGenerator[Application, None]:
-    """Deploy and return loki charm application."""
+    """Deploy and return loki charm application with relation to WordPress charm."""
     loki = await model.deploy("loki-k8s", channel="stable", trust=True)
     await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
     yield loki
@@ -436,10 +439,16 @@ async def loki_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="grafana")
-async def grafana_fixture(model: Model) -> Application:
-    """Deploy and return grafana charm application."""
+async def grafana_fixture(
+    model: Model, application_name: str
+) -> typing.AsyncGenerator[Application, None]:
+    """Deploy and return grafana charm application with relation to WordPress charm."""
     grafana = await model.deploy("grafana-k8s", channel="stable", trust=True)
-    return grafana
+    await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
+    yield grafana
+    await grafana.remove_relation(
+        GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}"
+    )
 
 
 @pytest.fixture(scope="module", name="test_image")

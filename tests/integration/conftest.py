@@ -34,27 +34,20 @@ def model_module_scope_fixture(ops_test: OpsTest) -> Model:
     return ops_test.model
 
 
-@pytest.fixture(scope="function", name="func_model")
-def model_func_scope_fixture(ops_test: OpsTest) -> Model:
-    """Get current valid model created for integraion testing with function scope."""
-    assert ops_test.model
-    return ops_test.model
-
-
 @pytest_asyncio.fixture(scope="function", name="app_config")
-async def app_config_fixture(request, func_model: Model):
+async def app_config_fixture(request, model: Model):
     """Change the charm config to specific values and revert that after test."""
     config = request.param
-    application: Application = func_model.applications["wordpress"]
+    application: Application = model.applications["wordpress"]
     original_config: dict = await application.get_config()
     original_config = {k: v["value"] for k, v in original_config.items() if k in config}
     await application.set_config(config)
-    await func_model.wait_for_idle()
+    await model.wait_for_idle()
 
     yield config
 
     await application.set_config(original_config)
-    await func_model.wait_for_idle()
+    await model.wait_for_idle()
 
 
 @pytest.fixture(scope="module", name="application_name")
@@ -418,15 +411,13 @@ async def build_and_deploy_fixture(
 async def prometheus_fixture(model: Model) -> Application:
     """Deploy and return prometheus charm application."""
     prometheus = await model.deploy("prometheus-k8s", channel="stable", trust=True)
-    await model.wait_for_idle(apps=[prometheus.name], status="active")
-    return prometheus
+    yield prometheus
 
 
 @pytest_asyncio.fixture(scope="module", name="loki")
 async def loki_fixture(model: Model) -> Application:
     """Deploy and return loki charm application."""
     loki = await model.deploy("loki-k8s", channel="stable", trust=True)
-    await model.wait_for_idle(apps=[loki.name], status="active")
     return loki
 
 
@@ -434,7 +425,6 @@ async def loki_fixture(model: Model) -> Application:
 async def grafana_fixture(model: Model) -> Application:
     """Deploy and return grafana charm application."""
     grafana = await model.deploy("grafana-k8s", channel="stable", trust=True)
-    await model.wait_for_idle(apps=[grafana.name], status="active")
     return grafana
 
 

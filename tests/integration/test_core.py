@@ -13,21 +13,27 @@ import typing
 import unittest.mock
 import urllib.parse
 
-import kubernetes
 import ops.model
 import PIL.Image
 import pytest
-import pytest_operator.plugin
 import requests
+from juju.action import Action
+from juju.application import Application
+from juju.client._definitions import FullStatus
+from juju.model import Model
+from kubernetes import kubernetes
+from pytest_operator.plugin import OpsTest
 
 from charm import WordpressCharm
-from tests.integration.wordpress_client_for_test import WordpressClient
+from cos import APACHE_PROMETHEUS_SCRAPE_PORT
+
+from .wordpress_client_for_test import WordpressClient
 
 
 @pytest.mark.usefixtures("build_and_deploy")
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, application_name):
+async def test_build_and_deploy(ops_test: OpsTest, application_name):
     """
     arrange: no pre-condition.
     act: build charm using charmcraft and deploy charm to test juju model.
@@ -50,7 +56,7 @@ async def test_build_and_deploy(ops_test: pytest_operator.plugin.OpsTest, applic
 @pytest.mark.abort_on_fail
 async def test_mysql_config(
     db_from_config,
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     kube_core_client,
     pod_db_database,
@@ -87,9 +93,7 @@ async def test_mysql_config(
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(
-    db_from_config, ops_test: pytest_operator.plugin.OpsTest, application_name
-):
+async def test_mysql_relation(db_from_config, ops_test: OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed.
     act: deploy a mariadb charm and add a relation between WordPress and mariadb.
@@ -110,7 +114,7 @@ async def test_mysql_relation(
 
 @pytest.mark.asyncio
 async def test_openstack_object_storage_plugin(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     default_admin_password,
     unit_ip_list,
@@ -215,7 +219,7 @@ async def test_wordpress_default_themes(unit_ip_list, get_theme_list_from_ip):
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_themes(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     unit_ip_list,
     get_theme_list_from_ip,
@@ -248,9 +252,7 @@ async def test_wordpress_install_uninstall_themes(
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_wordpress_theme_installation_error(
-    ops_test: pytest_operator.plugin.OpsTest, application_name
-):
+async def test_wordpress_theme_installation_error(ops_test: OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: install a nonexistent theme.
@@ -286,7 +288,7 @@ async def test_wordpress_theme_installation_error(
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_plugins(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     unit_ip_list,
     get_plugin_list_from_ip,
@@ -318,9 +320,7 @@ async def test_wordpress_install_uninstall_plugins(
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_wordpress_plugin_installation_error(
-    ops_test: pytest_operator.plugin.OpsTest, application_name
-):
+async def test_wordpress_plugin_installation_error(ops_test: OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: install a nonexistent plugin.
@@ -356,7 +356,7 @@ async def test_wordpress_plugin_installation_error(
 
 @pytest.mark.asyncio
 async def test_ingress(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name: str,
 ):
     """
@@ -422,7 +422,7 @@ async def test_ingress(
 
 @pytest.mark.asyncio
 async def test_ingress_modsecurity(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name: str,
     kube_config: str,
 ):
@@ -465,7 +465,7 @@ async def test_ingress_modsecurity(
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_akismet_plugin(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     default_admin_password,
     unit_ip_list,
@@ -508,7 +508,7 @@ async def test_akismet_plugin(
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_openid_plugin(
-    ops_test: pytest_operator.plugin.OpsTest,
+    ops_test: OpsTest,
     application_name,
     unit_ip_list,
     openid_username,
@@ -540,3 +540,104 @@ async def test_openid_plugin(
         assert (
             "administrator" in wordpress_client.list_roles()
         ), "An launchpad OpenID account should be associated with the WordPress admin user"
+
+
+async def test_prometheus_integration(
+    model: Model,
+    prometheus: Application,
+    application_name: str,
+    unit_ip_list: list[str],
+):
+    """
+    arrange: after WordPress charm has been deployed and relations established with prometheus.
+    act: None.
+    assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
+        targets.
+    """
+    await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
+
+    for unit_ip in unit_ip_list:
+        res = requests.get(f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10)
+        assert res.status_code == 200
+    status: FullStatus = await model.get_status(filters=[prometheus.name])
+    for unit in status.applications[prometheus.name].units.values():
+        query_targets = requests.get(
+            f"http://{unit.address}:9090/api/v1/targets", timeout=10
+        ).json()
+        assert len(query_targets["data"]["activeTargets"])
+
+
+async def test_loki_integration(
+    ops_test: OpsTest,
+    model: Model,
+    loki: Application,
+    application_name: str,
+    kube_core_client: kubernetes.client.CoreV1Api,
+):
+    """
+    arrange: after WordPress charm has been deployed and relations established.
+    act: loki charm joins relation
+    assert: loki joins relation successfully, logs are being output to container and to files for
+        loki to scrape.
+    """
+    await model.wait_for_idle(apps=[application_name, loki.name], status="active")
+
+    status: FullStatus = await model.get_status(filters=[loki.name])
+    for unit in status.applications[loki.name].units.values():
+        series = requests.get(f"http://{unit.address}:3100/loki/api/v1/series", timeout=10).json()
+        log_files = set(series_data["filename"] for series_data in series["data"])
+        assert "/var/log/apache2/error.log" in log_files
+        assert "/var/log/apache2/access.log" in log_files
+        log_query = requests.get(
+            f"http://{unit.address}:3100/loki/api/v1/query",
+            timeout=10,
+            params={"query": f'{{juju_application="{application_name}"}}'},
+        ).json()
+        assert len(log_query["data"]["result"])
+    kube_log = kube_core_client.read_namespaced_pod_log(
+        name=f"{application_name}-0", namespace=ops_test.model_name, container="wordpress"
+    )
+    assert kube_log
+
+
+async def test_grafana_integration(
+    model: Model,
+    prometheus: Application,
+    loki: Application,
+    grafana: Application,
+    application_name: str,
+):
+    """
+    arrange: after WordPress charm has been deployed and relations established among cos.
+    act: grafana charm joins relation
+    assert: grafana wordpress dashboard can be found
+    """
+    await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
+    await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
+    await model.wait_for_idle(
+        apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
+    )
+
+    action: Action = await grafana.units[0].run_action("get-admin-password")
+    await action.wait()
+    password = action.results["admin-password"]
+    status: FullStatus = await model.get_status(filters=[grafana.name])
+    for unit in status.applications[grafana.name].units.values():
+        sess = requests.session()
+        sess.post(
+            f"http://{unit.address}:3000/login",
+            json={
+                "user": "admin",
+                "password": password,
+            },
+        ).raise_for_status()
+        datasources = sess.get(f"http://{unit.address}:3000/api/datasources", timeout=10).json()
+        datasource_types = set(datasource["type"] for datasource in datasources)
+        assert "loki" in datasource_types
+        assert "prometheus" in datasource_types
+        dashboards = sess.get(
+            f"http://{unit.address}:3000/api/search",
+            timeout=10,
+            params={"query": "Wordpress Operator Overview"},
+        ).json()
+        assert len(dashboards)

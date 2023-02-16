@@ -22,17 +22,34 @@ import mysql.connector
 import ops.charm
 import ops.pebble
 import yaml
+from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
-from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, StartEvent, StorageAttachedEvent
+from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
+from ops.charm import (
+    ActionEvent,
+    CharmBase,
+    LeaderElectedEvent,
+    PebbleReadyEvent,
+    StartEvent,
+    StorageAttachedEvent,
+)
 from ops.framework import EventBase, StoredState
 from ops.main import main
-from ops.model import ActiveStatus, RelationDataContent, WaitingStatus
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    MaintenanceStatus,
+    RelationDataContent,
+    WaitingStatus,
+)
 from ops.pebble import ExecProcess
 from opslib.mysql import MySQLClient, MySQLDatabaseChangedEvent
 from yaml import safe_load
 
 import exceptions
 import types_
+from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
 
 # MySQL logger prints database credentials on debug level, silence it
 logging.getLogger(mysql.connector.__name__).setLevel(logging.WARNING)
@@ -148,6 +165,14 @@ class WordpressCharm(CharmBase):
         )
 
         self.ingress = IngressRequires(self, self.ingress_config)
+        self.metrics_endpoint = MetricsEndpointProvider(
+            self,
+            jobs=WORDPRESS_SCRAPE_JOBS,
+        )
+        self._logging = LogProxyConsumer(
+            self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
+        )
+        self._grafana_dashboards = GrafanaDashboardProvider(self)
 
         self.framework.observe(
             self.on.get_initial_password_action, self._on_get_initial_password_action
@@ -168,6 +193,10 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
         self.framework.observe(self.database.on.database_changed, self._reconciliation)
+        self.framework.observe(
+            self.on.apache_prometheus_exporter_pebble_ready,
+            self._on_apache_prometheus_exporter_pebble_ready,
+        )
 
     def _on_start(self, _event: StartEvent):
         """Record if the start event is emitted."""
@@ -1336,6 +1365,17 @@ class WordpressCharm(CharmBase):
         elif not swift_config and swift_apache_config_enabled:
             self._apache_disable_config(apache_swift_conf)
 
+    def _are_pebble_instances_ready(self) -> bool:
+        """Check if all pebble instances are up and containers available.
+
+        Returns:
+            If the containers are up and available.
+        """
+        return all(
+            self.unit.get_container(container_name).can_connect()
+            for container_name in self.model.unit.containers
+        )
+
     def _plugin_reconciliation(self) -> None:
         """Reconciliation process for WordPress plugins.
 
@@ -1375,10 +1415,31 @@ class WordpressCharm(CharmBase):
             self._theme_reconciliation()
             self._plugin_reconciliation()
             logger.info("Reconciliation process finished successfully.")
-            self.unit.status = ActiveStatus()
         except exceptions.WordPressStatusException as status_exception:
             logger.info("Reconciliation process terminated early, reason: %s", status_exception)
             self.unit.status = status_exception.status
+            return
+        if self._are_pebble_instances_ready():
+            self.unit.status = ActiveStatus()
+        else:
+            self.unit.status = WaitingStatus("Waiting for pebble")
+
+    def _on_apache_prometheus_exporter_pebble_ready(self, event: PebbleReadyEvent):
+        """Configure and start apache prometheus exporter.
+
+        Args:
+            event: Event triggering the handler.
+        """
+        if not event.workload:
+            self.unit.status = BlockedStatus("Internal Error, pebble container not found.")
+            return
+        container = event.workload
+        pebble: ops.pebble.Client = container.pebble
+        self.unit.status = MaintenanceStatus(f"Adding {container.name} layer to pebble")
+        container.add_layer(container.name, PROM_EXPORTER_PEBBLE_CONFIG, combine=True)
+        self.unit.status = MaintenanceStatus(f"Starting {container.name} container")
+        pebble.replan_services()
+        self._reconciliation(event)
 
 
 if __name__ == "__main__":  # pragma: no cover

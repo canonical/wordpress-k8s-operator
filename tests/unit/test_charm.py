@@ -9,9 +9,13 @@ import json
 import typing
 import unittest.mock
 
+import ops.charm
 import ops.pebble
 import ops.testing
 import pytest
+from ops.charm import PebbleReadyEvent
+from ops.model import Container
+from ops.pebble import Client
 
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
@@ -314,6 +318,44 @@ def test_core_reconciliation_before_database_ready(
     assert (
         "db relation" in harness.model.unit.status.message
     ), "unit should wait for database connection info"
+
+
+def test_prom_exporter_pebble_ready(
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
+    """
+    arrange: after required relations ready but before prometheus exporter pebble ready.
+    act: run prometheus exporter pebble ready.
+    assert: unit should be active.
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    setup_replica_consensus()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    db_config = {
+        "db_host": "config_db_host",
+        "db_name": "config_db_name",
+        "db_user": "config_db_user",
+        "db_password": "config_db_password",
+    }
+    patch.database.prepare_database(
+        host=db_config["db_host"],
+        database=db_config["db_name"],
+        user=db_config["db_user"],
+        password=db_config["db_password"],
+    )
+    harness.update_config(db_config)
+    mock_event = unittest.mock.MagicMock(spec=PebbleReadyEvent)
+    mock_event.workload = unittest.mock.MagicMock(spec=Container)
+    mock_event.workload.name = "apache-prometheus-exporter"
+    mock_event.workload.pebble = unittest.mock.MagicMock(spec=Client)
+
+    charm._on_apache_prometheus_exporter_pebble_ready(mock_event)
+
+    assert isinstance(
+        harness.model.unit.status, ops.charm.model.ActiveStatus
+    ), "unit should be in ActiveStatus"
 
 
 def test_core_reconciliation(

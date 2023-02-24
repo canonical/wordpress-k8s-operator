@@ -2,7 +2,7 @@ juju>=2,<3
 pytest
 Pillow
 requests
-kubernetes
+kubernetes>=25.3,<26
 pytest-cov
 types-requests
 pytest-operator

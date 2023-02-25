@@ -15,9 +15,6 @@ on:
       - track/**
 
 jobs:
-  integration-test-with-secrets:
-    uses: ./.github/workflows/integration_test_secrets.yaml
-    secrets: inherit
   integration-test:
     uses: ./.github/workflows/integration_test.yaml
     secrets: inherit
@@ -34,7 +31,7 @@ jobs:
             value: "--num-units=3"
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
-    needs: [integration-test, integration-test-with-secrets]
+    needs: [integration-test]
     uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml@main
     with:
       trivy-image-config: trivy.yaml

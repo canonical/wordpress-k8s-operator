@@ -7,4 +7,4 @@
 - _rotate-wordpress-secrets_: Invalidate user sessions by rotating the following secrets:
   auth_key, auth_salt, logged_in_key, logged_in_salt, nonce_key, nonce_salt, secure_auth_key,
   secure_auth_salt.
-  Users will be forced to log in again. This might be usedful under security breach circumstances.
+  Users will be forced to log in again. This might be useful under security breach circumstances.

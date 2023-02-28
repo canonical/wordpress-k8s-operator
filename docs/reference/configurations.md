@@ -80,3 +80,8 @@
 
 - _use_nginx_ingress_modsec_: Boolean value denoting whether modsec based WAF should be enabled.
   Applied if ingress relation is available.
+
+- _mysql-interface-user_: Database username for mysql relation. (See mysql-k8s relation
+  [documentation](https://charmhub.io/mysql/configure))
+- _mysql-interface-database_: Database name for mysql relation. (See mysql-k8s relation
+  [documentation](https://charmhub.io/mysql/configure))

@@ -23,11 +23,10 @@
 
   ```yaml
   admin_password: <secret> # auto generated if not set
-  blog_public: False # by default blogs are public
   ```
 
-  If _admin_password_ is not provided it will be automatically generated and stored on the operator
-  pod in the /root directory.
+  If _admin_password_ is not provided it will be automatically generated and stored on juju's peer
+  relation data bag.
 
 - _plugins_: Plugin slugs of plugins to be installed, separated by comma. Including or excluding a
   default plugin here has no effect.
@@ -52,6 +51,8 @@
 - _wp_plugin_openstack_objectstorage_config_: YAML dictionary with keys named after WordPress
   settings and the desired values. Please note that the settings will be reset to values provided
   every time hooks run. Below are available values of the configuration yaml.
+  It is important to note that for multi-unit deployments, the `openstack-objectstorage-k8s` plugin
+  must be enabled to sync data across WordPress applications.
 
   ```
   auth-url:authentication URL to openstack. Example: http://10.100.115.2/identity

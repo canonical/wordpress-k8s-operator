@@ -6,7 +6,8 @@ image build time. If the plugins are installed during runtime with
 by default and may cause version differences between pods.
 Due to the clustered nature of the WordPress charm, installing plugins through UI has been disabled
 and can only be installed through the plugins configuration. Please see
-[Configurations](configurations.md) section for more information.
+[Configurations](https://charmhub.io/wordpress-k8s/configure?channel=edge) section for more
+information.
 
 _\*The descriptions of the following plugins are taken from the WordPress plugin pages._
 

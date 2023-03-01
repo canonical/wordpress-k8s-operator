@@ -8,8 +8,9 @@ _Supported charms_: [charmed-osm-mariadb-k8s](https://charmhub.io/mysql),
 
 Database integration is a required relation for the wordpress-k8s charm to supply structured data
 storage for WordPress. It is recommended to use a juju native integration that provides a mysql
-interface by providing necessary configuration details to wordpress-k8s charm. See
-[configuration](configuration.md) for more specific parameters.
+interface by providing `mysql-interface-user` and `mysql-interface-database` parameters to
+wordpress-k8s charm configurations. See
+[configuration](https://charmhub.io/wordpress-k8s/configure?channel=edge) for more detail.
 Another way to establish database relation is to supply db_host, db_name, db_user, db_password
 configuration parameters to the charm with a MySQL database. See Configuration section for detailed
 information regarding each of the parameters.

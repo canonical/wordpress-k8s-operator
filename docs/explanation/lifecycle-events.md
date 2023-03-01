@@ -22,7 +22,8 @@ uploaded content from the WordPress user.
 ### leader_elected
 
 This event is fired when juju elects a leader unit among the replica peers. Wordpress-k8s charm
-then responds by setting up secrets and sharing them with peers through peer relation databag.
+then responds by setting up secrets and sharing them with peers through peer relation databag if
+not already set.
 
 ### config-changed
 
@@ -52,5 +53,5 @@ installed themes and plugins with the incoming list of themes and plugins.
 
 ### upgrade-charm
 
-Upgrade charm event is fired on the upgrade charm command `juju refresh wordpress-k8s`. Sets up new
-secrets for upgraded deployment of WordPress.
+Upgrade charm event is fired on the upgrade charm command `juju refresh wordpress-k8s`. Sets up
+secrets in peer-relation databag for upgraded deployment of WordPress if not already set.

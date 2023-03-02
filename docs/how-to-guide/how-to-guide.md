@@ -364,4 +364,4 @@ juju deploy ./wordpress-k8s_ubuntu-22.04-amd64_ubuntu-20.04-amd64.charm \
 ```
 
 You should now be able to see your local wordpress-k8s charm progress through the stages of the
-deployoment through `watch -c juju status --color`.
+deployoment through `juju status --watch 2s`.

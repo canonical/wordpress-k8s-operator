@@ -101,7 +101,7 @@ juju config wordpress-k8s themes=twentytwentytwo,twentytwentythree
 Once the configuration is complete, you can navigate to `http://<wordpress-unit-ip>/wp-admin/themes.php` to
 verify your new theme installation.
 
-### Enable antispam(Akismet)
+### Enable antispam (Akismet)
 
 Enabling anti spam filter can be easily done by just supplying wp_plugin_akismet_key to the
 configurations.

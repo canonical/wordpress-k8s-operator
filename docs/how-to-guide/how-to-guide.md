@@ -19,7 +19,7 @@ juju deploy wordpress-k8s --config initial_settings=$WORDPRESS_SETTINGS
 ```
 
 You can verify your initial WordPress settings by navigating to ​​the general settings page in
-WordPress(`http://UNIT_IP/wp-admin/options-general.php`).
+WordPress(`http://<wordpress-unit-ip>/wp-admin/options-general.php`).
 
 You can also pass in the wordpress-k8s configuration.yaml file with the parameters above. See how
 to pass in a configuration file in the
@@ -28,7 +28,7 @@ to pass in a configuration file in the
 ### Get initial admin credentials
 
 Run the following command to get the initial admin password that can be used to login at
-`http://UNIT_IP/wp-login.php`.
+`http://<wordpress-unit-ip>/wp-login.php`.
 
 ```
 juju run-action wordpress-k8s/0 get-initial-password --wait
@@ -49,7 +49,7 @@ unit-wordpress-k8s-0:
     started: 2023-02-28 10:31:34 +0000 UTC
 ```
 
-You can use the password to login to the admin account in `http://UNIT_IP/wp-admin.php`.
+You can use the password to login to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
 
 Note that if `admin_password` value has been passed in the `initial_settings` configuration, the
 password from the action is invalid.
@@ -68,7 +68,7 @@ This action will force users to be logged out. All sessions and cookies will be 
 
 Start by locating the plugin from the WordPress [plugins page](https://wordpress.org/plugins/).
 Once you’ve located the plugin, the plugin slug is the name of the plugin from the URL of the
-selected theme page. For example, https://wordpress.org/plugins/akismet/ the plugin slug is
+selected theme page. For example, `https://wordpress.org/plugins/akismet/` the plugin slug is
 “akismet” after the “/plugins/” path in the URL. You can now install the plugin using the plugin
 slug with `juju config`.
 
@@ -82,7 +82,7 @@ To install multiple plugins at once, append more plugins separated by a comma.
 juju config wordpress-k8s plugins=akismet,404page
 ```
 
-Once the configuration is complete, you can navigate to `http://UNIT_IP/wp-admin/plugins.php` to
+Once the configuration is complete, you can navigate to `http://<wordpress-unit-ip>/wp-admin/plugins.php` to
 verify your new plugin installation.
 
 ### Install themes
@@ -102,7 +102,7 @@ To install multiple themes at once, append more themes separated by a comma.
 juju config wordpress-k8s themes=twentytwentytwo,twentytwentythree
 ```
 
-Once the configuration is complete, you can navigate to `http://UNIT_IP/wp-admin/themes.php` to
+Once the configuration is complete, you can navigate to `http://<wordpress-unit-ip>/wp-admin/themes.php` to
 verify your new theme installation.
 
 ### Enable antispam(Akismet)
@@ -269,8 +269,8 @@ credentials for admin access.
 juju run-action grafana-k8s/0 get-admin-password --wait
 ```
 
-You can now log into the grafana dashboard by visiting `http://GRAFANA_UNIT_IP:3000`. Navigate to
-`http://GRAFANA_UNIT_IP:3000/dashboards` and access the WordPress dashboard named Wordpress Operator
+You can now log into the grafana dashboard by visiting `http://<grafana-unit-ip>:3000`. Navigate to
+`http://<grafana-unit-ip>:3000/dashboards` and access the WordPress dashboard named Wordpress Operator
 Overview.
 
 ### ObjectStorage with Swift

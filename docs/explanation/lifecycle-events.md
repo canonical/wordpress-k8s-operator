@@ -28,7 +28,8 @@ not already set.
 ### config-changed
 
 WordPress-k8s charm reacts to any configuration change and runs reconciliation between the current
-state and the desired state. See the list of configurations in the reference documentation.
+state and the desired state. See the list of
+[configurations](https://charmhub.io/wordpress-k8s/configure?channel=edge).
 
 ### wordpress_pebble_ready
 

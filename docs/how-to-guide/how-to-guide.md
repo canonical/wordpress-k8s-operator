@@ -111,7 +111,7 @@ the instructions. After obtaining the Akismet API key, you can now run the follo
 enable Akismet plugin.
 
 ```
-juju config wordpress-k8s wp_plugin_akismet_key=AKISMET_API_KEY
+juju config wordpress-k8s wp_plugin_akismet_key=<akismet-api-key>
 ```
 
 The Akismet plugin should automatically be active after running the configuration.
@@ -139,7 +139,7 @@ look something like the following:
 ```
 Name:             wordpress-k8s-ingress
 Labels:           app.juju.is/created-by=nginx-ingress-integrator
-Namespace:        cos
+Namespace:        wordpress-tutorial
 Address:
 Ingress Class:    <none>
 Default backend:  <default>
@@ -147,7 +147,7 @@ Rules:
   Host           Path  Backends
   ----           ----  --------
   wordpress-k8s
-                 /   wordpress-k8s-service:80 (10.1.158.121:80)
+                 /   wordpress-k8s-service:80
 Annotations:     nginx.ingress.kubernetes.io/enable-modsecurity: true
                  nginx.ingress.kubernetes.io/enable-owasp-modsecurity-crs: true
                  nginx.ingress.kubernetes.io/modsecurity-snippet:
@@ -169,7 +169,7 @@ To configure a different hostname for WordPress, you can configure the ingress h
 wordpress-k8s configuration.
 
 ```
-juju config wordpress-k8s blog_hostname=myhostname.com
+juju config wordpress-k8s blog_hostname=<desired-hostname>
 ```
 
 To test locally, append the service IP of nginx-ingress-integrator to `/etc/hosts` file with your
@@ -179,23 +179,18 @@ The output of `juju status` should look similar to the following:
 
 ```
 Model  Controller          Cloud/Region        Version  SLA          Timestamp
-cos    microk8s-localhost  microk8s/localhost  2.9.38   unsupported  20:15:53+08:0
-0
+wordpress-k8s-tutorial    microk8s-localhost  microk8s/localhost  2.9.38   unsupported
 
-App                       Version              Status  Scale  Charm
-      Channel  Rev  Address         Exposed  Message
-mariadb                   mariadb/server:10.3  active      1  charmed-osm-mariadb-
-k8s   stable    35  10.152.183.119  no       ready
-nginx-ingress-integrator                       active      1  nginx-ingress-integr
-ator  stable    54  10.152.183.86   no       Service IP(s): 10.152.183.196
-wordpress-k8s                                  active      1  wordpress-k8s
-                16  10.152.183.163  no
+App                       Version              Status  Scale  Charm     Channel  Rev  Address         Exposed  Message
+mysql-k8s                                      active      1  mysql-k8s stable    35  <mysql-ip>  no       ready
+nginx-ingress-integrator                       active      1  nginx-ingress-integrator  stable    54  <nginx-ingress-integrator-ip>   no       Service IP(s): <nginx-ingress-integrator-service-ip>
+wordpress-k8s                                  active      1  wordpress-k8s 16  <wordpress-k8s-ip>  no
 
 Unit                         Workload  Agent  Address       Ports     Message
-mariadb/4*                   active    idle   10.1.158.73   3306/TCP  ready
-nginx-ingress-integrator/0*  active    idle   10.1.158.78             Service IP(s
-): 10.152.183.196
-wordpress-k8s/0*             active    idle   10.1.158.121
+mysql-k8s/0*                active    idle   <mysql-k8s-ip>
+nginx-ingress-integrator/0*  active    idle  <nginx-ingress-integrator-ip>            Service IP(s
+): <nginx-ingress-integrator-service-ip>
+wordpress-k8s/0*             active    idle   <wordpress-k8s-ip>
 ```
 
 Note the Service IP(s): next to nginx-ingress-integrator charm’s Status output.
@@ -203,13 +198,13 @@ Note the Service IP(s): next to nginx-ingress-integrator charm’s Status output
 Append the new hostname with the ingress IP with following command.
 
 ```
-echo 10.152.183.196 myhostname.com | sudo tee -a /etc/hosts
+echo <nginx-ingress-integrator-service-ip> <desired-hostname> | sudo tee -a /etc/hosts
 ```
 
 Test the ingress by sending a GET request to the hostname.
 
 ```
-curl myhostname.com
+curl <desired-hostname>
 ```
 
 ### COS integrations
@@ -290,7 +285,7 @@ export OS_AUTH_TYPE=<strong-password>
 export OS_PROJECT_NAME=demo
 export OS_PASSWORD=<strong-password>
 export OS_IDENTITY_API_VERSION=3
-export OS_AUTH_URL=http://10.100.115.2/identity
+export OS_AUTH_URL=http://<openstack-deployment-address>/identity
 ```
 
 To use the openstack cli tools, source the file with the following command.
@@ -303,7 +298,7 @@ To configure Swift storage for wordpress-k8s, copy and paste the following yaml 
 the values accordingly.
 
 ```
-auth-url: http://10.100.115.2/identity/v3
+auth-url: http://<openstack-deployment-address>/identity/v3
 bucket: WordPress
 copy-to-swift: 1
 domain: Default
@@ -313,7 +308,7 @@ region: RegionOne
 remove-local-file: 0
 serve-from-swift: 1
 swift-url: swift_auth_url # obtain the value by running `swift auth`. The value should look
-something like http://10.100.115.2:8080/v1/AUTH_1d449b4237d3499dabd95210c33ca150, exported under
+something like http://<openstack-deployment-address>:8080/v1/AUTH_1d449b4237d3499dabd95210c33ca150, exported under
 OS_STORAGE_URL key.
 tenant: demo
 username: demo

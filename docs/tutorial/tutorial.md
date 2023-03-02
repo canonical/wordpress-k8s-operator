@@ -3,12 +3,12 @@
 ### Prerequisites
 
 To deploy wordpress-k8s charm, you will need a juju bootstrapped with any kubernetes controller.
-To see how to bootstrap your installation of juju with microk8s, please refer to the documentation
+To see how to bootstrap your juju installation with microk8s, please refer to the documentation
 on microk8s [installation](https://juju.is/docs/olm/microk8s).
 
 ### Setting up the environment
 
-To easily clean up the resources and to segregate your workload from the contents of this tutorial,
+To easily clean up the resources and to separate your workload from the contents of this tutorial,
 it is recommended to set up another environment by adding a new model with the following command.
 
 ```
@@ -19,7 +19,7 @@ juju add-model wordpress-tutorial
 
 Deployment of WordPress requires a database integration. A preferred method in juju is through the
 native juju relation. In this case, a `mysql` interface is required by the wordpress-k8s charm and
-hence, `mysql-k8s` charm will be used.
+hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
 Start off by deploying the wordpress charm. By default it will deploy the latest stable release of
 the wordpress-k8s charm.
@@ -29,20 +29,17 @@ juju deploy wordpress-k8s
 ```
 
 If you wish to try out the latest features of the wordpress-k8s charm you can set an additional
-parameter to deploy from a specific channel. For example, to deploy from the latest/edge channel:
+parameter to deploy from a specific channel. For example, to deploy from the edge channel:
 
 ```
-juju deploy wordpress-k8s --channel=latest/edge
+juju deploy wordpress-k8s --channel=edge
 ```
 
 ### Deploy and relate database
 
 #### Database relation
 
-Note: If you want to deploy the wordpress-k8s charm with a production ready database, please refer
-to the Database configuration section below. Otherwise, follow the steps in this section.
-
-The following commands deploys the mysql-k8s charm and relate wordpress-k8s app through its mysql
+The following commands deploys the mysql-k8s charm and relates wordpress-k8s charm through its mysql
 interface.
 
 ```
@@ -76,7 +73,7 @@ db_user=wordpress \
 db_password=wordpress
 ```
 
-Use the following command to watch your deployment progress through different stages.
+Use the following command to watch your deployment progress through different stages of deployment.
 
 ```
 watch -c juju status --color
@@ -124,9 +121,9 @@ juju destroy model wordpress-tutorial -y --force --release-storage
 
 ### Next steps
 
-To learn more about the wordpress-k8s charm and how to operate it, you can refer to the how-to
-guide of the documentation.  
+To learn more about the wordpress-k8s charm and how to operate it, you can refer to the
+[how-to-guide](https://charmhub.io/wordpress-k8s/docs/how-to-guide?channel=edge) of the documentation.  
 To find out more information about the configuration and operational parameters, please visit the
-reference documentation.  
+[reference](https://charmhub.io/wordpress-k8s/docs/reference?channel=edge) documentation.  
 To understand more about the wordpress-k8s charm and its background, please refer to the
-explanation documentation.
+[explanation](https://charmhub.io/wordpress-k8s/docs/explanation?channel=edge) documentation.

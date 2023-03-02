@@ -2,8 +2,7 @@
 
 The wordpress-k8s charm helps deploy a horizontally scalable WordPress application with ease and
 also helps operate the charm by liaising with the Canonical Observability Stack (COS). This
-tutorial will walk you through each step of deployment to get a basic WordPress application
-working.
+tutorial will walk you through each step of deployment to get a basic WordPress deployment.
 
 ### Prerequisites
 
@@ -79,9 +78,10 @@ watch -c juju status --color
 
 ### Get admin credentials
 
-After the database has been configured in step 2, you can now access the WordPress application by
-accessing the IP of a wordpress-k8s unit. To start managing WordPress as an administrator, you need
-to get the credentials for the admin account.
+After the database has been configured in the
+[Deploy and relate database section](#deploy-and-relate-database), you can now access the WordPress
+application by accessing the IP of a wordpress-k8s unit. To start managing WordPress as an
+administrator, you need to get the credentials for the admin account.
 
 By running the `get-initial-password` action on a wordpress-k8s unit, juju will read and fetch the
 admin credentials setup for you. You can use the following command below.
@@ -105,7 +105,7 @@ unit-wordpress-k8s-0:
     started: 2023-02-24 02:46:26 +0000 UTC
 ```
 
-You can now access your WordPress application at http://UNIT_IP/wp-login.php and login with
+You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with
 username admin and password the action above.
 
 ### Cleaning up the environment

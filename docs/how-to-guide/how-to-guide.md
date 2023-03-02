@@ -41,12 +41,8 @@ unit-wordpress-k8s-0:
   UnitId: wordpress-k8s/0
   id: "10"
   results:
-    password: ATEqzix_phnAEDJOwEWXuK2CJBXlMmTS9e90aIeH9ys
+    password: <password> # password should look something like: ATEqzix_phnAEDJOwEWXuK2CJBXlMmTS9e90aIeH9ys
   status: completed
-  timing:
-    completed: 2023-02-28 10:31:35 +0000 UTC
-    enqueued: 2023-02-28 10:31:33 +0000 UTC
-    started: 2023-02-28 10:31:34 +0000 UTC
 ```
 
 You can use the password to login to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
@@ -290,9 +286,9 @@ export OS_TENANT_NAME=demo
 export OS_USER_DOMAIN_ID=default
 export OS_USERNAME=demo
 export OS_VOLUME_API_VERSION=3
-export OS_AUTH_TYPE=password
+export OS_AUTH_TYPE=<strong-password>
 export OS_PROJECT_NAME=demo
-export OS_PASSWORD=nomoresecret
+export OS_PASSWORD=<strong-password>
 export OS_IDENTITY_API_VERSION=3
 export OS_AUTH_URL=http://10.100.115.2/identity
 ```
@@ -312,7 +308,7 @@ bucket: WordPress
 copy-to-swift: 1
 domain: Default
 object-prefix: wp-content/uploads/
-password: mysecretpassword
+password: <strong-password>
 region: RegionOne
 remove-local-file: 0
 serve-from-swift: 1

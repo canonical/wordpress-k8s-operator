@@ -33,13 +33,6 @@ the wordpress-k8s charm.
 juju deploy wordpress-k8s
 ```
 
-If you wish to try out the latest features of the wordpress-k8s charm you can set an additional
-parameter to deploy from a specific channel. For example, to deploy from the edge channel:
-
-```
-juju deploy wordpress-k8s --channel=edge
-```
-
 ### Deploy and relate database
 
 #### Database relation

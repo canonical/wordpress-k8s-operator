@@ -1,0 +1,66 @@
+name: Debug integration test
+
+on: [pull_request]
+
+jobs:
+  get-runner-image:
+    name: Get runner image
+    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
+  build-images:
+    name: Build images
+    uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
+    needs: get-runner-image
+    with:
+      owner: ${{ github.repository_owner }}
+      registry: ghcr.io
+      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+  integration-test-debug:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Devstack Swift
+        id: setup-devstack-swift
+        uses: canonical/setup-devstack-swift@v1
+      - name: Create OpenStack credential file
+        run: echo "${{ steps.setup-devstack-swift.outputs.credentials }}" > openrc
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+      - name: Enable microk8s plugins
+        run: |
+          sudo microk8s enable hostpath-storage ingress
+          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
+          sudo microk8s kubectl -n ingress rollout status -w daemonset.apps/nginx-ingress-microk8s-controller
+      - name: Dump microk8s config
+        run: sudo microk8s config > kube-config
+      - name: Install tox
+        run: python3 -m pip install tox
+      - name: Build docker image
+        run: tox -e test-build
+      - name: Run integration tests
+        run: |
+          args=""
+          for image_name in $(echo '${{ needs.build-images.outputs.images }}' | jq -cr '.[]'); do
+            if [ ${{ github.event.pull_request.head.repo.fork }} = "true" ]; then
+              args="${args} --${image_name}-image localhost:32000/${image_name}:latest"
+            else
+              args="${args} --${image_name}-image ${{ env.REGISTRY }}/${{ env.OWNER }}/${image_name}:${{ github.run_id }}"
+            fi
+          done
+
+          tox -e integration -- \
+          -m requires_secret \
+          --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }} \
+          --openid-username ${{ secrets.TEST_OPENID_USERNAME }} \
+          --openid-password ${{ secrets.TEST_OPENID_PASSWORD }} \
+          --kube-config ${GITHUB_WORKSPACE}/kube-config \
+          --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }} \
+          -k test_core -m "not (requires_secret)" \
+          --openstack-rc ${GITHUB_WORKSPACE}/openrc \
+          --kube-config ${GITHUB_WORKSPACE}/kube-config \
+          --screenshot-dir /tmp \
+          --num-units=3
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3

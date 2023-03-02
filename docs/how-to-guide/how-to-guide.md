@@ -329,7 +329,7 @@ To build and deploy wordpress-k8s charm from source follow the steps below.
 
 #### Docker image build
 
-Bulid the `wordpress.Dockerfile` image with the following command.
+Build the `wordpress.Dockerfile` image with the following command.
 
 ```
 docker build -t wordpress -f wordpress.Dockerfile .

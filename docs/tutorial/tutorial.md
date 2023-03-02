@@ -48,9 +48,8 @@ juju relate wordpress-k8s mysql-k8s
 
 #### Database configuration
 
-Note: If you’ve completed the steps in the Database relation section, you may skip this part. If
-you want to deploy your wordpress-k8s charm through configuration, you may continue to follow the
-steps in this section.
+Note: This section is required only if database relation is not used. If you want to deploy your
+wordpress-k8s charm through configuration, you may continue to follow the steps in this section.
 
 The commands below create the MySQL deployment in microk8s which we can then use to configure the
 database for wordpress-k8s. Note that the environment variables are for demonstration purposes only

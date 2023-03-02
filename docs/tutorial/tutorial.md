@@ -10,10 +10,10 @@ To deploy wordpress-k8s charm, you will need a juju bootstrapped with any kubern
 To see how to bootstrap your juju installation with microk8s, please refer to the documentation
 on microk8s [installation](https://juju.is/docs/olm/microk8s).
 
-### Setting up the environment
+### Setting up the tutorial model
 
 To easily clean up the resources and to separate your workload from the contents of this tutorial,
-it is recommended to set up another environment by adding a new model with the following command.
+it is recommended to set up a new model with the following command.
 
 ```
 juju add-model wordpress-tutorial

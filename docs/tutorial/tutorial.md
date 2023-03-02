@@ -114,7 +114,7 @@ Congratulations! You have successfully finished the wordpress-k8s tutorial. You 
 model environment that you’ve created using the following command.
 
 ```
-juju destroy model wordpress-tutorial -y --force --release-storage
+juju destroy model wordpress-tutorial -y --release-storage
 ```
 
 ### Next steps

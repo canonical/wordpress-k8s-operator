@@ -12,7 +12,7 @@ WordPress settings. For detailed information on configurable parameters, please 
 WORDPRESS_SETTINGS=$(cat << EOF
 user_name: admin
 admin_email: admin@testing.com
-admin_password: mysecretpassword
+admin_password: <strong-password>
 EOF
 )
 juju deploy wordpress-k8s --config initial_settings=$WORDPRESS_SETTINGS

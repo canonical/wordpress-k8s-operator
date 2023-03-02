@@ -60,7 +60,8 @@ jobs:
           --openstack-rc ${GITHUB_WORKSPACE}/openrc \
           --kube-config ${GITHUB_WORKSPACE}/kube-config \
           --screenshot-dir /tmp \
-          --num-units=3
+          --num-units=3 \
+          $args
       - name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3

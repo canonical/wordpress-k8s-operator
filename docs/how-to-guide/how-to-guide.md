@@ -325,7 +325,43 @@ username: demo
 
 ### Building from source
 
-Docker image build
-Microk8s upload docker artifacts
-Charmcraft pack
-Deploy / upgrade WordPress with new charm built from source
+To build and deploy wordpress-k8s charm from source follow the steps below.
+
+#### Docker image build
+
+Bulid the `wordpress.Dockerfile` image with the following command.
+
+```
+docker build -t wordpress -f wordpress.Dockerfile .
+```
+
+#### Microk8s upload docker artifacts
+
+For microk8s to pick up the locally built image, you must export the image and import it within
+microk8s.
+
+```
+docker save wordpress > wordpress.tar
+microk8s ctr image import wordpress.tar
+```
+
+#### Build the charm
+
+Build the charm locally using charmcraft. It should output a .charm file.
+
+```
+charmcraft pack
+```
+
+### Deploy WordPress
+
+Deploy the locally built WordPress charm with the following command.
+
+```
+juju deploy ./wordpress-k8s_ubuntu-22.04-amd64_ubuntu-20.04-amd64.charm \
+  --resource wordpress-image=wordpress \
+  --resource apache-prometheus-exporter-image=bitnami/apache-exporter:0.11.0
+```
+
+You should now be able to see your local wordpress-k8s charm progress through the stages of the
+deployoment through `watch -c juju status --color`.

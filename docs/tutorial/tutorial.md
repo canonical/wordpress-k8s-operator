@@ -41,8 +41,8 @@ interface.
 
 ```
 juju deploy mysql-k8s \
-    --config mysql-interface-user=wordpress \
-    --config mysql-interface-database=test-database
+    --config mysql-interface-user=wordpress-tutorial-user \
+    --config mysql-interface-database=wordpress-tutorial-database
 juju relate wordpress-k8s mysql-k8s
 ```
 
@@ -57,22 +57,22 @@ and should not be used for production environments.
 
 ```
 microk8s kubectl run mysql -n wordpress-tutorial --image=mysql:latest \
---env="MYSQL_ROOT_PASSWORD=mysecretpassword" \
---env=”MYSQL_DATABASE=wordpress” \
---env=”MYSQL_USER=wordpress” \
---env=”MYSQL_PASSWORD=wordpress”
+--env="MYSQL_ROOT_PASSWORD=<strong-password>" \
+--env=”MYSQL_DATABASE=wordpress-tutorial-database” \
+--env=”MYSQL_USER=wordpress-tutorial-user” \
+--env=”MYSQL_PASSWORD=<strong-password>
 WORDPRESS_IP=microk8s kubectl get pod mysql --template '{{.status.podIP}}'
 juju config wordpress-k8s \
 db_host=$WORDPRESS_IP \
-db_name=wordpress \
-db_user=wordpress \
-db_password=wordpress
+db_name=wordpress-tutorial-database \
+db_user=wordpress-tutorial-user \
+db_password=<strong-password>
 ```
 
 Use the following command to watch your deployment progress through different stages of deployment.
 
 ```
-watch -c juju status --color
+juju status --color --watch 2s
 ```
 
 ### Get admin credentials
@@ -96,7 +96,7 @@ unit-wordpress-k8s-0:
   UnitId: wordpress-k8s/0
   id: "6"
   results:
-    password: 7ioJgp2CS6iK7MrM9I-wCm48i25HaJLzeHT7MpEwdyk
+    password: <password> # should look something like: 7ioJgp2CS6iK7MrM9I-wCm48i25HaJLzeHT7MpEwdyk
   status: completed
   timing:
     completed: 2023-02-24 02:46:27 +0000 UTC

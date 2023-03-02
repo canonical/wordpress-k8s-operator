@@ -21,8 +21,8 @@ juju add-model wordpress-tutorial
 
 ### Deploy wordpress-k8s charm
 
-Deployment of WordPress requires a database integration. A preferred method in juju is through the
-native juju relation. In this case, a `mysql` interface is required by the wordpress-k8s charm and
+Deployment of WordPress requires a database integration. The preferred method in juju is through an
+integration. In this case, a `mysql` interface is required by the wordpress-k8s charm and
 hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
 Start off by deploying the wordpress charm. By default it will deploy the latest stable release of

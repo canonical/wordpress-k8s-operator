@@ -625,8 +625,7 @@ async def test_grafana_integration(
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
     await model.wait_for_idle(
-        apps=[application_name, prometheus.name, loki.name, grafana.name],
-        status="active",
+        apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
     )
 
     action: Action = await grafana.units[0].run_action("get-admin-password")

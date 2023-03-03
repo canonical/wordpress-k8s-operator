@@ -583,13 +583,12 @@ async def test_loki_integration(
         loki to scrape.
     """
     try:
-        await model.wait_for_idle(
-            apps=[application_name, loki.name], status="active", raise_on_error=True
-        )
+        await model.wait_for_idle(apps=[application_name, loki.name], status="active")
     except (JujuAppError, JujuUnitError):
         for unit in typing.cast(list[Unit], loki.units):
             await unit.resolved()  # loki-k8s charm has a bug that falls into errored state which
             # must be resolved
+        await model.wait_for_idle(apps=[application_name, loki.name], status="active")
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():

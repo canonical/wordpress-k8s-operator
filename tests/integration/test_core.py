@@ -587,8 +587,7 @@ async def test_loki_integration(
             apps=[application_name, loki.name], status="active", raise_on_error=True
         )
     except (JujuAppError, JujuUnitError):
-        for unit in loki.units:
-            unit: Unit
+        for unit in typing.cast(list[Unit], loki.units):
             await unit.resolved()  # loki-k8s charm has a bug that falls into errored state which
             # must be resolved
 

@@ -1,4 +1,4 @@
-### Enable antispam (Akismet)
+# Enable antispam (Akismet)
 
 Enabling anti spam filter can be easily done by just supplying wp_plugin_akismet_key to the
 configurations.

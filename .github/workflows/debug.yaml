@@ -61,7 +61,8 @@ jobs:
           --kube-config ${GITHUB_WORKSPACE}/kube-config \
           --screenshot-dir /tmp \
           --num-units=3 \
-          --wordpress-image ghcr.io/canonical/wordpress:4312963255
+          --wordpress-image ghcr.io/canonical/wordpress:4312963255 \
+          --keep-models
       - name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3

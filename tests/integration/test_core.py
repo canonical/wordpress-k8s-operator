@@ -555,7 +555,7 @@ async def test_prometheus_integration(
         targets.
     """
     await model.wait_for_idle(
-        apps=[application_name, prometheus.name], status="active", raise_on_error=False
+        apps=[application_name, prometheus.name], status="active"
     )
 
     for unit_ip in unit_ip_list:
@@ -583,7 +583,7 @@ async def test_loki_integration(
         loki to scrape.
     """
     await model.wait_for_idle(
-        apps=[application_name, loki.name], status="active", raise_on_error=False
+        apps=[application_name, loki.name], status="active"
     )
 
     status: FullStatus = await model.get_status(filters=[loki.name])
@@ -621,7 +621,6 @@ async def test_grafana_integration(
     await model.wait_for_idle(
         apps=[application_name, prometheus.name, loki.name, grafana.name],
         status="active",
-        raise_on_error=False,
     )
 
     action: Action = await grafana.units[0].run_action("get-admin-password")

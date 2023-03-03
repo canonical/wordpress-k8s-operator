@@ -20,7 +20,9 @@ import requests
 from juju.action import Action
 from juju.application import Application
 from juju.client._definitions import FullStatus
+from juju.errors import JujuAppError, JujuUnitError
 from juju.model import Model
+from juju.unit import Unit
 from kubernetes import kubernetes
 from pytest_operator.plugin import OpsTest
 
@@ -554,9 +556,7 @@ async def test_prometheus_integration(
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
-    await model.wait_for_idle(
-        apps=[application_name, prometheus.name], status="active"
-    )
+    await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
 
     for unit_ip in unit_ip_list:
         res = requests.get(f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10)
@@ -582,9 +582,15 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(
-        apps=[application_name, loki.name], status="active"
-    )
+    try:
+        await model.wait_for_idle(
+            apps=[application_name, loki.name], status="active", raise_on_error=True
+        )
+    except (JujuAppError, JujuUnitError):
+        for unit in loki.units:
+            unit: Unit
+            await unit.resolved()  # loki-k8s charm has a bug that falls into errored state which
+            # must be resolved
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():

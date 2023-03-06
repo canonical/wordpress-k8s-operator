@@ -20,7 +20,7 @@ Ingress interface provides external http/https access to the WordPress applicati
 additional capabilities depending on the ingress charm. The wordpress-k8s charm's ingress relation
 is best enhanced with the [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
 charm, providing additional capabilities such as ModSecurity enabled
-Web Application Firewall([WAF](https://docs.nginx.com/nginx-waf/)) through the wordpress-k8s charm
+Web Application Firewall ([WAF](https://docs.nginx.com/nginx-waf/)) through the wordpress-k8s charm
 configuration parameter `use_nginx_ingress_modsec`. The ingress relation interface is subject to
 renaming due to additional ingress interface definition supported by the Traefik charm.
 

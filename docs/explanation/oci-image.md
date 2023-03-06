@@ -17,7 +17,7 @@ image during build step. The latest CLI php archive file from source is used.
 
 Currently, WordPress version 5.9.3 is used alongside Ubuntu 20.04 base image. The Ubuntu base image
 hasn't yet been upgraded to 22.04 due to an unsupported php version 8 for
-`wordpress-launchpad-integration` plugin(supported php version 7). All other plugins and themes use
+`wordpress-launchpad-integration` plugin (supported php version 7). All other plugins and themes use
 the latest stable version by default, downloaded from the source.
 
 ### apache-prometheus-exporter-image

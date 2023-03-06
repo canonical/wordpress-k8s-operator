@@ -18,9 +18,6 @@ wordpress-k8s configuration.
 juju config wordpress-k8s blog_hostname=<desired-hostname>
 ```
 
-To test locally, append the service IP of nginx-ingress-integrator to `/etc/hosts` file with your
-new hostname and curl the service using the hostname.
-
 The output of `juju status` should look similar to the following:
 
 ```
@@ -41,7 +38,7 @@ wordpress-k8s/0*             active    idle   <wordpress-k8s-ip>
 
 Note the Service IP(s): next to nginx-ingress-integrator charm’s Status output.
 
-Test the ingress by sending a GET request to the hostname.
+Test the ingress by sending a GET request to the service with `Host` headers.
 
 ```
 curl -H "Host: <desired-hostname>" http://<nginx-ingress-integrator-service-ip>

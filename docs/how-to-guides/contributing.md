@@ -18,6 +18,8 @@ WordPress operator.
   - user experience for Juju operators of this charm.
 - Please help us out in ensuring easy to review branches by rebasing your pull request branch onto
   the `main` branch. This also avoids merge commits and creates a linear Git commit history.
+- For further information on contributing, please refer to our
+  [Contributing Guide](https://github.com/canonical/is-charms-contributing-guide)
 
 ## Developing
 

@@ -232,7 +232,7 @@ async def build_and_upgrade_fixture(
     """
     assert ops_test.model
     charm = await ops_test.build_charm(".")
-    await ops_test.model.remove_application(application_name)
+    await ops_test.model.remove_application(application_name, block_until_done=True)
 
     def wordpress_removed() -> bool:
         """Check if WordPress charm was fully removed.

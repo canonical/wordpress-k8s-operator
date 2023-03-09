@@ -232,7 +232,8 @@ async def build_and_upgrade_fixture(
     """
     assert ops_test.model
     charm = await ops_test.build_charm(".")
-    await ops_test.model.remove_application(application_name)
+    # Most of the times the integration tests will fail due to timeout without the force flag.
+    await ops_test.juju("remove-application", application_name, "--force")
 
     def wordpress_removed() -> bool:
         """Check if WordPress charm was fully removed.

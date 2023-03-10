@@ -1,4 +1,4 @@
-# Tutorial
+# Getting Started
 
 ## What you'll learn
 
@@ -48,8 +48,9 @@ interface.
 
 ```
 juju deploy mysql-k8s \
-    --config mysql-interface-user=wordpress-tutorial-user \
-    --config mysql-interface-database=wordpress-tutorial-database
+  --config mysql-interface-user=wordpress-tutorial-user \
+  --config mysql-interface-database=wordpress-tutorial-database
+
 # mysql interface is required since mysql-k8s charm provides multiple mysql interfaces
 juju relate wordpress-k8s:mysql mysql-k8s:mysql
 ```
@@ -65,11 +66,13 @@ and should not be used for production environments.
 
 ```
 microk8s kubectl run mysql -n wordpress-tutorial --image=mysql:latest \
---env="MYSQL_ROOT_PASSWORD=<strong-password>" \
---env=”MYSQL_DATABASE=wordpress-tutorial-database” \
---env=”MYSQL_USER=wordpress-tutorial-user” \
---env=”MYSQL_PASSWORD=<strong-password>
+  --env="MYSQL_ROOT_PASSWORD=<strong-password>" \
+  --env=”MYSQL_DATABASE=wordpress-tutorial-database” \
+  --env=”MYSQL_USER=wordpress-tutorial-user” \
+  --env=”MYSQL_PASSWORD=<strong-password>
+
 WORDPRESS_IP=microk8s kubectl get pod mysql --template '{{.status.podIP}}'
+
 juju config wordpress-k8s \
 db_host=$WORDPRESS_IP \
 db_name=wordpress-tutorial-database \
@@ -107,9 +110,9 @@ unit-wordpress-k8s-0:
     password: <password> # should look something like: XXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXX
   status: completed
   timing:
-    completed: 2023-02-24 02:46:27 +0000 UTC
-    enqueued: 2023-02-24 02:46:25 +0000 UTC
-    started: 2023-02-24 02:46:26 +0000 UTC
+    completed: <timestamp>
+    enqueued: <timestamp>
+    started: <timestamp>
 ```
 
 You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with

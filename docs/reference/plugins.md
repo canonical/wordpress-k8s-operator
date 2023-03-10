@@ -2,11 +2,11 @@
 
 By default, the following WordPress plugins are installed with the latest version during the OCI
 image build time. If the plugins are installed during runtime with
-`juju config wordpress-k8s plugins=...`, the plugin will also be installed to it's latest version
-by default and may cause version differences between pods.
-Due to the clustered nature of the WordPress charm, installing plugins through UI has been disabled
-and can only be installed through the plugins configuration. Please see
-[Configurations](https://charmhub.io/wordpress-k8s/configure?channel=edge) section for more
+`juju config wordpress-k8s plugins=<plugin-slug>`, the plugin will also be installed to it's latest
+version by default and may cause version differences between pods.
+The wordpress-k8s charm supports multi-unit deployments. Therefore, installing plugins through UI
+has been disabled and can only be installed through the plugins configuration. Please see
+[Configurations](https://charmhub.io/wordpress-k8s/configure) section for more
 information.
 
 _\*The descriptions of the following plugins are taken from the WordPress plugin pages._
@@ -21,7 +21,7 @@ _\*The descriptions of the following plugins are taken from the WordPress plugin
   calendar with remote synchronization service.
 - [elementor](https://wordpress.org/plugins/elementor/): Intuitive visual website builder platform
   for WordPress.
-- [essential-addons-for-elementor-lite](https://wordpress.org/plugins/essential-addonselementor-lite/):
+- [essential-addons-for-elementor-lite](https://wordpress.org/plugins/essential-addons-for-elementor-lite/):
   Addons for website builder Elementor.
 - [favicon-by-realfavicongenerator](https://wordpress.org/plugins/favicon-by-realfavicongenerator/):
   Favicon generator for desktop browsers, iPhone/iPad, Android devices, Windows 8 tablets and more.

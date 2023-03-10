@@ -5,7 +5,7 @@ value afterwards has no effect.
 
 By providing configuration value for `initial_settings` at deployment, you can tweak a few
 WordPress settings. For detailed information on configurable parameters, please refer to the
-[reference guide](https://charmhub.io/wordpress-k8s/docs/reference).
+[reference guide](https://charmhub.io/wordpress-k8s/docs/reference-configurations).
 
 ```
 WORDPRESS_SETTINGS=$(cat << EOF

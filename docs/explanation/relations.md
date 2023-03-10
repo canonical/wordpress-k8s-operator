@@ -5,7 +5,7 @@
 When deploying multiple replications of the wordpress-k8s charm, peer relations are set up to
 ensure synchronization of data among replications. Namely, secrets and admin credentials are shared
 among peers. See more about the secrets in the `rotate-wordpress-secrets` action of the
-[reference documentation](https://charmhub.io/wordpress-k8s/docs/reference).
+[reference documentation](https://charmhub.io/wordpress-k8s/docs/reference-actions).
 
 ### db
 

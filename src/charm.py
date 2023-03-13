@@ -175,6 +175,7 @@ class WordpressCharm(CharmBase):
 
         self.framework.observe(self.on.leader_elected, self._setup_replica_data)
         self.framework.observe(self.on.start, self._on_start)
+        self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
         self.framework.observe(
             self.database.on.database_changed, self._on_relation_database_changed
         )

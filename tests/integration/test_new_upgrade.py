@@ -178,7 +178,7 @@ async def build_and_upgrade_fixture(
 
 
 @pytest.mark.usefixtures("build_and_upgrade")
-async def test_wordpress_upgrade(unit_ip_list, screenshot_dir):
+async def test_wordpress_upgrade(get_unit_ip_list, screenshot_dir):
     """
     arrange: the WordPress charm has been upgraded.
     act: browser the WordPress website powered by the new charm.
@@ -212,6 +212,8 @@ async def test_wordpress_upgrade(unit_ip_list, screenshot_dir):
                     f"access image {url} should return a valid image file"
                 ) from exc
 
+    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    unit_ip_list = await get_unit_ip_list()
     for idx, unit_ip in enumerate(unit_ip_list):
         await screenshot(f"http://{unit_ip}", screenshot_dir / f"wordpress-after-{idx}.png")
         # create a side-by-side comparison of the before and after screenshots

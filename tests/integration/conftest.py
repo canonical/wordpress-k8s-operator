@@ -5,6 +5,7 @@
 
 import asyncio
 import configparser
+import json
 import logging
 import pathlib
 import re
@@ -88,7 +89,7 @@ async def fixture_default_admin_password(get_default_admin_password):
 
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ip_list")
-async def fixture_get_unit_ip_list(model: Model, application_name: str):
+async def fixture_get_unit_ip_list(ops_test: OpsTest, application_name: str):
     """Retrieve unit ip addresses, similar to fixture_get_unit_status_list."""
 
     async def _get_unit_ip_list():
@@ -97,11 +98,12 @@ async def fixture_get_unit_ip_list(model: Model, application_name: str):
         Returns:
             list of WordPress units ip addresses.
         """
-        status = await model.get_status()
-        units = status.applications[application_name].units
+        _, status, _ = await ops_test.juju("status", "--format", "json")
+        status = json.loads(status)
+        units = status["applications"][application_name]["units"]
         ip_list = []
         for key in sorted(units.keys(), key=lambda n: int(n.split("/")[-1])):
-            ip_list.append(units[key].address)
+            ip_list.append(units[key]["address"])
         return ip_list
 
     yield _get_unit_ip_list

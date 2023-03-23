@@ -26,14 +26,7 @@ from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops.charm import (
-    ActionEvent,
-    CharmBase,
-    LeaderElectedEvent,
-    PebbleReadyEvent,
-    StartEvent,
-    StorageAttachedEvent,
-)
+from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, PebbleReadyEvent, StartEvent
 from ops.framework import EventBase, StoredState
 from ops.main import main
 from ops.model import (
@@ -160,7 +153,6 @@ class WordpressCharm(CharmBase):
             relation_db_user=None,
             relation_db_password=None,
             started=False,
-            storage_attached=False,
         )
 
         self._require_nginx_route()
@@ -182,7 +174,7 @@ class WordpressCharm(CharmBase):
 
         self.framework.observe(self.on.leader_elected, self._setup_replica_data)
         self.framework.observe(self.on.start, self._on_start)
-        self.framework.observe(self.on.uploads_storage_attached, self._on_storage_attached)
+        self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
         self.framework.observe(
             self.database.on.database_changed, self._on_relation_database_changed
         )
@@ -199,10 +191,6 @@ class WordpressCharm(CharmBase):
     def _on_start(self, _event: StartEvent):
         """Record if the start event is emitted."""
         self.state.started = True
-
-    def _on_storage_attached(self, _event: StorageAttachedEvent):
-        """Record if the storage for WordPress uploads dir is attached."""
-        self.state.storage_attached = True
 
     def _require_nginx_route(self):
         """Require nginx-route relation based on current configuration."""
@@ -1376,26 +1364,38 @@ class WordpressCharm(CharmBase):
             self._plugin_akismet_reconciliation()
             self._plugin_openid_reconciliation()
 
+    def _storage_mounted(self) -> bool:
+        """Check if the upload storage mounted in the wordpress container.
+
+        Returns:
+            True if the storage "upload" is attached to the container.
+        """
+        container = self._container()
+        if not container.can_connect():
+            return False
+        mount_info: str = container.pull("/proc/mounts").read()
+        return "/var/www/html/wp-content/uploads" in mount_info
+
     def _reconciliation(self, _event: EventBase) -> None:
         """Reconcile the WordPress charm on juju event.
 
         Args:
             _event: Event fired by juju on WordPress charm related state change.
         """
+        logger.info("Start reconciliation process, triggered by %s", _event)
         if not self.state.started:
             logger.info("Charm hasn't started yet, reconciliation deferred")
             self.unit.status = WaitingStatus("Waiting for charm start")
             _event.defer()
             return
-        if not self.state.storage_attached:
-            logger.info("Storage is not ready, reconciliation deferred")
-            self.unit.status = WaitingStatus("Waiting for storage")
-            _event.defer()
-            return
-        logger.info("Start reconciliation process, triggered by %s", _event)
         if not self._container().can_connect():
             logger.info("Reconciliation process terminated early, pebble is not ready")
             self.unit.status = WaitingStatus("Waiting for pebble")
+            return
+        if not self._storage_mounted():
+            logger.info("Storage is not ready, reconciliation deferred")
+            self.unit.status = WaitingStatus("Waiting for storage")
+            _event.defer()
             return
         try:
             self._core_reconciliation()

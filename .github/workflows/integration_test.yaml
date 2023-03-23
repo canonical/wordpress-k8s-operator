@@ -47,7 +47,7 @@ jobs:
         --kube-config ${GITHUB_WORKSPACE}/kube-config \
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
-      modules: '["test_core", "test_error", "test_upgrade"]'
+      modules: '["test_core", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
       owner: ${{ github.repository_owner }}
       registry: ghcr.io
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}

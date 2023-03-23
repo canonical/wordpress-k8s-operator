@@ -45,6 +45,7 @@ def test_generate_wp_secret_keys(harness: ops.testing.Harness):
         assert not (value.isalnum() or len(value) < 64), "secret values should not be too simple"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_replica_consensus(
     harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
 ):
@@ -60,6 +61,7 @@ def test_replica_consensus(
     ), "units in application should reach consensus once leadership established"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_replica_consensus_stable_after_leader_reelection(
     harness: ops.testing.Harness, app_name: str
 ):
@@ -92,6 +94,7 @@ def test_replica_consensus_stable_after_leader_reelection(
     ), "consensus once established should not change after leadership changed"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_mysql_relation(
     harness: ops.testing.Harness, setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]]
 ):
@@ -219,6 +222,7 @@ def test_wp_config(
         ), "db info in config should takes precedence over the db relation"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_wp_install_cmd(
     harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
 ):
@@ -273,6 +277,7 @@ def test_core_reconciliation_before_storage_ready(harness: ops.testing.Harness):
     assert "storage" in harness.model.unit.status.message, "unit should wait for storage"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Harness):
     """
     arrange: before peer relation established but after charm created.
@@ -296,6 +301,7 @@ def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Har
     ), "unit should wait for peer relation establishment right now"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_core_reconciliation_before_database_ready(
     harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
 ):
@@ -320,6 +326,7 @@ def test_core_reconciliation_before_database_ready(
     ), "unit should wait for database connection info"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_prom_exporter_pebble_ready(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
@@ -358,6 +365,7 @@ def test_prom_exporter_pebble_ready(
     ), "unit should be in ActiveStatus"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_core_reconciliation(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
@@ -528,6 +536,7 @@ def test_rotate_wordpress_secrets(
     action_event_mock.fail.assert_not_called()
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_theme_reconciliation(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
@@ -572,6 +581,7 @@ def test_theme_reconciliation(
     ), "removing themes from themes config should trigger theme deletion"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_plugin_reconciliation(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
@@ -695,6 +705,7 @@ def test_swift_config(
     assert charm._swift_config() == swift_config
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_akismet_plugin(run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready.
@@ -715,6 +726,7 @@ def test_akismet_plugin(run_standard_plugin_test: typing.Callable):
     )
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready.
@@ -735,6 +747,7 @@ def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.C
     ), "PHP function update_option should be invoked after openid plugin enabled"
 
 
+@pytest.mark.usefixtures("attach_storage")
 def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready.

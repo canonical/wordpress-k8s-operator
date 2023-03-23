@@ -352,7 +352,7 @@ class WordpressContainerMock:
             wordpress_database_mock: An instance of the WordPress database mock system.
         """
         self.original_pebble = None
-        self.fs: typing.Dict[str, str] = {}
+        self.fs: typing.Dict[str, str] = {"/proc/mounts": ""}
         self._wordpress_database_mock = wordpress_database_mock
         self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)

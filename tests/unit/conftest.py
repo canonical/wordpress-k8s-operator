@@ -186,3 +186,13 @@ def run_standard_plugin_test(
         ), f"{plugin} options should be removed after {plugin_config_keys} being reset"
 
     return _run_standard_plugin_test
+
+
+@pytest.fixture(scope="function")
+def attach_storage(
+    patch: WordpressPatch,
+):
+    """Attach the "upload" storage to the mock container."""
+    patch.container.fs["/proc/mounts"] = "/var/www/html/wp-content/uploads"
+    yield
+    patch.container.fs["/proc/mounts"] = ""

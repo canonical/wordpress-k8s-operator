@@ -109,6 +109,26 @@ async def fixture_get_unit_ip_list(ops_test: OpsTest, application_name: str):
     yield _get_unit_ip_list
 
 
+@pytest_asyncio.fixture(scope="module")
+async def get_app_revision(ops_test: OpsTest):
+    """Return an async function that can retrieve the revision number for certain app."""
+
+    async def _get_app_revision(application_name: str) -> int:
+        """Retrieve the revision number for certain app.
+
+        Args:
+            application_name: application name.
+
+        Returns:
+            Charm application revision number.
+        """
+        _, status, _ = await ops_test.juju("status", "--format", "json")
+        status = json.loads(status)
+        return status["applications"][application_name]["charm-rev"]
+
+    yield _get_app_revision
+
+
 @pytest_asyncio.fixture(scope="function", name="unit_ip_list")
 async def fixture_unit_ip_list(get_unit_ip_list: typing.Callable[[], typing.Awaitable[list[str]]]):
     """A fixture containing ip addresses of current units.

@@ -835,7 +835,6 @@ def test_ingress(
         password=example_db_info["password"],
     )
     setup_db_relation()
-    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
     assert harness.get_relation_data(nginx_route_relation_id, harness.charm.app) == {
         "service-hostname": app_name,

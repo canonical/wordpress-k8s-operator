@@ -898,3 +898,22 @@ def test_missing_peer_relation(harness: ops.testing.Harness):
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     with pytest.raises(WordpressCharm._ReplicaRelationNotReady):
         charm._replica_relation_data()
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_mysql_connection_error(harness: ops.testing.Harness, setup_replica_consensus):
+    """
+    arrange: charm peer relation is ready and the storage is attached.
+    act: config the charm to connect to a non-existent database.
+    assert: charm should enter blocked state, and the database error should be seen in the status.
+    """
+    setup_replica_consensus()
+    db_config = {
+        "db_host": "a",
+        "db_name": "b",
+        "db_user": "c",
+        "db_password": "d",
+    }
+    harness.update_config(db_config)
+    assert isinstance(harness.model.unit.status, ops.charm.model.BlockedStatus)
+    assert harness.model.unit.status.message == "MySQL error 2003"

@@ -1,6 +1,6 @@
 # Getting Started
 
-## What you'll learn
+## What you'll do
 
 - Deploy the [wordpress-k8s charm](https://charmhub.io/wordpress-k8s)
 - [Deploy and relate database](#deploy-and-relate-database)
@@ -49,10 +49,11 @@ interface.
 ```
 juju deploy mysql-k8s \
   --config mysql-interface-user=wordpress-tutorial-user \
-  --config mysql-interface-database=wordpress-tutorial-database
+  --config mysql-interface-database=wordpress-tutorial-database \
+  --channel=edge
 
 # mysql interface is required since mysql-k8s charm provides multiple mysql interfaces
-juju relate wordpress-k8s:mysql mysql-k8s:mysql
+juju relate wordpress-k8s:db mysql-k8s:mysql
 ```
 
 #### Database configuration

@@ -178,7 +178,8 @@ async def build_and_upgrade_fixture(
     # Most of the times the integration tests will fail due to timeout without the force flag.
     app: juju.application.Application = ops_test.model.applications[application_name]
     wordpress_revision_before = await get_app_revision(application_name)
-    upgrade_from_ingress = wordpress_revision_before <= 14
+    last_revision_using_ingress = 14
+    upgrade_from_ingress = wordpress_revision_before <= last_revision_using_ingress
     if upgrade_from_ingress:
         await ops_test.juju(
             "remove-relation", "nginx-ingress-integrator", application_name, check=True

@@ -1,4 +1,4 @@
-# Install plugins
+# How to install plugins
 
 Start by locating the plugin from the WordPress [plugins page](https://wordpress.org/plugins/).
 Once you’ve located the plugin, the plugin slug is the name of the plugin from the URL of the

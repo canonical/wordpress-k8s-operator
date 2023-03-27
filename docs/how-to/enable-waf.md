@@ -1,4 +1,4 @@
-# Enable WAF
+# How to enable WAF
 
 This step will walk you through making your WordPress application secure using Modsecurity 3.0
 Web Application Firewall.

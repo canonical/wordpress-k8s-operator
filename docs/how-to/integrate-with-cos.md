@@ -1,4 +1,4 @@
-# Integrate with COS
+# How to integrate with COS
 
 ### prometheus-k8s
 

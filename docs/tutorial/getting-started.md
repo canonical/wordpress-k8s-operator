@@ -49,10 +49,11 @@ interface.
 ```
 juju deploy mysql-k8s \
   --config mysql-interface-user=wordpress-tutorial-user \
-  --config mysql-interface-database=wordpress-tutorial-database
+  --config mysql-interface-database=wordpress-tutorial-database \
+  --channel=edge
 
 # mysql interface is required since mysql-k8s charm provides multiple mysql interfaces
-juju relate wordpress-k8s:mysql mysql-k8s:mysql
+juju relate wordpress-k8s:db mysql-k8s:mysql
 ```
 
 #### Database configuration

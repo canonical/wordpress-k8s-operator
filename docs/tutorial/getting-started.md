@@ -1,6 +1,6 @@
 # Getting Started
 
-## What you'll learn
+## What you'll do
 
 - Deploy the [wordpress-k8s charm](https://charmhub.io/wordpress-k8s)
 - [Deploy and relate database](#deploy-and-relate-database)

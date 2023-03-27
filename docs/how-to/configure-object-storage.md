@@ -1,4 +1,4 @@
-# Object storage
+# Configure object storage
 
 Object storage configuration is required for wordpress-k8s charm to work with multi-unit
 deployments.

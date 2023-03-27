@@ -1,4 +1,4 @@
-# Initial Configuration\*
+# Configure initial settings\*
 
 \*This only works when setting up WordPress initially, before database relation setup. Changing the
 value afterwards has no effect.

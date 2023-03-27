@@ -1,4 +1,4 @@
-# Secrets rotation
+# Rotate secrets
 
 To securely update all the WordPress secrets, run the following action.
 

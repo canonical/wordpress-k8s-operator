@@ -1,4 +1,4 @@
-# Contributing
+# Contribute
 
 ## Overview
 
@@ -79,7 +79,7 @@ The following commands can then be used to run the tests:
   [additional arguments](https://github.com/canonical/wordpress-k8s-operator/blob/main/tests/conftest.py)
   depending on the test module.
 
-## Canonical Contributor Agreement
+## Canonical contributor agreement
 
 Canonical welcomes contributions to the WordPress Operator. Please check out our
 [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing

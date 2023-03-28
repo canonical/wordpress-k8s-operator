@@ -12,6 +12,7 @@ import socket
 import typing
 import unittest.mock
 import urllib.parse
+from typing import Callable
 
 import ops.model
 import PIL.Image
@@ -93,7 +94,7 @@ async def test_mysql_config(
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(db_from_config, ops_test: OpsTest, application_name):
+async def test_mysql_relation(db_from_config: bool, ops_test: OpsTest, application_name):
     """
     arrange: after WordPress charm has been deployed.
     act: deploy a mariadb charm and add a relation between WordPress and mariadb.
@@ -136,7 +137,7 @@ async def test_mysql_relation(
 
 @pytest.mark.asyncio
 async def test_openstack_object_storage_plugin(
-    ops_test: OpsTest,
+    model: Model,
     application_name,
     default_admin_password,
     unit_ip_list,
@@ -153,13 +154,12 @@ async def test_openstack_object_storage_plugin(
     """
     if swift_config is None:
         pytest.skip("no openstack configuration provided, skip openstack swift plugin setup")
-    assert ops_test.model
-    application = ops_test.model.applications[application_name]
+    application = model.applications[application_name]
     await application.set_config(
         {"wp_plugin_openstack-objectstorage_config": json.dumps(swift_config)}
     )
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     container = swift_config["bucket"]
     for idx, unit_ip in enumerate(unit_ip_list):
@@ -241,17 +241,16 @@ async def test_wordpress_default_themes(unit_ip_list, get_theme_list_from_ip):
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_themes(
-    ops_test: OpsTest,
-    application_name,
-    unit_ip_list,
-    get_theme_list_from_ip,
+    model: Model,
+    application_name: str,
+    unit_ip_list: list[str],
+    get_theme_list_from_ip: Callable[[str], list[str]],
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: change themes setting in config.
     assert: themes should be installed and uninstalled accordingly.
     """
-    assert ops_test.model
     theme_change_list: typing.List[typing.Set[str]] = [
         {"twentyfifteen", "classic"},
         {"tt1-blocks", "twentyfifteen"},
@@ -260,9 +259,9 @@ async def test_wordpress_install_uninstall_themes(
         set(),
     ]
     for themes in theme_change_list:
-        application = ops_test.model.applications[application_name]
+        application = model.applications[application_name]
         await application.set_config({"themes": ",".join(themes)})
-        await ops_test.model.wait_for_idle()
+        await model.wait_for_idle()
 
         for unit_ip in unit_ip_list:
             expected_themes = themes
@@ -274,19 +273,18 @@ async def test_wordpress_install_uninstall_themes(
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_wordpress_theme_installation_error(ops_test: OpsTest, application_name):
+async def test_wordpress_theme_installation_error(model: Model, application_name):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: install a nonexistent theme.
     assert: charm should switch to blocked state and the reason should be included in the status
         message.
     """
-    assert ops_test.model
     invalid_theme = "invalid-theme-sgkeahrgalejr"
-    await ops_test.model.applications[application_name].set_config({"themes": invalid_theme})
-    await ops_test.model.wait_for_idle()
+    await model.applications[application_name].set_config({"themes": invalid_theme})
+    await model.wait_for_idle()
 
-    for unit in ops_test.model.applications[application_name].units:
+    for unit in model.applications[application_name].units:
         assert (
             # mypy has trouble to inferred types for variables that are initialized in subclasses.
             unit.workload_status
@@ -297,9 +295,9 @@ async def test_wordpress_theme_installation_error(ops_test: OpsTest, application
             invalid_theme in unit.workload_status_message
         ), "status message should contain the reason why it's blocked"
 
-    await ops_test.model.applications[application_name].set_config({"themes": ""})
-    await ops_test.model.wait_for_idle()
-    for unit in ops_test.model.applications[application_name].units:
+    await model.applications[application_name].set_config({"themes": ""})
+    await model.wait_for_idle()
+    for unit in model.applications[application_name].units:
         assert (
             # mypy has trouble to inferred types for variables that are initialized in subclasses.
             unit.workload_status
@@ -310,17 +308,16 @@ async def test_wordpress_theme_installation_error(ops_test: OpsTest, application
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_wordpress_install_uninstall_plugins(
-    ops_test: OpsTest,
-    application_name,
-    unit_ip_list,
-    get_plugin_list_from_ip,
+    model: Model,
+    application_name: str,
+    unit_ip_list: list[str],
+    get_plugin_list_from_ip: Callable[[str], list[str]],
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: change plugins setting in config.
     assert: plugins should be installed and uninstalled accordingly.
     """
-    assert ops_test.model
     plugin_change_list: typing.List[typing.Set[str]] = [
         {"classic-editor", "classic-widgets"},
         {"classic-editor"},
@@ -328,9 +325,9 @@ async def test_wordpress_install_uninstall_plugins(
         set(),
     ]
     for plugins in plugin_change_list:
-        application = ops_test.model.applications[application_name]
+        application = model.applications[application_name]
         await application.set_config({"plugins": ",".join(plugins)})
-        await ops_test.model.wait_for_idle()
+        await model.wait_for_idle()
 
         for unit_ip in unit_ip_list:
             expected_plugins = plugins
@@ -342,19 +339,18 @@ async def test_wordpress_install_uninstall_plugins(
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_wordpress_plugin_installation_error(ops_test: OpsTest, application_name):
+async def test_wordpress_plugin_installation_error(model: Model, application_name):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: install a nonexistent plugin.
     assert: charm should switch to blocked state and the reason should be included in the status
         message.
     """
-    assert ops_test.model
     invalid_plugin = "invalid-plugin-sgkeahrgalejr"
-    await ops_test.model.applications[application_name].set_config({"plugins": invalid_plugin})
-    await ops_test.model.wait_for_idle()
+    await model.applications[application_name].set_config({"plugins": invalid_plugin})
+    await model.wait_for_idle()
 
-    for unit in ops_test.model.applications[application_name].units:
+    for unit in model.applications[application_name].units:
         assert (
             # mypy has trouble to inferred types for variables that are initialized in subclasses.
             unit.workload_status
@@ -365,10 +361,10 @@ async def test_wordpress_plugin_installation_error(ops_test: OpsTest, applicatio
             invalid_plugin in unit.workload_status_message
         ), "status message should contain the reason why it's blocked"
 
-    await ops_test.model.applications[application_name].set_config({"plugins": ""})
-    await ops_test.model.wait_for_idle()
+    await model.applications[application_name].set_config({"plugins": ""})
+    await model.wait_for_idle()
 
-    for unit in ops_test.model.applications[application_name].units:
+    for unit in model.applications[application_name].units:
         assert (
             # mypy has trouble to inferred types for variables that are initialized in subclasses.
             unit.workload_status
@@ -378,7 +374,7 @@ async def test_wordpress_plugin_installation_error(ops_test: OpsTest, applicatio
 
 @pytest.mark.asyncio
 async def test_ingress(
-    ops_test: OpsTest,
+    model: Model,
     application_name: str,
 ):
     """
@@ -418,10 +414,9 @@ async def test_ingress(
 
         return patched_getaddrinfo
 
-    assert ops_test.model
-    await ops_test.model.add_relation(application_name, "ingress:ingress")
+    await model.add_relation(application_name, "ingress:ingress")
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     response = requests.get("http://127.0.0.1", headers={"Host": application_name}, timeout=5)
     assert (
@@ -429,10 +424,10 @@ async def test_ingress(
     ), "Ingress should accept requests to WordPress and return correct contents"
 
     new_hostname = "wordpress.test"
-    application = ops_test.model.applications[application_name]
+    application = model.applications[application_name]
     await application.set_config({"blog_hostname": new_hostname})
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
     with unittest.mock.patch.multiple(
         socket, getaddrinfo=gen_patch_getaddrinfo(new_hostname, "127.0.0.1")
     ):
@@ -444,6 +439,7 @@ async def test_ingress(
 
 @pytest.mark.asyncio
 async def test_ingress_modsecurity(
+    model: Model,
     ops_test: OpsTest,
     application_name: str,
     kube_config: str,
@@ -454,11 +450,10 @@ async def test_ingress_modsecurity(
     assert: A Kubernetes ingress modsecurity should be enabled and proper rules should be set up
         for WordPress.
     """
-    assert ops_test.model
-    application = ops_test.model.applications[application_name]
+    application = model.applications[application_name]
     await application.set_config({"use_nginx_ingress_modsec": "true"})
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
     kubernetes.config.load_kube_config(config_file=kube_config)
     kube = kubernetes.client.NetworkingV1Api()
@@ -487,7 +482,7 @@ async def test_ingress_modsecurity(
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_akismet_plugin(
-    ops_test: OpsTest,
+    model: Model,
     application_name,
     default_admin_password,
     unit_ip_list,
@@ -498,14 +493,13 @@ async def test_akismet_plugin(
     act: update charm configuration for Akismet plugin.
     assert: Akismet plugin should be activated and spam detection function should be working.
     """
-    assert ops_test.model
-    await ops_test.model.add_relation("wordpress", "mariadb:mysql")
+    await model.add_relation("wordpress", "mariadb:mysql")
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
-    application = ops_test.model.applications[application_name]
+    application = model.applications[application_name]
     await application.set_config({"wp_plugin_akismet_key": akismet_api_key})
-    await ops_test.model.wait_for_idle()
+    await model.wait_for_idle()
 
     for unit_ip in unit_ip_list:
         wordpress_client = WordpressClient(
@@ -530,7 +524,7 @@ async def test_akismet_plugin(
 @pytest.mark.requires_secret
 @pytest.mark.asyncio
 async def test_openid_plugin(
-    ops_test: OpsTest,
+    model: Model,
     application_name,
     unit_ip_list,
     openid_username,
@@ -542,10 +536,9 @@ async def test_openid_plugin(
     act: update charm configuration for OpenID plugin.
     assert: A WordPress user should be created with correct roles according to the config.
     """
-    assert ops_test.model
-    application = ops_test.model.applications[application_name]
+    application = model.applications[application_name]
     await application.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})
-    await ops_test.model.wait_for_idle()
+    await model.wait_for_idle()
 
     for idx, unit_ip in enumerate(unit_ip_list):
         # wordpress-teams-integration has a bug causing desired roles not to be assigned to

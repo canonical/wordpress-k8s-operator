@@ -36,7 +36,7 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope="module", name="model")
-def model_module_scope_fixture(ops_test: OpsTest) -> Model:
+def model_fixture(ops_test: OpsTest) -> Model:
     """Get current valid model created for integraion testing with module scope."""
     assert ops_test.model
     return ops_test.model

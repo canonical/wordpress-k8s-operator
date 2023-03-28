@@ -22,19 +22,12 @@ import mysql.connector
 import ops.charm
 import ops.pebble
 import yaml
-from charms.data_platform_libs.v0.data_interfaces import DatabaseCreatedEvent, DatabaseRequires
+from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops.charm import (
-    ActionEvent,
-    CharmBase,
-    LeaderElectedEvent,
-    PebbleReadyEvent,
-    RelationDepartedEvent,
-    StartEvent,
-)
+from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, PebbleReadyEvent, StartEvent
 from ops.framework import EventBase, StoredState
 from ops.main import main
 from ops.model import (
@@ -50,6 +43,7 @@ from yaml import safe_load
 
 import exceptions
 import types_
+from constants import DATABASE_RELATION_NAME, LEGACY_DB_RELATION_NAME
 from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
 
 # MySQL logger prints database credentials on debug level, silence it
@@ -155,10 +149,10 @@ class WordpressCharm(CharmBase):
         super().__init__(*args, **kwargs)
 
         self.database = DatabaseRequires(
-            self, relation_name="database", database_name=self.app.name
+            self, relation_name=DATABASE_RELATION_NAME, database_name=self.app.name
         )
         # This relation is soon to be deprecated.
-        self.legacy_db = MySQLClient(self, "db")
+        self.legacy_db = MySQLClient(self, LEGACY_DB_RELATION_NAME)
 
         self.state.set_default(
             relation_db_host=None,
@@ -188,9 +182,7 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.leader_elected, self._setup_replica_data)
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
-        self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(self.database.on.database_created, self._reconciliation)
-        self.framework.observe(self.on.database_relation_departed, self._on_database_departed)
         self.framework.observe(self.legacy_db.on.database_changed, self._on_relation_db_changed)
         self.framework.observe(self.legacy_db.on.database_changed, self._reconciliation)
         self.framework.observe(self.on.config_changed, self._update_ingress_config)
@@ -379,6 +371,9 @@ class WordpressCharm(CharmBase):
         This method will set all db relation related states ``relation_db_*`` when db relation
         changes and will reset all that to ``None`` after db relation is broken.
 
+        The relation data has to be stored in charm state since this event is per-unit basis.
+        Otherwise, there's no way to determine which unit of mysql to connect with.
+
         Args:
             event: An instance of opslib.mysql.MySQLDatabaseChangedEvent represents the new
                 database connection information.
@@ -391,41 +386,6 @@ class WordpressCharm(CharmBase):
         self.state.relation_db_name = event.database
         self.state.relation_db_user = event.user
         self.state.relation_db_password = event.password
-
-    def _parse_database_endpoints(self, endpoints: str | None) -> str | None:
-        """Retrieve a single database endpoint from database endpoints.
-
-        Args:
-            endpoints: Comma separated endpoints of format host:port
-
-        Returns:
-            Hostname of database running on port 3306. None if no endpoints are provided.
-            Note that WordPress will throw MySQL Error when supplying a port with the hostname
-            (i.e. host:port).
-        """
-        if not endpoints:
-            return None
-        urls = endpoints.split(",")
-        return urls[0].split(":")[0]
-
-    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
-        """Store database connection configuration details to charm state.
-
-        Args:
-            event: Event emitted when a new database is created for use on this relation,
-            propagated from relation_changed event under the hood.
-        """
-        self.state.relation_db_host = self._parse_database_endpoints(endpoints=event.endpoints)
-        self.state.relation_db_name = event.database
-        self.state.relation_db_user = event.username
-        self.state.relation_db_password = event.password
-
-    def _on_database_departed(self, _: RelationDepartedEvent) -> None:
-        """Reset stored database configuration values on database relation departed event."""
-        self.state.relation_db_host = None
-        self.state.relation_db_name = None
-        self.state.relation_db_user = None
-        self.state.relation_db_password = None
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.
@@ -457,12 +417,14 @@ class WordpressCharm(CharmBase):
             )
         ]
 
-        # database info in config takes precedence over database info provided by relations
-        database_info = self._current_effective_db_info()
-        for db_key, db_value in database_info.items():
-            wp_config.append(f"define( '{db_key.upper()}', '{db_value}' );")
-
-        wp_config.append(f"define( 'DB_CHARSET',  '{self._WORDPRESS_DB_CHARSET}' );")
+        if self._current_effective_db_info:
+            wp_config.append(f"define( 'DB_HOST', '{self._current_effective_db_info.hostname}' );")
+            wp_config.append(f"define( 'DB_NAME', '{self._current_effective_db_info.database}' );")
+            wp_config.append(f"define( 'DB_USER', '{self._current_effective_db_info.username}' );")
+            wp_config.append(
+                f"define( 'DB_PASSWORD', '{self._current_effective_db_info.password}' );"
+            )
+            wp_config.append(f"define( 'DB_CHARSET',  '{self._WORDPRESS_DB_CHARSET}' );")
 
         replica_relation_data = self._replica_relation_data()
         for secret_key in self._wordpress_secret_key_fields():
@@ -634,26 +596,98 @@ class WordpressCharm(CharmBase):
         logger.debug("Check if WordPress is installed")
         return self._run_wp_cli(["wp", "core", "is-installed"]).return_code == 0
 
-    def _current_effective_db_info(self):
-        """Get the current effective db connection information.
-
-        Database info in config takes precedence over database info provided by relations.
-        Return value is a dict containing four keys (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD)
+    @property
+    def _config_database_config(self) -> types_.DatabaseConfig | None:
+        """Database configuration details from charm config.
 
         Returns:
-            A dict containing four keys "db_host", "db_name", "db_user" and "db_password". All
-            values are string.
+            Database configuration required to establish database connection.
+            None if not exists.
         """
-        database_info = {
-            key.upper(): self.model.config[key]
-            for key in ["db_host", "db_name", "db_user", "db_password"]
-        }
-        if any(not value for value in database_info.values()):
-            database_info = {
-                key.upper(): getattr(self.state, f"relation_{key}")
-                for key in ["db_host", "db_name", "db_user", "db_password"]
-            }
-        return database_info
+        if any(
+            self.model.config.get(key) for key in ["db_host", "db_name", "db_user", "db_password"]
+        ):
+            return types_.DatabaseConfig(
+                hostname=self.model.config.get("db_host"),
+                database=self.model.config.get("db_name"),
+                username=self.model.config.get("db_user"),
+                password=self.model.config.get("db_password"),
+            )
+        return None
+
+    @property
+    def _db_relation_database_config(self) -> types_.DatabaseConfig | None:
+        """Database configuration details from stored state.
+
+        Since the legacy db relation is per-unit basis, the relation data must be stored in charm
+        state.
+
+        Returns:
+            Database configuration required to establish database connection.
+            None if not exists.
+        """
+        relation = self.model.get_relation(LEGACY_DB_RELATION_NAME)
+        if not relation:
+            return None
+        return types_.DatabaseConfig(
+            hostname=self.state.relation_db_host,
+            database=self.state.relation_db_name,
+            username=self.state.relation_db_user,
+            password=self.state.relation_db_password,
+        )
+
+    def _parse_database_endpoints(self, endpoints: str | None) -> str | None:
+        """Retrieve a single database endpoint from database endpoints.
+
+        Args:
+            endpoints: Comma separated endpoints of format host:port
+
+        Returns:
+            Hostname of database running on port 3306. None if no endpoints are provided.
+            Note that WordPress will throw MySQL Error when supplying a port with the hostname
+            (i.e. host:port).
+        """
+        if not endpoints:
+            return None
+        urls = endpoints.split(",")
+        return urls[0].split(":")[0]
+
+    @property
+    def _database_relation_database_config(self) -> types_.DatabaseConfig | None:
+        """Database configuration details from database relation.
+
+        Returns:
+            Database configuration required to establish database connection.
+            None if not exists.
+        """
+        relation = self.model.get_relation(DATABASE_RELATION_NAME)
+        if not relation:
+            return None
+        return types_.DatabaseConfig(
+            hostname=self._parse_database_endpoints(relation.data[relation.app].get("endpoints")),
+            database=relation.data[relation.app].get("database"),
+            username=relation.data[relation.app].get("username"),
+            password=relation.data[relation.app].get("password"),
+        )
+
+    @property
+    def _current_effective_db_info(self) -> types_.DatabaseConfig | None:
+        """Get the current effective db connection information.
+
+        The order of precedence for effective configurations are as follows:
+        1. Charm config
+        2. database relation
+        3. db relation
+
+        Returns:
+            Database configuration required to establish database connection.
+            None if not exists.
+        """
+        return (
+            self._config_database_config
+            or self._database_relation_database_config
+            or self._db_relation_database_config
+        )
 
     def _test_database_connectivity(self):
         """Test the connectivity of the current database config/relation.
@@ -662,14 +696,13 @@ class WordpressCharm(CharmBase):
             A tuple of connectivity as bool and error message as str, error message will be
             an empty string if charm can connect to the database.
         """
-        db_info = self._current_effective_db_info()
         try:
             # TODO: add database charset check later
             cnx = mysql.connector.connect(
-                host=db_info["DB_HOST"],
-                database=db_info["DB_NAME"],
-                user=db_info["DB_USER"],
-                password=db_info["DB_PASSWORD"],
+                host=self._current_effective_db_info.hostname,
+                database=self._current_effective_db_info.database,
+                user=self._current_effective_db_info.username,
+                password=self._current_effective_db_info.password,
                 charset="latin1",
             )
             cnx.close()
@@ -835,23 +868,8 @@ class WordpressCharm(CharmBase):
             logger.info("Core reconciliation terminates early, replica consensus is not ready")
             self._stop_server()
             raise exceptions.WordPressWaitingStatusException("Waiting for unit consensus")
-        available_db_config = tuple(
-            key
-            for key in ("db_host", "db_name", "db_user", "db_password")
-            if self.model.config[key]
-        )
-        available_db_relation = tuple(
-            key
-            for key in ("db_host", "db_name", "db_user", "db_password")
-            if getattr(self.state, f"relation_{key}")
-        )
-        if len(available_db_config) != 4 and len(available_db_relation) != 4:
-            logger.info(
-                "Core reconciliation terminated early due to db info missing, "
-                "available from config: %s, available from relation: %s",
-                available_db_config,
-                available_db_relation,
-            )
+        if not self._current_effective_db_info:
+            logger.info("Core reconciliation terminated early due to db info missing.")
             self._stop_server()
             raise exceptions.WordPressBlockedStatusException("Waiting for db relation/config")
         wp_config = self._gen_wp_config()

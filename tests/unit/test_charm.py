@@ -106,42 +106,26 @@ def test_db_relation(
     act: add and remove the db relation between WordPress application and mysql.
     assert: database info in charm state should change accordingly.
     """
-
-    def get_db_info_from_state():
-        """Wrapper for getting database relation state information.
-
-        Returns:
-            Wrapped dictionary of database relation information.
-        """
-        return {
-            "host": charm.state.relation_db_host,
-            "database": charm.state.relation_db_name,
-            "user": charm.state.relation_db_user,
-            "password": charm.state.relation_db_password,
-        }
-
     harness.begin_with_initial_hooks()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    assert set(get_db_info_from_state().values()) == {
-        None
-    }, "database info in charm state should not exist before database relation created"
+    assert (
+        charm._current_effective_db_info is None
+    ), "database info in charm state should not exist before database relation created"
 
     db_relation_id, db_info = setup_db_relation()
 
-    db_info_in_state = get_db_info_from_state()
-    for db_info_key, db_info_value in db_info_in_state.items():
-        assert (
-            db_info_value == db_info[db_info_key]
-        ), f"database info {db_info_key} in charm state should be updated after database relation changed"
+    effective_db_info = charm._current_effective_db_info
+
+    assert effective_db_info.hostname == db_info["host"]
+    assert effective_db_info.database == db_info["database"]
+    assert effective_db_info.username == db_info["user"]
+    assert effective_db_info.password == db_info["password"]
 
     harness.remove_relation(db_relation_id)
 
-    db_info_in_state = get_db_info_from_state()
-    for db_info_key, db_info_value in db_info_in_state.items():
-        assert (
-            db_info_value is None
-        ), f"database info {db_info_key} should be reset to None after database relation broken"
+    effective_db_info = charm._current_effective_db_info
+    assert effective_db_info is None
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -154,42 +138,26 @@ def test_database_relation(
     act: add and remove the db relation between WordPress application and mysql.
     assert: database info in charm state should change accordingly.
     """
-
-    def get_db_info_from_state():
-        """Wrapper for getting database relation state information.
-
-        Returns:
-            Wrapped dictionary of database relation information.
-        """
-        return {
-            "host": charm.state.relation_db_host,
-            "database": charm.state.relation_db_name,
-            "user": charm.state.relation_db_user,
-            "password": charm.state.relation_db_password,
-        }
-
     harness.begin_with_initial_hooks()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    assert set(get_db_info_from_state().values()) == {
-        None
-    }, "database info in charm state should not exist before database relation created"
+    assert (
+        charm._current_effective_db_info is None
+    ), "database info in charm state should not exist before database relation created"
 
     db_relation_id, db_info = setup_database_relation()
 
-    db_info_in_state = get_db_info_from_state()
-    assert db_info_in_state["host"] == get_first_endpoint(db_info["endpoints"])
-    assert db_info_in_state["database"] == db_info["database"]
-    assert db_info_in_state["user"] == db_info["username"]
-    assert db_info_in_state["password"] == db_info["password"]
+    effective_db_info = charm._current_effective_db_info
+
+    assert effective_db_info.hostname == get_first_endpoint(db_info["endpoints"])
+    assert effective_db_info.database == db_info["database"]
+    assert effective_db_info.username == db_info["username"]
+    assert effective_db_info.password == db_info["password"]
 
     harness.remove_relation(db_relation_id)
 
-    db_info_in_state = get_db_info_from_state()
-    for db_info_key, db_info_value in db_info_in_state.items():
-        assert (
-            db_info_value is None
-        ), f"database info {db_info_key} should be reset to None after database relation broken"
+    effective_db_info = charm._current_effective_db_info
+    assert effective_db_info is None
 
 
 def test_wp_config_before_consensus(harness: ops.testing.Harness):

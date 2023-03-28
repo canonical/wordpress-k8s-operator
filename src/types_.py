@@ -32,3 +32,19 @@ class ExecResult(NamedTuple):
     success: bool
     result: Any
     message: str
+
+
+class DatabaseConfig(NamedTuple):
+    """Configuration values required to connect to database.
+
+    Attrs:
+        hostname: The hostname under which the database is being served.
+        database: The name of the database to connect to.
+        username: The username to use to authenticate to the database.
+        password: The password to use to authenticat to the database.
+    """
+
+    hostname: str | None
+    database: str | None
+    username: str | None
+    password: str | None

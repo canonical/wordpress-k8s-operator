@@ -115,7 +115,7 @@ async def test_mysql_relation(db_from_config: bool, ops_test: OpsTest, applicati
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(
+async def test_mysql_database_relation(
     db_from_config: bool, model: Model, application_name: str, mysql: Application
 ):
     """

@@ -824,6 +824,9 @@ def test_ingress(
     assert: ingress relation data should be set up according to the configuration and application
         name.
     """
+    harness.set_model_name("test-wordpress")
+    nginx_route_relation_id = harness.add_relation("nginx-route", "ingress")
+    harness.add_relation_unit(nginx_route_relation_id, "ingress/0")
     setup_replica_consensus()
     patch.database.prepare_database(
         host=example_db_info["host"],
@@ -832,53 +835,35 @@ def test_ingress(
         password=example_db_info["password"],
     )
     setup_db_relation()
-    ingress_relation_id = harness.add_relation("ingress", "ingress")
-    harness.add_relation_unit(ingress_relation_id, "ingress/0")
-    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    assert charm.ingress.config_dict == {
+    assert harness.get_relation_data(nginx_route_relation_id, harness.charm.app) == {
         "service-hostname": app_name,
-        "host": app_name,
         "service-name": app_name,
-        "name": app_name,
         "service-port": "80",
-        "port": "80",
-        "owasp-modsecurity-crs": True,
-        "owasp-modsecurity-custom-rules": 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n',
-    }
-
-    assert charm.ingress.config_dict == {
-        "service-hostname": app_name,
-        "host": app_name,
-        "service-name": app_name,
-        "name": app_name,
-        "service-port": "80",
-        "port": "80",
-        "owasp-modsecurity-crs": True,
+        "service-namespace": "test-wordpress",
+        "owasp-modsecurity-crs": "True",
         "owasp-modsecurity-custom-rules": 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n',
     }
 
     harness.update_config({"use_nginx_ingress_modsec": False})
+    harness.charm._require_nginx_route()
 
-    assert charm.ingress.config_dict == {
+    assert harness.get_relation_data(nginx_route_relation_id, harness.charm.app) == {
         "service-hostname": app_name,
-        "host": app_name,
         "service-name": app_name,
-        "name": app_name,
         "service-port": "80",
-        "port": "80",
+        "service-namespace": "test-wordpress",
     }
 
     new_hostname = "new-hostname"
     harness.update_config({"blog_hostname": new_hostname})
+    harness.charm._require_nginx_route()
 
-    assert charm.ingress.config_dict == {
+    assert harness.get_relation_data(nginx_route_relation_id, harness.charm.app) == {
         "service-hostname": new_hostname,
-        "host": new_hostname,
         "service-name": app_name,
-        "name": app_name,
         "service-port": "80",
-        "port": "80",
+        "service-namespace": "test-wordpress",
     }
 
 
@@ -913,3 +898,22 @@ def test_missing_peer_relation(harness: ops.testing.Harness):
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     with pytest.raises(WordpressCharm._ReplicaRelationNotReady):
         charm._replica_relation_data()
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_mysql_connection_error(harness: ops.testing.Harness, setup_replica_consensus):
+    """
+    arrange: charm peer relation is ready and the storage is attached.
+    act: config the charm to connect to a non-existent database.
+    assert: charm should enter blocked state, and the database error should be seen in the status.
+    """
+    setup_replica_consensus()
+    db_config = {
+        "db_host": "a",
+        "db_name": "b",
+        "db_user": "c",
+        "db_password": "d",
+    }
+    harness.update_config(db_config)
+    assert isinstance(harness.model.unit.status, ops.charm.model.BlockedStatus)
+    assert harness.model.unit.status.message == "MySQL error 2003"

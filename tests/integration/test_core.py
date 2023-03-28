@@ -397,7 +397,7 @@ async def test_ingress(
         return patched_getaddrinfo
 
     assert ops_test.model
-    await ops_test.model.add_relation(application_name, "ingress:ingress")
+    await ops_test.model.add_relation(application_name, "ingress")
     # mypy has trouble to inferred types for variables that are initialized in subclasses.
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 

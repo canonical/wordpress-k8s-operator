@@ -117,8 +117,17 @@ async def deploy_old_version_fixture(
 
     await asyncio.gather(
         deploy_wordpress(),
+        ops_test.juju(
+            "deploy",
+            "nginx-ingress-integrator",
+            "--channel=edge",
+            "--series=focal",
+            "--trust",
+            check=True,
+        ),
         ops_test.run("playwright", "install", "chromium"),
     )
+    await ops_test.model.relate("nginx-ingress-integrator", application_name)
     await ops_test.model.applications[application_name].set_config(gen_upgrade_test_charm_config())
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
@@ -157,6 +166,7 @@ async def build_and_upgrade_fixture(
     ops_test: pytest_operator.plugin.OpsTest,
     application_name,
     wordpress_image,
+    get_app_revision,
 ):
     """
     arrange: an old version of the WordPress is deployed.
@@ -167,6 +177,13 @@ async def build_and_upgrade_fixture(
     charm = await ops_test.build_charm(".")
     # Most of the times the integration tests will fail due to timeout without the force flag.
     app: juju.application.Application = ops_test.model.applications[application_name]
+    wordpress_revision_before = await get_app_revision(application_name)
+    last_revision_using_ingress = 14
+    upgrade_from_ingress = wordpress_revision_before <= last_revision_using_ingress
+    if upgrade_from_ingress:
+        await ops_test.juju(
+            "remove-relation", "nginx-ingress-integrator", application_name, check=True
+        )
     await app.refresh(
         path=str(charm),
         resources={
@@ -174,6 +191,8 @@ async def build_and_upgrade_fixture(
             "wordpress-image": wordpress_image,
         },
     )
+    if upgrade_from_ingress:
+        await ops_test.model.relate("nginx-ingress-integrator", application_name)
     await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
 
 

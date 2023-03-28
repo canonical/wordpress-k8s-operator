@@ -43,7 +43,6 @@ from yaml import safe_load
 
 import exceptions
 import types_
-from constants import DATABASE_RELATION_NAME, LEGACY_DB_RELATION_NAME
 from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
 
 # MySQL logger prints database credentials on debug level, silence it
@@ -68,6 +67,8 @@ class WordpressCharm(CharmBase):
     _WORDPRESS_USER = "www-data"
     _WORDPRESS_GROUP = "www-data"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
+    _DATABASE_RELATION_NAME = "database"
+    _LEGACY_DB_RELATION_NAME = "db"
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
     _WORDPRESS_DEFAULT_THEMES = [
@@ -149,10 +150,10 @@ class WordpressCharm(CharmBase):
         super().__init__(*args, **kwargs)
 
         self.database = DatabaseRequires(
-            self, relation_name=DATABASE_RELATION_NAME, database_name=self.app.name
+            self, relation_name=self._DATABASE_RELATION_NAME, database_name=self.app.name
         )
         # This relation is soon to be deprecated.
-        self.legacy_db = MySQLClient(self, LEGACY_DB_RELATION_NAME)
+        self.legacy_db = MySQLClient(self, self._LEGACY_DB_RELATION_NAME)
 
         self.state.set_default(
             relation_db_host=None,
@@ -626,7 +627,7 @@ class WordpressCharm(CharmBase):
             Database configuration required to establish database connection.
             None if not exists.
         """
-        relation = self.model.get_relation(LEGACY_DB_RELATION_NAME)
+        relation = self.model.get_relation(self._LEGACY_DB_RELATION_NAME)
         if not relation:
             return None
         return types_.DatabaseConfig(
@@ -660,7 +661,7 @@ class WordpressCharm(CharmBase):
             Database configuration required to establish database connection.
             None if not exists.
         """
-        relation = self.model.get_relation(DATABASE_RELATION_NAME)
+        relation = self.model.get_relation(self._DATABASE_RELATION_NAME)
         if not relation:
             return None
         return types_.DatabaseConfig(

@@ -21,6 +21,8 @@ from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressPatch
 
+from .helpers import get_first_endpoint
+
 
 def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     """
@@ -95,12 +97,13 @@ def test_replica_consensus_stable_after_leader_reelection(
 
 
 @pytest.mark.usefixtures("attach_storage")
-def test_mysql_relation(
-    harness: ops.testing.Harness, setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]]
+def test_db_relation(
+    harness: ops.testing.Harness,
+    setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]],
 ):
     """
     arrange: no pre-condition.
-    act: add and remove the database relation between WordPress application and mysql.
+    act: add and remove the db relation between WordPress application and mysql.
     assert: database info in charm state should change accordingly.
     """
 
@@ -131,6 +134,54 @@ def test_mysql_relation(
         assert (
             db_info_value == db_info[db_info_key]
         ), f"database info {db_info_key} in charm state should be updated after database relation changed"
+
+    harness.remove_relation(db_relation_id)
+
+    db_info_in_state = get_db_info_from_state()
+    for db_info_key, db_info_value in db_info_in_state.items():
+        assert (
+            db_info_value is None
+        ), f"database info {db_info_key} should be reset to None after database relation broken"
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_database_relation(
+    harness: ops.testing.Harness,
+    setup_database_relation: typing.Callable[[], typing.Tuple[int, dict]],
+):
+    """
+    arrange: no pre-condition.
+    act: add and remove the db relation between WordPress application and mysql.
+    assert: database info in charm state should change accordingly.
+    """
+
+    def get_db_info_from_state():
+        """Wrapper for getting database relation state information.
+
+        Returns:
+            Wrapped dictionary of database relation information.
+        """
+        return {
+            "host": charm.state.relation_db_host,
+            "database": charm.state.relation_db_name,
+            "user": charm.state.relation_db_user,
+            "password": charm.state.relation_db_password,
+        }
+
+    harness.begin_with_initial_hooks()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+
+    assert set(get_db_info_from_state().values()) == {
+        None
+    }, "database info in charm state should not exist before database relation created"
+
+    db_relation_id, db_info = setup_database_relation()
+
+    db_info_in_state = get_db_info_from_state()
+    assert db_info_in_state["host"] == get_first_endpoint(db_info["endpoints"])
+    assert db_info_in_state["database"] == db_info["database"]
+    assert db_info_in_state["user"] == db_info["username"]
+    assert db_info_in_state["password"] == db_info["password"]
 
     harness.remove_relation(db_relation_id)
 

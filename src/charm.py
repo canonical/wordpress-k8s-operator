@@ -22,11 +22,19 @@ import mysql.connector
 import ops.charm
 import ops.pebble
 import yaml
+from charms.data_platform_libs.v0.data_interfaces import DatabaseCreatedEvent, DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, PebbleReadyEvent, StartEvent
+from ops.charm import (
+    ActionEvent,
+    CharmBase,
+    LeaderElectedEvent,
+    PebbleReadyEvent,
+    RelationDepartedEvent,
+    StartEvent,
+)
 from ops.framework import EventBase, StoredState
 from ops.main import main
 from ops.model import (
@@ -146,7 +154,11 @@ class WordpressCharm(CharmBase):
         """
         super().__init__(*args, **kwargs)
 
-        self.database = MySQLClient(self, "db")
+        self.database = DatabaseRequires(
+            self, relation_name="database", database_name=self.app.name
+        )
+        # This relation is soon to be deprecated.
+        self.legacy_db = MySQLClient(self, "db")
 
         self.state.set_default(
             relation_db_host=None,
@@ -176,15 +188,16 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.leader_elected, self._setup_replica_data)
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
-        self.framework.observe(
-            self.database.on.database_changed, self._on_relation_database_changed
-        )
+        self.framework.observe(self.database.on.database_created, self._on_database_created)
+        self.framework.observe(self.database.on.database_created, self._reconciliation)
+        self.framework.observe(self.on.database_relation_departed, self._on_database_departed)
+        self.framework.observe(self.legacy_db.on.database_changed, self._on_relation_db_changed)
+        self.framework.observe(self.legacy_db.on.database_changed, self._reconciliation)
         self.framework.observe(self.on.config_changed, self._update_ingress_config)
         self.framework.observe(self.on.config_changed, self._reconciliation)
         self.framework.observe(self.on.upgrade_charm, self._setup_replica_data)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
-        self.framework.observe(self.database.on.database_changed, self._reconciliation)
         self.framework.observe(
             self.on.apache_prometheus_exporter_pebble_ready,
             self._on_apache_prometheus_exporter_pebble_ready,
@@ -360,7 +373,7 @@ class WordpressCharm(CharmBase):
             for secret_key, secret_value in new_replica_data.items():
                 replica_relation_data[secret_key] = secret_value
 
-    def _on_relation_database_changed(self, event: MySQLDatabaseChangedEvent) -> None:
+    def _on_relation_db_changed(self, event: MySQLDatabaseChangedEvent) -> None:
         """Handle db relation changes (data changes/relation breaks).
 
         This method will set all db relation related states ``relation_db_*`` when db relation
@@ -370,10 +383,49 @@ class WordpressCharm(CharmBase):
             event: An instance of opslib.mysql.MySQLDatabaseChangedEvent represents the new
                 database connection information.
         """
+        logger.warning(
+            "The `db` relation is marked for deprecation. "
+            "Please use `database` relation instead."
+        )
         self.state.relation_db_host = event.host
         self.state.relation_db_name = event.database
         self.state.relation_db_user = event.user
         self.state.relation_db_password = event.password
+
+    def _parse_database_endpoints(self, endpoints: str | None) -> str | None:
+        """Retrieve a single database endpoint from database endpoints.
+
+        Args:
+            endpoints: Comma separated endpoints of format host:port
+
+        Returns:
+            Hostname of database running on port 3306. None if no endpoints are provided.
+            Note that WordPress will throw MySQL Error when supplying a port with the hostname
+            (i.e. host:port).
+        """
+        if not endpoints:
+            return None
+        urls = endpoints.split(",")
+        return urls[0].split(":")[0]
+
+    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
+        """Store database connection configuration details to charm state.
+
+        Args:
+            event: Event emitted when a new database is created for use on this relation,
+            propagated from relation_changed event under the hood.
+        """
+        self.state.relation_db_host = self._parse_database_endpoints(endpoints=event.endpoints)
+        self.state.relation_db_name = event.database
+        self.state.relation_db_user = event.username
+        self.state.relation_db_password = event.password
+
+    def _on_database_departed(self, _: RelationDepartedEvent) -> None:
+        """Reset stored database configuration values on database relation departed event."""
+        self.state.relation_db_host = None
+        self.state.relation_db_name = None
+        self.state.relation_db_user = None
+        self.state.relation_db_password = None
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.

@@ -113,6 +113,28 @@ async def test_mysql_relation(db_from_config, ops_test: OpsTest, application_nam
 
 
 @pytest.mark.asyncio
+@pytest.mark.abort_on_fail
+async def test_mysql_relation(
+    db_from_config: bool, model: Model, application_name: str, mysql: Application
+):
+    """
+    arrange: after WordPress charm has been deployed.
+    act: deploy a mysql charm and add a database relation between WordPress and mysql.
+    assert: WordPress should be active.
+    """
+    if db_from_config:
+        pytest.skip()
+    await model.add_relation(f"{application_name}:database", f"{mysql.name}:database")
+    # mypy has trouble to inferred types for variables that are initialized in subclasses.
+    await model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    app_status = model.applications[application_name].status
+    assert app_status == ops.model.ActiveStatus.name, (  # type: ignore
+        "application status should be active once correct database connection info "
+        "being provided via relation"
+    )
+
+
+@pytest.mark.asyncio
 async def test_openstack_object_storage_plugin(
     ops_test: OpsTest,
     application_name,

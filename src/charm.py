@@ -180,6 +180,7 @@ class WordpressCharm(CharmBase):
         )
         self.framework.observe(self.on.config_changed, self._reconciliation)
         self.framework.observe(self.on.upgrade_charm, self._setup_replica_data)
+        self.framework.observe(self.on.wordpress_pebble_ready, self._set_version)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
         self.framework.observe(self.database.on.database_changed, self._reconciliation)
@@ -191,6 +192,19 @@ class WordpressCharm(CharmBase):
     def _on_start(self, _event: StartEvent):
         """Record if the start event is emitted."""
         self.state.started = True
+
+    def _set_version(self, _: PebbleReadyEvent):
+        """Set WordPress application version to Juju charm's app version status."""
+        version_result = self._run_wp_cli(
+            ["wp", "core", "version"],
+            timeout=60,
+        )
+        if version_result.return_code != 0:
+            logger.error(
+                "WordPress version command failed with exit code %d.", version_result.return_code
+            )
+            return
+        self.unit.set_workload_version(version_result.stdout)
 
     def _require_nginx_route(self):
         """Require nginx-route relation based on current configuration."""

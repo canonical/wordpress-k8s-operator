@@ -623,6 +623,11 @@ class WordpressContainerMock:
             pass
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
+    @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "version"])
+    def _mock_wp_core_version(self, _cmd):
+        """Simulate ``wp core version`` command execution in the container."""
+        return ExecProcessMock(return_code=0, stdout="5.9.3", stderr="")
+
     def __getattr__(self, item):
         """Passthrough anything else to :class:`ops.charm.model.Container`.
 

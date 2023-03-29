@@ -640,8 +640,7 @@ class WordpressCharm(CharmBase):
         """
         if not endpoints:
             return None
-        urls = endpoints.split(",")
-        host_port = urls[0].split(":")
+        host_port = endpoints[0].split(":")
         if len(host_port) == 2 and host_port[1] != "3306":
             raise exceptions.WordPressBlockedStatusException(f"Invalid port {host_port[1]}")
         # The endpoint might not contain port, we assume it to be 3306. If not, it will be caught

@@ -19,7 +19,7 @@ from ops.pebble import Client
 
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
-from tests.unit.wordpress_mock import WordpressPatch
+from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
 
 
 def test_generate_wp_secret_keys(harness: ops.testing.Harness):
@@ -917,3 +917,16 @@ def test_mysql_connection_error(harness: ops.testing.Harness, setup_replica_cons
     harness.update_config(db_config)
     assert isinstance(harness.model.unit.status, ops.charm.model.BlockedStatus)
     assert harness.model.unit.status.message == "MySQL error 2003"
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_wordpress_version_set(harness: ops.testing.Harness):
+    """
+    arrange: no arrange.
+    act: charm container is ready.
+    assert: workload version is set.
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.begin_with_initial_hooks()
+
+    assert harness.get_workload_version() == WordpressContainerMock._WORDPRESS_VERSION

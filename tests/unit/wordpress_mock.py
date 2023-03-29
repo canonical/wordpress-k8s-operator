@@ -341,6 +341,7 @@ class WordpressContainerMock:
     """
 
     _exec_handler = HandlerRegistry()
+    _WORDPRESS_VERSION = "5.9.3"
 
     def __init__(
         self,
@@ -626,7 +627,7 @@ class WordpressContainerMock:
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "version"])
     def _mock_wp_core_version(self, _cmd):
         """Simulate ``wp core version`` command execution in the container."""
-        return ExecProcessMock(return_code=0, stdout="5.9.3", stderr="")
+        return ExecProcessMock(return_code=0, stdout=self._WORDPRESS_VERSION, stderr="")
 
     def __getattr__(self, item):
         """Passthrough anything else to :class:`ops.charm.model.Container`.

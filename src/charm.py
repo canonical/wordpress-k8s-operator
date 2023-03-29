@@ -25,7 +25,7 @@ import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
-from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
+from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, PebbleReadyEvent, StartEvent
 from ops.framework import EventBase, StoredState
@@ -55,7 +55,6 @@ class WordpressCharm(CharmBase):
 
     Attrs:
         state: Persistent charm state used to store metadata after various events.
-        ingress_config: Ingress configuration data based on current charm configuration.
     """
 
     class _ReplicaRelationNotReady(Exception):
@@ -163,7 +162,7 @@ class WordpressCharm(CharmBase):
             started=False,
         )
 
-        self.ingress = IngressRequires(self, self.ingress_config)
+        self._require_nginx_route()
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
             jobs=WORDPRESS_SCRAPE_JOBS,
@@ -200,29 +199,18 @@ class WordpressCharm(CharmBase):
         """Record if the start event is emitted."""
         self.state.started = True
 
-    @property
-    def ingress_config(self):
-        """Create the ingress relation data based on current configuration."""
-        blog_hostname = self.model.config["blog_hostname"] or self.app.name
-        ingress_config = {
-            "service-hostname": blog_hostname,
-            "service-name": self.app.name,
-            "service-port": "80",
-        }
-        if self.model.config["use_nginx_ingress_modsec"]:
-            ingress_config["owasp-modsecurity-crs"] = True
-            ingress_config[
-                "owasp-modsecurity-custom-rules"
-            ] = 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n'
-        return ingress_config
-
-    def _update_ingress_config(self, _event):
-        """Update the ingress relation when config changed.
-
-        Args:
-            _event: not used.
-        """
-        self.ingress.update_config(self.ingress_config)
+    def _require_nginx_route(self):
+        """Require nginx-route relation based on current configuration."""
+        use_modsec = self.model.config["use_nginx_ingress_modsec"]
+        owasp_modsecurity_custom_rules = 'SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"\n'
+        require_nginx_route(
+            charm=self,
+            service_hostname=self.model.config["blog_hostname"] or self.app.name,
+            service_name=self.app.name,
+            service_port=80,
+            owasp_modsecurity_crs=True if use_modsec else None,
+            owasp_modsecurity_custom_rules=owasp_modsecurity_custom_rules if use_modsec else None,
+        )
 
     def _on_get_initial_password_action(self, event: ActionEvent):
         """Handle the get-initial-password action.

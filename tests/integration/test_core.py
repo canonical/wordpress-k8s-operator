@@ -401,8 +401,8 @@ async def test_ingress(
 
         return patched_getaddrinfo
 
-    await model.add_relation(application_name, "ingress:ingress")
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.add_relation(application_name, "ingress")
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)  # type: ignore
 
     response = requests.get("http://127.0.0.1", headers={"Host": application_name}, timeout=5)
     assert (

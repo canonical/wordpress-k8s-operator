@@ -1,4 +1,4 @@
-# Hostname configuration
+# How to configure hostname
 
 ### Prerequisites
 

@@ -1,4 +1,4 @@
-# Install themes
+# How to install themes
 
 Start by locating the theme from the WordPress themes page. Once you’ve located the theme, the
 theme slug is the name of the theme from the URL of the selected theme page. For example,

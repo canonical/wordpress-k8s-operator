@@ -54,8 +54,8 @@ requires:
     limit: 1
   database:
     interface: mysql_client
-  ingress:
-    interface: ingress
+  nginx-route:
+    interface: nginx-route
     limit: 1
   logging:
     interface: loki_push_api

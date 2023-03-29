@@ -1,4 +1,4 @@
-# Initial credentials
+# How to retrieve initial credentials
 
 Run the following command to get the initial admin password that can be used to login at
 `http://<wordpress-unit-ip>/wp-login.php`.

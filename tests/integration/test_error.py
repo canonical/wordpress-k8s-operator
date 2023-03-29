@@ -3,7 +3,6 @@
 
 """Integration tests for WordPress charm in error."""
 
-import ops.model
 import pytest
 import pytest_operator.plugin
 

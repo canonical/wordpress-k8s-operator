@@ -14,7 +14,6 @@ import unittest.mock
 import urllib.parse
 from typing import Callable
 
-import ops.model
 import PIL.Image
 import pytest
 import requests

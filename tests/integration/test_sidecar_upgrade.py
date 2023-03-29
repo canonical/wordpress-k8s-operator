@@ -15,7 +15,6 @@ import time
 from pathlib import Path
 
 import juju.application
-import ops.model
 import PIL.Image
 import pytest
 import pytest_asyncio

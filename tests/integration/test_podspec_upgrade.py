@@ -16,7 +16,6 @@ import time
 from pathlib import Path
 
 import kubernetes
-import ops.model
 import PIL.Image
 import pytest
 import pytest_asyncio

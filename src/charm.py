@@ -185,7 +185,6 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.database.on.database_created, self._reconciliation)
         self.framework.observe(self.legacy_db.on.database_changed, self._on_relation_db_changed)
         self.framework.observe(self.legacy_db.on.database_changed, self._reconciliation)
-        self.framework.observe(self.on.config_changed, self._update_ingress_config)
         self.framework.observe(self.on.config_changed, self._reconciliation)
         self.framework.observe(self.on.upgrade_charm, self._setup_replica_data)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)

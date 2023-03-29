@@ -135,7 +135,7 @@ def test_database_relation(
 ):
     """
     arrange: no pre-condition.
-    act: add and remove the db relation between WordPress application and mysql.
+    act: add and remove the database relation between WordPress application and mysql.
     assert: database info in charm state should change accordingly.
     """
     harness.begin_with_initial_hooks()
@@ -158,6 +158,30 @@ def test_database_relation(
 
     effective_db_info = charm._current_effective_db_info
     assert effective_db_info is None
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_database_invalid_port_relation(
+    harness: ops.testing.Harness,
+    setup_database_relation_invalid_port: typing.Callable[[], typing.Tuple[int, dict]],
+):
+    """
+    arrange: no pre-condition.
+    act: add database relation with invalid port between WordPress application and mysql.
+    assert: database info in charm state should change accordingly.
+    """
+    harness.begin_with_initial_hooks()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+
+    assert (
+        charm._current_effective_db_info is None
+    ), "database info in charm state should not exist before database relation created"
+
+    setup_database_relation_invalid_port()
+
+    with pytest.raises(WordPressBlockedStatusException):
+        # This is a function disguised as property and is not pointless.
+        charm._current_effective_db_info  # pylint: disable=pointless-statement
 
 
 def test_wp_config_before_consensus(harness: ops.testing.Harness):

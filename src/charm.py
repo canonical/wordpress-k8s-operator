@@ -606,7 +606,7 @@ class WordpressCharm(CharmBase):
             None if not exists.
         """
         if any(
-            self.model.config.get(key) for key in ["db_host", "db_name", "db_user", "db_password"]
+            self.model.config.get(key) for key in ("db_host", "db_name", "db_user", "db_password")
         ):
             return types_.DatabaseConfig(
                 hostname=self.model.config.get("db_host"),
@@ -647,11 +647,19 @@ class WordpressCharm(CharmBase):
             Hostname of database running on port 3306. None if no endpoints are provided.
             Note that WordPress will throw MySQL Error when supplying a port with the hostname
             (i.e. host:port).
+
+        Raises:
+            WordPressBlockedStatusException: Provided endpoint contains port other than 3306.
         """
         if not endpoints:
             return None
         urls = endpoints.split(",")
-        return urls[0].split(":")[0]
+        host_port = urls[0].split(":")
+        if len(host_port) == 2 and host_port[1] != "3306":
+            raise exceptions.WordPressBlockedStatusException(f"Invalid port {host_port[1]}")
+        # The endpoint might not contain port, we assume it to be 3306. If not, it will be caught
+        # by `_test_database_connectivity` function later on.
+        return host_port[0]
 
     @property
     def _database_relation_database_config(self) -> types_.DatabaseConfig | None:

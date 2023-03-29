@@ -21,8 +21,6 @@ from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressPatch
 
-from .helpers import get_first_endpoint
-
 
 def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     """
@@ -132,6 +130,7 @@ def test_db_relation(
 def test_database_relation(
     harness: ops.testing.Harness,
     setup_database_relation: typing.Callable[[], typing.Tuple[int, dict]],
+    example_database_endpoints: tuple[str, str],
 ):
     """
     arrange: no pre-condition.
@@ -149,7 +148,7 @@ def test_database_relation(
 
     effective_db_info = charm._current_effective_db_info
 
-    assert effective_db_info.hostname == get_first_endpoint(db_info["endpoints"])
+    assert effective_db_info.hostname == example_database_endpoints[0]
     assert effective_db_info.database == db_info["database"]
     assert effective_db_info.username == db_info["username"]
     assert effective_db_info.password == db_info["password"]

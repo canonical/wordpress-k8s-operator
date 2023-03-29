@@ -81,11 +81,17 @@ def example_db_info_fixture():
     }
 
 
+@pytest.fixture(scope="function", name="example_database_endpoints")
+def example_database_endpoints_fixture():
+    """Example database endpoints."""
+    return ("test_database_host:3306", "another_database_host:3306")
+
+
 @pytest.fixture(scope="function", name="example_database_info")
-def example_database_info_fixture():
+def example_database_info_fixture(example_database_endpoints: tuple[str, str]):
     """An example database connection info from mysql_client interface."""
     return {
-        "endpoints": "test_database_host:3306,another_database_host:3306",
+        "endpoints": ",".join(example_database_endpoints),
         "database": "test_database_name",
         "username": "test_database_user",
         "password": "test_database_password",

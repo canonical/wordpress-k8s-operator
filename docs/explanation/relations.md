@@ -7,12 +7,20 @@ ensure synchronization of data among replications. Namely, secrets and admin cre
 among peers. See more about the secrets in the `rotate-wordpress-secrets` action of the
 [reference documentation](https://charmhub.io/wordpress-k8s/docs/reference-actions).
 
+### database
+
+The database relation is the standard database relation in accordance with the latest data platform
+library. It is a required relation for wordpress-k8s charm to become active. It provides a
+connection with `mysql_client` interface, meaning that any charms supporting mysql client can
+connect to the wordpress-k8s charm. It should be noted that the connection port on the database
+side must be on 3306.
+
 ### db
 
-Database relation is required for the wordpress-k8s charm to become active. Any relation that can
-fulfill the `mysql` interface can be used to integrate with the wordpress-k8s charm. Database
-configuration parameters are also provided for non-k8s native integrations support. Configuration
-replacements for db relation can be found in the reference documentation with the prefix `db_`.
+The db relation is marked for deprecation. Any relation that can fulfill the `mysql` interface can
+be used to integrate with the wordpress-k8s charm. Database configuration parameters are also
+provided for non-k8s native integrations support. Configuration replacements for db relation can be
+found in the reference documentation with the prefix `db_`.
 
 ### ingress
 

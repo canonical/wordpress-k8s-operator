@@ -148,7 +148,8 @@ def test_database_relation(
 
     effective_db_info = charm._current_effective_db_info
 
-    assert effective_db_info.hostname == example_database_endpoints[0]
+    (host, _) = example_database_endpoints[0].split(":")
+    assert effective_db_info.hostname == host
     assert effective_db_info.database == db_info["database"]
     assert effective_db_info.username == db_info["username"]
     assert effective_db_info.password == db_info["password"]

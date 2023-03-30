@@ -130,7 +130,7 @@ def test_db_relation(
 def test_database_relation(
     harness: ops.testing.Harness,
     setup_database_relation: typing.Callable[[], typing.Tuple[int, dict]],
-    example_database_endpoints: tuple[str, str],
+    example_database_host_port: tuple[str, str],
 ):
     """
     arrange: no pre-condition.
@@ -148,8 +148,7 @@ def test_database_relation(
 
     effective_db_info = charm._current_effective_db_info
 
-    (host, _) = example_database_endpoints[0].split(":")
-    assert effective_db_info.hostname == host
+    assert effective_db_info.hostname == example_database_host_port[0]
     assert effective_db_info.database == db_info["database"]
     assert effective_db_info.username == db_info["username"]
     assert effective_db_info.password == db_info["password"]

@@ -81,17 +81,17 @@ def example_db_info_fixture():
     }
 
 
-@pytest.fixture(scope="function", name="example_database_endpoints")
-def example_database_endpoints_fixture():
-    """Example database endpoints."""
-    return ("test_database_host:3306", "another_database_host:3306")
+@pytest.fixture(scope="function", name="example_database_host_port")
+def example_database_host_port_fixture():
+    """An example database connection host and port tuple."""
+    return ("test_database_host", "3306")
 
 
 @pytest.fixture(scope="function", name="example_database_info")
-def example_database_info_fixture(example_database_endpoints: tuple[str, str]):
+def example_database_info_fixture(example_database_host_port: tuple[str, str]):
     """An example database connection info from mysql_client interface."""
     return {
-        "endpoints": ",".join(example_database_endpoints),
+        "endpoints": ":".join(example_database_host_port),
         "database": "test_database_name",
         "username": "test_database_user",
         "password": "test_database_password",
@@ -102,7 +102,7 @@ def example_database_info_fixture(example_database_endpoints: tuple[str, str]):
 def example_invalid_database_info_fixture():
     """An example database connection info from mysql_client interface."""
     return {
-        "endpoints": "test_database_host:1234,another_database_host:4321",
+        "endpoints": "test_database_host:1234",
         "database": "test_database_name",
         "username": "test_database_user",
         "password": "test_database_password",

@@ -624,11 +624,11 @@ class WordpressCharm(CharmBase):
             password=self.state.relation_db_password,
         )
 
-    def _parse_database_endpoints(self, endpoints: str | None) -> str | None:
-        """Retrieve a single database endpoint from database endpoints.
+    def _parse_database_endpoints(self, endpoint: str | None) -> str | None:
+        """Retrieve a single database endpoint.
 
         Args:
-            endpoints: Comma separated endpoints of format host:port
+            endpoint: An endpoint of format host:port
 
         Returns:
             Hostname of database running on port 3306. None if no endpoints are provided.
@@ -638,9 +638,9 @@ class WordpressCharm(CharmBase):
         Raises:
             WordPressBlockedStatusException: Provided endpoint contains port other than 3306.
         """
-        if not endpoints:
+        if not endpoint:
             return None
-        host_port = endpoints[0].split(":")
+        host_port = endpoint.split(":")
         if len(host_port) == 2 and host_port[1] != "3306":
             raise exceptions.WordPressBlockedStatusException(f"Invalid port {host_port[1]}")
         # The endpoint might not contain port, we assume it to be 3306. If not, it will be caught

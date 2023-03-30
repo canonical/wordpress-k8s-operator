@@ -16,7 +16,6 @@ import time
 from pathlib import Path
 
 import kubernetes
-import ops.model
 import PIL.Image
 import pytest
 import pytest_asyncio
@@ -25,6 +24,8 @@ import requests
 from playwright.async_api import async_playwright
 
 from tests.integration.wordpress_client_for_test import WordpressClient
+
+from .constants import ACTIVE_STATUS_NAME
 
 logger = logging.getLogger()
 
@@ -120,7 +121,7 @@ async def deploy_old_version_fixture(
         ops_test.run("playwright", "install", "chromium"),
     )
     await ops_test.model.applications[application_name].set_config(gen_upgrade_test_charm_config())
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    await ops_test.model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
 
 @pytest_asyncio.fixture(scope="module", name="create_example_blog")
@@ -259,7 +260,7 @@ async def build_and_upgrade_fixture(
         num_units=num_units,
         config=gen_upgrade_test_charm_config(),
     )
-    await ops_test.model.wait_for_idle(status=ops.model.ActiveStatus.name)  # type: ignore
+    await ops_test.model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
 
 @pytest.mark.usefixtures("build_and_upgrade")

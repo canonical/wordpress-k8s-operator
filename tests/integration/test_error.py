@@ -3,9 +3,10 @@
 
 """Integration tests for WordPress charm in error."""
 
-import ops.model
 import pytest
 import pytest_operator.plugin
+
+from .constants import BLOCKED_STATUS_NAME
 
 
 @pytest.mark.usefixtures("build_and_deploy")
@@ -36,13 +37,11 @@ async def test_incorrect_db_config(ops_test: pytest_operator.plugin.OpsTest, app
     # db config.
     assert ops_test.model
     await ops_test.model.wait_for_idle(
-        idle_period=60, status=ops.model.BlockedStatus.name, apps=[application_name]  # type: ignore
+        idle_period=60, status=BLOCKED_STATUS_NAME, apps=[application_name]
     )
 
     for unit in ops_test.model.applications[application_name].units:
-        assert (
-            unit.workload_status == ops.model.BlockedStatus.name  # type: ignore
-        ), "unit status should be blocked"
+        assert unit.workload_status == BLOCKED_STATUS_NAME, "unit status should be blocked"
         msg = unit.workload_status_message
         assert ("MySQL error" in msg and ("2003" in msg or "2005" in msg)) or (
             "leader unit failed" in msg

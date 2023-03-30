@@ -70,7 +70,7 @@ def setup_replica_consensus_fixture(harness: ops.testing.Harness, app_name: str)
 
 @pytest.fixture(scope="function", name="example_db_info")
 def example_db_info_fixture():
-    """An example database connection info."""
+    """An example db connection info."""
     return {
         "host": "test_database_host",
         "database": "test_database_name",
@@ -81,8 +81,36 @@ def example_db_info_fixture():
     }
 
 
+@pytest.fixture(scope="function", name="example_database_host_port")
+def example_database_host_port_fixture():
+    """An example database connection host and port tuple."""
+    return ("test_database_host", "3306")
+
+
+@pytest.fixture(scope="function", name="example_database_info")
+def example_database_info_fixture(example_database_host_port: tuple[str, str]):
+    """An example database connection info from mysql_client interface."""
+    return {
+        "endpoints": ":".join(example_database_host_port),
+        "database": "test_database_name",
+        "username": "test_database_user",
+        "password": "test_database_password",
+    }
+
+
+@pytest.fixture(scope="function", name="example_invalid_database_info")
+def example_invalid_database_info_fixture():
+    """An example database connection info from mysql_client interface."""
+    return {
+        "endpoints": "test_database_host:1234",
+        "database": "test_database_name",
+        "username": "test_database_user",
+        "password": "test_database_password",
+    }
+
+
 @pytest.fixture(scope="function")
-def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict):
+def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict[str, str]):
     """Yields a function that can be used to set up db relation.
 
     After calling the yielded function, a db relation will be set up. example_db_info will be used
@@ -95,13 +123,58 @@ def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict):
         Returns:
             Tuple of relation id and relation data.
         """
-        db_info = example_db_info
         db_relation_id = harness.add_relation("db", "mysql")
         harness.add_relation_unit(db_relation_id, "mysql/0")
         harness.update_relation_data(db_relation_id, "mysql/0", example_db_info)
-        return db_relation_id, db_info
+        return db_relation_id, example_db_info
 
     return _setup_db_relation
+
+
+@pytest.fixture(scope="function")
+def setup_database_relation(harness: ops.testing.Harness, example_database_info: dict[str, str]):
+    """Yields a function that can be used to set up database relation.
+
+    After calling the yielded function, a database relation will be set up. example_database_info
+    will be used as the relation data. Return a tuple of relation id and the relation data.
+    """
+
+    def _setup_database_relation():
+        """Function to set up database relation. See fixture docstring for more information.
+
+        Returns:
+            Tuple of relation id and relation data.
+        """
+        db_relation_id = harness.add_relation("database", "mysql")
+        harness.add_relation_unit(db_relation_id, "mysql/0")
+        harness.update_relation_data(db_relation_id, "mysql", example_database_info)
+        return db_relation_id, example_database_info
+
+    return _setup_database_relation
+
+
+@pytest.fixture(scope="function")
+def setup_database_relation_invalid_port(
+    harness: ops.testing.Harness, example_invalid_database_info: dict[str, str]
+):
+    """Yields a function that can be used to set up database relation with a non 3306 port.
+
+    After calling the yielded function, a database relation will be set up. example_database_info
+    will be used as the relation data. Return a tuple of relation id and the relation data.
+    """
+
+    def _setup_database_relation():
+        """Function to set up database relation. See fixture docstring for more information.
+
+        Returns:
+            Tuple of relation id and relation data.
+        """
+        db_relation_id = harness.add_relation("database", "mysql")
+        harness.add_relation_unit(db_relation_id, "mysql/0")
+        harness.update_relation_data(db_relation_id, "mysql", example_invalid_database_info)
+        return db_relation_id, example_invalid_database_info
+
+    return _setup_database_relation
 
 
 @pytest.fixture(scope="function")

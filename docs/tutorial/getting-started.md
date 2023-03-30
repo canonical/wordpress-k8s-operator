@@ -47,13 +47,10 @@ The following commands deploys the mysql-k8s charm and relates wordpress-k8s cha
 interface.
 
 ```
-juju deploy mysql-k8s \
-  --config mysql-interface-user=wordpress-tutorial-user \
-  --config mysql-interface-database=wordpress-tutorial-database \
-  --channel=edge
+juju deploy mysql-k8s --channel=edge
 
-# mysql interface is required since mysql-k8s charm provides multiple mysql interfaces
-juju relate wordpress-k8s:db mysql-k8s:mysql
+# database interface is required since mysql-k8s charm provides multiple compatible interfaces
+juju relate wordpress-k8s:database mysql-k8s:database
 ```
 
 #### Database configuration

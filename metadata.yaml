@@ -11,7 +11,7 @@ tags:
   - blog
 assumes:
   - k8s-api
-  
+
 containers:
   wordpress:
     resource: wordpress-image
@@ -52,6 +52,8 @@ requires:
   db:
     interface: mysql
     limit: 1
+  database:
+    interface: mysql_client
   nginx-route:
     interface: nginx-route
     limit: 1

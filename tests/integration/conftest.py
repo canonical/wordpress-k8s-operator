@@ -36,7 +36,7 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope="module", name="model")
-def model_module_scope_fixture(ops_test: OpsTest) -> Model:
+def model_fixture(ops_test: OpsTest) -> Model:
     """Get current valid model created for integraion testing with module scope."""
     assert ops_test.model
     return ops_test.model
@@ -434,6 +434,13 @@ async def build_and_deploy_fixture(
         ),
     )
     await model.wait_for_idle()
+
+
+@pytest_asyncio.fixture(scope="module", name="mysql")
+async def mysql_fixture(model: Model):
+    """Deploy mysql-k8s application fixture."""
+    mysql = await model.deploy("mysql-k8s", channel="edge", trust=True)
+    return mysql
 
 
 @pytest_asyncio.fixture(scope="module", name="prometheus")

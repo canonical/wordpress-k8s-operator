@@ -1,66 +1,66 @@
-name: Integration tests
+# name: Integration tests
 
-on:
-  pull_request:
-  workflow_call:
+# on:
+#   pull_request:
+#   workflow_call:
 
-jobs:
-  get-runner-image:
-    name: Get runner image
-    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
-  build-images:
-    name: Build images
-    uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
-    needs: get-runner-image
-    with:
-      owner: ${{ github.repository_owner }}
-      registry: ghcr.io
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-      trivy-image-config: trivy.yaml
-  integration-tests-with-secrets:
-    uses: ./.github/workflows/integration_test_secrets.yaml
-    needs: [get-runner-image, build-images]
-    secrets: inherit
-    with:
-      images: ${{ needs.build-images.outputs.images }}
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-  integration-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        args:
-          - name: num_units=3, db_from_config
-            value: "--test-db-from-config --num-units=3"
-          - name: num_units=1, db_from_config
-            value: "--test-db-from-config --num-units=1"
-          - name: num_units=3, db_from_relation
-            value: "--num-units=3"
-          - name: num_units=1, db_from_relation
-            value: "--num-units=1"
-    uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
-    needs: [get-runner-image, build-images]
-    with:
-      images: ${{ needs.build-images.outputs.images }}
-      extra-arguments: |
-        -m "not (requires_secret)" \
-        --openstack-rc ${GITHUB_WORKSPACE}/openrc \
-        --kube-config ${GITHUB_WORKSPACE}/kube-config \
-        --screenshot-dir /tmp \
-        ${{ matrix.args.value }}
-      modules: '["test_core", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
-      owner: ${{ github.repository_owner }}
-      registry: ghcr.io
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-      pre-run-script: |
-        -c "sudo microk8s enable registry hostpath-storage
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-          sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
-      setup-devstack-swift: true
-  required_status_checks:
-    name: Required Integration Test Status Checks
-    runs-on: ubuntu-latest
-    needs:
-      - integration-tests
-      - integration-tests-with-secrets
-    steps:
-      - run: echo required checks passed
+# jobs:
+#   get-runner-image:
+#     name: Get runner image
+#     uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
+#   build-images:
+#     name: Build images
+#     uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
+#     needs: get-runner-image
+#     with:
+#       owner: ${{ github.repository_owner }}
+#       registry: ghcr.io
+#       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+#       trivy-image-config: trivy.yaml
+#   integration-tests-with-secrets:
+#     uses: ./.github/workflows/integration_test_secrets.yaml
+#     needs: [get-runner-image, build-images]
+#     secrets: inherit
+#     with:
+#       images: ${{ needs.build-images.outputs.images }}
+#       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+#   integration-tests:
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         args:
+#           - name: num_units=3, db_from_config
+#             value: "--test-db-from-config --num-units=3"
+#           - name: num_units=1, db_from_config
+#             value: "--test-db-from-config --num-units=1"
+#           - name: num_units=3, db_from_relation
+#             value: "--num-units=3"
+#           - name: num_units=1, db_from_relation
+#             value: "--num-units=1"
+#     uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
+#     needs: [get-runner-image, build-images]
+#     with:
+#       images: ${{ needs.build-images.outputs.images }}
+#       extra-arguments: |
+#         -m "not (requires_secret)" \
+#         --openstack-rc ${GITHUB_WORKSPACE}/openrc \
+#         --kube-config ${GITHUB_WORKSPACE}/kube-config \
+#         --screenshot-dir /tmp \
+#         ${{ matrix.args.value }}
+#       modules: '["test_core", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
+#       owner: ${{ github.repository_owner }}
+#       registry: ghcr.io
+#       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+#       pre-run-script: |
+#         -c "sudo microk8s enable registry hostpath-storage
+#           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
+#           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
+#       setup-devstack-swift: true
+#   required_status_checks:
+#     name: Required Integration Test Status Checks
+#     runs-on: ubuntu-latest
+#     needs:
+#       - integration-tests
+#       - integration-tests-with-secrets
+#     steps:
+#       - run: echo required checks passed

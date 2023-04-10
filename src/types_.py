@@ -3,7 +3,7 @@
 
 """Module for commonly used internal types in WordPress charm."""
 
-from typing import Any, NamedTuple, Union
+from typing import Any, NamedTuple, Optional, Union
 
 
 class CommandExecResult(NamedTuple):
@@ -44,7 +44,7 @@ class DatabaseConfig(NamedTuple):
         password: The password to use to authenticat to the database.
     """
 
-    hostname: str | None
-    database: str | None
-    username: str | None
-    password: str | None
+    hostname: Optional[str]
+    database: Optional[str]
+    username: Optional[str]
+    password: Optional[str]

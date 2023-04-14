@@ -4,7 +4,7 @@
 # See LICENSE file for licensing details.
 
 """COS integration for WordPress charm."""
-from typing import TypedDict
+from typing import Dict, List, TypedDict
 
 from ops.pebble import Check, Layer, Service
 
@@ -20,8 +20,8 @@ class PrometheusStaticConfig(TypedDict, total=False):
         labels: labels assigned to all metrics scraped from the targets.
     """
 
-    targets: list[str]
-    labels: dict[str, str]
+    targets: List[str]
+    labels: Dict[str, str]
 
 
 class PrometheusMetricsJob(TypedDict, total=False):
@@ -36,7 +36,7 @@ class PrometheusMetricsJob(TypedDict, total=False):
     """
 
     metrics_path: str
-    static_configs: list[PrometheusStaticConfig]
+    static_configs: List[PrometheusStaticConfig]
 
 
 APACHE_PROMETHEUS_SCRAPE_PORT = "9117"

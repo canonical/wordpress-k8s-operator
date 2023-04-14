@@ -9,7 +9,6 @@ import io
 import json
 import secrets
 import socket
-import typing
 import unittest.mock
 import urllib.parse
 from typing import Callable, List, Set

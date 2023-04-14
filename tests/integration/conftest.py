@@ -10,6 +10,7 @@ import logging
 import pathlib
 import re
 import typing
+from typing import Dict, List, Optional
 
 import kubernetes
 import pytest
@@ -130,7 +131,7 @@ async def get_app_revision(ops_test: OpsTest) -> typing.Callable[[str], typing.A
 
 
 @pytest_asyncio.fixture(scope="function", name="unit_ip_list")
-async def fixture_unit_ip_list(get_unit_ip_list: typing.Callable[[], typing.Awaitable[list[str]]]):
+async def fixture_unit_ip_list(get_unit_ip_list: typing.Callable[[], typing.Awaitable[List[str]]]):
     """A fixture containing ip addresses of current units.
 
     Yields:
@@ -439,7 +440,7 @@ async def build_and_deploy_fixture(
 @pytest_asyncio.fixture(scope="module", name="mysql")
 async def mysql_fixture(model: Model):
     """Deploy mysql-k8s application fixture."""
-    mysql = await model.deploy("mysql-k8s", channel="edge", trust=True)
+    mysql = await model.deploy("mysql-k8s", channel="8.0/stable", trust=True)
     return mysql
 
 
@@ -489,7 +490,7 @@ def image_fixture() -> bytes:
 
 
 @pytest.fixture(scope="module", name="swift_conn")
-def swift_conn_fixture(openstack_environment) -> swiftclient.Connection | None:
+def swift_conn_fixture(openstack_environment) -> Optional[swiftclient.Connection]:
     """Create a swift connection client."""
     if openstack_environment is None:
         return None
@@ -511,8 +512,8 @@ def swift_conn_fixture(openstack_environment) -> swiftclient.Connection | None:
 def swift_config_fixture(
     request: pytest.FixtureRequest,
     swift_conn: swiftclient.Connection,
-    openstack_environment: typing.Optional[typing.Dict[str, str]],
-) -> typing.Optional[typing.Dict[str, str]]:
+    openstack_environment: Optional[Dict[str, str]],
+) -> Optional[Dict[str, str]]:
     """Create a swift config dict that can be used for wp_plugin_openstack-objectstorage_config."""
     if openstack_environment is None:
         return None

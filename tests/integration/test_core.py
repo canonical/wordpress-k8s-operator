@@ -9,10 +9,9 @@ import io
 import json
 import secrets
 import socket
-import typing
 import unittest.mock
 import urllib.parse
-from typing import Callable
+from typing import Callable, List, Set
 
 import PIL.Image
 import pytest
@@ -237,15 +236,15 @@ async def test_wordpress_default_themes(unit_ip_list, get_theme_list_from_ip):
 async def test_wordpress_install_uninstall_themes(
     model: Model,
     application_name: str,
-    unit_ip_list: list[str],
-    get_theme_list_from_ip: Callable[[str], list[str]],
+    unit_ip_list: List[str],
+    get_theme_list_from_ip: Callable[[str], List[str]],
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: change themes setting in config.
     assert: themes should be installed and uninstalled accordingly.
     """
-    theme_change_list: typing.List[typing.Set[str]] = [
+    theme_change_list: List[Set[str]] = [
         {"twentyfifteen", "classic"},
         {"tt1-blocks", "twentyfifteen"},
         {"tt1-blocks"},
@@ -300,15 +299,15 @@ async def test_wordpress_theme_installation_error(model: Model, application_name
 async def test_wordpress_install_uninstall_plugins(
     model: Model,
     application_name: str,
-    unit_ip_list: list[str],
-    get_plugin_list_from_ip: Callable[[str], list[str]],
+    unit_ip_list: List[str],
+    get_plugin_list_from_ip: Callable[[str], List[str]],
 ):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: change plugins setting in config.
     assert: plugins should be installed and uninstalled accordingly.
     """
-    plugin_change_list: typing.List[typing.Set[str]] = [
+    plugin_change_list: List[Set[str]] = [
         {"classic-editor", "classic-widgets"},
         {"classic-editor"},
         {"classic-widgets"},
@@ -543,7 +542,7 @@ async def test_prometheus_integration(
     model: Model,
     prometheus: Application,
     application_name: str,
-    unit_ip_list: list[str],
+    unit_ip_list: List[str],
 ):
     """
     arrange: after WordPress charm has been deployed and relations established with prometheus.

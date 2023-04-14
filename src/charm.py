@@ -16,7 +16,7 @@ import string
 import textwrap
 import time
 import traceback
-from typing import Any, Union
+from typing import Any, Dict, List, Optional, Union
 
 import mysql.connector
 import ops.charm
@@ -294,7 +294,7 @@ class WordpressCharm(CharmBase):
             "nonce_salt",
         ]
 
-    def _generate_wp_secret_keys(self) -> dict[str, str]:
+    def _generate_wp_secret_keys(self) -> Dict[str, str]:
         """Generate random secure secrets for each secret required by WordPress.
 
         Returns:
@@ -480,7 +480,7 @@ class WordpressCharm(CharmBase):
 
     def _run_cli(
         self,
-        cmd: list[str],
+        cmd: List[str],
         user: Union[str, None] = None,
         group: Union[str, None] = None,
         working_dir: Union[str, None] = None,
@@ -533,7 +533,7 @@ class WordpressCharm(CharmBase):
         return result
 
     def _run_wp_cli(
-        self, cmd: list[str], timeout: int = 60, combine_stderr: bool = False
+        self, cmd: List[str], timeout: int = 60, combine_stderr: bool = False
     ) -> types_.CommandExecResult:
         """Execute a wp-cli command, this is a wrapper of :meth:`charm.WordpressCharm._run_cli`.
 
@@ -560,7 +560,7 @@ class WordpressCharm(CharmBase):
         return result
 
     def _wrapped_run_wp_cli(
-        self, cmd: list[str], timeout: int = 60, error_message: Union[str, None] = None
+        self, cmd: List[str], timeout: int = 60, error_message: Union[str, None] = None
     ) -> types_.ExecResult:
         """Run wp cli command and return the result as ``types_.ExecResult``.
 
@@ -599,7 +599,7 @@ class WordpressCharm(CharmBase):
         return self._run_wp_cli(["wp", "core", "is-installed"]).return_code == 0
 
     @property
-    def _config_database_config(self) -> types_.DatabaseConfig | None:
+    def _config_database_config(self) -> Optional[types_.DatabaseConfig]:
         """Database configuration details from charm config.
 
         Returns:
@@ -618,7 +618,7 @@ class WordpressCharm(CharmBase):
         return None
 
     @property
-    def _db_relation_database_config(self) -> types_.DatabaseConfig | None:
+    def _db_relation_database_config(self) -> Optional[types_.DatabaseConfig]:
         """Database configuration details from stored state.
 
         Since the legacy db relation is per-unit basis, the relation data must be stored in charm
@@ -638,7 +638,7 @@ class WordpressCharm(CharmBase):
             password=self.state.relation_db_password,
         )
 
-    def _parse_database_endpoints(self, endpoint: str | None) -> str | None:
+    def _parse_database_endpoints(self, endpoint: Optional[str]) -> Optional[str]:
         """Retrieve a single database endpoint.
 
         Args:
@@ -662,7 +662,7 @@ class WordpressCharm(CharmBase):
         return host_port[0]
 
     @property
-    def _database_relation_database_config(self) -> types_.DatabaseConfig | None:
+    def _database_relation_database_config(self) -> Optional[types_.DatabaseConfig]:
         """Database configuration details from database relation.
 
         Returns:
@@ -680,7 +680,7 @@ class WordpressCharm(CharmBase):
         )
 
     @property
-    def _current_effective_db_info(self) -> types_.DatabaseConfig | None:
+    def _current_effective_db_info(self) -> Optional[types_.DatabaseConfig]:
         """Get the current effective db connection information.
 
         The order of precedence for effective configurations are as follows:
@@ -1121,7 +1121,7 @@ class WordpressCharm(CharmBase):
         return types_.ExecResult(success=True, result=None, message="")
 
     def _activate_plugin(
-        self, plugin: str, options: dict[str, Union[str, dict]]
+        self, plugin: str, options: Dict[str, Union[str, dict]]
     ) -> types_.ExecResult:
         """Activate a WordPress plugin and set WordPress options after activation.
 
@@ -1152,7 +1152,7 @@ class WordpressCharm(CharmBase):
                 )
         return types_.ExecResult(success=True, result=None, message="")
 
-    def _deactivate_plugin(self, plugin: str, options: list[str]) -> types_.ExecResult:
+    def _deactivate_plugin(self, plugin: str, options: List[str]) -> types_.ExecResult:
         """Deactivate a WordPress plugin and delete WordPress options after deactivation.
 
         Args:
@@ -1323,7 +1323,7 @@ class WordpressCharm(CharmBase):
         self._run_cli(["a2disconf", conf_name])
         self._start_server()
 
-    def _swift_config(self) -> dict[str, Any]:
+    def _swift_config(self) -> Dict[str, Any]:
         """Load swift configuration from charm config.
 
         The legacy swift plugin options ``url`` or ``prefix`` will be converted to ``swift-url``
@@ -1387,7 +1387,7 @@ class WordpressCharm(CharmBase):
                 )
         return swift_config
 
-    def _config_swift_plugin(self, swift_config: dict[str, Any]) -> None:
+    def _config_swift_plugin(self, swift_config: Dict[str, Any]) -> None:
         """Activate or deactivate the swift plugin based on the swift config in the charm config.
 
         Args:

@@ -464,7 +464,10 @@ async def loki_fixture(
     model: Model, application_name: str
 ) -> typing.AsyncGenerator[Application, None]:
     """Deploy and return loki charm application with relation to WordPress charm."""
-    loki = await model.deploy("loki-k8s", channel="edge", trust=True)
+    # 2023-04-18 The Loki stable is missing container.can_connect guard and hence fails the tests
+    # often. Resort to using the latest edge (revision 82) until it is promoted to stable.
+    # https://chat.charmhub.io/charmhub/pl/xgqyman4btym3ff74fcjomzxbw
+    loki = await model.deploy("loki-k8s", channel="latest/edge", trust=True)
     await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
     yield loki
     await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")

@@ -5,6 +5,7 @@
 
 """Integration tests for WordPress charm."""
 
+import asyncio
 import io
 import json
 import secrets
@@ -576,10 +577,28 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
+
+    async def wait_loki_unit_agent_idle():
+        """Wait for loki unit agent to be in idle state."""
+        idle = False
+        for _ in range(3):
+            status: FullStatus = await model.get_status(filters=[loki.name])
+            for unit in status.applications[loki.name].units.values():
+                if unit.agent_status.status == "idle":
+                    idle = True
+                    break
+            if idle:
+                break
+            await asyncio.sleep(10.0)
+        if not idle:
+            raise TimeoutError("Loki unit agent state not idle.")
+
     await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=30)
 
+    await wait_loki_unit_agent_idle()
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
+        unit.agent_status.status
         series = requests.get(f"http://{unit.address}:3100/loki/api/v1/series", timeout=10).json()
         log_files = set(series_data["filename"] for series_data in series["data"])
         assert "/var/log/apache2/error.log" in log_files

@@ -449,7 +449,7 @@ async def prometheus_fixture(
     model: Model, application_name: str
 ) -> typing.AsyncGenerator[Application, None]:
     """Deploy and yield prometheus charm application with relation to WordPress charm."""
-    prometheus = await model.deploy("prometheus-k8s", channel="stable", trust=True)
+    prometheus = await model.deploy("prometheus-k8s", channel="latest/edge", trust=True)
     await prometheus.relate(
         PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
     )
@@ -478,7 +478,7 @@ async def grafana_fixture(
     model: Model, application_name: str
 ) -> typing.AsyncGenerator[Application, None]:
     """Deploy and return grafana charm application with relation to WordPress charm."""
-    grafana = await model.deploy("grafana-k8s", channel="stable", trust=True)
+    grafana = await model.deploy("grafana-k8s", channel="latest/edge", trust=True)
     await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
     yield grafana
     await grafana.remove_relation(

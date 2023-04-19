@@ -32,12 +32,12 @@ async def test_incorrect_db_config(ops_test: pytest_operator.plugin.OpsTest, app
     assert: charm should be blocked by WordPress installation errors, instead of lacking
         of database connection info.
     """
-    # Database configuration can retry for up to 60 seconds before giving up and showing an error.
+    # Database configuration can retry for up to 300 seconds before giving up and showing an error.
     # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
     # db config.
     assert ops_test.model
     await ops_test.model.wait_for_idle(
-        idle_period=60, status=BLOCKED_STATUS_NAME, apps=[application_name]
+        idle_period=360, status=BLOCKED_STATUS_NAME, apps=[application_name]
     )
 
     for unit in ops_test.model.applications[application_name].units:

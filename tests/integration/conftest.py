@@ -421,7 +421,9 @@ async def build_and_deploy_fixture(
         build_and_deploy_wordpress(),
         deploy_and_wait_for_mysql_pod(),
         model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
-        model.deploy("nginx-ingress-integrator", series="focal", trust=True),
+        model.deploy(
+            "nginx-ingress-integrator", series="focal", trust=True, application_name="ingress"
+        ),
     )
     await model.wait_for_idle()
 

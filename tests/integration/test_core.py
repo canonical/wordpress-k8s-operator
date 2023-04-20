@@ -593,7 +593,7 @@ async def test_loki_integration(
         if not idle:
             raise TimeoutError("Loki unit agent state not idle.")
 
-    await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=30)
+    await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=60)
 
     await wait_loki_unit_agent_idle()
     status: FullStatus = await model.get_status(filters=[loki.name])

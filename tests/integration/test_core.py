@@ -582,7 +582,7 @@ async def test_loki_integration(
         """Wait for loki unit agent to be in idle state.
 
         Raises:
-            TimeoutError if loki does not become idle within given time.
+            TimeoutError: if loki does not become idle within given time.
         """
         idle = False
         for _ in range(3):
@@ -634,7 +634,9 @@ async def test_grafana_integration(
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
     await model.wait_for_idle(
-        apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
+        apps=[application_name, prometheus.name, loki.name, grafana.name],
+        status="active",
+        idle_period=60,
     )
 
     action: Action = await grafana.units[0].run_action("get-admin-password")

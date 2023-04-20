@@ -421,18 +421,7 @@ async def build_and_deploy_fixture(
         build_and_deploy_wordpress(),
         deploy_and_wait_for_mysql_pod(),
         model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
-        # temporary fix for the CharmHub problem
-        ops_test.juju(
-            "deploy",
-            "nginx-ingress-integrator",
-            "ingress",
-            "--channel",
-            "edge",
-            "--series",
-            "focal",
-            "--trust",
-            check=True,
-        ),
+        model.deploy("nginx-ingress-integrator", series="focal", trust=True),
     )
     await model.wait_for_idle()
 

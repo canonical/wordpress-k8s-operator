@@ -579,7 +579,11 @@ async def test_loki_integration(
     """
 
     async def wait_loki_unit_agent_idle():
-        """Wait for loki unit agent to be in idle state."""
+        """Wait for loki unit agent to be in idle state.
+
+        Raises:
+            TimeoutError if loki does not become idle within given time.
+        """
         idle = False
         for _ in range(3):
             status: FullStatus = await model.get_status(filters=[loki.name])

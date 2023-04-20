@@ -577,29 +577,8 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-
-    async def wait_loki_unit_agent_idle():
-        """Wait for loki unit agent to be in idle state.
-
-        Raises:
-            TimeoutError: if loki does not become idle within given time.
-        """
-        idle = False
-        for _ in range(3):
-            status: FullStatus = await model.get_status(filters=[loki.name])
-            for unit in status.applications[loki.name].units.values():
-                if unit.agent_status.status == "idle":
-                    idle = True
-                    break
-            if idle:
-                break
-            await asyncio.sleep(10.0)
-        if not idle:
-            raise TimeoutError("Loki unit agent state not idle.")
-
     await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=60)
 
-    await wait_loki_unit_agent_idle()
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
         series = requests.get(f"http://{unit.address}:3100/loki/api/v1/series", timeout=10).json()

@@ -66,4 +66,4 @@ jobs:
     steps:
       - run: |
           [ '${{ needs.integration-tests-with-secrets.result }}' = 'success' ] || (echo integration-test-with-secrets failed && false)
-          [ '${{ needs.integration-test.result }}' = 'success' ] || (echo integration-test failed && false)
+          [ '${{ needs.integration-tests.result }}' = 'success' ] || (echo integration-test failed && false)

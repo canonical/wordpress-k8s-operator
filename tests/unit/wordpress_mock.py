@@ -397,7 +397,7 @@ class WordpressContainerMock:
         file_list = []
         for file in self.fs:
             if file.startswith(path):
-                file_list.append(file.removeprefix(path).split("/")[0])
+                file_list.append(file.replace(path, "", 1).split("/")[0])
         return file_list
 
     def remove_path(self, path: str, recursive: bool = False) -> None:

@@ -13,6 +13,7 @@ import logging
 import re
 import subprocess  # nosec
 import time
+import typing
 from pathlib import Path
 
 import kubernetes
@@ -159,7 +160,7 @@ async def create_example_blog_fixture(
 
     wordpress_pod = get_wordpress_podspec_pod()
 
-    def kubernetes_exec(cmd: list[str]):
+    def kubernetes_exec(cmd: typing.List[str]):
         """Execute a command in WordPress pod.
 
         Args:

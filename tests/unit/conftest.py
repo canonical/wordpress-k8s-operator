@@ -88,7 +88,7 @@ def example_database_host_port_fixture():
 
 
 @pytest.fixture(scope="function", name="example_database_info")
-def example_database_info_fixture(example_database_host_port: tuple[str, str]):
+def example_database_info_fixture(example_database_host_port: typing.Tuple[str, str]):
     """An example database connection info from mysql_client interface."""
     return {
         "endpoints": ":".join(example_database_host_port),
@@ -110,7 +110,7 @@ def example_invalid_database_info_fixture():
 
 
 @pytest.fixture(scope="function")
-def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict[str, str]):
+def setup_db_relation(harness: ops.testing.Harness, example_db_info: typing.Dict[str, str]):
     """Yields a function that can be used to set up db relation.
 
     After calling the yielded function, a db relation will be set up. example_db_info will be used
@@ -132,7 +132,9 @@ def setup_db_relation(harness: ops.testing.Harness, example_db_info: dict[str, s
 
 
 @pytest.fixture(scope="function")
-def setup_database_relation(harness: ops.testing.Harness, example_database_info: dict[str, str]):
+def setup_database_relation(
+    harness: ops.testing.Harness, example_database_info: typing.Dict[str, str]
+):
     """Yields a function that can be used to set up database relation.
 
     After calling the yielded function, a database relation will be set up. example_database_info
@@ -155,7 +157,7 @@ def setup_database_relation(harness: ops.testing.Harness, example_database_info:
 
 @pytest.fixture(scope="function")
 def setup_database_relation_invalid_port(
-    harness: ops.testing.Harness, example_invalid_database_info: dict[str, str]
+    harness: ops.testing.Harness, example_invalid_database_info: typing.Dict[str, str]
 ):
     """Yields a function that can be used to set up database relation with a non 3306 port.
 
@@ -196,10 +198,10 @@ def run_standard_plugin_test(
 
     def _run_standard_plugin_test(
         plugin: str,
-        plugin_config: dict[str, str],
-        excepted_options: dict[str, typing.Any],
-        excepted_options_after_removed: dict[str, str] | None = None,
-        additional_check_after_install: typing.Callable | None = None,
+        plugin_config: typing.Dict[str, str],
+        excepted_options: typing.Dict[str, typing.Any],
+        excepted_options_after_removed: typing.Optional[typing.Dict[str, str]] = None,
+        additional_check_after_install: typing.Optional[typing.Callable] = None,
     ):
         """Function to perform standard plugins test.
 

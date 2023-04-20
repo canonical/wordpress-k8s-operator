@@ -62,5 +62,8 @@ jobs:
     needs:
       - integration-tests
       - integration-tests-with-secrets
+    if: always()
     steps:
-      - run: echo required checks passed
+      - run: |
+          [ '${{ needs.integration-tests-with-secrets.result }}' = 'success' ] || (echo integration-test-with-secrets failed && false)
+          [ '${{ needs.integration-test.result }}' = 'success' ] || (echo integration-test failed && false)

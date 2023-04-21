@@ -28,6 +28,7 @@ from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
 
 from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
+from .helpers import wait_unit_agents_idle
 from .wordpress_client_for_test import WordpressClient
 
 
@@ -577,29 +578,8 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-
-    async def wait_loki_unit_agent_idle():
-        """Wait for loki unit agent to be in idle state.
-
-        Raises:
-            TimeoutError: if loki does not become idle within given time.
-        """
-        idle = False
-        for _ in range(3):
-            status: FullStatus = await model.get_status(filters=[loki.name])
-            for unit in status.applications[loki.name].units.values():
-                if unit.agent_status.status == "idle":
-                    idle = True
-                    break
-            if idle:
-                break
-            await asyncio.sleep(10.0)
-        if not idle:
-            raise TimeoutError("Loki unit agent state not idle.")
-
     await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=60)
-
-    await wait_loki_unit_agent_idle()
+    await wait_unit_agents_idle(model=model, application_name=loki.name)
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
@@ -638,6 +618,7 @@ async def test_grafana_integration(
         status="active",
         idle_period=60,
     )
+    await wait_unit_agents_idle(model=model, application_name=grafana.name)
 
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()

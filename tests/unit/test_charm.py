@@ -130,7 +130,7 @@ def test_db_relation(
 def test_database_relation(
     harness: ops.testing.Harness,
     setup_database_relation: typing.Callable[[], typing.Tuple[int, dict]],
-    example_database_host_port: tuple[str, str],
+    example_database_host_port: typing.Tuple[str, str],
 ):
     """
     arrange: no pre-condition.

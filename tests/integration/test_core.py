@@ -27,6 +27,7 @@ from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
 
 from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
+from .helpers import wait_unit_agents_idle
 from .wordpress_client_for_test import WordpressClient
 
 
@@ -576,7 +577,8 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(apps=[application_name, loki.name], status="active")
+    await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=60)
+    await wait_unit_agents_idle(model=model, application_name=loki.name)
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
@@ -611,8 +613,11 @@ async def test_grafana_integration(
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
     await model.wait_for_idle(
-        apps=[application_name, prometheus.name, loki.name, grafana.name], status="active"
+        apps=[application_name, prometheus.name, loki.name, grafana.name],
+        status="active",
+        idle_period=60,
     )
+    await wait_unit_agents_idle(model=model, application_name=grafana.name)
 
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()

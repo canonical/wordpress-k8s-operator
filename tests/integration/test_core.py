@@ -5,7 +5,6 @@
 
 """Integration tests for WordPress charm."""
 
-import asyncio
 import io
 import json
 import secrets

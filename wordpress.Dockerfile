@@ -1,3 +1,5 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
 FROM ubuntu:20.04
 
 ARG VERSION=5.9.3

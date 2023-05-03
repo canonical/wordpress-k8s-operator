@@ -25,7 +25,7 @@ in the repository. The settings are dynamically modified during runtime when the
 
 In order to enable monitoring of Apache server status, redirection to WordPress php for route
 `/server-status` is overridden in
-[`files/apache2.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/files/docker-php-swift-proxy.conf).
+[`files/apache2.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/files/apache2.conf).
 `/server-status` endpoint is accessed by `apache-exporter` service to convert and re-expose with
 open metrics compliant format for integration with `prometheus_scrape` interface.
 

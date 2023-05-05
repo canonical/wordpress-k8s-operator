@@ -53,8 +53,6 @@ resources:
     upstream-source: bitnami/apache-exporter:0.11.0
 
 provides:
-  website:
-    interface: http
   metrics-endpoint:
     interface: prometheus_scrape
   grafana-dashboard:

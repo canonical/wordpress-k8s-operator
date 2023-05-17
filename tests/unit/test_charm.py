@@ -95,38 +95,6 @@ def test_replica_consensus_stable_after_leader_reelection(
 
 
 @pytest.mark.usefixtures("attach_storage")
-def test_db_relation(
-    harness: ops.testing.Harness,
-    setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]],
-):
-    """
-    arrange: no pre-condition.
-    act: add and remove the db relation between WordPress application and mysql.
-    assert: database info in charm state should change accordingly.
-    """
-    harness.begin_with_initial_hooks()
-    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-
-    assert (
-        charm._current_effective_db_info is None
-    ), "database info in charm state should not exist before database relation created"
-
-    db_relation_id, db_info = setup_db_relation()
-
-    effective_db_info = charm._current_effective_db_info
-
-    assert effective_db_info.hostname == db_info["host"]
-    assert effective_db_info.database == db_info["database"]
-    assert effective_db_info.username == db_info["user"]
-    assert effective_db_info.password == db_info["password"]
-
-    harness.remove_relation(db_relation_id)
-
-    effective_db_info = charm._current_effective_db_info
-    assert effective_db_info is None
-
-
-@pytest.mark.usefixtures("attach_storage")
 def test_database_relation(
     harness: ops.testing.Harness,
     setup_database_relation: typing.Callable[[], typing.Tuple[int, dict]],
@@ -199,7 +167,6 @@ def test_wp_config_before_consensus(harness: ops.testing.Harness):
 def test_wp_config(
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
-    setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]],
 ):
     """
     arrange: after WordPress application unit consensus has been reached.
@@ -232,22 +199,7 @@ def test_wp_config(
             wp_config, "define(", secret_key.upper(), secret_value
         ), f"wp-config.php should contain a valid {secret_key}"
 
-    _, db_info = setup_db_relation()
     wp_config = charm._gen_wp_config()
-
-    db_field_conversion = {
-        "db_host": "host",
-        "db_name": "database",
-        "db_user": "user",
-        "db_password": "password",
-    }
-    for db_info_field in ["db_host", "db_name", "db_user", "db_password"]:
-        assert in_same_line(
-            wp_config,
-            "define(",
-            db_info_field.upper(),
-            db_info[db_field_conversion[db_info_field]],
-        ), f"wp-config.php should contain database setting {db_info_field} from the db relation"
 
     db_info_in_config = {
         "db_host": "config_db_host",
@@ -257,11 +209,6 @@ def test_wp_config(
     }
     harness.update_config(db_info_in_config)
     wp_config = charm._gen_wp_config()
-
-    for db_info_field, db_info_value in db_info_in_config.items():
-        assert in_same_line(
-            wp_config, "define(", db_info_field.upper(), db_info_value
-        ), "db info in config should takes precedence over the db relation"
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -852,11 +799,8 @@ def test_swift_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Ca
 
 
 def test_ingress(
-    patch: WordpressPatch,
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
-    example_db_info: dict,
-    setup_db_relation: typing.Callable[[], typing.Tuple[int, dict]],
     app_name: str,
 ):
     """
@@ -870,13 +814,6 @@ def test_ingress(
     nginx_route_relation_id = harness.add_relation("nginx-route", "ingress")
     harness.add_relation_unit(nginx_route_relation_id, "ingress/0")
     setup_replica_consensus()
-    patch.database.prepare_database(
-        host=example_db_info["host"],
-        database=example_db_info["database"],
-        user=example_db_info["user"],
-        password=example_db_info["password"],
-    )
-    setup_db_relation()
 
     assert harness.get_relation_data(nginx_route_relation_id, harness.charm.app) == {
         "service-hostname": app_name,

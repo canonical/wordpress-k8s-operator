@@ -38,7 +38,6 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.pebble import ExecProcess
-from opslib.mysql import MySQLClient, MySQLDatabaseChangedEvent
 from yaml import safe_load
 
 import exceptions
@@ -67,7 +66,6 @@ class WordpressCharm(CharmBase):
     _WORDPRESS_GROUP = "www-data"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
     _DATABASE_RELATION_NAME = "database"
-    _LEGACY_DB_RELATION_NAME = "db"
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
     _WORDPRESS_DEFAULT_THEMES = [
@@ -151,8 +149,6 @@ class WordpressCharm(CharmBase):
         self.database = DatabaseRequires(
             self, relation_name=self._DATABASE_RELATION_NAME, database_name=self.app.name
         )
-        # This relation is soon to be deprecated.
-        self.legacy_db = MySQLClient(self, self._LEGACY_DB_RELATION_NAME)
 
         self.state.set_default(
             relation_db_host=None,
@@ -183,8 +179,6 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
         self.framework.observe(self.database.on.database_created, self._reconciliation)
-        self.framework.observe(self.legacy_db.on.database_changed, self._on_relation_db_changed)
-        self.framework.observe(self.legacy_db.on.database_changed, self._reconciliation)
         self.framework.observe(self.on.config_changed, self._reconciliation)
         self.framework.observe(self.on.upgrade_charm, self._setup_replica_data)
         self.framework.observe(self.on.wordpress_pebble_ready, self._set_version)
@@ -366,28 +360,6 @@ class WordpressCharm(CharmBase):
             new_replica_data = self._generate_wp_secret_keys()
             for secret_key, secret_value in new_replica_data.items():
                 replica_relation_data[secret_key] = secret_value
-
-    def _on_relation_db_changed(self, event: MySQLDatabaseChangedEvent) -> None:
-        """Handle db relation changes (data changes/relation breaks).
-
-        This method will set all db relation related states ``relation_db_*`` when db relation
-        changes and will reset all that to ``None`` after db relation is broken.
-
-        The relation data has to be stored in charm state since this event is per-unit basis.
-        Otherwise, there's no way to determine which unit of mysql to connect with.
-
-        Args:
-            event: An instance of opslib.mysql.MySQLDatabaseChangedEvent represents the new
-                database connection information.
-        """
-        logger.warning(
-            "The `db` relation is marked for deprecation. "
-            "Please use `database` relation instead."
-        )
-        self.state.relation_db_host = event.host
-        self.state.relation_db_name = event.database
-        self.state.relation_db_user = event.user
-        self.state.relation_db_password = event.password
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.
@@ -617,27 +589,6 @@ class WordpressCharm(CharmBase):
             )
         return None
 
-    @property
-    def _db_relation_database_config(self) -> Optional[types_.DatabaseConfig]:
-        """Database configuration details from stored state.
-
-        Since the legacy db relation is per-unit basis, the relation data must be stored in charm
-        state.
-
-        Returns:
-            Database configuration required to establish database connection.
-            None if not exists.
-        """
-        relation = self.model.get_relation(self._LEGACY_DB_RELATION_NAME)
-        if not relation:
-            return None
-        return types_.DatabaseConfig(
-            hostname=self.state.relation_db_host,
-            database=self.state.relation_db_name,
-            username=self.state.relation_db_user,
-            password=self.state.relation_db_password,
-        )
-
     def _parse_database_endpoints(self, endpoint: Optional[str]) -> Optional[str]:
         """Retrieve a single database endpoint.
 
@@ -686,17 +637,12 @@ class WordpressCharm(CharmBase):
         The order of precedence for effective configurations are as follows:
         1. Charm config
         2. database relation
-        3. db relation
 
         Returns:
             Database configuration required to establish database connection.
             None if not exists.
         """
-        return (
-            self._config_database_config
-            or self._database_relation_database_config
-            or self._db_relation_database_config
-        )
+        return self._config_database_config or self._database_relation_database_config
 
     def _test_database_connectivity(self):
         """Test the connectivity of the current database config/relation.

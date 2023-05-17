@@ -68,19 +68,6 @@ def setup_replica_consensus_fixture(harness: ops.testing.Harness, app_name: str)
     return _setup_replica_consensus
 
 
-@pytest.fixture(scope="function", name="example_db_info")
-def example_db_info_fixture():
-    """An example db connection info."""
-    return {
-        "host": "test_database_host",
-        "database": "test_database_name",
-        "user": "test_database_user",
-        "password": "test_database_password",
-        "port": "3306",
-        "root_password": "test_root_password",
-    }
-
-
 @pytest.fixture(scope="function", name="example_database_host_port")
 def example_database_host_port_fixture():
     """An example database connection host and port tuple."""
@@ -107,28 +94,6 @@ def example_invalid_database_info_fixture():
         "username": "test_database_user",
         "password": "test_database_password",
     }
-
-
-@pytest.fixture(scope="function")
-def setup_db_relation(harness: ops.testing.Harness, example_db_info: typing.Dict[str, str]):
-    """Yields a function that can be used to set up db relation.
-
-    After calling the yielded function, a db relation will be set up. example_db_info will be used
-    as the relation data. Return a tuple of relation id and the relation data.
-    """
-
-    def _setup_db_relation():
-        """Function to set up db relation. See fixture docstring for more information.
-
-        Returns:
-            Tuple of relation id and relation data.
-        """
-        db_relation_id = harness.add_relation("db", "mysql")
-        harness.add_relation_unit(db_relation_id, "mysql/0")
-        harness.update_relation_data(db_relation_id, "mysql/0", example_db_info)
-        return db_relation_id, example_db_info
-
-    return _setup_db_relation
 
 
 @pytest.fixture(scope="function")

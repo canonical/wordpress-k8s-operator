@@ -91,26 +91,6 @@ async def test_mysql_config(
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_relation(db_from_config: bool, ops_test: OpsTest, application_name):
-    """
-    arrange: after WordPress charm has been deployed.
-    act: deploy a mariadb charm and add a relation between WordPress and mariadb.
-    assert: WordPress should be active.
-    """
-    if db_from_config:
-        pytest.skip()
-    assert ops_test.model
-    await ops_test.model.add_relation("wordpress", "mariadb:mysql")
-    await ops_test.model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    app_status = ops_test.model.applications[application_name].status
-    assert app_status == ACTIVE_STATUS_NAME, (
-        "application status should be active once correct database connection info "
-        "being provided via relation"
-    )
-
-
-@pytest.mark.asyncio
-@pytest.mark.abort_on_fail
 async def test_mysql_database_relation(
     db_from_config: bool, model: Model, application_name: str, mysql: Application
 ):

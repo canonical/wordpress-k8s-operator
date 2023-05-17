@@ -59,9 +59,6 @@ provides:
     interface: grafana_dashboard
 
 requires:
-  db:
-    interface: mysql
-    limit: 1
   database:
     interface: mysql_client
   nginx-route:

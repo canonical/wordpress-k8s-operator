@@ -91,9 +91,7 @@ async def test_mysql_config(
 
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
-async def test_mysql_database_relation(
-    db_from_config: bool, model: Model, application_name: str
-):
+async def test_mysql_database_relation(db_from_config: bool, model: Model, application_name: str):
     """
     arrange: after WordPress charm has been deployed.
     act: deploy a mysql charm and add a database relation between WordPress and mysql.

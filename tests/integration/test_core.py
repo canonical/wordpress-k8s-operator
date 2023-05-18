@@ -456,7 +456,7 @@ async def test_akismet_plugin(
     act: update charm configuration for Akismet plugin.
     assert: Akismet plugin should be activated and spam detection function should be working.
     """
-    await model.add_relation("wordpress", "mariadb:mysql")
+    await model.add_relation("wordpress:database", "mysql-k8s:database")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
     application = model.applications[application_name]

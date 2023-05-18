@@ -428,6 +428,13 @@ async def build_and_deploy_fixture(
     await model.wait_for_idle()
 
 
+@pytest_asyncio.fixture(scope="module", name="mysql")
+async def mysql_fixture(model: Model):
+    """Deploy mysql-k8s application fixture."""
+    mysql = await model.deploy("mysql-k8s", channel="8.0/stable", trust=True)
+    return mysql
+
+
 @pytest_asyncio.fixture(scope="module", name="prometheus")
 async def prometheus_fixture(
     model: Model, application_name: str

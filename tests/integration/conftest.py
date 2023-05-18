@@ -420,7 +420,7 @@ async def build_and_deploy_fixture(
     await asyncio.gather(
         build_and_deploy_wordpress(),
         deploy_and_wait_for_mysql_pod(),
-        model.deploy("charmed-osm-mariadb-k8s", application_name="mariadb"),
+        model.deploy("mysql-k8s", channel="8.0/stable", trust=True),
         model.deploy(
             "nginx-ingress-integrator", series="focal", trust=True, application_name="ingress"
         ),

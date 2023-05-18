@@ -101,7 +101,7 @@ async def test_mysql_database_relation(
     """
     if db_from_config:
         pytest.skip()
-    await model.add_relation(f"{application_name}:database", f"mysql-k8s:database")
+    await model.add_relation(f"{application_name}:database", "mysql-k8s:database")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     app_status = model.applications[application_name].status
     assert app_status == ACTIVE_STATUS_NAME, (

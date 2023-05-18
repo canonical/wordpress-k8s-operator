@@ -92,7 +92,7 @@ async def test_mysql_config(
 @pytest.mark.asyncio
 @pytest.mark.abort_on_fail
 async def test_mysql_database_relation(
-    db_from_config: bool, model: Model, application_name: str, mysql: Application
+    db_from_config: bool, model: Model, application_name: str
 ):
     """
     arrange: after WordPress charm has been deployed.
@@ -101,7 +101,7 @@ async def test_mysql_database_relation(
     """
     if db_from_config:
         pytest.skip()
-    await model.add_relation(f"{application_name}:database", f"{mysql.name}:database")
+    await model.add_relation(f"{application_name}:database", f"mysql-k8s:database")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     app_status = model.applications[application_name].status
     assert app_status == ACTIVE_STATUS_NAME, (

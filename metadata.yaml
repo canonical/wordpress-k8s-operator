@@ -50,7 +50,7 @@ resources:
     type: oci-image
     description: Prometheus exporter for apache
     auto-fetch: true
-    upstream-source: bitnami/apache-exporter:0.11.0
+    upstream-source: bitnami/apache-exporter:0.13.3
 
 provides:
   metrics-endpoint:

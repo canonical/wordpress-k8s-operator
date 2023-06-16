@@ -27,10 +27,9 @@ juju add-model wordpress-tutorial
 
 ### Deploy wordpress-k8s charm
 
-Deployment of WordPress requires a database integration. The preferred method in juju is through an
-integration. In this case, a `mysql` [interface](https://juju.is/docs/sdk/integration) is required
-by the wordpress-k8s charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be
-used.
+Deployment of WordPress requires a relational database. The integration with the 
+`mysql` [interface](https://juju.is/docs/sdk/integration) is required by the wordpress-k8s 
+charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
 Start off by deploying the wordpress charm. By default it will deploy the latest stable release of
 the wordpress-k8s charm.
@@ -47,10 +46,13 @@ The following commands deploys the mysql-k8s charm and relates wordpress-k8s cha
 interface.
 
 ```
-juju deploy mysql-k8s --channel=edge
+juju deploy mysql-k8s \
+  --config mysql-interface-user=wordpress-tutorial-user \
+  --config mysql-interface-database=wordpress-tutorial-database \
+  --channel=8.0/stable
 
-# database interface is required since mysql-k8s charm provides multiple compatible interfaces
-juju relate wordpress-k8s:database mysql-k8s:database
+# mysql interface is required since mysql-k8s charm provides multiple mysql interfaces
+juju relate wordpress-k8s:db mysql-k8s:mysql
 ```
 
 #### Database configuration
@@ -69,7 +71,7 @@ microk8s kubectl run mysql -n wordpress-tutorial --image=mysql:latest \
   --env=”MYSQL_USER=wordpress-tutorial-user” \
   --env=”MYSQL_PASSWORD=<strong-password>
 
-WORDPRESS_IP=microk8s kubectl get pod mysql --template '{{.status.podIP}}'
+WORDPRESS_IP=microk8s kubectl get pod -n wordpress-tutorial mysql --template '{{.status.podIP}}'
 
 juju config wordpress-k8s \
 db_host=$WORDPRESS_IP \

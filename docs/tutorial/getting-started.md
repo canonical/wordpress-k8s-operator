@@ -40,8 +40,6 @@ juju deploy wordpress-k8s
 
 ### Deploy and relate database
 
-#### Database relation
-
 The following commands deploys the mysql-k8s charm and relates wordpress-k8s charm through its mysql
 interface.
 
@@ -50,37 +48,6 @@ juju deploy mysql-k8s --channel=8.0/stable
 
 # database interface is required since mysql-k8s charm provides multiple compatible interfaces
 juju relate wordpress-k8s:database mysql-k8s:database
-```
-
-#### Database configuration
-
-Note: This section is required only if database relation is not used. If you want to deploy your
-wordpress-k8s charm through configuration, you may continue to follow the steps in this section.
-
-The commands below create the MySQL deployment in microk8s which we can then use to configure the
-database for wordpress-k8s. Note that the environment variables are for demonstration purposes only
-and should not be used for production environments.
-
-```
-microk8s kubectl run mysql -n wordpress-tutorial --image=mysql:latest \
-  --env="MYSQL_ROOT_PASSWORD=<strong-password>" \
-  --env=”MYSQL_DATABASE=wordpress-tutorial-database” \
-  --env=”MYSQL_USER=wordpress-tutorial-user” \
-  --env=”MYSQL_PASSWORD=<strong-password>
-
-WORDPRESS_IP=microk8s kubectl get pod -n wordpress-tutorial mysql --template '{{.status.podIP}}'
-
-juju config wordpress-k8s \
-db_host=$WORDPRESS_IP \
-db_name=wordpress-tutorial-database \
-db_user=wordpress-tutorial-user \
-db_password=<strong-password>
-```
-
-Use the following command to watch your deployment progress through different stages of deployment.
-
-```
-juju status --color --watch 2s
 ```
 
 ### Get admin credentials

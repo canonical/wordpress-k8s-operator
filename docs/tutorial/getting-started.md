@@ -38,16 +38,15 @@ the wordpress-k8s charm.
 juju deploy wordpress-k8s
 ```
 
-### Deploy and relate database
+### Deploy and integrate database
 
-The following commands deploys the mysql-k8s charm and relates wordpress-k8s charm through its mysql
-interface.
+The following commands deploy the mysql-k8s charm and integrate it with the wordpress-k8s charm.
 
 ```
-juju deploy mysql-k8s --channel=8.0/stable
+juju deploy mysql-k8s
 
-# database interface is required since mysql-k8s charm provides multiple compatible interfaces
-juju relate wordpress-k8s:database mysql-k8s:database
+# 'database' interface is required since mysql-k8s charm provides multiple compatible interfaces
+juju relate wordpress-k8s mysql-k8s:database
 ```
 
 ### Get admin credentials

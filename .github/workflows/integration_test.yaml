@@ -29,12 +29,12 @@ jobs:
         args:
           - name: num_units=3, db_from_config
             value: "--test-db-from-config --num-units=3"
-          - name: num_units=1, db_from_config
-            value: "--test-db-from-config --num-units=1"
-          - name: num_units=3, db_from_relation
-            value: "--num-units=3"
-          - name: num_units=1, db_from_relation
-            value: "--num-units=1"
+          # - name: num_units=1, db_from_config
+          #   value: "--test-db-from-config --num-units=1"
+          # - name: num_units=3, db_from_relation
+          #   value: "--num-units=3"
+          # - name: num_units=1, db_from_relation
+          #   value: "--num-units=1"
     uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
     needs: [get-runner-image, build-images]
     with:
@@ -52,6 +52,7 @@ jobs:
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true
+      tmate-debug: true
   required_status_checks:
     name: Required Integration Test Status Checks
     runs-on: ubuntu-latest

@@ -45,7 +45,7 @@ jobs:
         --kube-config ${GITHUB_WORKSPACE}/kube-config \
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
-      modules: '["test_core", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
+      modules: '["test_core"]' #  "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage

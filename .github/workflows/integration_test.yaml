@@ -12,6 +12,9 @@ jobs:
     name: Build images
     uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
     needs: get-runner-image
+    with:
+      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+      trivy-image-config: trivy.yaml
   integration-tests-with-secrets:
     uses: ./.github/workflows/integration_test_secrets.yaml
     needs: [get-runner-image, build-images]

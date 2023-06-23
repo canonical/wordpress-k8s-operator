@@ -7,10 +7,10 @@ on:
 jobs:
   get-runner-image:
     name: Get runner image
-    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@fix/image-import
+    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
   build-images:
     name: Build images
-    uses: canonical/operator-workflows/.github/workflows/build_images.yaml@fix/image-import
+    uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
     needs: get-runner-image
     with:
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
@@ -29,13 +29,13 @@ jobs:
         args:
           - name: num_units=3, db_from_config
             value: "--test-db-from-config --num-units=3"
-          # - name: num_units=1, db_from_config
-          #   value: "--test-db-from-config --num-units=1"
-          # - name: num_units=3, db_from_relation
-          #   value: "--num-units=3"
-          # - name: num_units=1, db_from_relation
-          #   value: "--num-units=1"
-    uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@fix/image-import
+          - name: num_units=1, db_from_config
+            value: "--test-db-from-config --num-units=1"
+          - name: num_units=3, db_from_relation
+            value: "--num-units=3"
+          - name: num_units=1, db_from_relation
+            value: "--num-units=1"
+    uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
     needs: [get-runner-image, build-images]
     with:
       images: ${{ needs.build-images.outputs.images }}
@@ -45,14 +45,13 @@ jobs:
         --kube-config ${GITHUB_WORKSPACE}/kube-config \
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
-      modules: '["test_core"]' #  "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"
+      modules: '["test_core", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true
-      tmate-debug: true
   required_status_checks:
     name: Required Integration Test Status Checks
     runs-on: ubuntu-latest

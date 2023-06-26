@@ -13,6 +13,8 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
     needs: get-runner-image
     with:
+      owner: ${{ github.repository_owner }}
+      registry: ghcr.io
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       trivy-image-config: trivy.yaml
   integration-tests-with-secrets:
@@ -46,6 +48,8 @@ jobs:
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
       modules: '["test_core", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
+      owner: ${{ github.repository_owner }}
+      registry: ghcr.io
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage

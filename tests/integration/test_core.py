@@ -545,7 +545,9 @@ async def test_prometheus_integration(
         assert len(query_targets["data"]["activeTargets"])
 
 
-def log_files_exist(unit_address: str, application_name: str, filenames: Tuple[str, str]) -> bool:
+async def log_files_exist(
+    unit_address: str, application_name: str, filenames: Tuple[str, str]
+) -> bool:
     """Returns whether log filenames exist in Loki logs query.
 
     Args:
@@ -588,7 +590,7 @@ async def test_loki_integration(
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
-        wait_for(
+        await wait_for(
             functools.partial(
                 log_files_exist,
                 unit.address,

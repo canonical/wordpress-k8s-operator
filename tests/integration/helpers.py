@@ -3,7 +3,7 @@
 
 """Helpers for WordPress charm integration tests."""
 
-import asyncio
+import inspect
 import typing
 from datetime import datetime, timedelta
 from time import sleep
@@ -12,8 +12,10 @@ from juju.client._definitions import FullStatus
 from juju.model import Model
 
 
-def wait_for(
-    func: typing.Callable[[], typing.Any], timeout: int = 300, check_interval: int = 10
+async def wait_for(
+    func: typing.Union[typing.Awaitable, typing.Callable],
+    timeout: int = 300,
+    check_interval: int = 10,
 ) -> None:
     """Wait for function execution to become truthy.
 
@@ -27,13 +29,18 @@ def wait_for(
     """
     start_time = now = datetime.now()
     min_wait_seconds = timedelta(seconds=timeout)
+    isAwaitable = inspect.iscoroutinefunction(func)
     while now - start_time < min_wait_seconds:
-        if func():
+        if isAwaitable and await func():
+            break
+        elif func():
             break
         now = datetime.now()
         sleep(check_interval)
     else:
-        if func():
+        if isAwaitable and await func():
+            return
+        elif func():
             return
         raise TimeoutError()
 

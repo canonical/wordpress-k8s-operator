@@ -29,16 +29,16 @@ async def wait_for(
     """
     start_time = now = datetime.now()
     min_wait_seconds = timedelta(seconds=timeout)
-    isAwaitable = inspect.iscoroutinefunction(func)
+    is_awaitable = inspect.iscoroutinefunction(func)
     while now - start_time < min_wait_seconds:
-        if isAwaitable and await func():
+        if is_awaitable and await func():
             break
         elif func():
             break
         now = datetime.now()
         sleep(check_interval)
     else:
-        if isAwaitable and await func():
+        if is_awaitable and await func():
             return
         elif func():
             return

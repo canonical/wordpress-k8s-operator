@@ -45,7 +45,7 @@ async def wait_for(
         raise TimeoutError()
 
 
-async def are_unit_agents_idle(model: Model, application_name: str):
+async def are_unit_agents_idle(model: Model, application_name: str) -> bool:
     """Wait for application unit agents to be in idle state.
 
     This function is used for applications status that stays in idle state while the unit agent
@@ -56,8 +56,8 @@ async def are_unit_agents_idle(model: Model, application_name: str):
         model: The model in test.
         application_name: The name of the application to wait for units to become idle.
 
-    Raises:
-        TimeoutError: if application units do not become idle within given time.
+    Returns:
+        True if all unit agents are idle, False otherwise.
     """
     status: FullStatus = await model.get_status(filters=[application_name])
     return all(

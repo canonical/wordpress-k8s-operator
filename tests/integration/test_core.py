@@ -545,15 +545,16 @@ async def test_prometheus_integration(
         assert len(query_targets["data"]["activeTargets"])
 
 
-async def log_files_exist(
-    unit_address: str, application_name: str, filenames: Tuple[str, str]
-) -> bool:
+def log_files_exist(unit_address: str, application_name: str, filenames: Tuple[str, str]) -> bool:
     """Returns whether log filenames exist in Loki logs query.
 
     Args:
         unit_address: Loki unit ip address.
         application_name: Application name to query logs for.
         filenames: Expected filenames to be present in logs collected by Loki.
+
+    Retruns:
+        True if log files with logs exists. False otherwise.
     """
     series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
     log_files = set(series_data["filename"] for series_data in series["data"])

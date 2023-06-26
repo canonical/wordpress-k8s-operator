@@ -444,6 +444,7 @@ async def prometheus_fixture(
     await prometheus.relate(
         PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
     )
+    await model.wait_for_idle()
     yield prometheus
     await prometheus.remove_relation(
         PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
@@ -457,6 +458,7 @@ async def loki_fixture(
     """Deploy and return loki charm application with relation to WordPress charm."""
     loki = await model.deploy("loki-k8s", channel="1.0/stable", trust=True)
     await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
+    await model.wait_for_idle()
     yield loki
     await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
 
@@ -468,6 +470,7 @@ async def grafana_fixture(
     """Deploy and return grafana charm application with relation to WordPress charm."""
     grafana = await model.deploy("grafana-k8s", channel="1.0/stable", trust=True)
     await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
+    await model.wait_for_idle()
     yield grafana
     await grafana.remove_relation(
         GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}"

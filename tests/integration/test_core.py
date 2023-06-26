@@ -5,13 +5,14 @@
 
 """Integration tests for WordPress charm."""
 
+import functools
 import io
 import json
 import secrets
 import socket
 import unittest.mock
 import urllib.parse
-from typing import Callable, List, Set
+from typing import Callable, List, Set, Tuple
 
 import PIL.Image
 import pytest
@@ -27,7 +28,7 @@ from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
 
 from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
-from .helpers import wait_unit_agents_idle
+from .helpers import retry_assert, wait_unit_agents_idle
 from .wordpress_client_for_test import WordpressClient
 
 
@@ -542,6 +543,25 @@ async def test_prometheus_integration(
         assert len(query_targets["data"]["activeTargets"])
 
 
+def assert_filename_in_log(unit_address: str, application_name: str, filenames: Tuple[str, str]):
+    """Assert filename exist in Loki logs query.
+
+    Args:
+        unit_address: Loki unit ip address.
+        application_name: Application name to query logs for.
+        filenames: Expected filenames to be present in logs collected by Loki.
+    """
+    series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
+    log_files = set(series_data["filename"] for series_data in series["data"])
+    assert all(filename in log_files for filename in filenames)
+    log_query = requests.get(
+        f"http://{unit_address}:3100/loki/api/v1/query",
+        timeout=10,
+        params={"query": f'{{juju_application="{application_name}"}}'},
+    ).json()
+    assert len(log_query["data"]["result"])
+
+
 async def test_loki_integration(
     ops_test: OpsTest,
     model: Model,
@@ -560,10 +580,14 @@ async def test_loki_integration(
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
-        series = requests.get(f"http://{unit.address}:3100/loki/api/v1/series", timeout=10).json()
-        log_files = set(series_data["filename"] for series_data in series["data"])
-        assert "/var/log/apache2/error.log" in log_files
-        assert "/var/log/apache2/access.log" in log_files
+        retry_assert(
+            functools.partial(
+                assert_filename_in_log,
+                unit.address,
+                application_name,
+                ("/var/log/apache2/error.log", "/var/log/apache2/access.log"),
+            )
+        )
         log_query = requests.get(
             f"http://{unit.address}:3100/loki/api/v1/query",
             timeout=10,
@@ -581,7 +605,6 @@ async def test_grafana_integration(
     prometheus: Application,
     loki: Application,
     grafana: Application,
-    application_name: str,
 ):
     """
     arrange: after WordPress charm has been deployed and relations established among cos.
@@ -590,10 +613,7 @@ async def test_grafana_integration(
     """
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await model.wait_for_idle(
-        status="active",
-        idle_period=60,
-    )
+    await model.wait_for_idle(idle_period=60)
     await wait_unit_agents_idle(model=model, application_name=grafana.name)
 
     action: Action = await grafana.units[0].run_action("get-admin-password")

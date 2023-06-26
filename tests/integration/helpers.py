@@ -4,6 +4,7 @@
 """Helpers for WordPress charm integration tests."""
 
 import asyncio
+import typing
 
 from juju.client._definitions import FullStatus
 from juju.model import Model
@@ -35,3 +36,19 @@ async def wait_unit_agents_idle(model: Model, application_name: str):
         await asyncio.sleep(10.0)
     if not idle:
         raise TimeoutError(f"{application_name} unit agent state not idle.")
+
+
+def retry_assert(assert_func: typing.Callable[[], None], retry: int = 3):
+    """Retry assertions.
+
+    Args:
+        assert_func: The function with assertion.
+        retry: The number of times to retry for.
+    """
+    for retry_count in range(retry):
+        try:
+            assert_func()
+        except AssertionError:
+            if retry_count == retry - 1:
+                raise
+            continue

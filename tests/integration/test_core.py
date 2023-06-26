@@ -10,6 +10,7 @@ import io
 import json
 import secrets
 import socket
+import time
 import unittest.mock
 import urllib.parse
 from typing import Callable, List, Set, Tuple
@@ -28,7 +29,7 @@ from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
 
 from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
-from .helpers import retry_assert, wait_unit_agents_idle
+from .helpers import are_unit_agents_idle, wait_for
 from .wordpress_client_for_test import WordpressClient
 
 
@@ -103,6 +104,7 @@ async def test_mysql_database_relation(db_from_config: bool, model: Model, appli
     await model.add_relation(f"{application_name}:database", "mysql-k8s:database")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     app_status = model.applications[application_name].status
+
     assert app_status == ACTIVE_STATUS_NAME, (
         "application status should be active once correct database connection info "
         "being provided via relation"
@@ -543,8 +545,8 @@ async def test_prometheus_integration(
         assert len(query_targets["data"]["activeTargets"])
 
 
-def assert_filename_in_log(unit_address: str, application_name: str, filenames: Tuple[str, str]):
-    """Assert filename exist in Loki logs query.
+def log_files_exist(unit_address: str, application_name: str, filenames: Tuple[str, str]) -> bool:
+    """Returns whether log filenames exist in Loki logs query.
 
     Args:
         unit_address: Loki unit ip address.
@@ -553,13 +555,16 @@ def assert_filename_in_log(unit_address: str, application_name: str, filenames: 
     """
     series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
     log_files = set(series_data["filename"] for series_data in series["data"])
-    assert all(filename in log_files for filename in filenames)
+    if not all(filename in log_files for filename in filenames):
+        return False
     log_query = requests.get(
         f"http://{unit_address}:3100/loki/api/v1/query",
         timeout=10,
         params={"query": f'{{juju_application="{application_name}"}}'},
     ).json()
-    assert len(log_query["data"]["result"])
+    if not len(log_query["data"]["result"]):
+        return False
+    return True
 
 
 async def test_loki_integration(
@@ -576,24 +581,21 @@ async def test_loki_integration(
         loki to scrape.
     """
     await model.wait_for_idle(status="active", idle_period=60)
-    await wait_unit_agents_idle(model=model, application_name=loki.name)
+    await wait_for(
+        functools.partial(are_unit_agents_idle, model=model, application_name=loki.name)
+    )
+    time.sleep(15)  # wait for logs to be pushed
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
-        retry_assert(
+        wait_for(
             functools.partial(
-                assert_filename_in_log,
+                log_files_exist,
                 unit.address,
                 application_name,
                 ("/var/log/apache2/error.log", "/var/log/apache2/access.log"),
             )
         )
-        log_query = requests.get(
-            f"http://{unit.address}:3100/loki/api/v1/query",
-            timeout=10,
-            params={"query": f'{{juju_application="{application_name}"}}'},
-        ).json()
-        assert len(log_query["data"]["result"])
     kube_log = kube_core_client.read_namespaced_pod_log(
         name=f"{application_name}-0", namespace=ops_test.model_name, container="wordpress"
     )
@@ -614,7 +616,9 @@ async def test_grafana_integration(
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
     await model.wait_for_idle(idle_period=60)
-    await wait_unit_agents_idle(model=model, application_name=grafana.name)
+    await wait_for(
+        functools.partial(are_unit_agents_idle, model=model, application_name=grafana.name)
+    )
 
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()

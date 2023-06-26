@@ -553,7 +553,7 @@ def log_files_exist(unit_address: str, application_name: str, filenames: Tuple[s
         application_name: Application name to query logs for.
         filenames: Expected filenames to be present in logs collected by Loki.
 
-    Retruns:
+    Returns:
         True if log files with logs exists. False otherwise.
     """
     series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()

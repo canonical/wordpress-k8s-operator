@@ -581,7 +581,7 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(status="active", idle_period=60)
+    await model.wait_for_idle(status="active")
     await wait_for(
         functools.partial(are_unit_agents_idle, model=model, application_name=loki.name)
     )
@@ -616,7 +616,7 @@ async def test_grafana_integration(
     """
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await model.wait_for_idle(idle_period=60)
+    await model.wait_for_idle()
     await wait_for(
         functools.partial(are_unit_agents_idle, model=model, application_name=grafana.name)
     )

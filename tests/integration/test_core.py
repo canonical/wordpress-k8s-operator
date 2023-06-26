@@ -529,7 +529,7 @@ async def test_prometheus_integration(
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
-    await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
+    await model.wait_for_idle(status="active")
 
     for unit_ip in unit_ip_list:
         res = requests.get(f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10)
@@ -555,7 +555,7 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=60)
+    await model.wait_for_idle(status="active", idle_period=60)
     await wait_unit_agents_idle(model=model, application_name=loki.name)
 
     status: FullStatus = await model.get_status(filters=[loki.name])
@@ -591,7 +591,6 @@ async def test_grafana_integration(
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
     await model.wait_for_idle(
-        apps=[application_name, prometheus.name, loki.name, grafana.name],
         status="active",
         idle_period=60,
     )

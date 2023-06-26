@@ -13,7 +13,7 @@ from juju.model import Model
 
 
 async def wait_for(
-    func: typing.Union[typing.Awaitable, typing.Callable],
+    func: typing.Callable[[], typing.Union[typing.Awaitable, typing.Any]],
     timeout: int = 300,
     check_interval: int = 10,
 ) -> None:
@@ -33,14 +33,14 @@ async def wait_for(
     while now - start_time < min_wait_seconds:
         if is_awaitable and await func():
             break
-        elif func():
+        if func():
             break
         now = datetime.now()
         sleep(check_interval)
     else:
         if is_awaitable and await func():
             return
-        elif func():
+        if func():
             return
         raise TimeoutError()
 

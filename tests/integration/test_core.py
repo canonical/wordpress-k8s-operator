@@ -523,7 +523,6 @@ async def test_openid_plugin(
 async def test_prometheus_integration(
     model: Model,
     prometheus: Application,
-    application_name: str,
     unit_ip_list: List[str],
 ):
     """
@@ -565,9 +564,8 @@ def log_files_exist(unit_address: str, application_name: str, filenames: Tuple[s
         timeout=10,
         params={"query": f'{{juju_application="{application_name}"}}'},
     ).json()
-    if not len(log_query["data"]["result"]):
-        return False
-    return True
+
+    return len(log_query["data"]["result"]) != 0
 
 
 async def test_loki_integration(

@@ -3,35 +3,40 @@
 
 """Helpers for WordPress charm integration tests."""
 
-import asyncio
+import inspect
+import typing
+from datetime import datetime, timedelta
+from time import sleep
 
-from juju.client._definitions import FullStatus
-from juju.model import Model
 
-
-async def wait_unit_agents_idle(model: Model, application_name: str):
-    """Wait for application unit agents to be in idle state.
-
-    This function is used for applications status that stays in idle state while the unit agent
-    states could be in executing. Accessing any of the application while the units are executing
-    may lead to an incorrect state being returned, hence the wait_unit_agents_idle.
+async def wait_for(
+    func: typing.Callable[[], typing.Union[typing.Awaitable, typing.Any]],
+    timeout: int = 300,
+    check_interval: int = 10,
+) -> None:
+    """Wait for function execution to become truthy.
 
     Args:
-        model: The model in test.
-        application_name: The name of the application to wait for units to become idle.
+        func: A callback function to wait to return a truthy value.
+        timeout: Time in seconds to wait for function result to become truthy.
+        check_interval: Time in seconds to wait between ready checks.
 
     Raises:
-        TimeoutError: if application units do not become idle within given time.
+        TimeoutError: if the callback function did not return a truthy value within timeout.
     """
-    idle = False
-    for _ in range(5):
-        status: FullStatus = await model.get_status(filters=[application_name])
-        idle = all(
-            unit.agent_status.status == "idle"
-            for unit in status.applications[application_name].units.values()
-        )
-        if idle:
+    start_time = now = datetime.now()
+    min_wait_seconds = timedelta(seconds=timeout)
+    is_awaitable = inspect.iscoroutinefunction(func)
+    while now - start_time < min_wait_seconds:
+        if is_awaitable and await func():
             break
-        await asyncio.sleep(10.0)
-    if not idle:
-        raise TimeoutError(f"{application_name} unit agent state not idle.")
+        if func():
+            break
+        now = datetime.now()
+        sleep(check_interval)
+    else:
+        if is_awaitable and await func():
+            return
+        if func():
+            return
+        raise TimeoutError()

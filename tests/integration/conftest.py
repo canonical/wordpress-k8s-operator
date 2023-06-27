@@ -440,12 +440,11 @@ async def prometheus_fixture(
     model: Model, application_name: str
 ) -> typing.AsyncGenerator[Application, None]:
     """Deploy and yield prometheus charm application with relation to WordPress charm."""
-    # 2023-04-18 Temporarily use edge until revision discrepancy is resolved.
-    # edge revision: 123, stable revision: 103
-    prometheus = await model.deploy("prometheus-k8s", channel="latest/edge", trust=True)
+    prometheus = await model.deploy("prometheus-k8s", channel="1.0/stable", trust=True)
     await prometheus.relate(
         PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
     )
+    await model.wait_for_idle()
     yield prometheus
     await prometheus.remove_relation(
         PROMETHEUS_RELATION_NAME, f"{application_name}:{PROMETHEUS_RELATION_NAME}"
@@ -457,11 +456,9 @@ async def loki_fixture(
     model: Model, application_name: str
 ) -> typing.AsyncGenerator[Application, None]:
     """Deploy and return loki charm application with relation to WordPress charm."""
-    # 2023-04-18 The Loki stable is missing container.can_connect guard and hence fails the tests
-    # often. Resort to using the latest edge (revision 82) until it is promoted to stable
-    # (revision 60). See https://chat.charmhub.io/charmhub/pl/xgqyman4btym3ff74fcjomzxbw
-    loki = await model.deploy("loki-k8s", channel="latest/edge", trust=True)
+    loki = await model.deploy("loki-k8s", channel="1.0/stable", trust=True)
     await loki.relate(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
+    await model.wait_for_idle()
     yield loki
     await loki.remove_relation(LOKI_RELATION_NAME, f"{application_name}:{LOKI_RELATION_NAME}")
 
@@ -471,10 +468,9 @@ async def grafana_fixture(
     model: Model, application_name: str
 ) -> typing.AsyncGenerator[Application, None]:
     """Deploy and return grafana charm application with relation to WordPress charm."""
-    # 2023-04-18 Temporarily use edge until revision discrepancy is resolved.
-    # edge revision: 78, stable revision: 64
-    grafana = await model.deploy("grafana-k8s", channel="latest/edge", trust=True)
+    grafana = await model.deploy("grafana-k8s", channel="1.0/stable", trust=True)
     await grafana.relate(GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}")
+    await model.wait_for_idle()
     yield grafana
     await grafana.remove_relation(
         GRAFANA_RELATION_NAME, f"{application_name}:{GRAFANA_RELATION_NAME}"

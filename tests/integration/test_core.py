@@ -83,7 +83,7 @@ async def test_mysql_config(
             "db_password": pod_db_password,
         }
     )
-    await ops_test.model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await ops_test.model.wait_for_idle(apps=[application_name], timeout=20 * 60)
     app_status = ops_test.model.applications[application_name].status
     assert app_status == ACTIVE_STATUS_NAME, (
         "application status should be active once correct database connection info "

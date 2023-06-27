@@ -249,7 +249,7 @@ async def build_and_upgrade_fixture(
         )
         return application_name not in json.loads(status)["applications"]
 
-    await ops_test.model.block_until(wordpress_removed, wait_period=5, timeout=600)
+    await ops_test.model.block_until(wordpress_removed, wait_period=5, timeout=20 * 60)
     await ops_test.model.deploy(
         str(charm),
         resources={

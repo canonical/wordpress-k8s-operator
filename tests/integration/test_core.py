@@ -10,7 +10,6 @@ import io
 import json
 import secrets
 import socket
-import time
 import unittest.mock
 import urllib.parse
 from typing import Callable, Iterable, List, Set

@@ -8,9 +8,6 @@ import typing
 from datetime import datetime, timedelta
 from time import sleep
 
-from juju.client._definitions import FullStatus
-from juju.model import Model
-
 
 async def wait_for(
     func: typing.Callable[[], typing.Union[typing.Awaitable, typing.Any]],

@@ -581,8 +581,7 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(apps=[loki.name, application_name], status="active", timeout=20 * 60)
-    time.sleep(15)  # wait for logs to be pushed
+    await model.wait_for_idle(apps=[loki.name], status="active", timeout=20 * 60)
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():

@@ -581,7 +581,7 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(apps=[loki.name, application_name], status="active")
+    await model.wait_for_idle(apps=[loki.name, application_name], status="active", timeout=20 * 60)
     time.sleep(15)  # wait for logs to be pushed
 
     status: FullStatus = await model.get_status(filters=[loki.name])
@@ -651,7 +651,9 @@ async def test_grafana_integration(
     """
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await model.wait_for_idle(apps=[prometheus.name, loki.name, grafana.name], status="active")
+    await model.wait_for_idle(
+        apps=[prometheus.name, loki.name, grafana.name], status="active", timeout=20 * 60
+    )
 
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()

@@ -5,13 +5,14 @@
 
 """Integration tests for WordPress charm."""
 
+import functools
 import io
 import json
 import secrets
 import socket
 import unittest.mock
 import urllib.parse
-from typing import Callable, List, Set
+from typing import Callable, Iterable, List, Set
 
 import PIL.Image
 import pytest
@@ -27,7 +28,7 @@ from charm import WordpressCharm
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
 
 from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
-from .helpers import wait_unit_agents_idle
+from .helpers import wait_for
 from .wordpress_client_for_test import WordpressClient
 
 
@@ -81,7 +82,7 @@ async def test_mysql_config(
             "db_password": pod_db_password,
         }
     )
-    await ops_test.model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await ops_test.model.wait_for_idle(apps=[application_name], timeout=20 * 60)
     app_status = ops_test.model.applications[application_name].status
     assert app_status == ACTIVE_STATUS_NAME, (
         "application status should be active once correct database connection info "
@@ -102,6 +103,7 @@ async def test_mysql_database_relation(db_from_config: bool, model: Model, appli
     await model.add_relation(f"{application_name}:database", "mysql-k8s:database")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     app_status = model.applications[application_name].status
+
     assert app_status == ACTIVE_STATUS_NAME, (
         "application status should be active once correct database connection info "
         "being provided via relation"
@@ -520,7 +522,6 @@ async def test_openid_plugin(
 async def test_prometheus_integration(
     model: Model,
     prometheus: Application,
-    application_name: str,
     unit_ip_list: List[str],
 ):
     """
@@ -529,7 +530,7 @@ async def test_prometheus_integration(
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
-    await model.wait_for_idle(apps=[application_name, prometheus.name], status="active")
+    await model.wait_for_idle(status="active")
 
     for unit_ip in unit_ip_list:
         res = requests.get(f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10)
@@ -540,6 +541,30 @@ async def test_prometheus_integration(
             f"http://{unit.address}:9090/api/v1/targets", timeout=10
         ).json()
         assert len(query_targets["data"]["activeTargets"])
+
+
+def log_files_exist(unit_address: str, application_name: str, filenames: Iterable[str]) -> bool:
+    """Returns whether log filenames exist in Loki logs query.
+
+    Args:
+        unit_address: Loki unit ip address.
+        application_name: Application name to query logs for.
+        filenames: Expected filenames to be present in logs collected by Loki.
+
+    Returns:
+        True if log files with logs exists. False otherwise.
+    """
+    series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
+    log_files = set(series_data["filename"] for series_data in series["data"])
+    if not all(filename in log_files for filename in filenames):
+        return False
+    log_query = requests.get(
+        f"http://{unit_address}:3100/loki/api/v1/query",
+        timeout=10,
+        params={"query": f'{{juju_application="{application_name}"}}'},
+    ).json()
+
+    return len(log_query["data"]["result"]) != 0
 
 
 async def test_loki_integration(
@@ -555,25 +580,60 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(apps=[application_name, loki.name], status="active", idle_period=60)
-    await wait_unit_agents_idle(model=model, application_name=loki.name)
+    await model.wait_for_idle(apps=[loki.name], status="active", timeout=20 * 60)
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
-        series = requests.get(f"http://{unit.address}:3100/loki/api/v1/series", timeout=10).json()
-        log_files = set(series_data["filename"] for series_data in series["data"])
-        assert "/var/log/apache2/error.log" in log_files
-        assert "/var/log/apache2/access.log" in log_files
-        log_query = requests.get(
-            f"http://{unit.address}:3100/loki/api/v1/query",
-            timeout=10,
-            params={"query": f'{{juju_application="{application_name}"}}'},
-        ).json()
-        assert len(log_query["data"]["result"])
+        await wait_for(
+            functools.partial(
+                log_files_exist,
+                unit.address,
+                application_name,
+                ("/var/log/apache2/error.log", "/var/log/apache2/access.log"),
+            )
+        )
     kube_log = kube_core_client.read_namespaced_pod_log(
         name=f"{application_name}-0", namespace=ops_test.model_name, container="wordpress"
     )
     assert kube_log
+
+
+def datasources_exist(
+    loggedin_session: requests.Session, unit_address: str, datasources: Iterable[str]
+):
+    """Checks if the datasources are registered in Grafana.
+
+    Args:
+        loggedin_session: Requests session that's authorized to make API calls.
+        unit_address: Grafana unit address.
+        datasources: Datasources to check for.
+
+    Returns:
+        True if all datasources are found. False otherwise.
+    """
+    response = loggedin_session.get(
+        f"http://{unit_address}:3000/api/datasources", timeout=10
+    ).json()
+    datasource_types = set(datasource["type"] for datasource in response)
+    return all(datasource in datasource_types for datasource in datasources)
+
+
+def dashboard_exist(loggedin_session: requests.Session, unit_address: str):
+    """Checks if the WordPress dashboard is registered in Grafana.
+
+    Args:
+        loggedin_session: Requests session that's authorized to make API calls.
+        unit_address: Grafana unit address.
+
+    Returns:
+        True if all dashboard is found. False otherwise.
+    """
+    dashboards = loggedin_session.get(
+        f"http://{unit_address}:3000/api/search",
+        timeout=10,
+        params={"query": "Wordpress Operator Overview"},
+    ).json()
+    return len(dashboards)
 
 
 async def test_grafana_integration(
@@ -581,7 +641,6 @@ async def test_grafana_integration(
     prometheus: Application,
     loki: Application,
     grafana: Application,
-    application_name: str,
 ):
     """
     arrange: after WordPress charm has been deployed and relations established among cos.
@@ -591,15 +650,13 @@ async def test_grafana_integration(
     await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
     await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
     await model.wait_for_idle(
-        apps=[application_name, prometheus.name, loki.name, grafana.name],
-        status="active",
-        idle_period=60,
+        apps=[prometheus.name, loki.name, grafana.name], status="active", timeout=20 * 60
     )
-    await wait_unit_agents_idle(model=model, application_name=grafana.name)
 
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()
     password = action.results["admin-password"]
+
     status: FullStatus = await model.get_status(filters=[grafana.name])
     for unit in status.applications[grafana.name].units.values():
         sess = requests.session()
@@ -610,13 +667,14 @@ async def test_grafana_integration(
                 "password": password,
             },
         ).raise_for_status()
-        datasources = sess.get(f"http://{unit.address}:3000/api/datasources", timeout=10).json()
-        datasource_types = set(datasource["type"] for datasource in datasources)
-        assert "loki" in datasource_types
-        assert "prometheus" in datasource_types
-        dashboards = sess.get(
-            f"http://{unit.address}:3000/api/search",
-            timeout=10,
-            params={"query": "Wordpress Operator Overview"},
-        ).json()
-        assert len(dashboards)
+        await wait_for(
+            functools.partial(
+                datasources_exist,
+                loggedin_session=sess,
+                unit_address=unit.address,
+                datasources=("loki", "prometheus"),
+            )
+        )
+        await wait_for(
+            functools.partial(dashboard_exist, loggedin_session=sess, unit_address=unit.address)
+        )

@@ -45,8 +45,19 @@ _Supported charms_: [grafana-k8s](https://charmhub.io/grafana-k8s)
 Grafana-dashboard relation enables quick dashboard access already tailored to fit the needs of
 operators to monitor the charm. The template for the Grafana dashboard for wordpress-k8s charm can
 be found at `/src/grafana_dashboards/wordpress.json`. In Grafana UI, it can be found as “WordPress
-Operator Overview” under the General section of the dashboard browser(`/dashboards`). Modifications
+Operator Overview” under the General section of the dashboard browser (`/dashboards`). Modifications
 to the dashboard can be made but will not be persisted upon restart/redeployment of the charm.
 
 Grafana-Prometheus relate command: `juju relate grafana-k8s:grafana-source prometheus-k8s:grafana-source`  
 Grafana-dashboard relate command: `juju relate wordpress-k8s grafana-dashboard`
+
+### database:
+
+_Interface_: mysql_client
+_Supported charms_: [Charmed MySQL](https://charmhub.io/mysql), [Charmed MySQL-K8s](https://charmhub.io/mysql-k8s)
+
+Database endpoint can be related to mysql based charms, providing long term storage for wordpress.
+Database relation connect wordpress-k8s with charms that support the `mysql_client` interface on port 3306
+in the database side.
+
+Example database relate command: juju relate wordpress-k8s:database mysql-k8s:database

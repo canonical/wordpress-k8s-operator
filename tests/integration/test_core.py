@@ -573,6 +573,7 @@ async def test_loki_integration(
     loki: Application,
     application_name: str,
     kube_core_client: kubernetes.client.CoreV1Api,
+    unit_ip_list: List[str]
 ):
     """
     arrange: after WordPress charm has been deployed and relations established.
@@ -584,6 +585,10 @@ async def test_loki_integration(
 
     status: FullStatus = await model.get_status(filters=[loki.name])
     for unit in status.applications[loki.name].units.values():
+        # populate log files with access logs
+        for unit_ip in unit_ip_list:
+            for _ in range(500):
+                requests.get(f"http://{unit_ip}:80", timeout=10)
         await wait_for(
             functools.partial(
                 log_files_exist,

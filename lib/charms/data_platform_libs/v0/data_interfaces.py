@@ -316,7 +316,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 12
+LIBPATCH = 13
 
 PYDEPS = ["ops>=2.0.0"]
 
@@ -1199,6 +1199,18 @@ class KafkaRequires(DataRequires):
         self.charm = charm
         self.topic = topic
         self.consumer_group_prefix = consumer_group_prefix or ""
+
+    @property
+    def topic(self):
+        """Topic to use in Kafka."""
+        return self._topic
+
+    @topic.setter
+    def topic(self, value):
+        # Avoid wildcards
+        if value == "*":
+            raise ValueError(f"Error on topic '{value}', cannot be a wildcard.")
+        self._topic = value
 
     def _on_relation_joined_event(self, event: RelationJoinedEvent) -> None:
         """Event emitted when the application joins the Kafka relation."""

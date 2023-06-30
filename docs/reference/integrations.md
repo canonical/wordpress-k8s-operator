@@ -50,3 +50,14 @@ to the dashboard can be made but will not be persisted upon restart/redeployment
 
 Grafana-Prometheus relate command: `juju relate grafana-k8s:grafana-source prometheus-k8s:grafana-source`  
 Grafana-dashboard relate command: `juju relate wordpress-k8s grafana-dashboard`
+
+### database:
+
+_Interface_: mysql_client
+_Supported charms_: [Charmed MySQL](https://charmhub.io/mysql), [Charmed MySQL-K8s](https://charmhub.io/mysql-k8s)
+
+Database endpoint can be related to mysql based charms, providing long term storage for wordpress.
+Database relation connect wordpress-k8s with charms that support the `mysql_client` interface on port 3306
+in the database side.
+
+Example database relate command: juju relate wordpress-k8s:database mysql-k8s:database

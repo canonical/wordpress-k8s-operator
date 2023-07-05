@@ -15,13 +15,6 @@ connection with `mysql_client` interface, meaning that any charms supporting mys
 connect to the wordpress-k8s charm. It should be noted that the connection port on the database
 side must be on 3306.
 
-### db
-
-The db relation is marked for deprecation. Any relation that can fulfill the `mysql` interface can
-be used to integrate with the wordpress-k8s charm. Database configuration parameters are also
-provided for non-k8s native integrations support. Configuration replacements for db relation can be
-found in the reference documentation with the prefix `db_`.
-
 ### ingress
 
 Ingress interface provides external http/https access to the WordPress application along with other

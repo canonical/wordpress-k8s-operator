@@ -24,3 +24,10 @@ The WordPress Operator is a member of the Ubuntu family. It's an open source pro
 - [Contribute](Contribute)
 
 Thinking about using the WordPress Operator for your next project? [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
+
+## In this documentation
+
+| | |
+|--|--|
+|  [Tutorials](https://charmhub.io/wordpress-k8s/docs/tutorials-getting-started)</br>  Get started - a hands-on introduction to using the Charmed Wordpress-k8s operator for new users </br> |  [How-to guides](https://charmhub.io/wordpress-k8s/docs/how-to-contribute) </br> Step-by-step guides covering key operations and common tasks |
+| [Reference](https://charmhub.io/wordpress-k8s/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/wordpress-k8s/docs/explanation-overview) </br> Concepts - discussion and clarification of key topics  |

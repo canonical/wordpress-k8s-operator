@@ -17,6 +17,28 @@ jobs:
       registry: ghcr.io
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       trivy-image-config: trivy.yaml
+  build-charm:
+    name: Build and push charm
+    needs: get-runner-image
+    runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+    outputs:
+      charm-file: ${{ env.CHARM_FILE }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: canonical/setup-lxd@v0.1.1
+      - name: Pack charm
+        if: ${{ !cancelled() }}
+        run: |
+          sudo snap install charmcraft --classic --channel latest/stable
+          echo "CHARM_NAME=$([ -f metadata.yaml ] && yq '.name' metadata.yaml || echo UNKNOWN)" >> $GITHUB_ENV
+          charmcraft pack -v
+          echo "CHARM_FILE=$(ls $CHARM_NAME_*.charm)" >> $GITHUB_ENV
+      - name: Upload charm artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.CHARM_NAME }}-charm
+          path: ${{ inputs.working-directory }}/${{ env.CHARM_FILE }}
+          if-no-files-found: error
   integration-tests-with-secrets:
     uses: ./.github/workflows/integration_test_secrets.yaml
     needs: [get-runner-image, build-images]

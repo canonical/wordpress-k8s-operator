@@ -60,7 +60,7 @@ jobs:
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
     uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
-    needs: [get-runner-image, build-images]
+    needs: [get-runner-image, build-images, build-charm]
     with:
       images: ${{ needs.build-images.outputs.images }}
       extra-arguments: |

@@ -1,4 +1,5 @@
 juju==3.0.4
+macaroonbakery==1.3.1
 pytest
 Pillow
 requests

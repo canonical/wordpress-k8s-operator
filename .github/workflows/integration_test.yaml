@@ -47,14 +47,11 @@ jobs:
         --kube-config ${GITHUB_WORKSPACE}/kube-config \
         --screenshot-dir /tmp \
         ${{ matrix.args.value }}
-      modules: '["test_core", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
+      modules: '["test_core", "test_cos", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
       owner: ${{ github.repository_owner }}
       registry: ghcr.io
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-      pre-run-script: |
-        -c "sudo microk8s enable hostpath-storage
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-          sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
+      pre-run-script: -c "sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true
   required_status_checks:
     name: Required Integration Test Status Checks

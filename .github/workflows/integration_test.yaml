@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.CHARM_NAME }}-charm
-          path: ${{ inputs.working-directory }}/${{ env.CHARM_FILE }}
+          path: ./${{ env.CHARM_FILE }}
           if-no-files-found: error
   integration-tests-with-secrets:
     uses: ./.github/workflows/integration_test_secrets.yaml

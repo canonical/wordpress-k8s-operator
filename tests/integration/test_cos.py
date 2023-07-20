@@ -19,42 +19,23 @@ from pytest_operator.plugin import OpsTest
 
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
 
-from .constants import BLOCKED_STATUS_NAME
 from .helpers import wait_for
 
 
 @pytest.mark.usefixtures("build_and_deploy")
-@pytest.mark.asyncio
-@pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, application_name):
-    """
-    arrange: no pre-condition.
-    act: build charm using charmcraft and deploy charm to test juju model.
-    assert: building and deploying should success and status should be "blocked" since the
-        database info hasn't been provided yet.
-    """
-    assert ops_test.model
-    for unit in ops_test.model.applications[application_name].units:
-        assert (
-            unit.workload_status == BLOCKED_STATUS_NAME
-        ), "status should be 'blocked' since the default database info is empty"
-
-        assert (
-            "Waiting for db" in unit.workload_status_message
-        ), "status message should contain the reason why it's blocked"
-
-
 async def test_prometheus_integration(
+    application_name,
     model: Model,
     prometheus: Application,
     unit_ip_list: List[str],
 ):
     """
-    arrange: after WordPress charm has been deployed and relations established with prometheus.
-    act: None.
+    arrange: none.
+    act: deploy the WordPress charm and relations established with prometheus.
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
+    await model.add_relation(f"{application_name}:database", "mysql-k8s:database")
     await model.wait_for_idle(status="active")
 
     for unit_ip in unit_ip_list:

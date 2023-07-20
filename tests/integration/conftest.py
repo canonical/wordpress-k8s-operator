@@ -400,12 +400,15 @@ async def build_and_deploy_fixture(
     application_name: str,
     deploy_and_wait_for_mysql_pod,
     wordpress_image,
+    pytestconfig,
 ):
     """Deploy all required charms and kubernetes pods for tests."""
 
     async def build_and_deploy_wordpress():
         """Build wordpress charm from source and deploy to current testing model."""
-        my_charm = await ops_test.build_charm(".")
+        my_charm = pytestconfig.getoption("--charm-file")
+        if not my_charm:
+            my_charm = await ops_test.build_charm(".")
         await model.deploy(
             my_charm,
             resources={

@@ -226,6 +226,7 @@ async def build_and_upgrade_fixture(
     gen_upgrade_test_charm_config,
     num_units,
     wordpress_image,
+    pytestconfig,
 ):
     """
     arrange: an old version of the WordPress is deployed.
@@ -233,7 +234,9 @@ async def build_and_upgrade_fixture(
     assert: all operations finished without error.
     """
     assert ops_test.model
-    charm = await ops_test.build_charm(".")
+    charm = pytestconfig.getoption("--charm-file")
+    if not charm:
+        charm = await ops_test.build_charm(".")
     # Most of the times the integration tests will fail due to timeout without the force flag.
     await ops_test.juju("remove-application", application_name, "--force")
 

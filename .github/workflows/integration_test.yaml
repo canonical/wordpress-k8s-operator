@@ -59,6 +59,7 @@ jobs:
             value: "--num-units=3"
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
+    max-parallel: 2
     uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
     needs: [get-runner-image, build-images, build-charm]
     with:

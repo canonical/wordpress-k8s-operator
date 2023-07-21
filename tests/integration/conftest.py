@@ -434,7 +434,7 @@ async def build_and_deploy_fixture(
 @pytest_asyncio.fixture(scope="module", name="mysql")
 async def mysql_fixture(model: Model):
     """Deploy mysql-k8s application fixture."""
-    mysql = await model.deploy("mysql-k8s", channel="8.0/stable", trust=True)
+    mysql = await model.deploy("mysql-k8s", channel="8.0/edge", trust=True)
     return mysql
 
 

@@ -36,7 +36,7 @@ async def test_prometheus_integration(
         targets.
     """
     await model.add_relation(f"{application_name}:database", "mysql-k8s:database")
-    await model.wait_for_idle(status="active")
+    await model.wait_for_idle(status="active", timeout=20 * 60)
 
     for unit_ip in unit_ip_list:
         res = requests.get(f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10)

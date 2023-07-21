@@ -48,7 +48,7 @@ jobs:
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
   integration-tests:
     strategy:
-      max-parallel: 2
+      max-parallel: 1
       fail-fast: false
       matrix:
         args:

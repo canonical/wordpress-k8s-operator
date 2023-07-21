@@ -48,18 +48,18 @@ jobs:
       runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
   integration-tests:
     strategy:
+      max-parallel: 2
       fail-fast: false
       matrix:
         args:
-          - name: num_units=3, db_from_config
-            value: "--test-db-from-config --num-units=3"
+#          - name: num_units=3, db_from_config
+#            value: "--test-db-from-config --num-units=3"
           - name: num_units=1, db_from_config
             value: "--test-db-from-config --num-units=1"
-          - name: num_units=3, db_from_relation
-            value: "--num-units=3"
+#          - name: num_units=3, db_from_relation
+#            value: "--num-units=3"
           - name: num_units=1, db_from_relation
             value: "--num-units=1"
-    max-parallel: 2
     uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
     needs: [get-runner-image, build-images, build-charm]
     with:

@@ -54,10 +54,10 @@ jobs:
       - name: Run integration tests
         run: >
           tox -e integration --
-            --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
-            --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
-            --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
-            --kube-config ${GITHUB_WORKSPACE}/kube-config
-            --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
-            --wordpress-image localhost:32000/wordpress:test
-            -k test_external
+          --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
+          --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
+          --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
+          --kube-config ${GITHUB_WORKSPACE}/kube-config
+          --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
+          --wordpress-image localhost:32000/wordpress:test
+          -k test_external

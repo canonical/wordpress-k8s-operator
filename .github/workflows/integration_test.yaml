@@ -25,7 +25,7 @@ jobs:
 
   integration-test-with-secrets:
     runs-on: ubuntu-latest
-    name: Integration Tests (With Secrets)
+    name: Integration Test (With Secrets)
     steps:
       - uses: actions/checkout@v3
       - name: Setup Devstack Swift

@@ -37,6 +37,8 @@ async def wordpress_fixture(pytestconfig: Config, ops_test: OpsTest, model: Mode
     charm_dir = Path(__file__).parent.parent.parent
     if not charm:
         charm = await ops_test.build_charm(charm_dir)
+    else:
+        charm = Path(charm).absolute()
     wordpress_image = pytestconfig.getoption("--wordpress-image")
     if not wordpress_image:
         raise ValueError("--wordpress-image is required to run integration test")

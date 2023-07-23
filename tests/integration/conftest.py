@@ -49,6 +49,7 @@ async def wordpress_fixture(pytestconfig: Config, ops_test: OpsTest, model: Mode
             "apache-prometheus-exporter-image": "bitnami/apache-exporter:0.11.0",
         },
         num_units=2,
+        series="focal"
     )
     return WordpressApp(app, ops_test=ops_test)
 

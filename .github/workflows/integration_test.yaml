@@ -54,7 +54,6 @@ jobs:
       - name: Run integration tests
         run: >
           tox -e integration --
-            -m requires_secret
             --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
             --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
             --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}

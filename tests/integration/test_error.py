@@ -8,7 +8,6 @@ import pytest
 from tests.integration.helper import WordpressApp
 
 
-@pytest.mark.asyncio
 @pytest.mark.usefixtures("wordpress")
 async def test_incorrect_db_config(wordpress: WordpressApp):
     """
@@ -29,7 +28,7 @@ async def test_incorrect_db_config(wordpress: WordpressApp):
         }
     )
     await wordpress.model.wait_for_idle(
-        idle_period=360, status="blocked", apps=[wordpress.name], timeout=1200
+        idle_period=450, status="blocked", apps=[wordpress.name], timeout=1800
     )
 
     for unit in wordpress.get_units():

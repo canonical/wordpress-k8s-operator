@@ -1,93 +1,63 @@
-name: Integration tests
+name: Integration Test
 
 on:
   pull_request:
   workflow_call:
 
 jobs:
-  get-runner-image:
-    name: Get runner image
-    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
-  build-images:
-    name: Build images
-    uses: canonical/operator-workflows/.github/workflows/build_images.yaml@main
-    needs: get-runner-image
-    with:
-      owner: ${{ github.repository_owner }}
-      registry: ghcr.io
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-      trivy-image-config: trivy.yaml
-  build-charm:
-    name: Build and push charm
-    needs: get-runner-image
-    runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-    outputs:
-      charm-file: ${{ env.CHARM_FILE }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: canonical/setup-lxd@v0.1.1
-      - name: Pack charm
-        if: ${{ !cancelled() }}
-        run: |
-          sudo snap install charmcraft --classic --channel latest/stable
-          echo "CHARM_NAME=$([ -f metadata.yaml ] && yq '.name' metadata.yaml || echo UNKNOWN)" >> $GITHUB_ENV
-          charmcraft pack -v
-          echo "CHARM_FILE=$(ls $CHARM_NAME_*.charm)" >> $GITHUB_ENV
-      - name: Upload charm artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.CHARM_NAME }}-charm
-          path: ./${{ env.CHARM_FILE }}
-          if-no-files-found: error
-  integration-tests-with-secrets:
-    uses: ./.github/workflows/integration_test_secrets.yaml
-    needs: [get-runner-image, build-images]
+  integration-test:
+    name: Integration Test
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      images: ${{ needs.build-images.outputs.images }}
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-  integration-tests:
-    strategy:
-      max-parallel: 1
-      fail-fast: false
-      matrix:
-        args:
-#          - name: num_units=3, db_from_config
-#            value: "--test-db-from-config --num-units=3"
-          - name: num_units=1, db_from_config
-            value: "--test-db-from-config --num-units=1"
-#          - name: num_units=3, db_from_relation
-#            value: "--num-units=3"
-          - name: num_units=1, db_from_relation
-            value: "--num-units=1"
-    uses: canonical/operator-workflows/.github/workflows/integration_test_run.yaml@main
-    needs: [get-runner-image, build-images, build-charm]
-    with:
-      images: ${{ needs.build-images.outputs.images }}
-      extra-arguments: |
-        -m "not (requires_secret)" \
-        --openstack-rc ${GITHUB_WORKSPACE}/openrc \
-        --kube-config ${GITHUB_WORKSPACE}/kube-config \
-        --screenshot-dir /tmp \
-        ${{ matrix.args.value }}
-#      modules: '["test_core", "test_cos", "test_error", "test_sidecar_upgrade", "test_podspec_upgrade"]'
-      modules: '["test_core", "test_cos", "test_error"]'
-      owner: ${{ github.repository_owner }}
-      registry: ghcr.io
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+      extra-arguments: >
+        -m "not (requires_secret)"
+        --openstack-rc ${GITHUB_WORKSPACE}/openrc
+        --kube-config ${GITHUB_WORKSPACE}/kube-config
+        --screenshot-dir /tmp
+      modules: '["test_addon", "test_core", "test_cos", "test_db_config", "test_error", "test_ingress"]'
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true
-  required_status_checks:
-    name: Required Integration Test Status Checks
+
+  integration-test-with-secrets:
     runs-on: ubuntu-latest
-    needs:
-      - integration-tests
-      - integration-tests-with-secrets
-    if: always()
+    name: Integration Tests (With Secrets)
     steps:
-      - run: |
-          [ '${{ needs.integration-tests-with-secrets.result }}' = 'success' ] || (echo integration-test-with-secrets failed && false)
-          [ '${{ needs.integration-tests.result }}' = 'success' ] || (echo integration-test failed && false)
+      - uses: actions/checkout@v3
+      - name: Setup Devstack Swift
+        id: setup-devstack-swift
+        uses: canonical/setup-devstack-swift@v1
+      - name: Create OpenStack credential file
+        run: echo "${{ steps.setup-devstack-swift.outputs.credentials }}" > openrc
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+      - name: Enable microk8s plugins
+        run: |
+          sudo microk8s enable hostpath-storage ingress registry
+          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
+          sudo microk8s kubectl -n ingress rollout status -w daemonset.apps/nginx-ingress-microk8s-controller
+          sudo microk8s kubectl -n container-registry rollout status -w deployment.apps/registry
+      - name: Dump microk8s config
+        run: sudo microk8s config > kube-config
+      - name: Install tox
+        run: python3 -m pip install tox
+      - name: Build docker image
+        run: |
+          docker build -t localhost:32000/wordpress:test -f wordpress.Dockerfile .
+          docker push localhost:32000/wordpress:test
+      - name: Run integration tests
+        run: >
+          tox -e integration --
+            -m requires_secret
+            --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
+            --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
+            --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
+            --kube-config ${GITHUB_WORKSPACE}/kube-config
+            --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
+            --wordpress-image localhost:32000/wordpress:test
+            -k test_external

@@ -6,7 +6,7 @@ requests
 kubernetes>=25.3,<26
 pytest-cov
 types-requests
+types-PyYAML
 pytest-operator
-pytest-playwright
 python-swiftclient
 python-keystoneclient

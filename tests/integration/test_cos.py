@@ -3,31 +3,25 @@
 
 # pylint: disable=protected-access,too-many-locals
 
-"""Integration tests for WordPress charm."""
+"""Integration tests for WordPress charm COS integration."""
 
 import functools
-from typing import Iterable, List
+from typing import Iterable
 
+import kubernetes
 import pytest
 import requests
 from juju.action import Action
-from juju.application import Application
 from juju.client._definitions import FullStatus
-from juju.model import Model
-from kubernetes import kubernetes
-from pytest_operator.plugin import OpsTest
 
 from cos import APACHE_PROMETHEUS_SCRAPE_PORT
+from tests.integration.helper import WordpressApp, wait_for
 
-from .helpers import wait_for
 
-
-@pytest.mark.usefixtures("build_and_deploy")
+@pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("prepare_mysql", "prepare_swift", "prepare_prometheus")
 async def test_prometheus_integration(
-    application_name,
-    model: Model,
-    prometheus: Application,
-    unit_ip_list: List[str],
+    wordpress: WordpressApp,
 ):
     """
     arrange: none.
@@ -35,14 +29,11 @@ async def test_prometheus_integration(
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
-    await model.add_relation(f"{application_name}:database", "mysql-k8s:database")
-    await model.wait_for_idle(status="active", timeout=20 * 60)
-
-    for unit_ip in unit_ip_list:
+    for unit_ip in await wordpress.get_unit_ips():
         res = requests.get(f"http://{unit_ip}:{APACHE_PROMETHEUS_SCRAPE_PORT}", timeout=10)
         assert res.status_code == 200
-    status: FullStatus = await model.get_status(filters=[prometheus.name])
-    for unit in status.applications[prometheus.name].units.values():
+    status: FullStatus = await wordpress.model.get_status(filters=["prometheus-k8s"])
+    for unit in status.applications["prometheus-k8s"].units.values():
         query_targets = requests.get(
             f"http://{unit.address}:9090/api/v1/targets", timeout=10
         ).json()
@@ -73,12 +64,11 @@ def log_files_exist(unit_address: str, application_name: str, filenames: Iterabl
     return len(log_query["data"]["result"]) != 0
 
 
+@pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("prepare_mysql", "prepare_swift", "prepare_loki")
 async def test_loki_integration(
-    ops_test: OpsTest,
-    model: Model,
-    loki: Application,
-    application_name: str,
-    kube_core_client: kubernetes.client.CoreV1Api,
+    wordpress: WordpressApp,
+    kube_config: str,
 ):
     """
     arrange: after WordPress charm has been deployed and relations established.
@@ -86,20 +76,24 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    await model.wait_for_idle(apps=[loki.name], status="active", timeout=20 * 60)
-
-    status: FullStatus = await model.get_status(filters=[loki.name])
-    for unit in status.applications[loki.name].units.values():
+    for unit_ip in await wordpress.get_unit_ips():
+        for _ in range(100):
+            requests.get(f"http://{unit_ip}", timeout=10)
+    status: FullStatus = await wordpress.model.get_status(filters=["loki-k8s"])
+    for unit in status.applications["loki-k8s"].units.values():
         await wait_for(
             functools.partial(
                 log_files_exist,
                 unit.address,
-                application_name,
+                wordpress.name,
                 ("/var/log/apache2/error.log", "/var/log/apache2/access.log"),
             )
         )
+    kubernetes.config.load_kube_config(config_file=kube_config)
+    kube_core_client = kubernetes.client.CoreV1Api()
+
     kube_log = kube_core_client.read_namespaced_pod_log(
-        name=f"{application_name}-0", namespace=ops_test.model_name, container="wordpress"
+        name=f"{wordpress.name}-0", namespace=wordpress.model.name, container="wordpress"
     )
     assert kube_log
 
@@ -142,28 +136,38 @@ def dashboard_exist(loggedin_session: requests.Session, unit_address: str):
     return len(dashboards)
 
 
+@pytest.mark.usefixtures("prepare_mysql", "prepare_swift", "prepare_loki", "prepare_prometheus")
 async def test_grafana_integration(
-    model: Model,
-    prometheus: Application,
-    loki: Application,
-    grafana: Application,
+    wordpress: WordpressApp,
 ):
     """
     arrange: after WordPress charm has been deployed and relations established among cos.
     act: grafana charm joins relation
     assert: grafana wordpress dashboard can be found
     """
-    await prometheus.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await loki.relate("grafana-source", f"{grafana.name}:grafana-source")
-    await model.wait_for_idle(
-        apps=[prometheus.name, loki.name, grafana.name], status="active", timeout=20 * 60
+    grafana = await wordpress.model.deploy("grafana-k8s", channel="1.0/stable", trust=True)
+    await wordpress.model.wait_for_idle(
+        status="active", apps=["grafana-k8s"], timeout=20 * 60, idle_period=60
     )
-
+    await wordpress.model.add_relation(
+        "grafana-k8s:grafana-source", "prometheus-k8s:grafana-source"
+    )
+    await wordpress.model.wait_for_idle(
+        status="active", apps=["grafana-k8s", "prometheus-k8s"], timeout=20 * 60, idle_period=60
+    )
+    await wordpress.model.add_relation("grafana-k8s:grafana-source", "loki-k8s:grafana-source")
+    await wordpress.model.wait_for_idle(
+        status="active", apps=["grafana-k8s", "loki-k8s"], timeout=20 * 60, idle_period=60
+    )
+    await wordpress.model.add_relation("wordpress-k8s:grafana-dashboard", "grafana-k8s")
+    await wordpress.model.wait_for_idle(
+        status="active", apps=["grafana-k8s", "wordpress-k8s"], timeout=20 * 60, idle_period=60
+    )
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()
     password = action.results["admin-password"]
 
-    status: FullStatus = await model.get_status(filters=[grafana.name])
+    status: FullStatus = await wordpress.model.get_status(filters=[grafana.name])
     for unit in status.applications[grafana.name].units.values():
         sess = requests.session()
         sess.post(
@@ -179,8 +183,10 @@ async def test_grafana_integration(
                 loggedin_session=sess,
                 unit_address=unit.address,
                 datasources=("loki", "prometheus"),
-            )
+            ),
+            timeout=1200,
         )
         await wait_for(
-            functools.partial(dashboard_exist, loggedin_session=sess, unit_address=unit.address)
+            functools.partial(dashboard_exist, loggedin_session=sess, unit_address=unit.address),
+            timeout=1200,
         )

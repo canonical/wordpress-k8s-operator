@@ -3,7 +3,7 @@
 [tool.bandit]
 exclude_dirs = ["/venv/"]
 [tool.bandit.assert_used]
-skips = ["*/*test.py", "*/test_*.py"]
+skips = ["tests/**"]
 
 # Testing tools configuration
 [tool.coverage.run]
@@ -35,8 +35,7 @@ ignore = ["W503", "E501"]
 # DCO020, DCO030: Ignore missing args in docstring in mocks
 per-file-ignores = [
     "tests/unit/__init__.py:D104",
-    "tests/*:D205,D212",
-    "tests/unit/wordpress_mock.py:DCO020,DCO030"
+    "tests/**:DCO020,DCO030,DCO050,DCO060,D205,D212"
 ]
 docstring-convention = "google"
 # Check for properly formatted copyright header in each file

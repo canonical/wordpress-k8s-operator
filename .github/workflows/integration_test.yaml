@@ -21,6 +21,7 @@ jobs:
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true
+      trivy-image-config: ./trivy.yaml
 
   integration-test-with-secrets:
     runs-on: ubuntu-latest

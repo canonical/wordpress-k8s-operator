@@ -28,7 +28,7 @@ async def test_incorrect_db_config(wordpress: WordpressApp):
         }
     )
     await wordpress.model.wait_for_idle(
-        idle_period=450, status="blocked", apps=[wordpress.name], timeout=1800
+        idle_period=360, status="blocked", apps=[wordpress.name], timeout=45 * 60
     )
 
     for unit in wordpress.get_units():

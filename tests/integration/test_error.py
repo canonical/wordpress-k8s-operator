@@ -3,12 +3,9 @@
 
 """Integration tests for WordPress charm in error."""
 
-import pytest
-
 from tests.integration.helper import WordpressApp
 
 
-@pytest.mark.usefixtures("wordpress")
 async def test_incorrect_db_config(wordpress: WordpressApp):
     """
     arrange: after WordPress charm has been deployed.

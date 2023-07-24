@@ -664,8 +664,8 @@ class WordpressPatch:
             unittest.mock.patch.multiple(
                 WordpressCharm,
                 _container=mock_container,
-                _DB_CHECK_INTERVAL=0.001,
-                _DB_CHECK_TIMEOUT=0,
+                _DB_CHECK_INTERVAL=0.01,
+                _DB_CHECK_TIMEOUT=0.1,
             )
         )
         self._patches.append(unittest.mock.patch.multiple(mysql, connector=self.mysql_connector))

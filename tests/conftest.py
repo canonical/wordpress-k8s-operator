@@ -44,3 +44,5 @@ def pytest_addoption(parser: pytest.Parser):
     parser.addoption("--screenshot-dir", action="store", default="")
     # WordPress docker image built for the WordPress charm.
     parser.addoption("--wordpress-image", action="store")
+    # Pre-build charm file
+    parser.addoption("--charm-file", action="store")

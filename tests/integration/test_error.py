@@ -3,29 +3,10 @@
 
 """Integration tests for WordPress charm in error."""
 
-import pytest
-import pytest_operator.plugin
-
-from .constants import BLOCKED_STATUS_NAME
+from tests.integration.helper import WordpressApp
 
 
-@pytest.mark.usefixtures("build_and_deploy")
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("app_config")
-@pytest.mark.parametrize(
-    "app_config",
-    [
-        {
-            "db_host": "test_db_host",
-            "db_name": "test_db_name",
-            "db_user": "test_db_user",
-            "db_password": "test_db_password",
-        }
-    ],
-    indirect=True,
-    scope="function",
-)
-async def test_incorrect_db_config(ops_test: pytest_operator.plugin.OpsTest, application_name):
+async def test_incorrect_db_config(wordpress: WordpressApp):
     """
     arrange: after WordPress charm has been deployed.
     act: provide incorrect database info via config.
@@ -35,13 +16,20 @@ async def test_incorrect_db_config(ops_test: pytest_operator.plugin.OpsTest, app
     # Database configuration can retry for up to 300 seconds before giving up and showing an error.
     # Default wait_for_idle 15 seconds in ``app_config`` fixture is too short for incorrect
     # db config.
-    assert ops_test.model
-    await ops_test.model.wait_for_idle(
-        idle_period=360, status=BLOCKED_STATUS_NAME, apps=[application_name], timeout=1200
+    await wordpress.set_config(
+        {
+            "db_host": "test_db_host",
+            "db_name": "test_db_name",
+            "db_user": "test_db_user",
+            "db_password": "test_db_password",
+        }
+    )
+    await wordpress.model.wait_for_idle(
+        idle_period=360, status="blocked", apps=[wordpress.name], timeout=45 * 60
     )
 
-    for unit in ops_test.model.applications[application_name].units:
-        assert unit.workload_status == BLOCKED_STATUS_NAME, "unit status should be blocked"
+    for unit in wordpress.get_units():
+        assert unit.workload_status == "blocked", "unit status should be blocked"
         msg = unit.workload_status_message
         assert ("MySQL error" in msg and ("2003" in msg or "2005" in msg)) or (
             "leader unit failed" in msg

@@ -1,5 +1,5 @@
 [![CharmHub Badge](https://charmhub.io/wordpress-k8s/badge.svg)](https://charmhub.io/wordpress-k8s)
-[![Release to Edge](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/test_and_publish_charm.yaml/badge.svg)](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/test_and_publish_charm.yaml)
+[![Publish to edge](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/publish_charm.yaml/badge.svg)](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/publish_charm.yaml)
 [![Promote charm](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/promote_charm.yaml)
 [![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
 

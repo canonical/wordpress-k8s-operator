@@ -1,19 +1,26 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""A WordPress HTTP client for test purpose only."""
+"""Helper classes and functions for integration tests."""
 
 import html
+import inspect
 import json
 import mimetypes
 import re
 import secrets
-import typing
+import time
+from typing import Any, Awaitable, Callable, Dict, List, Optional, TypedDict, Union
 
 import requests
+import yaml
+from juju.application import Application
+from juju.model import Model
+from juju.unit import Unit
+from pytest_operator.plugin import OpsTest
 
 
-class WordPressPost(typing.TypedDict):
+class WordPressPost(TypedDict):
     """Typing for a WordPress post object.
 
     Attrs:
@@ -105,8 +112,8 @@ class WordpressClient:
     def _get(
         self,
         url: str,
-        headers: typing.Optional[typing.Dict[str, str]] = None,
-        except_status_code: typing.Optional[int] = None,
+        headers: Optional[Dict[str, str]] = None,
+        except_status_code: Optional[int] = None,
     ) -> requests.Response:
         """HTTP GET using the instance session.
 
@@ -133,10 +140,10 @@ class WordpressClient:
     def _post(
         self,
         url: str,
-        json_: typing.Optional[dict] = None,
-        data: typing.Optional[typing.Union[bytes, typing.Dict[str, typing.Any]]] = None,
-        headers: typing.Optional[typing.Dict[str, str]] = None,
-        except_status_code: typing.Optional[int] = None,
+        json_: Optional[dict] = None,
+        data: Optional[Union[bytes, Dict[str, Any]]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        except_status_code: Optional[int] = None,
     ) -> requests.Response:
         """HTTP GET using the instance session.
 
@@ -215,7 +222,7 @@ class WordpressClient:
         return nonce
 
     def create_post(
-        self, title: str, content: str, featured_media: typing.Optional[int] = None
+        self, title: str, content: str, featured_media: Optional[int] = None
     ) -> WordPressPost:
         """Create a WordPress post using wp-json API, return post object.
 
@@ -227,7 +234,7 @@ class WordpressClient:
         Returns:
             Post object returned from WordPress REST API.
         """
-        body: typing.Dict[str, typing.Union[str, int]] = {
+        body: Dict[str, Union[str, int]] = {
             "status": "publish",
             "title": title,
             "content": content,
@@ -295,7 +302,7 @@ class WordpressClient:
         """
         return self._get(post_link).text
 
-    def list_themes(self) -> typing.List[str]:
+    def list_themes(self) -> List[str]:
         """List all installed WordPress theme slugs.
 
         Return:
@@ -308,7 +315,7 @@ class WordpressClient:
         )
         return [t["stylesheet"] for t in response.json()]
 
-    def list_plugins(self) -> typing.List[str]:
+    def list_plugins(self) -> List[str]:
         """List all installed WordPress plugin slugs.
 
         Return:
@@ -321,9 +328,7 @@ class WordpressClient:
         )
         return [p["plugin"].split("/")[0] for p in response.json()]
 
-    def list_comments(
-        self, status: str = "approve", post_id: typing.Optional[int] = None
-    ) -> typing.List[dict]:
+    def list_comments(self, status: str = "approve", post_id: Optional[int] = None) -> List[dict]:
         """List all comments in the WordPress site.
 
         Args:
@@ -339,9 +344,7 @@ class WordpressClient:
         response = self._get(url, headers={"X-WP-Nonce": self._gen_wp_rest_nonce()})
         return response.json()
 
-    def upload_media(
-        self, filename: str, content: bytes, mimetype: typing.Optional[str] = None
-    ) -> dict:
+    def upload_media(self, filename: str, content: bytes, mimetype: Optional[str] = None) -> dict:
         """Upload a media file (image/video).
 
         Args:
@@ -379,7 +382,7 @@ class WordpressClient:
         return {"id": media["id"], "urls": image_urls}
 
     def login_using_launchpad(self, username: str, password: str) -> None:
-        """Use Launchpad OpenID to login the WordPress site, require launchpad related plugins.
+        """Log in the WordPress site using Launchpad OpenID, require launchpad related plugins.
 
         Args:
             username: Username of the launchpad account.
@@ -445,7 +448,7 @@ class WordpressClient:
             except_status_code=200,
         )
 
-    def list_associated_ubuntu_one_accounts(self) -> typing.List[str]:
+    def list_associated_ubuntu_one_accounts(self) -> List[str]:
         """List Ubuntu One accounts OpenID IDs associated with the current WordPress account.
 
         Returns:
@@ -458,7 +461,7 @@ class WordpressClient:
         )
         return re.findall("<td>(https://login\\.ubuntu\\.com[^<]+)</td>", openid_setting.text)
 
-    def list_roles(self) -> typing.List[str]:
+    def list_roles(self) -> List[str]:
         """List all WordPress roles of the current user.
 
         Raises:
@@ -475,3 +478,104 @@ class WordpressClient:
             if self.username in (email, username):
                 return [r.strip() for r in role.lower().split(",")]
         raise ValueError(f"User {self.username} not found")
+
+
+class WordpressApp:
+    """An object represents the wordpress charm application."""
+
+    def __init__(self, app: Application, ops_test: OpsTest):
+        """Initialize the WordpressApp object."""
+        self.app = app
+        self.ops_test = ops_test
+
+    @property
+    def model(self) -> Model:
+        """Get the current juju model."""
+        model = self.ops_test.model
+        assert model
+        return model
+
+    @property
+    def name(self) -> str:
+        """Get the wordpress charm application name."""
+        return self.app.name
+
+    async def get_unit_ips(self) -> List[str]:
+        """Retrieve unit ip addresses, similar to fixture_get_unit_status_list.
+
+        Returns:
+            list of WordPress units ip addresses.
+        """
+        _, status, _ = await self.ops_test.juju("status", "--format", "json")
+        status = json.loads(status)
+        units = status["applications"][self.name]["units"]
+        ip_list = []
+        for key in sorted(units.keys(), key=lambda n: int(n.split("/")[-1])):
+            ip_list.append(units[key]["address"])
+        return ip_list
+
+    async def get_default_admin_password(self) -> str:
+        """Get default admin password using get-initial-password action.
+
+        Returns:
+            WordPress admin account password
+        """
+        action = await self.app.units[0].run_action("get-initial-password")
+        await action.wait()
+        return action.results["password"]
+
+    async def set_config(self, config):
+        """Update the configuration of the wordpress charm."""
+        await self.app.set_config(config)
+
+    async def get_swift_bucket(self) -> Optional[str]:
+        """Get the swift bucket name used by the wordpress application."""
+        config = await self.app.get_config()
+        openstack_config = config["wp_plugin_openstack-objectstorage_config"]["value"]
+        return yaml.safe_load(openstack_config).get("bucket")
+
+    async def client_for_units(self) -> List[WordpressClient]:
+        """Get a list of WordpressClient for each unit of the wordpress application."""
+        clients = []
+        default_admin_password = await self.get_default_admin_password()
+        for unit_ip in await self.get_unit_ips():
+            clients.append(
+                WordpressClient(
+                    host=unit_ip, username="admin", password=default_admin_password, is_admin=True
+                )
+            )
+        return clients
+
+    async def wait_for_wordpress_idle(self, status: Optional[str] = None):
+        """Wait for the wordpress application is idle."""
+        await self.model.wait_for_idle(status=status, apps=[self.name])
+
+    def get_units(self) -> List[Unit]:
+        """Get units of the wordpress application."""
+        return self.app.units
+
+
+async def wait_for(
+    func: Callable[[], Union[Awaitable, Any]],
+    timeout: int = 300,
+    check_interval: int = 10,
+) -> None:
+    """Wait for function execution to become truthy.
+
+    Args:
+        func: A callback function to wait to return a truthy value.
+        timeout: Time in seconds to wait for function result to become truthy.
+        check_interval: Time in seconds to wait between ready checks.
+
+    Raises:
+        TimeoutError: if the callback function did not return a truthy value within timeout.
+    """
+    deadline = time.time() + timeout
+    is_awaitable = inspect.iscoroutinefunction(func)
+    while time.time() < deadline:
+        if is_awaitable and await func():
+            return
+        if func():
+            return
+        time.sleep(check_interval)
+    raise TimeoutError()

@@ -739,7 +739,8 @@ class WordpressCharm(CharmBase):
         logger.info("Ensure WordPress server is up")
         if self.unit.is_leader():
             msg = ""
-            for _ in range(max(1, self._DB_CHECK_TIMEOUT // self._DB_CHECK_INTERVAL)):
+            deadline = time.time() + self._DB_CHECK_TIMEOUT
+            while time.time() < deadline:
                 success, msg = self._test_database_connectivity()
                 if success:
                     break
@@ -750,11 +751,12 @@ class WordpressCharm(CharmBase):
             if not self._wp_is_installed():
                 self._wp_install()
         else:
-            for _ in range(60):
+            deadline = time.time() + self._DB_CHECK_TIMEOUT
+            while time.time() < deadline:
                 if self._wp_is_installed():
                     break
                 self.unit.status = WaitingStatus("Waiting for leader unit to initialize database")
-                time.sleep(5)
+                time.sleep(self._DB_CHECK_INTERVAL)
             else:
                 raise exceptions.WordPressBlockedStatusException(
                     "leader unit failed to initialize WordPress database in given time."

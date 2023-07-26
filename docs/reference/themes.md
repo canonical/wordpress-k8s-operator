@@ -2,7 +2,6 @@
 
 By default, the following WordPress themes are installed with the latest version from source.
 
-- [fruitful](https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-fruitful/)
 - [launchpad](https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-launchpad)
 - [light-wordpress-theme](https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme)
 - [mscom](https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-mscom)

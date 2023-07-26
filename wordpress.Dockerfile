@@ -81,7 +81,6 @@ RUN set -e; \
         essential-addons-for-elementor-lite \
         favicon-by-realfavicongenerator \
         feedwordpress \
-        fruitful-shortcodes \
         genesis-columns-advanced \
         line-break-shortcode \
         no-category-base-wpml \
@@ -94,7 +93,6 @@ RUN set -e; \
         show-current-template \
         simple-301-redirects \
         simple-custom-css \
-        social-media-buttons-toolbar \
         so-widgets-bundle \
         svg-support \
         syntaxhighlighter \
@@ -121,7 +119,6 @@ RUN set -e; \
     rm -rf */.git
 
 RUN cd ./wp-content/themes && \
-    git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-fruitful fruitful && \
     git clone https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme light-wordpress-theme && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-mscom mscom && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-thematic thematic && \

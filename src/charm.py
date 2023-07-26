@@ -69,7 +69,6 @@ class WordpressCharm(CharmBase):
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
     _WORDPRESS_DEFAULT_THEMES = [
-        "fruitful",
         "launchpad",
         "light-wordpress-theme",
         "mscom",
@@ -100,9 +99,7 @@ class WordpressCharm(CharmBase):
         "essential-addons-for-elementor-lite",
         "favicon-by-realfavicongenerator",
         "feedwordpress",
-        "fruitful-shortcodes",
         "genesis-columns-advanced",
-        "hello",
         "line-break-shortcode",
         "wp-mastodon-share",
         "no-category-base-wpml",
@@ -119,7 +116,6 @@ class WordpressCharm(CharmBase):
         "simple-301-redirects",
         "simple-custom-css",
         "so-widgets-bundle",
-        "social-media-buttons-toolbar",
         "svg-support",
         "syntaxhighlighter",
         "wordpress-importer",

@@ -44,7 +44,7 @@ For DevOps or SRE teams this charm will make operating WordPress simple and stra
 
 # Redirects
 
-[details=Mapping table]
+[details=Mapping Table]
 | Path | Location |
 | - | - |
 [/details]

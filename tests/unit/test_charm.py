@@ -201,15 +201,6 @@ def test_wp_config(
 
     wp_config = charm._gen_wp_config()
 
-    db_info_in_config = {
-        "db_host": "config_db_host",
-        "db_name": "config_db_name",
-        "db_user": "config_db_user",
-        "db_password": "config_db_password",
-    }
-    harness.update_config(db_info_in_config)
-    wp_config = charm._gen_wp_config()
-
 
 @pytest.mark.usefixtures("attach_storage")
 def test_wp_install_cmd(
@@ -320,6 +311,7 @@ def test_prom_exporter_pebble_ready(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
+    setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
 ):
     """
     arrange: after required relations ready but before prometheus exporter pebble ready.
@@ -329,19 +321,13 @@ def test_prom_exporter_pebble_ready(
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    db_config = {
-        "db_host": "config_db_host",
-        "db_name": "config_db_name",
-        "db_user": "config_db_user",
-        "db_password": "config_db_password",
-    }
+    _, db_info = setup_database_relation_no_port()
     patch.database.prepare_database(
-        host=db_config["db_host"],
-        database=db_config["db_name"],
-        user=db_config["db_user"],
-        password=db_config["db_password"],
+        host=db_info["endpoints"],
+        database=db_info["database"],
+        user=db_info["username"],
+        password=db_info["password"],
     )
-    harness.update_config(db_config)
     mock_event = unittest.mock.MagicMock(spec=PebbleReadyEvent)
     mock_event.workload = unittest.mock.MagicMock(spec=Container)
     mock_event.workload.name = "apache-prometheus-exporter"
@@ -359,6 +345,8 @@ def test_core_reconciliation(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
+    setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
+    example_database_info_no_port_diff_host: dict,
 ):
     """
     arrange: after peer relation established and database configured.
@@ -368,35 +356,31 @@ def test_core_reconciliation(
     """
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
-    db_config = {
-        "db_host": "config_db_host",
-        "db_name": "config_db_name",
-        "db_user": "config_db_user",
-        "db_password": "config_db_password",
-    }
+    db_relation_id, db_info = setup_database_relation_no_port()
     patch.database.prepare_database(
-        host=db_config["db_host"],
-        database=db_config["db_name"],
-        user=db_config["db_user"],
-        password=db_config["db_password"],
+        host=db_info["endpoints"],
+        database=db_info["database"],
+        user=db_info["username"],
+        password=db_info["password"],
     )
-    harness.update_config(db_config)
+    harness.update_config()
 
     assert patch.database.is_wordpress_installed(
-        db_config["db_host"], db_config["db_name"]
+        db_info["endpoints"], db_info["database"]
     ), "WordPress should be installed after core reconciliation"
 
-    db_config.update({"db_host": "config_db_host_2"})
+    harness.update_relation_data(db_relation_id, "mysql", example_database_info_no_port_diff_host)
+    harness.update_config()
+
     patch.database.prepare_database(
-        host=db_config["db_host"],
-        database=db_config["db_name"],
-        user=db_config["db_user"],
-        password=db_config["db_password"],
+        host=example_database_info_no_port_diff_host["endpoints"],
+        database=example_database_info_no_port_diff_host["database"],
+        user=example_database_info_no_port_diff_host["username"],
+        password=example_database_info_no_port_diff_host["password"],
     )
-    harness.update_config({"db_host": "config_db_host_2"})
 
     assert patch.database.is_wordpress_installed(
-        "config_db_host_2", db_config["db_name"]
+        db_info["endpoints"], db_info["database"]
     ), "WordPress should be installed after database config changed"
 
 
@@ -530,6 +514,7 @@ def test_theme_reconciliation(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
+    setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
 ):
     """
     arrange: after peer relation established and database ready.
@@ -539,19 +524,13 @@ def test_theme_reconciliation(
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    db_config = {
-        "db_host": "config_db_host",
-        "db_name": "config_db_name",
-        "db_user": "config_db_user",
-        "db_password": "config_db_password",
-    }
+    _, db_info = setup_database_relation_no_port()
     patch.database.prepare_database(
-        host=db_config["db_host"],
-        database=db_config["db_name"],
-        user=db_config["db_user"],
-        password=db_config["db_password"],
+        host=db_info["endpoints"],
+        database=db_info["database"],
+        user=db_info["username"],
+        password=db_info["password"],
     )
-    harness.update_config(db_config)
 
     assert patch.container.installed_themes == set(
         charm._WORDPRESS_DEFAULT_THEMES
@@ -575,6 +554,7 @@ def test_plugin_reconciliation(
     patch: WordpressPatch,
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
+    setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
 ):
     """
     arrange: after peer relation established and database ready.
@@ -584,19 +564,13 @@ def test_plugin_reconciliation(
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     setup_replica_consensus()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    db_config = {
-        "db_host": "config_db_host",
-        "db_name": "config_db_name",
-        "db_user": "config_db_user",
-        "db_password": "config_db_password",
-    }
+    _, db_info = setup_database_relation_no_port()
     patch.database.prepare_database(
-        host=db_config["db_host"],
-        database=db_config["db_name"],
-        user=db_config["db_user"],
-        password=db_config["db_password"],
+        host=db_info["endpoints"],
+        database=db_info["database"],
+        user=db_info["username"],
+        password=db_info["password"],
     )
-    harness.update_config(db_config)
 
     assert patch.container.installed_plugins == set(
         charm._WORDPRESS_DEFAULT_PLUGINS
@@ -880,20 +854,16 @@ def test_missing_peer_relation(harness: ops.testing.Harness):
 
 
 @pytest.mark.usefixtures("attach_storage")
-def test_mysql_connection_error(harness: ops.testing.Harness, setup_replica_consensus):
+def test_mysql_connection_error(
+    harness: ops.testing.Harness, setup_replica_consensus, setup_database_relation_connection_error
+):
     """
     arrange: charm peer relation is ready and the storage is attached.
     act: config the charm to connect to a non-existent database.
     assert: charm should enter blocked state, and the database error should be seen in the status.
     """
+    setup_database_relation_connection_error()
     setup_replica_consensus()
-    db_config = {
-        "db_host": "a",
-        "db_name": "b",
-        "db_user": "c",
-        "db_password": "d",
-    }
-    harness.update_config(db_config)
     assert isinstance(harness.model.unit.status, ops.charm.model.BlockedStatus)
     assert harness.model.unit.status.message == "MySQL error 2003"
 

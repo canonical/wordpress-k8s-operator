@@ -45,7 +45,7 @@ def app_name_fixture():
 
 @pytest.fixture(scope="function", name="setup_replica_consensus")
 def setup_replica_consensus_fixture(harness: ops.testing.Harness, app_name: str):
-    """Yields a function that can be used to set up peer relation.
+    """Returns a function that can be used to set up peer relation.
 
     After calling the yielded function, the replica consensus including WordPress salt keys and
     secrets will be populated. The unit will become a leader unit in this process.
@@ -133,7 +133,7 @@ def example_database_info_connection_error_fixture():
 def setup_database_relation(
     harness: ops.testing.Harness, example_database_info: typing.Dict[str, str]
 ):
-    """Yields a function that can be used to set up database relation.
+    """Returns a function that can be used to set up database relation.
 
     After calling the yielded function, a database relation will be set up. example_database_info
     will be used as the relation data. Return a tuple of relation id and the relation data.
@@ -157,7 +157,7 @@ def setup_database_relation(
 def setup_database_relation_no_port_fixture(
     harness: ops.testing.Harness, example_database_info_no_port: typing.Dict[str, str]
 ):
-    """Yields a function that can be used to set up database relation.
+    """Returns a function that can be used to set up database relation.
 
     After calling the yielded function, a database relation will be set up. example_database_info
     will be used as the relation data. Return a tuple of relation id and the relation data.
@@ -181,7 +181,7 @@ def setup_database_relation_no_port_fixture(
 def setup_database_relation_invalid_port(
     harness: ops.testing.Harness, example_invalid_database_info: typing.Dict[str, str]
 ):
-    """Yields a function that can be used to set up database relation with a non 3306 port.
+    """Returns a function that can be used to set up database relation with a non 3306 port.
 
     After calling the yielded function, a database relation will be set up. example_database_info
     will be used as the relation data. Return a tuple of relation id and the relation data.
@@ -205,7 +205,7 @@ def setup_database_relation_invalid_port(
 def setup_database_relation_connection_error(
     harness: ops.testing.Harness, example_database_info_connection_error: typing.Dict[str, str]
 ):
-    """Yields a function that can be used to set up database relation with a non 3306 port.
+    """Returns a function that can be used to set up database relation with a non 3306 port.
 
     After calling the yielded function, a database relation will be set up.
     example_database_info_connection_error will be used as the relation data.
@@ -244,7 +244,7 @@ def run_standard_plugin_test(
     setup_replica_consensus: typing.Callable[[], dict],
     setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
 ):
-    """Yields a function that can be used to perform some general test for different plugins."""
+    """Returns a function that can be used to perform some general test for different plugins."""
 
     def _run_standard_plugin_test(
         plugin: str,

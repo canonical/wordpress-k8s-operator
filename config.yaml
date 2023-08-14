@@ -7,22 +7,6 @@ options:
       Hostname for accessing WordPress, if ingress relation is active. Defaults to the application
       name.
     default: ""
-  db_host:
-    type: string
-    description: "MySQL database host"
-    default: ""
-  db_name:
-    type: string
-    description: "MySQL database name"
-    default: ""
-  db_user:
-    type: string
-    description: "MySQL database user"
-    default: ""
-  db_password:
-    type: string
-    description: "MySQL database user's password"
-    default: ""
   initial_settings:
       type: string
       description: >

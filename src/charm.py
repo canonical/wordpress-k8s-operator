@@ -566,25 +566,6 @@ class WordpressCharm(CharmBase):
         logger.debug("Check if WordPress is installed")
         return self._run_wp_cli(["wp", "core", "is-installed"]).return_code == 0
 
-    @property
-    def _config_database_config(self) -> Optional[types_.DatabaseConfig]:
-        """Database configuration details from charm config.
-
-        Returns:
-            Database configuration required to establish database connection.
-            None if not exists.
-        """
-        if any(
-            self.model.config.get(key) for key in ("db_host", "db_name", "db_user", "db_password")
-        ):
-            return types_.DatabaseConfig(
-                hostname=self.model.config.get("db_host"),
-                database=self.model.config.get("db_name"),
-                username=self.model.config.get("db_user"),
-                password=self.model.config.get("db_password"),
-            )
-        return None
-
     def _parse_database_endpoints(self, endpoint: Optional[str]) -> Optional[str]:
         """Retrieve a single database endpoint.
 
@@ -609,8 +590,8 @@ class WordpressCharm(CharmBase):
         return host_port[0]
 
     @property
-    def _database_relation_database_config(self) -> Optional[types_.DatabaseConfig]:
-        """Database configuration details from database relation.
+    def _current_effective_db_info(self) -> Optional[types_.DatabaseConfig]:
+        """Get the current effective db connection information.
 
         Returns:
             Database configuration required to establish database connection.
@@ -625,20 +606,6 @@ class WordpressCharm(CharmBase):
             username=relation.data[relation.app].get("username"),
             password=relation.data[relation.app].get("password"),
         )
-
-    @property
-    def _current_effective_db_info(self) -> Optional[types_.DatabaseConfig]:
-        """Get the current effective db connection information.
-
-        The order of precedence for effective configurations are as follows:
-        1. Charm config
-        2. database relation
-
-        Returns:
-            Database configuration required to establish database connection.
-            None if not exists.
-        """
-        return self._config_database_config or self._database_relation_database_config
 
     def _test_database_connectivity(self):
         """Test the connectivity of the current database config/relation.

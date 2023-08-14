@@ -15,7 +15,7 @@ description: |
   and supports scaling out for enterprise deployments.
 docs: https://discourse.charmhub.io/t/wordpress-documentation-overview/4052
 maintainers:
-  - launchpad.net/~canonical-is-devops
+  - https://launchpad.net/~canonical-is-devops
 issues: https://github.com/canonical/wordpress-k8s-operator/issues
 source: https://github.com/canonical/wordpress-k8s-operator
 tags:

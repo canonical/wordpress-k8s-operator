@@ -3,4 +3,4 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-lazydocs --no-watermark --output-path src-docs src/*
+lazydocs --no-watermark --output-path src-docs src/*.py

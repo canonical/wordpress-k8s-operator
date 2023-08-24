@@ -10,13 +10,14 @@ import mimetypes
 import re
 import secrets
 import time
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TypedDict, Union
+from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, TypedDict, Union
 
 import requests
 import yaml
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
+from kubernetes import kubernetes
 from pytest_operator.plugin import OpsTest
 
 
@@ -483,10 +484,12 @@ class WordpressClient:
 class WordpressApp:
     """An object represents the wordpress charm application."""
 
-    def __init__(self, app: Application, ops_test: OpsTest):
+    def __init__(self, app: Application, ops_test: OpsTest, kube_config: str):
         """Initialize the WordpressApp object."""
         self.app = app
         self.ops_test = ops_test
+        kubernetes.config.load_kube_config(config_file=kube_config)
+        self.kube_core_client = kubernetes.client.CoreV1Api()
 
     @property
     def model(self) -> Model:
@@ -554,6 +557,26 @@ class WordpressApp:
         """Get units of the wordpress application."""
         return self.app.units
 
+    async def get_wordpress_config(self) -> str:
+        """Get wp-config.php contents from the leader unit.
+
+        Returns:
+            The contents of wp-config.php
+        """
+        unit = self.app.units[0]
+        stdout = kubernetes.stream.stream(
+            self.kube_core_client.connect_get_namespaced_pod_exec,
+            unit.name.replace("/", "-"),
+            unit.model.name,
+            container="wordpress",
+            command=["cat", "/var/www/html/wp-config.php"],
+            stderr=True,
+            stdin=False,
+            stdout=True,
+            tty=False,
+        )
+        return stdout
+
 
 async def wait_for(
     func: Callable[[], Union[Awaitable, Any]],
@@ -579,3 +602,15 @@ async def wait_for(
             return
         time.sleep(check_interval)
     raise TimeoutError()
+
+
+async def get_mysql_primary_unit(units: Iterable[Unit]) -> Optional[Unit]:
+    """Get the mysql primary unit.
+
+    Args:
+        units: An iterable list of units to search for primary unit from.
+    """
+    for unit in units:
+        if unit.workload_status_message == "Primary":
+            return unit
+    return None

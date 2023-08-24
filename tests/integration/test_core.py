@@ -3,6 +3,7 @@
 
 """Integration tests for WordPress charm core functionality."""
 
+import functools
 import io
 import secrets
 import urllib.parse
@@ -10,6 +11,9 @@ import urllib.parse
 import PIL.Image
 import pytest
 import requests
+from helper import get_mysql_primary_unit, wait_for
+from juju.application import Application
+from juju.model import Model
 
 from charm import WordpressCharm
 from tests.integration.helper import WordpressApp, WordpressClient
@@ -111,3 +115,30 @@ async def test_default_wordpress_themes_and_plugins(wordpress: WordpressApp):
         assert set(wordpress_client.list_plugins()) == set(
             WordpressCharm._WORDPRESS_DEFAULT_PLUGINS
         ), "plugins installed on WordPress should match default plugins defined in charm.py"
+
+
+@pytest.mark.usefixtures("prepare_machine_mysql")
+async def test_database_endpoints_changed(machine_model: Model, wordpress: WordpressApp):
+    """
+    arrange: given related mysql charm with 3 units.
+    act: when the leader mysql unit is removed and hence the endpoints changed event fired.
+    assert: the WordPress correctly connects to the newly elected leader endpoint.
+    """
+    model: Model = wordpress.model
+    mysql: Application = machine_model.applications["mysql"]
+    await mysql.add_unit(2)
+    await machine_model.wait_for_idle(["mysql"])
+    await model.wait_for_idle(["wordpress-k8s"])
+
+    leader = await get_mysql_primary_unit(mysql.units)
+    assert leader, "No leader unit found."
+    await mysql.destroy_unit(leader.name)
+    await machine_model.wait_for_idle(["mysql"], idle_period=30)
+    await model.wait_for_idle(["wordpress-k8s"])
+
+    await wait_for(functools.partial(get_mysql_primary_unit, mysql.units))
+    leader = await get_mysql_primary_unit(mysql.units)
+
+    assert (
+        await leader.get_public_address() in await wordpress.get_wordpress_config()
+    ), "MySQL leader unit IP not found."

@@ -582,7 +582,7 @@ async def wait_for(
     func: Callable[[], Union[Awaitable, Any]],
     timeout: int = 300,
     check_interval: int = 10,
-) -> None:
+) -> Any:
     """Wait for function execution to become truthy.
 
     Args:
@@ -596,10 +596,10 @@ async def wait_for(
     deadline = time.time() + timeout
     is_awaitable = inspect.iscoroutinefunction(func)
     while time.time() < deadline:
-        if is_awaitable and await func():
-            return
-        if func():
-            return
+        if is_awaitable and (result := await func()):
+            return result
+        if result := func():
+            return result
         time.sleep(check_interval)
     raise TimeoutError()
 

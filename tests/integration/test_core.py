@@ -136,8 +136,7 @@ async def test_database_endpoints_changed(machine_model: Model, wordpress: Wordp
     await machine_model.wait_for_idle(["mysql"], timeout=30 * 60, idle_period=30)
     await model.wait_for_idle(["wordpress-k8s"])
 
-    await wait_for(functools.partial(get_mysql_primary_unit, mysql.units))
-    leader = await get_mysql_primary_unit(mysql.units)
+    leader = await wait_for(functools.partial(get_mysql_primary_unit, mysql.units))
 
     assert (
         await leader.get_public_address() in await wordpress.get_wordpress_config()

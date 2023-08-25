@@ -1,9 +1,0 @@
-requests
-charmhelpers
-charms.reactive
-flake8
-freezegun
-mock
-pytest
-pytest-cov
-python2-secrets

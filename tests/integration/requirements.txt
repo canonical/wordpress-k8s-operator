@@ -1,3 +1,4 @@
+cosl
 juju==3.0.4
 kubernetes>=25.3,<26
 macaroonbakery==1.3.1

@@ -1,3 +1,4 @@
+cosl
 requests
 charmhelpers
 charms.reactive

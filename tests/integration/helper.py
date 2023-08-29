@@ -3,14 +3,28 @@
 
 """Helper classes and functions for integration tests."""
 
+import asyncio
 import html
 import inspect
 import json
+import logging
 import mimetypes
 import re
 import secrets
 import time
-from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, TypedDict, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    Union,
+)
 
 import requests
 import yaml
@@ -19,6 +33,52 @@ from juju.model import Model
 from juju.unit import Unit
 from kubernetes import kubernetes
 from pytest_operator.plugin import OpsTest
+
+logger = logging.getLogger(__name__)
+
+
+def retry(times: int, exceptions: Tuple[Type[Exception]]):
+    """Retry decorator to catch exceptions and retry.
+
+    Args:
+        times: Number of times to retry.
+        exceptions: Types of exceptions to catch to retry.
+    """
+
+    def decorator(func: Callable):
+        """The decorating wrapper function.
+
+        Args:
+            func: Function to retry.
+        """
+
+        async def newfn(*args: Any, **kwargs: Any):
+            """Newly wrapped function with retry.
+
+            Returns:
+                The newly decorated function with retry capability.
+            """
+            attempt = 0
+            while attempt < times:
+                try:
+                    if asyncio.iscoroutinefunction(func):
+                        return await func(*args, **kwargs)
+                    return func(*args, **kwargs)
+                except exceptions as exc:
+                    logger.warning(
+                        "Function failed with exception %s, retrying %s/%s times.",
+                        exc,
+                        attempt,
+                        times,
+                    )
+                    attempt += 1
+            if asyncio.iscoroutinefunction(func):
+                return await func(*args, **kwargs)
+            return func(*args, **kwargs)
+
+        return newfn
+
+    return decorator
 
 
 class WordPressPost(TypedDict):
@@ -503,6 +563,7 @@ class WordpressApp:
         """Get the wordpress charm application name."""
         return self.app.name
 
+    @retry(times=5, exceptions=(KeyError,))
     async def get_unit_ips(self) -> List[str]:
         """Retrieve unit ip addresses, similar to fixture_get_unit_status_list.
 

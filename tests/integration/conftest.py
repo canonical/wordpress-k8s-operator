@@ -85,7 +85,7 @@ async def wordpress_fixture(
             "wordpress-image": wordpress_image,
             "apache-prometheus-exporter-image": "bitnami/apache-exporter:0.11.0",
         },
-        num_units=2,
+        num_units=1,
         series="focal",
     )
     return WordpressApp(app, ops_test=ops_test, kube_config=kube_config)

@@ -6,8 +6,9 @@
 import configparser
 import json
 import re
+import secrets
 from pathlib import Path
-from typing import Dict, Optional
+from typing import AsyncGenerator, Dict, Optional
 
 import kubernetes
 import pytest
@@ -15,6 +16,7 @@ import pytest_asyncio
 import swiftclient
 import swiftclient.exceptions
 import swiftclient.service
+from juju.controller import Controller
 from juju.model import Model
 from pytest import Config
 from pytest_operator.plugin import OpsTest
@@ -30,8 +32,43 @@ def model(ops_test: OpsTest) -> Model:
     return model
 
 
+@pytest.fixture(scope="module", name="kube_config")
+def kube_config_fixture(pytestconfig: Config):
+    """The Kubernetes cluster configuration file."""
+    kube_config = pytestconfig.getoption("--kube-config")
+    assert kube_config, (
+        "The Kubernetes config file path should not be empty, "
+        "please include it in the --kube-config parameter"
+    )
+    return kube_config
+
+
+@pytest_asyncio.fixture(scope="module", name="machine_controller")
+async def machine_controller_fixture() -> AsyncGenerator[Controller, None]:
+    """The lxd controller."""
+    controller = Controller()
+    await controller.connect_controller("localhost")
+
+    yield controller
+
+    await controller.disconnect()
+
+
+@pytest_asyncio.fixture(scope="module", name="machine_model")
+async def machine_model_fixture(machine_controller: Controller) -> AsyncGenerator[Model, None]:
+    """The machine model for jenkins agent machine charm."""
+    machine_model_name = f"mysql-machine-{secrets.token_hex(2)}"
+    model = await machine_controller.add_model(machine_model_name)
+
+    yield model
+
+    await model.disconnect()
+
+
 @pytest_asyncio.fixture(scope="module", name="wordpress")
-async def wordpress_fixture(pytestconfig: Config, ops_test: OpsTest, model: Model) -> WordpressApp:
+async def wordpress_fixture(
+    pytestconfig: Config, ops_test: OpsTest, model: Model, kube_config: str
+) -> WordpressApp:
     """Prepare the wordpress charm for integration tests."""
     charm = pytestconfig.getoption("--charm-file")
     charm_dir = Path(__file__).parent.parent.parent
@@ -48,18 +85,32 @@ async def wordpress_fixture(pytestconfig: Config, ops_test: OpsTest, model: Mode
             "wordpress-image": wordpress_image,
             "apache-prometheus-exporter-image": "bitnami/apache-exporter:0.11.0",
         },
-        num_units=2,
+        num_units=1,
         series="focal",
     )
-    return WordpressApp(app, ops_test=ops_test)
+    return WordpressApp(app, ops_test=ops_test, kube_config=kube_config)
 
 
 @pytest_asyncio.fixture(scope="module")
 async def prepare_mysql(wordpress: WordpressApp, model: Model):
     """Deploy and relate the mysql-k8s charm for integration tests."""
-    await model.deploy("mysql-k8s", channel="8.0/edge", trust=True)
-    await model.wait_for_idle(status="active", apps=["mysql-k8s"])
+    await model.deploy("mysql-k8s", channel="8.0/candidate", trust=True)
+    await model.wait_for_idle(status="active", apps=["mysql-k8s"], timeout=30 * 60)
     await model.add_relation(f"{wordpress.name}:database", "mysql-k8s:database")
+
+
+@pytest_asyncio.fixture(scope="module")
+async def prepare_machine_mysql(
+    wordpress: WordpressApp, machine_controller: Controller, machine_model: Model, model: Model
+):
+    """Deploy and relate the mysql-k8s charm for integration tests."""
+    await machine_model.deploy("mysql", channel="8.0/edge", trust=True)
+    await machine_model.create_offer("mysql:database")
+    await machine_model.wait_for_idle(status="active", apps=["mysql"], timeout=30 * 60)
+    await model.add_relation(
+        f"{wordpress.name}:database",
+        f"{machine_controller.controller_name}:admin/{machine_model.name}.mysql",
+    )
 
 
 @pytest.fixture(scope="module", name="openstack_environment")
@@ -144,27 +195,18 @@ async def prepare_swift(wordpress: WordpressApp, swift_config: Dict[str, str]):
     await wordpress.set_config(
         {"wp_plugin_openstack-objectstorage_config": json.dumps(swift_config)}
     )
-    await wordpress.model.wait_for_idle(status="active", apps=[wordpress.name])
+    await wordpress.model.wait_for_idle(status="active", apps=[wordpress.name], timeout=30 * 60)
 
 
 @pytest_asyncio.fixture(scope="module")
 async def prepare_nginx_ingress(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate nginx-ingress-integrator charm for integration tests."""
     await wordpress.model.deploy("nginx-ingress-integrator", series="focal", trust=True)
-    await wordpress.model.wait_for_idle(status="active", apps=["nginx-ingress-integrator"])
+    await wordpress.model.wait_for_idle(
+        status="active", apps=["nginx-ingress-integrator"], timeout=30 * 60
+    )
     await wordpress.model.add_relation(f"{wordpress.name}:nginx-route", "nginx-ingress-integrator")
     await wordpress.model.wait_for_idle(status="active")
-
-
-@pytest.fixture(scope="module", name="kube_config")
-def kube_config_fixture(pytestconfig: Config):
-    """The Kubernetes cluster configuration file."""
-    kube_config = pytestconfig.getoption("--kube-config")
-    assert kube_config, (
-        "The Kubernetes config file path should not be empty, "
-        "please include it in the --kube-config parameter"
-    )
-    return kube_config
 
 
 @pytest_asyncio.fixture(scope="module")
@@ -172,7 +214,7 @@ async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate prometheus-k8s charm for integration tests."""
     prometheus = await wordpress.model.deploy("prometheus-k8s", channel="1.0/stable", trust=True)
     await wordpress.model.wait_for_idle(
-        status="active", apps=[prometheus.name], raise_on_error=False
+        status="active", apps=[prometheus.name], raise_on_error=False, timeout=30 * 60
     )
     await wordpress.model.add_relation(f"{wordpress.name}:metrics-endpoint", prometheus.name)
     await wordpress.model.wait_for_idle(

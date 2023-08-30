@@ -37,12 +37,13 @@ from pytest_operator.plugin import OpsTest
 logger = logging.getLogger(__name__)
 
 
-def retry(times: int, exceptions: Tuple[Type[Exception]]):
+def retry(times: int, exceptions: Tuple[Type[Exception]], interval=5):
     """Retry decorator to catch exceptions and retry.
 
     Args:
         times: Number of times to retry.
         exceptions: Types of exceptions to catch to retry.
+        interval: Interval between retries.
     """
 
     def decorator(func: Callable):
@@ -72,6 +73,7 @@ def retry(times: int, exceptions: Tuple[Type[Exception]]):
                         times,
                     )
                     attempt += 1
+                time.sleep(interval)
             if asyncio.iscoroutinefunction(func):
                 return await func(*args, **kwargs)
             return func(*args, **kwargs)

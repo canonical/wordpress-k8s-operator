@@ -62,3 +62,6 @@ jobs:
           --kube-config ${GITHUB_WORKSPACE}/kube-config
           --wordpress-image localhost:32000/wordpress:test
           -k test_external
+          --keep-models
+      - name: Tmate debugging session
+        uses: mxschmitt/action-tmate@v3

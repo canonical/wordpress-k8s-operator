@@ -83,6 +83,7 @@ RUN set -e; \
         feedwordpress \
         genesis-columns-advanced \
         line-break-shortcode \
+        orange-saml-20-single-sign-on directory \
         no-category-base-wpml \
         post-grid \
         powerpress \

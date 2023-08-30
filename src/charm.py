@@ -175,6 +175,7 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
         self.framework.observe(self.database.on.database_created, self._reconciliation)
+        self.framework.observe(self.database.on.endpoints_changed, self._reconciliation)
         self.framework.observe(self.on.config_changed, self._reconciliation)
         self.framework.observe(self.on.upgrade_charm, self._setup_replica_data)
         self.framework.observe(self.on.wordpress_pebble_ready, self._set_version)

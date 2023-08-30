@@ -3,21 +3,84 @@
 
 """Helper classes and functions for integration tests."""
 
+import asyncio
 import html
 import inspect
 import json
+import logging
 import mimetypes
 import re
 import secrets
 import time
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TypedDict, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    Union,
+)
 
 import requests
 import yaml
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
+from kubernetes import kubernetes
 from pytest_operator.plugin import OpsTest
+
+logger = logging.getLogger(__name__)
+
+
+def retry(times: int, exceptions: Tuple[Type[Exception]], interval=5):
+    """Retry decorator to catch exceptions and retry.
+
+    Args:
+        times: Number of times to retry.
+        exceptions: Types of exceptions to catch to retry.
+        interval: Interval between retries.
+    """
+
+    def decorator(func: Callable):
+        """The decorating wrapper function.
+
+        Args:
+            func: Function to retry.
+        """
+
+        async def newfn(*args: Any, **kwargs: Any):
+            """Newly wrapped function with retry.
+
+            Returns:
+                The newly decorated function with retry capability.
+            """
+            attempt = 0
+            while attempt < times:
+                try:
+                    if asyncio.iscoroutinefunction(func):
+                        return await func(*args, **kwargs)
+                    return func(*args, **kwargs)
+                except exceptions as exc:
+                    logger.warning(
+                        "Function failed with exception %s, retrying %s/%s times.",
+                        exc,
+                        attempt,
+                        times,
+                    )
+                    attempt += 1
+                time.sleep(interval)
+            if asyncio.iscoroutinefunction(func):
+                return await func(*args, **kwargs)
+            return func(*args, **kwargs)
+
+        return newfn
+
+    return decorator
 
 
 class WordPressPost(TypedDict):
@@ -483,10 +546,12 @@ class WordpressClient:
 class WordpressApp:
     """An object represents the wordpress charm application."""
 
-    def __init__(self, app: Application, ops_test: OpsTest):
+    def __init__(self, app: Application, ops_test: OpsTest, kube_config: str):
         """Initialize the WordpressApp object."""
         self.app = app
         self.ops_test = ops_test
+        kubernetes.config.load_kube_config(config_file=kube_config)
+        self.kube_core_client = kubernetes.client.CoreV1Api()
 
     @property
     def model(self) -> Model:
@@ -500,6 +565,7 @@ class WordpressApp:
         """Get the wordpress charm application name."""
         return self.app.name
 
+    @retry(times=5, exceptions=(KeyError,))
     async def get_unit_ips(self) -> List[str]:
         """Retrieve unit ip addresses, similar to fixture_get_unit_status_list.
 
@@ -554,12 +620,32 @@ class WordpressApp:
         """Get units of the wordpress application."""
         return self.app.units
 
+    async def get_wordpress_config(self) -> str:
+        """Get wp-config.php contents from the leader unit.
+
+        Returns:
+            The contents of wp-config.php
+        """
+        unit = self.app.units[0]
+        stdout = kubernetes.stream.stream(
+            self.kube_core_client.connect_get_namespaced_pod_exec,
+            unit.name.replace("/", "-"),
+            unit.model.name,
+            container="wordpress",
+            command=["cat", "/var/www/html/wp-config.php"],
+            stderr=True,
+            stdin=False,
+            stdout=True,
+            tty=False,
+        )
+        return stdout
+
 
 async def wait_for(
     func: Callable[[], Union[Awaitable, Any]],
     timeout: int = 300,
     check_interval: int = 10,
-) -> None:
+) -> Any:
     """Wait for function execution to become truthy.
 
     Args:
@@ -573,9 +659,21 @@ async def wait_for(
     deadline = time.time() + timeout
     is_awaitable = inspect.iscoroutinefunction(func)
     while time.time() < deadline:
-        if is_awaitable and await func():
-            return
-        if func():
-            return
+        if is_awaitable and (result := await func()):
+            return result
+        if result := func():
+            return result
         time.sleep(check_interval)
     raise TimeoutError()
+
+
+async def get_mysql_primary_unit(units: Iterable[Unit]) -> Optional[Unit]:
+    """Get the mysql primary unit.
+
+    Args:
+        units: An iterable list of units to search for primary unit from.
+    """
+    for unit in units:
+        if unit.workload_status_message == "Primary":
+            return unit
+    return None

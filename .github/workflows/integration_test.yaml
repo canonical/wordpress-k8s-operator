@@ -22,6 +22,7 @@ jobs:
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
+      tmate-debug: true
 
   integration-test-with-secrets:
     runs-on: ubuntu-latest
@@ -65,3 +66,5 @@ jobs:
           --keep-models
       - name: Tmate debugging session
         uses: mxschmitt/action-tmate@v3
+        with:
+          tmate-debug: true

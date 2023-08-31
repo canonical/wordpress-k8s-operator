@@ -32,6 +32,8 @@ _\*The descriptions of the following plugins are taken from the WordPress plugin
   Genesis Framework.
 - [line-break-shortcode](https://wordpress.org/plugins/line-break-shortcode/): Shortcode [br] enabler
   for line breaks that will not be filtered out by TinyMCE.
+- [miniorange-saml-20-single-sign-on](https://wordpress.org/plugins/miniorange-saml-20-single-sign-on/): Integrate
+  SAML authentication into you WordPress instance.
 - [no-category-base-wpml](https://wordpress.org/plugins/no-category-base-wpml/): Mandatory
   ‘Category Base’ from category permalinks remover.
 - [openid](https://wordpress.org/plugins/openid/): Authenticator that allows users to authenticate to

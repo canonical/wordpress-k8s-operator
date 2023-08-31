@@ -148,10 +148,6 @@ class WordpressCharm(CharmBase):
         )
 
         self.state.set_default(
-            relation_db_host=None,
-            relation_db_name=None,
-            relation_db_user=None,
-            relation_db_password=None,
             started=False,
         )
 

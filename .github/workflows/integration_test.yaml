@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Integration Test (With Secrets)
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Devstack Swift
         id: setup-devstack-swift
         uses: canonical/setup-devstack-swift@v1

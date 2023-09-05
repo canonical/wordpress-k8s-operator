@@ -49,7 +49,6 @@ resources:
   apache-prometheus-exporter-image:
     type: oci-image
     description: Prometheus exporter for apache
-    auto-fetch: true
     upstream-source: bitnami/apache-exporter:0.13.3
 
 provides:

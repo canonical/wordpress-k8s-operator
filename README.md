@@ -5,7 +5,7 @@
 
 # WordPress Operator
 
-A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators)deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
+A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
 
 This charm simplifies initial deployment and "day N" operations of WordPress on Kubernetes,
 including scaling the number of instances, integration with SSO, 

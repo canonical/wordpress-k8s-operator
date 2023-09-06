@@ -11,34 +11,35 @@ LABEL maintainer="wordpress-charmers@lists.launchpad.net"
 # Update all packages, remove cruft, install required packages, configure apache
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
     apt-get update \
-        && apt-get --purge autoremove -y \
-        && apt-get install -y apache2 \
-            curl \
-            git \
-            libapache2-mod-php \
-            libgmp-dev \
-            php \
-            php-curl \
-            php-gd \
-            php-gmp \
-            php-mysql \
-            php-symfony-yaml \
-            php-xml \
-            pwgen \
-            python3 \
-            python3-yaml \
-            unzip && \
-        sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' "$APACHE_ENVVARS" && \
-        . "$APACHE_ENVVARS" && \
-        for dir in "$APACHE_LOCK_DIR" "$APACHE_RUN_DIR" "$APACHE_LOG_DIR";  \
-          do  \
-            rm -rvf "$dir";  \
-            mkdir -p "$dir";  \
-            chown "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$dir";  \
-            chmod u=rwx,g=rx,o=rx "$dir"; \
-        done && \
-        ln -sfT /dev/stdout "$APACHE_LOG_DIR/other_vhosts_access.log" && \
-        chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
+    && apt-get --purge autoremove -y \
+    && apt-get install -y apache2 \
+    bzr \
+    curl \
+    git \
+    libapache2-mod-php \
+    libgmp-dev \
+    php \
+    php-curl \
+    php-gd \
+    php-gmp \
+    php-mysql \
+    php-symfony-yaml \
+    php-xml \
+    pwgen \
+    python3 \
+    python3-yaml \
+    unzip && \
+    sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' "$APACHE_ENVVARS" && \
+    . "$APACHE_ENVVARS" && \
+    for dir in "$APACHE_LOCK_DIR" "$APACHE_RUN_DIR" "$APACHE_LOG_DIR";  \
+    do  \
+    rm -rvf "$dir";  \
+    mkdir -p "$dir";  \
+    chown "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$dir";  \
+    chmod u=rwx,g=rx,o=rx "$dir"; \
+    done && \
+    ln -sfT /dev/stdout "$APACHE_LOG_DIR/other_vhosts_access.log" && \
+    chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
 
 # Configure PHP and apache2 - mod_php requires us to use mpm_prefork
 COPY ./files/docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf
@@ -74,41 +75,41 @@ RUN wp core download --version=${VERSION}
 RUN set -e; \
     cd ./wp-content/plugins; \
     for plugin in  \
-        404page \
-        all-in-one-event-calendar \
-        coschedule-by-todaymade \
-        elementor \
-        essential-addons-for-elementor-lite \
-        favicon-by-realfavicongenerator \
-        feedwordpress \
-        genesis-columns-advanced \
-        line-break-shortcode \
-        miniorange-saml-20-single-sign-on \
-        no-category-base-wpml \
-        post-grid \
-        powerpress \
-        redirection \
-        relative-image-urls \
-        rel-publisher \
-        safe-svg \
-        show-current-template \
-        simple-301-redirects \
-        simple-custom-css \
-        so-widgets-bundle \
-        svg-support \
-        syntaxhighlighter \
-        wordpress-importer \
-        wordpress-seo \
-        wp-font-awesome \
-        wp-lightbox-2 \
-        wp-markdown \
-        wp-mastodon-share \
-        wp-polls \
-        wp-statistics ;\
+    404page \
+    all-in-one-event-calendar \
+    coschedule-by-todaymade \
+    elementor \
+    essential-addons-for-elementor-lite \
+    favicon-by-realfavicongenerator \
+    feedwordpress \
+    genesis-columns-advanced \
+    line-break-shortcode \
+    miniorange-saml-20-single-sign-on \
+    no-category-base-wpml \
+    post-grid \
+    powerpress \
+    redirection \
+    relative-image-urls \
+    rel-publisher \
+    safe-svg \
+    show-current-template \
+    simple-301-redirects \
+    simple-custom-css \
+    so-widgets-bundle \
+    svg-support \
+    syntaxhighlighter \
+    wordpress-importer \
+    wordpress-seo \
+    wp-font-awesome \
+    wp-lightbox-2 \
+    wp-markdown \
+    wp-mastodon-share \
+    wp-polls \
+    wp-statistics ;\
     do \
-        curl -sSL "https://downloads.wordpress.org/plugin/${plugin}.latest-stable.zip" -o "${plugin}.zip"; \
-        unzip "${plugin}.zip"; \
-        rm "${plugin}.zip"; \
+    curl -sSL "https://downloads.wordpress.org/plugin/${plugin}.latest-stable.zip" -o "${plugin}.zip"; \
+    unzip "${plugin}.zip"; \
+    rm "${plugin}.zip"; \
     done; \
     curl -sSL "https://downloads.wordpress.org/plugin/openid.3.5.0.zip" -o "openid.zip"; \
     unzip "openid.zip"; \
@@ -132,7 +133,7 @@ RUN cd ./wp-content/themes && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp ubuntustudio-wp && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-launchpad launchpad && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-xubuntu-website xubuntu-website && \
-    git clone https://code.launchpad.net/~canonical-website-editors/resource-centre/resource-centre && \
+    bzr branch lp:resource-centre && \
     rm -rf */.git
 
 EXPOSE 80

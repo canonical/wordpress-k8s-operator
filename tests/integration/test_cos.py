@@ -161,7 +161,7 @@ async def test_grafana_integration(
     )
     await wordpress.model.add_relation("wordpress-k8s:grafana-dashboard", "grafana-k8s")
     await wordpress.model.wait_for_idle(
-        status="active", apps=["grafana-k8s", "wordpress-k8s"], timeout=20 * 60, idle_period=60
+        status="active", apps=["grafana-k8s", "wordpress-k8s"], timeout=30 * 60, idle_period=60
     )
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()

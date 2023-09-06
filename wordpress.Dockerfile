@@ -132,6 +132,7 @@ RUN cd ./wp-content/themes && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp ubuntustudio-wp && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-launchpad launchpad && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-xubuntu-website xubuntu-website && \
+    git clone https://code.launchpad.net/~canonical-website-editors/resource-centre/resource-centre && \
     rm -rf */.git
 
 EXPOSE 80

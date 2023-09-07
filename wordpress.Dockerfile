@@ -13,6 +13,7 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
     apt-get update \
         && apt-get --purge autoremove -y \
         && apt-get install -y apache2 \
+            bzr \
             curl \
             git \
             libapache2-mod-php \
@@ -132,6 +133,7 @@ RUN cd ./wp-content/themes && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp ubuntustudio-wp && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-launchpad launchpad && \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-xubuntu-website xubuntu-website && \
+    bzr branch lp:resource-centre && \
     rm -rf */.git
 
 EXPOSE 80

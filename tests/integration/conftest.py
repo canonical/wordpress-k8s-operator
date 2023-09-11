@@ -104,7 +104,7 @@ async def prepare_machine_mysql(
     wordpress: WordpressApp, machine_controller: Controller, machine_model: Model, model: Model
 ):
     """Deploy and relate the mysql-k8s charm for integration tests."""
-    await machine_model.deploy("mysql", channel="8.0/edge", trust=True)
+    await machine_model.deploy("mysql", channel="8.0/candidate", trust=True)
     await machine_model.create_offer("mysql:database")
     await machine_model.wait_for_idle(status="active", apps=["mysql"], timeout=30 * 60)
     await model.add_relation(

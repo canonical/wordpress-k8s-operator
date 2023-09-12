@@ -76,9 +76,6 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
-    for unit_ip in await wordpress.get_unit_ips():
-        for _ in range(100):
-            requests.get(f"http://{unit_ip}", timeout=10)
     status: FullStatus = await wordpress.model.get_status(filters=["loki-k8s"])
     for unit in status.applications["loki-k8s"].units.values():
         await wait_for(

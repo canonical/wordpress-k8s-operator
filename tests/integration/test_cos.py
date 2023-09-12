@@ -19,7 +19,7 @@ from tests.integration.helper import WordpressApp, wait_for
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift", "prepare_prometheus")
+@pytest.mark.usefixtures("prepare_mysql", "prepare_prometheus")
 async def test_prometheus_integration(
     wordpress: WordpressApp,
 ):
@@ -65,7 +65,7 @@ def log_files_exist(unit_address: str, application_name: str, filenames: Iterabl
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift", "prepare_loki")
+@pytest.mark.usefixtures("prepare_mysql", "prepare_loki")
 async def test_loki_integration(
     wordpress: WordpressApp,
     kube_config: str,
@@ -136,7 +136,7 @@ def dashboard_exist(loggedin_session: requests.Session, unit_address: str):
     return len(dashboards)
 
 
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift", "prepare_loki", "prepare_prometheus")
+@pytest.mark.usefixtures("prepare_mysql", "prepare_loki", "prepare_prometheus")
 async def test_grafana_integration(
     wordpress: WordpressApp,
 ):

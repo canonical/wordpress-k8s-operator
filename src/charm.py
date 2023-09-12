@@ -103,7 +103,6 @@ class WordpressCharm(CharmBase):
         "genesis-columns-advanced",
         "line-break-shortcode",
         "wp-mastodon-share",
-        "miniorange-saml-20-single-sign-on",
         "no-category-base-wpml",
         "openid",
         "wordpress-launchpad-integration",

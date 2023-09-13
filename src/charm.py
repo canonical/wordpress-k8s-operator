@@ -131,7 +131,7 @@ class WordpressCharm(CharmBase):
     ]
 
     _DB_CHECK_INTERVAL = 1
-    _DB_CHECK_TIMEOUT = 300
+    _DB_CHECK_TIMEOUT = 60 * 8
 
     state = StoredState()
 

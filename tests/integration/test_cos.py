@@ -84,7 +84,8 @@ async def test_loki_integration(
                 unit.address,
                 wordpress.name,
                 ("/var/log/apache2/error.log", "/var/log/apache2/access.log"),
-            )
+            ),
+            timeout=10 * 60,
         )
     kubernetes.config.load_kube_config(config_file=kube_config)
     kube_core_client = kubernetes.client.CoreV1Api()

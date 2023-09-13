@@ -891,7 +891,7 @@ class WordpressCharm(CharmBase):
         exec_result = self._wp_addon_list(addon_type)
         if not exec_result.success:
             logger.error("Failed to list addons, %s", exec_result.message)
-            raise exceptions.WordPressStatusException("Failed to list addons.")
+            raise exceptions.WordPressBlockedStatusException("Failed to list addons.")
         if not exec_result.result:
             return
         current_installed_addons = set(t["name"] for t in exec_result.result)

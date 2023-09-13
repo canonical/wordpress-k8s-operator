@@ -130,8 +130,8 @@ class WordpressCharm(CharmBase):
         "wordpress-seo",
     ]
 
-    _DB_CHECK_INTERVAL = 1
-    _DB_CHECK_TIMEOUT = 60 * 8
+    _DB_CHECK_INTERVAL = 5
+    _DB_CHECK_TIMEOUT = 60 * 10
 
     state = StoredState()
 
@@ -627,7 +627,7 @@ class WordpressCharm(CharmBase):
         except mysql.connector.Error as err:
             if err.errno < 0:
                 logger.debug("MySQL connection test failed, traceback: %s", traceback.format_exc())
-            return False, f"MySQL error {err.errno}"
+            return False, f"MySQL error {err.errno} {err.msg}"
 
     def _wp_install_cmd(self):
         """Generate wp-cli command used to install WordPress on database.

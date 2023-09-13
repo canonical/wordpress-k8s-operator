@@ -182,9 +182,9 @@ async def test_grafana_integration(
                 unit_address=unit.address,
                 datasources=("loki", "prometheus"),
             ),
-            timeout=1200,
+            timeout=60 * 20,
         )
         await wait_for(
             functools.partial(dashboard_exist, loggedin_session=sess, unit_address=unit.address),
-            timeout=1200,
+            timeout=60 * 20,
         )

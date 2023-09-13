@@ -232,7 +232,7 @@ async def prepare_loki(wordpress: WordpressApp, prepare_mysql):
     )
     await wordpress.model.add_relation(f"{wordpress.name}:logging", loki.name)
     await wordpress.model.wait_for_idle(
-        apps=[loki.name], status="active", timeout=20 * 60, idle_period=60
+        apps=[loki.name, wordpress.name], status="active", timeout=20 * 60, idle_period=60
     )
 
 

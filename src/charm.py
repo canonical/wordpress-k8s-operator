@@ -627,7 +627,7 @@ class WordpressCharm(CharmBase):
         except mysql.connector.Error as err:
             if err.errno < 0:
                 logger.debug("MySQL connection test failed, traceback: %s", traceback.format_exc())
-            return False, f"MySQL error {err.errno} {err.msg}"
+            return False, f"MySQL error {err.errno}"
 
     def _wp_install_cmd(self):
         """Generate wp-cli command used to install WordPress on database.

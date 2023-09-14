@@ -95,12 +95,10 @@ async def wordpress_fixture(
 async def prepare_mysql(wordpress: WordpressApp, model: Model):
     """Deploy and relate the mysql-k8s charm for integration tests."""
     await model.deploy("mysql-k8s", channel="8.0/candidate", trust=True)
-    await model.wait_for_idle(
-        status="active", apps=["mysql-k8s"], timeout=30 * 60, idle_period=5 * 60
-    )
+    await model.wait_for_idle(status="active", apps=["mysql-k8s"], timeout=30 * 60, idle_period=10)
     await model.add_relation(f"{wordpress.name}:database", "mysql-k8s:database")
     await model.wait_for_idle(
-        status="active", apps=["mysql-k8s", wordpress.name], timeout=30 * 60, idle_period=5 * 60
+        status="active", apps=["mysql-k8s", wordpress.name], timeout=30 * 60, idle_period=10
     )
 
 
@@ -226,7 +224,7 @@ async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
         status="active",
         apps=[prometheus.name, wordpress.name],
         timeout=20 * 60,
-        idle_period=60,
+        idle_period=10,
         raise_on_error=False,
     )
 
@@ -236,11 +234,11 @@ async def prepare_loki(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate loki-k8s charm for integration tests."""
     loki = await wordpress.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
     await wordpress.model.wait_for_idle(
-        apps=[loki.name], status="active", timeout=20 * 60, idle_period=60
+        apps=[loki.name], status="active", timeout=20 * 60, idle_period=10
     )
     await wordpress.model.add_relation(f"{wordpress.name}:logging", loki.name)
     await wordpress.model.wait_for_idle(
-        apps=[loki.name, wordpress.name], status="active", timeout=40 * 60, idle_period=60
+        apps=[loki.name, wordpress.name], status="active", timeout=40 * 60, idle_period=10
     )
 
 

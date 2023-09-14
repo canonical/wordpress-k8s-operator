@@ -144,22 +144,20 @@ async def test_grafana_integration(
     assert: grafana wordpress dashboard can be found
     """
     grafana = await wordpress.model.deploy("grafana-k8s", channel="1.0/stable", trust=True)
-    await wordpress.model.wait_for_idle(
-        status="active", apps=["grafana-k8s"], timeout=20 * 60, idle_period=60
-    )
+    await wordpress.model.wait_for_idle(status="active", apps=["grafana-k8s"], timeout=20 * 60)
     await wordpress.model.add_relation(
         "grafana-k8s:grafana-source", "prometheus-k8s:grafana-source"
     )
     await wordpress.model.wait_for_idle(
-        status="active", apps=["grafana-k8s", "prometheus-k8s"], timeout=20 * 60, idle_period=60
+        status="active", apps=["grafana-k8s", "prometheus-k8s"], timeout=20 * 60
     )
     await wordpress.model.add_relation("grafana-k8s:grafana-source", "loki-k8s:grafana-source")
     await wordpress.model.wait_for_idle(
-        status="active", apps=["grafana-k8s", "loki-k8s"], timeout=20 * 60, idle_period=60
+        status="active", apps=["grafana-k8s", "loki-k8s"], timeout=20 * 60
     )
     await wordpress.model.add_relation("wordpress-k8s:grafana-dashboard", "grafana-k8s")
     await wordpress.model.wait_for_idle(
-        status="active", apps=["grafana-k8s", "wordpress-k8s"], timeout=30 * 60, idle_period=60
+        status="active", apps=["grafana-k8s", "wordpress-k8s"], timeout=30 * 60
     )
     action: Action = await grafana.units[0].run_action("get-admin-password")
     await action.wait()

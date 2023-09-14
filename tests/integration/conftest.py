@@ -219,7 +219,11 @@ async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
     )
     await wordpress.model.add_relation(f"{wordpress.name}:metrics-endpoint", prometheus.name)
     await wordpress.model.wait_for_idle(
-        status="active", timeout=20 * 60, idle_period=60, raise_on_error=False
+        status="active",
+        apps=[prometheus.name, wordpress.name],
+        timeout=20 * 60,
+        idle_period=60,
+        raise_on_error=False,
     )
 
 

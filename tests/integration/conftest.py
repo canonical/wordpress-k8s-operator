@@ -88,6 +88,7 @@ async def wordpress_fixture(
         num_units=1,
         series="focal",
     )
+    await model.wait_for_idle(status="active", apps=[app.name], timeout=30 * 60, idle_period=10)
     return WordpressApp(app, ops_test=ops_test, kube_config=kube_config)
 
 

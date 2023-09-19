@@ -98,7 +98,6 @@ RUN set -e; \
         svg-support \
         syntaxhighlighter \
         wordpress-importer \
-        wordpress-seo \
         wp-font-awesome \
         wp-lightbox-2 \
         wp-markdown \
@@ -113,6 +112,10 @@ RUN set -e; \
     curl -sSL "https://downloads.wordpress.org/plugin/openid.3.5.0.zip" -o "openid.zip"; \
     unzip "openid.zip"; \
     rm "openid.zip"; \
+    # Latest YoastSEO does not support 5.9.3 version of WordPress.
+    curl -sSL "https://downloads.wordpress.org/plugin/wordpress-seo.18.9.zip" -o "wordpress-seo.zip"; \
+    unzip "wordpress-seo.zip"; \
+    rm "wordpress-seo.zip"; \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/wordpress-launchpad-integration wordpress-launchpad-integration; \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s openstack-objectstorage-k8s; \
     git clone https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration wordpress-teams-integration; \

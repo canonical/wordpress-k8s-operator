@@ -96,10 +96,10 @@ async def wordpress_fixture(
 async def prepare_mysql(wordpress: WordpressApp, model: Model):
     """Deploy and relate the mysql-k8s charm for integration tests."""
     await model.deploy("mysql-k8s", channel="8.0/edge", trust=True)
-    await model.wait_for_idle(status="active", apps=["mysql-k8s"], timeout=30 * 60, idle_period=10)
+    await model.wait_for_idle(status="active", apps=["mysql-k8s"], timeout=40 * 60, idle_period=30)
     await model.add_relation(f"{wordpress.name}:database", "mysql-k8s:database")
     await model.wait_for_idle(
-        status="active", apps=["mysql-k8s", wordpress.name], timeout=30 * 60, idle_period=10
+        status="active", apps=["mysql-k8s", wordpress.name], timeout=40 * 60, idle_period=30
     )
 
 

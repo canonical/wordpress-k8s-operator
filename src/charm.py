@@ -103,7 +103,6 @@ class WordpressCharm(CharmBase):
         "genesis-columns-advanced",
         "line-break-shortcode",
         "wp-mastodon-share",
-        "miniorange-saml-20-single-sign-on",
         "no-category-base-wpml",
         "openid",
         "wordpress-launchpad-integration",
@@ -130,8 +129,8 @@ class WordpressCharm(CharmBase):
         "wordpress-seo",
     ]
 
-    _DB_CHECK_INTERVAL = 1
-    _DB_CHECK_TIMEOUT = 300
+    _DB_CHECK_INTERVAL = 5
+    _DB_CHECK_TIMEOUT = 60 * 10
 
     state = StoredState()
 
@@ -888,7 +887,13 @@ class WordpressCharm(CharmBase):
         """
         self._check_addon_type(addon_type)
         logger.info("Start %s reconciliation process", addon_type)
-        current_installed_addons = set(t["name"] for t in self._wp_addon_list(addon_type).result)
+        exec_result = self._wp_addon_list(addon_type)
+        if not exec_result.success:
+            logger.error("Failed to list addons, %s", exec_result.message)
+            raise exceptions.WordPressBlockedStatusException("Failed to list addons.")
+        if not exec_result.result:
+            return
+        current_installed_addons = set(t["name"] for t in exec_result.result)
         logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
         addons_in_config = [
             t.strip() for t in self.model.config[f"{addon_type}s"].split(",") if t.strip()
@@ -903,15 +908,15 @@ class WordpressCharm(CharmBase):
         uninstall_addons = current_installed_addons - desired_addons
         for addon in install_addons:
             logger.info("Install %s: %s", addon_type, repr(addon))
-            result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
-            if not result.success:
+            exec_result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
+            if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to install {addon_type} {repr(addon)}"
                 )
         for addon in uninstall_addons:
             logger.info("Uninstall %s: %s", addon_type, repr(addon))
-            result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
-            if not result.success:
+            exec_result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
+            if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to uninstall {addon_type} {repr(addon)}"
                 )

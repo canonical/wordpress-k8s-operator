@@ -17,6 +17,7 @@ from ops.charm import PebbleReadyEvent
 from ops.model import Container
 from ops.pebble import Client
 
+import types_
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
@@ -304,6 +305,25 @@ def test_core_reconciliation_before_database_ready(
     assert (
         "db relation" in harness.model.unit.status.message
     ), "unit should wait for database connection info"
+
+
+def test_addon_reconciliation_fail(harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a monkeypatched _wp_addon_list that returns an unsuccessful ExecResult.
+    act: when _addon_reconciliation is called.
+    assert: WordPressBlockedStatusException is raised
+    """
+    harness.begin()
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    monkeypatch.setattr(
+        charm,
+        "_wp_addon_list",
+        lambda *_args, **_kwargs: types_.ExecResult(success=False, result=None, message="Failed"),
+    )
+
+    with pytest.raises(WordPressBlockedStatusException):
+        charm._addon_reconciliation("theme")
 
 
 @pytest.mark.usefixtures("attach_storage")

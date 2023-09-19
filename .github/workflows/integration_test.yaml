@@ -24,9 +24,6 @@ jobs:
           ./tests/integration/pre_run_script.sh"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
-      tmate-debug: true
-      juju-channel: 3.1/stable
-      channel: 1.28-strict/stable
 
   integration-test-with-secrets:
     runs-on: ubuntu-latest
@@ -42,8 +39,6 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          juju-channel: 3.1/stable
-          channel: 1.28-strict/stable
       - name: Enable microk8s plugins
         run: |
           sudo microk8s enable hostpath-storage ingress registry

@@ -10,7 +10,6 @@ import secrets
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Optional
 
-import kubernetes
 import pytest
 import pytest_asyncio
 import swiftclient
@@ -88,6 +87,7 @@ async def wordpress_fixture(
         num_units=1,
         series="focal",
     )
+    await model.wait_for_idle(status="blocked", apps=[app.name], timeout=30 * 60)
     return WordpressApp(app, ops_test=ops_test, kube_config=kube_config)
 
 
@@ -97,6 +97,9 @@ async def prepare_mysql(wordpress: WordpressApp, model: Model):
     await model.deploy("mysql-k8s", channel="8.0/candidate", trust=True)
     await model.wait_for_idle(status="active", apps=["mysql-k8s"], timeout=30 * 60)
     await model.add_relation(f"{wordpress.name}:database", "mysql-k8s:database")
+    await model.wait_for_idle(
+        status="active", apps=["mysql-k8s", wordpress.name], timeout=40 * 60, idle_period=30
+    )
 
 
 @pytest_asyncio.fixture(scope="module")
@@ -218,7 +221,10 @@ async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
     )
     await wordpress.model.add_relation(f"{wordpress.name}:metrics-endpoint", prometheus.name)
     await wordpress.model.wait_for_idle(
-        status="active", timeout=20 * 60, idle_period=60, raise_on_error=False
+        status="active",
+        apps=[prometheus.name, wordpress.name],
+        timeout=20 * 60,
+        raise_on_error=False,
     )
 
 
@@ -226,87 +232,8 @@ async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
 async def prepare_loki(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate loki-k8s charm for integration tests."""
     loki = await wordpress.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
-    await wordpress.model.wait_for_idle(
-        apps=[loki.name], status="active", timeout=20 * 60, idle_period=60
-    )
+    await wordpress.model.wait_for_idle(apps=[loki.name], status="active", timeout=20 * 60)
     await wordpress.model.add_relation(f"{wordpress.name}:logging", loki.name)
     await wordpress.model.wait_for_idle(
-        apps=[loki.name], status="active", timeout=20 * 60, idle_period=60
+        apps=[loki.name, wordpress.name], status="active", timeout=40 * 60
     )
-
-
-@pytest_asyncio.fixture(scope="module", name="mysql_pod_config")
-async def mysql_pod_config_fixture(kube_config: str, ops_test: OpsTest, model: Model):
-    """Deploy a mysql pod in k8s and return the mysql configuration for wordpress charm."""
-    kubernetes.config.load_kube_config(config_file=kube_config)
-    kube_core_client = kubernetes.client.CoreV1Api()
-    namespace = ops_test.model_name
-    kube_core_client.create_namespaced_pod(
-        namespace=namespace,
-        body=kubernetes.client.V1Pod(
-            metadata=kubernetes.client.V1ObjectMeta(name="mysql", namespace=namespace),
-            kind="Pod",
-            api_version="v1",
-            spec=kubernetes.client.V1PodSpec(
-                containers=[
-                    kubernetes.client.V1Container(
-                        name="mysql",
-                        image="mysql:latest",
-                        readiness_probe=kubernetes.client.V1Probe(
-                            kubernetes.client.V1ExecAction(
-                                ["mysqladmin", "ping", "-h", "localhost"]
-                            ),
-                            initial_delay_seconds=10,
-                            period_seconds=5,
-                        ),
-                        liveness_probe=kubernetes.client.V1Probe(
-                            kubernetes.client.V1ExecAction(
-                                ["mysqladmin", "ping", "-h", "localhost"]
-                            ),
-                            initial_delay_seconds=10,
-                            period_seconds=5,
-                        ),
-                        env=[
-                            kubernetes.client.V1EnvVar("MYSQL_ROOT_PASSWORD", "root-password"),
-                            kubernetes.client.V1EnvVar("MYSQL_DATABASE", "wordpress"),
-                            kubernetes.client.V1EnvVar("MYSQL_USER", "wordpress"),
-                            kubernetes.client.V1EnvVar("MYSQL_PASSWORD", "wordpress"),
-                        ],
-                    )
-                ]
-            ),
-        ),
-    )
-
-    def is_mysql_ready() -> bool:
-        """Check the status of mysql pod.
-
-        Returns:
-            True if ready, False otherwise.
-        """
-        mysql_status = kube_core_client.read_namespaced_pod(
-            name="mysql", namespace=namespace
-        ).status
-        if mysql_status.conditions is None:
-            return False
-        for condition in mysql_status.conditions:
-            if condition.type == "Ready" and condition.status == "True":
-                return True
-        return False
-
-    await model.block_until(is_mysql_ready, timeout=300, wait_period=3)
-    return {
-        "db_host": kube_core_client.read_namespaced_pod(
-            name="mysql", namespace=namespace
-        ).status.pod_ip,
-        "db_name": "wordpress",
-        "db_user": "wordpress",
-        "db_password": "wordpress",
-    }
-
-
-@pytest_asyncio.fixture(scope="module")
-async def prepare_mysql_pod(wordpress: WordpressApp, mysql_pod_config: Dict[str, str]):
-    """Deploy mysql pod and config wordpress charm to use that."""
-    await wordpress.set_config(mysql_pod_config)
-    await wordpress.wait_for_wordpress_idle(status="active")

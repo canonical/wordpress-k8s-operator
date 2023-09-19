@@ -33,7 +33,7 @@ def dashboard_exist(loggedin_session: requests.Session, unit_address: str):
     return len(dashboards)
 
 
-@pytest.mark.usefixtures("prepare_mysql", "prepare_loki", "prepare_prometheus")
+@pytest.mark.usefixtures("prepare_mysql")
 async def test_grafana_integration(
     wordpress: WordpressApp,
 ):

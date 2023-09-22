@@ -1211,7 +1211,7 @@ class WordpressCharm(CharmBase):
             True if certain apache config is enabled.
         """
         enabled_config = self._container().list_files("/etc/apache2/conf-enabled")
-        return f"{conf_name}.conf" in enabled_config
+        return f"{conf_name}.conf" in [file.name for file in enabled_config]
 
     def _apache_enable_config(self, conf_name: str, conf: str) -> None:
         """Create and enable an apache2 configuration file.
@@ -1330,6 +1330,10 @@ class WordpressCharm(CharmBase):
             self._config_swift_plugin(swift_config)
         apache_swift_conf = "docker-php-swift-proxy"
         swift_apache_config_enabled = self._apache_config_is_enabled(apache_swift_conf)
+        logger.debug(
+            "Apache config docker-php-swift-proxy is %s",
+            "enabled" if swift_apache_config_enabled else "disabled",
+        )
         if swift_config and not swift_apache_config_enabled:
             swift_url = swift_config.get("swift-url")
             bucket = swift_config.get("bucket")
@@ -1390,11 +1394,6 @@ class WordpressCharm(CharmBase):
             _event: Event fired by juju on WordPress charm related state change.
         """
         logger.info("Start reconciliation process, triggered by %s", _event)
-        if not self.state.started:
-            logger.info("Charm hasn't started yet, reconciliation deferred")
-            self.unit.status = WaitingStatus("Waiting for charm start")
-            _event.defer()
-            return
         if not self._container().can_connect():
             logger.info("Reconciliation process terminated early, pebble is not ready")
             self.unit.status = WaitingStatus("Waiting for pebble")

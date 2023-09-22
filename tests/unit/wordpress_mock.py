@@ -390,14 +390,16 @@ class WordpressContainerMock:
         """Mock method for :meth:`ops.charm.model.Container.exists`."""
         return path in self.fs
 
-    def list_files(self, path: str) -> typing.List[str]:
+    def list_files(self, path: str):
         """Mock method for :meth:`ops.charm.model.Container.list_files`."""
         if not path.endswith("/"):
             path += "/"
         file_list = []
         for file in self.fs:
             if file.startswith(path):
-                file_list.append(file.replace(path, "", 1).split("/")[0])
+                file_info_mock = unittest.mock.MagicMock()
+                file_info_mock.name = file.replace(path, "", 1).split("/")[0]
+                file_list.append(file_info_mock)
         return file_list
 
     def remove_path(self, path: str, recursive: bool = False) -> None:

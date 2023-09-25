@@ -69,6 +69,8 @@ async def wordpress_fixture(
     pytestconfig: Config, ops_test: OpsTest, model: Model, kube_config: str
 ) -> WordpressApp:
     """Prepare the wordpress charm for integration tests."""
+    exit_code, _, _ = await ops_test.juju("model-config", "logging-config=<root>=INFO;unit=DEBUG")
+    assert exit_code == 0
     charm = pytestconfig.getoption("--charm-file")
     charm_dir = Path(__file__).parent.parent.parent
     if not charm:
@@ -92,9 +94,11 @@ async def wordpress_fixture(
 
 
 @pytest_asyncio.fixture(scope="module")
-async def prepare_mysql(wordpress: WordpressApp, model: Model):
+async def prepare_mysql(ops_test: OpsTest, wordpress: WordpressApp, model: Model):
     """Deploy and relate the mysql-k8s charm for integration tests."""
-    await model.deploy("mysql-k8s", channel="8.0/candidate", trust=True)
+    await ops_test.juju(
+        "deploy", "mysql-k8s", "--channel=8.0/candidate", "--revision=75", "--trust"
+    )
     await model.wait_for_idle(status="active", apps=["mysql-k8s"], timeout=30 * 60)
     await model.add_relation(f"{wordpress.name}:database", "mysql-k8s:database")
     await model.wait_for_idle(

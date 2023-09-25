@@ -4,12 +4,14 @@
 """Integration tests for WordPress charm core functionality."""
 
 import io
+import json
 import secrets
 import urllib.parse
 
 import PIL.Image
 import pytest
 import requests
+from pytest_operator.plugin import OpsTest
 
 from charm import WordpressCharm
 from tests.integration.helper import WordpressApp, WordpressClient
@@ -111,3 +113,20 @@ async def test_default_wordpress_themes_and_plugins(wordpress: WordpressApp):
         assert set(wordpress_client.list_plugins()) == set(
             WordpressCharm._WORDPRESS_DEFAULT_PLUGINS
         ), "plugins installed on WordPress should match default plugins defined in charm.py"
+
+
+@pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
+async def test_apache_config(wordpress: WordpressApp, ops_test: OpsTest):
+    """
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: update the config to trigger a new reconciliation.
+    assert: apache config test works properly and prevents the restart of the server.
+    """
+    await wordpress.set_config(
+        {"initial_settings": json.dumps({"user_name": "foo", "admin_email": "bar@example.com"})}
+    )
+    await wordpress.wait_for_wordpress_idle()
+    exit_code, stdout, _ = await ops_test.juju("debug-log", "--replay")
+    assert exit_code == 0
+    assert "Apache config docker-php-swift-proxy is enabled" in stdout
+    assert "Conf docker-php-swift-proxy already enabled" not in stdout

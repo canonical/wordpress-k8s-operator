@@ -196,7 +196,7 @@ class WordpressClient:
             An instance of :class:`requests.Response`.
         """
         request = requests.Request("GET", url, headers=headers)
-        prepped = request.prepare()
+        prepped = self._session.prepare_request(request)
         response = self._session.send(prepped, timeout=self.timeout)
         if except_status_code is not None and response.status_code != except_status_code:
             raise requests.HTTPError(request=request, response=response)
@@ -230,7 +230,7 @@ class WordpressClient:
             An instance of :class:`requests.Response`.
         """
         request = requests.Request("POST", url, json=json_, data=data, headers=headers)
-        prepped = request.prepare()
+        prepped = self._session.prepare_request(request)
         response = self._session.send(prepped, timeout=self.timeout)
         if except_status_code is not None and response.status_code != except_status_code:
             raise requests.HTTPError(request=request, response=response)

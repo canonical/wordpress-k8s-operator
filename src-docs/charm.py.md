@@ -18,7 +18,7 @@ Charm for WordPress on kubernetes.
 
 Attrs:  state: Persistent charm state used to store metadata after various events. 
 
-<a href="../src/charm.py#L136"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

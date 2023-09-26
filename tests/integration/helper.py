@@ -195,9 +195,11 @@ class WordpressClient:
         Returns:
             An instance of :class:`requests.Response`.
         """
-        response = self._session.get(url, headers=headers, timeout=self.timeout)
+        request = requests.Request("GET", url, headers=headers)
+        prepped = request.prepare()
+        response = self._session.send(prepped, timeout=self.timeout)
         if except_status_code is not None and response.status_code != except_status_code:
-            raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
+            raise requests.HTTPError(request=request, response=response)
         return response
 
     def _post(
@@ -227,11 +229,11 @@ class WordpressClient:
         Returns:
             An instance of :class:`requests.Response`.
         """
-        response = self._session.post(
-            url, json=json_, data=data, headers=headers, timeout=self.timeout
-        )
+        request = requests.Request("POST", url, json=json_, data=data, headers=headers)
+        prepped = request.prepare()
+        response = self._session.send(prepped, timeout=self.timeout)
         if except_status_code is not None and response.status_code != except_status_code:
-            raise requests.HTTPError(f"HTTP status {response.status_code}, URL {url} ")
+            raise requests.HTTPError(request=request, response=response)
         return response
 
     def _login(self) -> bool:

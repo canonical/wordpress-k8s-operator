@@ -62,8 +62,8 @@ class WordpressCharm(CharmBase):
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
     _CONTAINER_NAME = "wordpress"
     _SERVICE_NAME = "wordpress"
-    _WORDPRESS_USER = "www-data"
-    _WORDPRESS_GROUP = "www-data"
+    _WORDPRESS_USER = "_daemon_"
+    _WORDPRESS_GROUP = "_daemon_"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
     _DATABASE_RELATION_NAME = "database"
 

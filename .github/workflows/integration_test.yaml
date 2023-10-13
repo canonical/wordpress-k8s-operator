@@ -29,40 +29,30 @@ jobs:
     name: Integration Test (With Secrets)
     steps:
       - uses: actions/checkout@v4
-      - run: df -h
-      - run: |
-          sudo du -sh /usr/local/lib/android
-          sudo rm -rf /usr/local/lib/android
+      - run: sudo rm -rf /usr/local/lib/android
       - name: Setup Devstack Swift
         id: setup-devstack-swift
         uses: canonical/setup-devstack-swift@v1
-      - run: df -h
       - name: Create OpenStack credential file
         run: echo "${{ steps.setup-devstack-swift.outputs.credentials }}" > openrc
-      - run: df -h
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-      - run: df -h
       - name: Enable microk8s plugins
         run: |
           sudo microk8s enable hostpath-storage ingress registry
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s kubectl -n ingress rollout status -w daemonset.apps/nginx-ingress-microk8s-controller
           sudo microk8s kubectl -n container-registry rollout status -w deployment.apps/registry
-      - run: df -h
       - name: Dump microk8s config
         run: sudo microk8s config > kube-config
-      - run: df -h
       - name: Install tox
         run: python3 -m pip install tox
-      - run: df -h
       - name: Build docker image
         run: |
           docker build -t localhost:32000/wordpress:test -f wordpress.Dockerfile .
           docker push localhost:32000/wordpress:test
-      - run: df -h
       - name: Run integration tests
         run: >
           tox -e integration --

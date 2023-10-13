@@ -22,6 +22,7 @@ jobs:
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config
           chmod +x tests/integration/pre_run_script.sh
           ./tests/integration/pre_run_script.sh"
+      setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
 
   integration-test-with-secrets:

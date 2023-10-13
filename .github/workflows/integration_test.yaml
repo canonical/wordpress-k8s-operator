@@ -24,6 +24,7 @@ jobs:
           ./tests/integration/pre_run_script.sh"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
+      tmate-debug: true
 
   integration-test-with-secrets:
     runs-on: ubuntu-latest

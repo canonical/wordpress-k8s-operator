@@ -4,3 +4,4 @@ build
 .tox
 .coverage
 __pycache__
+**/*.rock

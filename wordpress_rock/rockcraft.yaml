@@ -5,19 +5,23 @@ name: wordpress
 summary: Wordpress rock
 description: Wordpress OCI image for the Wordpress charm
 base: ubuntu:20.04
+# build-base: ubuntu:20.04
 run-user: _daemon_
 license: Apache-2.0
 version: "1.0"
 platforms:
   amd64:
-
 parts:
   apache2:
-    plugin: nil
+    plugin: dump
     source: files
     build-environment:
       - APACHE_CONFDIR: /etc/apache2
-      - APACHE_ENVVARS: /etc/apache2/envvars
+      - APACHE_CONFDIR_BUILD: etc_apache2_build
+      # apache2 config dir path without / to be used in prime
+      - APACHE_CONFDIR_PRIME_SUFFIX: etc/apache2
+      - APACHE_RUN_USER_ID: 584792
+      - APACHE_RUN_GROUP_ID: 584792
     build-packages:
       - apache2
       - bzr
@@ -35,56 +39,93 @@ parts:
       - pwgen
       - python3
       - python3-yaml
+      - less
+    stage-packages:
+      - apache2
+      - bzr
+      - curl
+      - git
+      - libapache2-mod-php
+      - libgmp-dev
+      - php
+      - php-curl
+      - php-gd
+      - php-gmp
+      - php-mysql
+      - php-symfony-yaml
+      - php-xml
+      - pwgen
+      - python3
+      - python3-yaml
       - unzip
+      - less
     override-build: |
-      # Reset apache2 configuration files
-      apt install --reinstall -o Dpkg::Options::="--force-confask,confnew,confmiss" apache2
+      # Copy the default apache2 config here so we can modify it in prime
+      cp -R /etc etc_part_build
 
-      # Format envvars to have the correct apache2 syntax
-      # Example:
-      # export A=B
-      #
-      # becomes
-      #
-      # : ${A:=B}
-      # export A
-      sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' "$APACHE_ENVVARS"
-      # Change default system user for apache2 to 584792
-      # This is because rockcraft only supports _daemon_ as the default run-user
-      # And it's only created at the end. So we use its uid and gid here
-      sed -ri 's/\{APACHE_RUN_(USER|GROUP):=.+\}/\{APACHE_RUN_\1:=584792\}/' "$APACHE_ENVVARS"
+      # Copy static files
+      cp envvars etc_part_build/apache2/envvars
+      cp docker-php.conf etc_part_build/apache2/conf-available/docker-php.conf
+      cp docker-php-swift-proxy.conf etc_part_build/apache2/conf-available/docker-php-swift-proxy.conf
+      cp apache2.conf etc_part_build/apache2/apache2.conf
+      cp 000-default.conf etc_part_build/apache2/sites-available/000-default.conf
 
-      . "$APACHE_ENVVARS"
-      for dir in "$APACHE_LOCK_DIR" "$APACHE_RUN_DIR" "$APACHE_LOG_DIR";
+      # Necessary for php
+      cp -R /usr usr_b
+      cp -R /lib lib_b
+      cp -R /lib64 lib64_b
+      craftctl default
+
+      ls -la etc_part_build/apache2; cat etc_part_build/apache2/envvars
+    organize:
+      etc_part_build: /etc
+      usr_b: /usr
+      lib_b: /lib
+      lib64_b: /lib64
+
+    override-prime: |
+      craftctl default
+      APACHE_CONF_PRIME="$CRAFT_PRIME/$APACHE_CONFDIR_PRIME_SUFFIX"
+
+      . $APACHE_CONF_PRIME/envvars
+      for dir in "$CRAFT_PRIME$APACHE_LOCK_DIR" "$CRAFT_PRIME$APACHE_RUN_DIR" "$CRAFT_PRIME$APACHE_LOG_DIR";
         do
           rm -rvf "$dir";
           mkdir -p "$dir";
-          chown "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$dir";
+          chown "$APACHE_RUN_USER_ID:$APACHE_RUN_GROUP_ID" "$dir";
           chmod u=rwx,g=rx,o=rx "$dir";
       done
-      ln -sfT /dev/stdout "$APACHE_LOG_DIR/other_vhosts_access.log"
-      chown -R --no-dereference "$APACHE_RUN_USER:$APACHE_RUN_GROUP" "$APACHE_LOG_DIR"
+      chown -R --no-dereference "$APACHE_RUN_USER_ID:$APACHE_RUN_GROUP_ID" "$CRAFT_PRIME$APACHE_LOG_DIR"
+      ln -sfT /dev/stdout "$CRAFT_PRIME$APACHE_LOG_DIR/other_vhosts_access.log"
 
-      cp docker-php.conf $APACHE_CONFDIR/conf-available/docker-php.conf
-      cp docker-php-swift-proxy.conf $APACHE_CONFDIR/conf-available/docker-php-swift-proxy.conf
-      cp apache2.conf $APACHE_CONFDIR/apache2.conf
-      cp 000-default.conf $APACHE_CONFDIR/sites-available/000-default.conf
-
-      a2enconf docker-php
-      a2dismod mpm_event
-      a2enmod headers
-      a2enmod mpm_prefork
-      a2enmod proxy
-      a2enmod proxy_http
-      a2enmod rewrite
-      a2enmod ssl
-
-      craftctl default
-
+      # a2enconf docker-php
+      ln -sfT ../conf-available/docker-php.conf $APACHE_CONF_PRIME/conf-enabled/docker-php.conf
+      # a2dismod mpm_event
+      rm -rf $APACHE_CONF_PRIME/mods-enabled/mpm_event.load
+      # a2enmod headers
+      ln -sfT ../mods-available/headers.load $APACHE_CONF_PRIME/mods-enabled/headers.load
+      # a2enmod mpm_prefork
+      ln -sfT ../mods-available/mpm_prefork.load $APACHE_CONF_PRIME/mods-enabled/mpm_prefork.load
+      # a2enmod proxy
+      ln -sfT ../mods-available/proxy.load $APACHE_CONF_PRIME/mods-enabled/proxy.load
+      # a2enmod proxy_http
+      ln -sfT ../mods-available/proxy_http.load $APACHE_CONF_PRIME/mods-enabled/proxy_http.load
+      # a2enmod rewrite
+      ln -sfT ../mods-available/rewrite.load $APACHE_CONF_PRIME/mods-enabled/rewrite.load
+      # a2enmod ssl
+      ln -sfT ../mods-available/ssl.load $APACHE_CONF_PRIME/mods-enabled/ssl.load
+    prime:
+      - '-envvars'
+      - '-docker-php.conf'
+      - '-docker-php-swift-proxy.conf'
+      - '-apache2.conf'
+      - '-000-default.conf'
+      - '-bin/touch'
   wordpress:
     after:
       - apache2
-    plugin: nil
+    plugin: dump
+    source: files
     build-environment:
       - WP_PLUGINS: |
           404page \
@@ -117,20 +158,22 @@ parts:
           wp-polls \
           wp-statistics
       - WP_VERSION: 5.9.3
-    overlay-script: |
-      # Clean up $CRAFT_OVERLAY to avoid conflicts between builds
-      rm -rf $CRAFT_OVERLAY/*
-      # Clean up apache directory where we install worpress
-      rm -rf /var/www/html/*
-      # Fetch wordpress CLI and install wordpress
-      curl -sSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp
-      chmod +x /usr/local/bin/wp
+      - WORDPRESS_DIR_BUILD: var_www_html_build
+      # wordpres dir (apache2 serve dir) path without / to be used in prime
+      - WORDPRESS_DIR_PRIME_SUFFIX: var/www/html/
+      - APACHE_RUN_USER_ID: 584792
+      - APACHE_RUN_GROUP_ID: 584792
+    override-build: |
+      cp -R /var/www/html/ var_www_html_build
 
-      cd /var/www/html/
-      wp core download --version=${WP_VERSION} --allow-root
+      curl -sSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o wp
+      chmod +x wp
+
+      (cd var_www_html_build
+      $CRAFT_PART_BUILD/wp core download --version=${WP_VERSION} --allow-root)
 
       # Install wordpress plugins
-      (cd wp-content/plugins
+      (cd var_www_html_build/wp-content/plugins
       for plugin in $WP_PLUGINS;
         do
           curl -sSL "https://downloads.wordpress.org/plugin/${plugin}.latest-stable.zip" -o "${plugin}.zip"
@@ -151,7 +194,7 @@ parts:
       rm -rf */.git)
 
       # Install wordpress themes
-      (cd ./wp-content/themes;
+      (cd var_www_html_build/wp-content/themes;
       git clone https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme light-wordpress-theme
       git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-mscom mscom
       git clone https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-thematic thematic
@@ -168,11 +211,16 @@ parts:
       rm -rf */.git)
 
       craftctl default
-
-  post-install-configuration:
-    plugin: nil
-    after:
-      - apache2
-      - wordpress
-    overlay-script: |
-      chown 584792:584792 -R /var/www/html/
+    organize:
+      wp: /usr/local/bin/wp
+      var_www_html_build: /var/www/html
+    override-prime: |
+      craftctl default
+      chown $APACHE_RUN_USER_ID:$APACHE_RUN_GROUP_ID -R --no-dereference "$CRAFT_PRIME/var/www/html"
+    prime:
+      - '-envvars'
+      - '-docker-php.conf'
+      - '-docker-php-swift-proxy.conf'
+      - '-apache2.conf'
+      - '-000-default.conf'
+      - '-bin/touch'

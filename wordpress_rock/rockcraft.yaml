@@ -34,6 +34,7 @@ parts:
     - apache2
     - libapache2-mod-php
     - libgmp-dev
+    - curl
     - php
     - php-curl
     - php-gd
@@ -44,7 +45,6 @@ parts:
     - pwgen
     - python3
     - python3-yaml
-    - unzip
     build-environment:
       # Required to source $CRAFT_OVERLAY/etc/apache2/envvars
       - APACHE_CONFDIR: /etc/apache2

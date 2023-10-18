@@ -50,10 +50,16 @@ jobs:
         run: sudo microk8s config > kube-config
       - name: Install tox
         run: python3 -m pip install tox
-      - name: Build docker image
+      - name: Build rockfile
+        uses: canonical/craft-actions/rockcraft-pack@main
+        with:
+          path: wordpress_rock/
+          verbosity: verbose
+        id: build-rock
+      - name: Upload rock to microk8s
         run: |
-          docker build -t localhost:32000/wordpress:test -f wordpress.Dockerfile .
-          docker push localhost:32000/wordpress:test
+          sudo /snap/rockcraft/current/bin/skopeo --insecure-policy copy oci-archive:$(ls "${{ steps.build-rock.outputs.rock }}") docker-daemon:wordpress:test
+          docker save wordpress:test | sudo microk8s ctr image import -
       - name: Run integration tests
         run: >
           tox -e integration --
@@ -63,5 +69,5 @@ jobs:
           --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
           --openstack-rc ./openrc
           --kube-config ${GITHUB_WORKSPACE}/kube-config
-          --wordpress-image localhost:32000/wordpress:test
+          --wordpress-image wordpress:test
           -k test_external

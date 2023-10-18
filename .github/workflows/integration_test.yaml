@@ -60,6 +60,7 @@ jobs:
         run: |
           sudo /snap/rockcraft/current/bin/skopeo --insecure-policy copy oci-archive:$(ls "${{ steps.build-rock.outputs.rock }}") docker-daemon:wordpress:test
           docker save wordpress:test | sudo microk8s ctr image import -
+          sudo microk8s ctr images ls name~='docker.io/library/wordpress:test'
       - name: Run integration tests
         run: >
           tox -e integration --

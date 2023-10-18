@@ -18,9 +18,6 @@ parts:
     source: files
     build-packages:
     - apache2
-    - bzr
-    - curl
-    - git
     - libapache2-mod-php
     - libgmp-dev
     - php
@@ -33,12 +30,8 @@ parts:
     - pwgen
     - python3
     - python3-yaml
-    - unzip
     overlay-packages:
     - apache2
-    - bzr
-    - curl
-    - git
     - libapache2-mod-php
     - libgmp-dev
     - php
@@ -62,10 +55,11 @@ parts:
     override-pull: |
       # Persists files here to use them in overlay
       craftctl default
-      rm -rfv /tmp/craft_apache_conf_files
+      rm -rfv /tmp/craft_apache_conf_files/*
       mkdir -p /tmp/craft_apache_conf_files
       cp -R . /tmp/craft_apache_conf_files
     overlay-script: |
+      craftctl default
       sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' $CRAFT_OVERLAY/etc/apache2/envvars
       sed -ri 's/\{APACHE_RUN_(USER|GROUP):=.+\}/\{APACHE_RUN_\1:=_daemon_\}/' $CRAFT_OVERLAY/etc/apache2/envvars
       . $CRAFT_OVERLAY/etc/apache2/envvars
@@ -77,7 +71,7 @@ parts:
           chmod u=rwx,g=rx,o=rx "$dir";
       done
       chown -R --no-dereference "$IMAGE_RUN_USER_ID:$IMAGE_RUN_GROUP_ID" "$CRAFT_OVERLAY$APACHE_LOG_DIR"
-      # ln -sfT /dev/stdout "$CRAFT_OVERLAY$APACHE_LOG_DIR/other_vhosts_access.log"
+      ln -sfT ../../../dev/stdout "$CRAFT_OVERLAY$APACHE_LOG_DIR/other_vhosts_access.log"
       mv /tmp/craft_apache_conf_files/docker-php.conf $CRAFT_OVERLAY/etc/apache2/conf-available/docker-php.conf
       mv /tmp/craft_apache_conf_files/docker-php-swift-proxy.conf $CRAFT_OVERLAY/etc/apache2/conf-available/docker-php-swift-proxy.conf
       mv /tmp/craft_apache_conf_files/apache2.conf $CRAFT_OVERLAY/etc/apache2/apache2.conf
@@ -93,7 +87,6 @@ parts:
       a2enmod rewrite
       a2enmod ssl
       EOF
-      craftctl default
   wordpress:
     after:
       - apache2
@@ -133,6 +126,11 @@ parts:
       - PHP_VERSION: 7.4
       - IMAGE_RUN_USER_ID: 584792
       - IMAGE_RUN_GROUP_ID: 584792
+    build-packages:
+      - bzr
+      - curl
+      - git
+      - unzip
     override-build: |
       curl -sSL --create-dirs https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o wp
       chmod +x wp

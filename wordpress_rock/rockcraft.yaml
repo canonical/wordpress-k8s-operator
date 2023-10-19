@@ -97,35 +97,35 @@ parts:
       - apache2
     plugin: nil
     build-environment:
-      - WP_PLUGINS: |
-          404page \
-          all-in-one-event-calendar \
-          coschedule-by-todaymade \
-          elementor \
-          essential-addons-for-elementor-lite \
-          favicon-by-realfavicongenerator \
-          feedwordpress \
-          genesis-columns-advanced \
-          line-break-shortcode \
-          no-category-base-wpml \
-          post-grid \
-          powerpress \
-          redirection \
-          relative-image-urls \
-          rel-publisher \
-          safe-svg \
-          show-current-template \
-          simple-301-redirects \
-          simple-custom-css \
-          so-widgets-bundle \
-          svg-support \
-          syntaxhighlighter \
-          wordpress-importer \
-          wp-font-awesome \
-          wp-lightbox-2 \
-          wp-markdown \
-          wp-mastodon-share \
-          wp-polls \
+      - WP_PLUGINS: >-
+          404page
+          all-in-one-event-calendar
+          coschedule-by-todaymade
+          elementor
+          essential-addons-for-elementor-lite
+          favicon-by-realfavicongenerator
+          feedwordpress
+          genesis-columns-advanced
+          line-break-shortcode
+          no-category-base-wpml
+          post-grid
+          powerpress
+          redirection
+          relative-image-urls
+          rel-publisher
+          safe-svg
+          show-current-template
+          simple-301-redirects
+          simple-custom-css
+          so-widgets-bundle
+          svg-support
+          syntaxhighlighter
+          wordpress-importer
+          wp-font-awesome
+          wp-lightbox-2
+          wp-markdown
+          wp-mastodon-share
+          wp-polls
           wp-statistics
       - WP_VERSION: 5.9.3
       - PHP_VERSION: 7.4

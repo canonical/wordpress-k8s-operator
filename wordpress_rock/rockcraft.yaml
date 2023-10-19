@@ -34,9 +34,6 @@ parts:
     - unzip
     overlay-packages:
     - apache2
-    - bzr
-    - curl
-    - git
     - libapache2-mod-php
     - libgmp-dev
     - php
@@ -49,7 +46,7 @@ parts:
     - pwgen
     - python3
     - python3-yaml
-    - unzip
+    - ca-certificates
     build-environment:
       # Required to source $CRAFT_OVERLAY/etc/apache2/envvars
       - APACHE_CONFDIR: /etc/apache2
@@ -131,6 +128,11 @@ parts:
       - PHP_VERSION: 7.4
       - IMAGE_RUN_USER_ID: 584792
       - IMAGE_RUN_GROUP_ID: 584792
+    build-packages: |
+      - bzr
+      - curl
+      - git
+      - unzip
     override-build: |
       curl -sSL --create-dirs https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o wp
       chmod +x wp

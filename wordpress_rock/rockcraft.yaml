@@ -128,7 +128,7 @@ parts:
       - PHP_VERSION: 7.4
       - IMAGE_RUN_USER_ID: 584792
       - IMAGE_RUN_GROUP_ID: 584792
-    build-packages: |
+    build-packages:
       - bzr
       - curl
       - git

@@ -223,6 +223,14 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/themes/ubuntu-community/
+  get-ubuntu-community-wordpress-theme:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-wordpress-theme/+git/ubuntu-community-wordpress-theme
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/ubuntu-community-wordpress-theme/
   get-wp-theme-ubuntu-fi:
     after:
       - wordpress
@@ -293,6 +301,7 @@ parts:
       - get-wp-theme-launchpad
       - get-wp-theme-xubuntu-website
       - get-resource-centre
+      - get-ubuntu-community-wordpress-theme
     build-environment:
       - IMAGE_RUN_USER_ID: 584792
       - IMAGE_RUN_GROUP_ID: 584792

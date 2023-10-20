@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-FROM ubuntu:20.04
+FROM ubuntu:20.04@sha256:ed4a42283d9943135ed87d4ee34e542f7f5ad9ecf2f244870e23122f703f91c2
 
 ARG VERSION=5.9.3
 ENV APACHE_CONFDIR=/etc/apache2

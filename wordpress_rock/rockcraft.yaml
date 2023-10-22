@@ -254,7 +254,7 @@ parts:
     source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp
     source-type: git
     organize:
-      "*": /var/www/html/wp-content/themes/light-wordpress-theme/
+      "*": /var/www/html/wp-content/themes/ubuntustudio-wp/
   get-wp-theme-launchpad:
     after:
       - wordpress

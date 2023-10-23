@@ -11,9 +11,9 @@ jobs:
     secrets: inherit
     with:
       extra-arguments: >
-        --openstack-rc ${GITHUB_WORKSPACE}/openrc
-        --kube-config ${GITHUB_WORKSPACE}/kube-config
-        --screenshot-dir /tmp
+        --openstack-rc=${GITHUB_WORKSPACE}/openrc
+        --kube-config=${GITHUB_WORKSPACE}/kube-config
+        --screenshot-dir=/tmp
       modules: '["test_addon", "test_core", "test_ingress", "test_cos_grafana", "test_cos_loki", "test_cos_prometheus"]'
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage

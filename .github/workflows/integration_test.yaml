@@ -10,7 +10,7 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      extra-arguments: >
+      extra-arguments: >-
         --openstack-rc=${GITHUB_WORKSPACE}/openrc
         --kube-config=${GITHUB_WORKSPACE}/kube-config
         --screenshot-dir=/tmp

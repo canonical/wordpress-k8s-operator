@@ -10,7 +10,7 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      extra-arguments: >
+      extra-arguments: >-
         -m "not (requires_secret)"
         --openstack-rc ${GITHUB_WORKSPACE}/openrc
         --kube-config ${GITHUB_WORKSPACE}/kube-config

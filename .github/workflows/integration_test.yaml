@@ -11,11 +11,10 @@ jobs:
     secrets: inherit
     with:
       extra-arguments: >-
-        -m "not (requires_secret)"
-        --openstack-rc ${GITHUB_WORKSPACE}/openrc
-        --kube-config ${GITHUB_WORKSPACE}/kube-config
-        --screenshot-dir /tmp
-      modules: '["test_addon", "test_core", "test_ingress", "test_cos_grafana", "test_cos_loki", "test_cos_prometheus"]'
+        --openstack-rc=${GITHUB_WORKSPACE}/openrc
+        --kube-config=${GITHUB_WORKSPACE}/kube-config
+        --screenshot-dir=/tmp
+      modules: '["test_addon", "test_core", "test_external", "test_ingress", "test_cos_grafana", "test_cos_loki", "test_cos_prometheus"]'
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
@@ -24,51 +23,3 @@ jobs:
           ./tests/integration/pre_run_script.sh"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
-
-  integration-test-with-secrets:
-    runs-on: ubuntu-latest
-    name: Integration Test (With Secrets)
-    steps:
-      - uses: actions/checkout@v4
-      - run: sudo rm -rf /usr/local/lib/android
-      - name: Setup Devstack Swift
-        id: setup-devstack-swift
-        uses: canonical/setup-devstack-swift@v1
-      - name: Create OpenStack credential file
-        run: echo "${{ steps.setup-devstack-swift.outputs.credentials }}" > openrc
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-      - name: Enable microk8s plugins
-        run: |
-          sudo microk8s enable hostpath-storage ingress registry
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-          sudo microk8s kubectl -n ingress rollout status -w daemonset.apps/nginx-ingress-microk8s-controller
-          sudo microk8s kubectl -n container-registry rollout status -w deployment.apps/registry
-      - name: Dump microk8s config
-        run: sudo microk8s config > kube-config
-      - name: Install tox
-        run: python3 -m pip install tox
-      - name: Build rockfile
-        uses: canonical/craft-actions/rockcraft-pack@main
-        with:
-          path: wordpress_rock/
-          verbosity: verbose
-        id: build-rock
-      - name: Upload rock to microk8s
-        run: |
-          sudo /snap/rockcraft/current/bin/skopeo --insecure-policy copy oci-archive:$(ls "${{ steps.build-rock.outputs.rock }}") docker-daemon:wordpress:test
-          docker save wordpress:test | sudo microk8s ctr image import -
-          sudo microk8s ctr images ls name~='docker.io/library/wordpress:test'
-      - name: Run integration tests
-        run: >
-          tox -e integration --
-          --akismet-api-key ${{ secrets.TEST_AKISMET_API_KEY }}
-          --openid-username ${{ secrets.TEST_OPENID_USERNAME }}
-          --openid-password ${{ secrets.TEST_OPENID_PASSWORD }}
-          --launchpad-team ${{ secrets.TEST_LAUNCHPAD_TEAM }}
-          --openstack-rc ./openrc
-          --kube-config ${GITHUB_WORKSPACE}/kube-config
-          --wordpress-image wordpress:test
-          -k test_external

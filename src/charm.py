@@ -62,8 +62,8 @@ class WordpressCharm(CharmBase):
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
     _CONTAINER_NAME = "wordpress"
     _SERVICE_NAME = "wordpress"
-    _WORDPRESS_USER = "www-data"
-    _WORDPRESS_GROUP = "www-data"
+    _WORDPRESS_USER = "_daemon_"
+    _WORDPRESS_GROUP = "_daemon_"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
     _DATABASE_RELATION_NAME = "database"
 
@@ -815,7 +815,13 @@ class WordpressCharm(CharmBase):
             keys: name, status, update and version.
         """
         self._check_addon_type(addon_type)
-        process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
+        # FIXME: the feedwordpress plugin causes the `wp theme list` command to fail occasionally
+        # use retries as a temporary workaround for this issue
+        for wait in (1, 3, 5, 5, 5):
+            process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
+            if process.return_code == 0:
+                break
+            time.sleep(wait)
         if process.return_code != 0:
             return types_.ExecResult(
                 success=False, result=None, message=f"wp {addon_type} list command failed"

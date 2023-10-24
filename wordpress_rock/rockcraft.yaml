@@ -1,0 +1,311 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: wordpress
+summary: Wordpress rock
+description: Wordpress OCI image for the Wordpress charm
+base: ubuntu:20.04
+run-user: _daemon_
+license: Apache-2.0
+version: "1.0"
+platforms:
+  amd64:
+parts:
+  apache2:
+    plugin: dump
+    source: files
+    build-packages:
+    - apache2
+    - php
+    - rsync
+    overlay-packages:
+    - apache2
+    - libapache2-mod-php
+    - libgmp-dev
+    - php
+    - php-curl
+    - php-gd
+    - php-gmp
+    - php-mysql
+    - php-symfony-yaml
+    - php-xml
+    - pwgen
+    - python3
+    - python3-yaml
+    - ca-certificates
+    build-environment:
+      # Required to source $CRAFT_OVERLAY/etc/apache2/envvars
+      - APACHE_CONFDIR: /etc/apache2
+      - IMAGE_RUN_USER: _daemon_
+      - IMAGE_RUN_GROUP: _daemon_
+      - IMAGE_RUN_USER_ID: 584792
+      - IMAGE_RUN_GROUP_ID: 584792
+    overlay-script: |
+      craftctl default
+      sed -ri 's/^export ([^=]+)=(.*)$/: ${\1:=\2}\nexport \1/' $CRAFT_OVERLAY/etc/apache2/envvars
+      sed -ri 's/\{APACHE_RUN_(USER|GROUP):=.+\}/\{APACHE_RUN_\1:=_daemon_\}/' $CRAFT_OVERLAY/etc/apache2/envvars
+      . $CRAFT_OVERLAY/etc/apache2/envvars
+      for dir in "$CRAFT_OVERLAY$APACHE_LOCK_DIR" "$CRAFT_OVERLAY$APACHE_RUN_DIR" "$CRAFT_OVERLAY$APACHE_LOG_DIR";
+        do
+          rm -rvf "$dir";
+          mkdir -p "$dir";
+          chown "$IMAGE_RUN_USER_ID:$IMAGE_RUN_GROUP_ID" "$dir";
+          chmod u=rwx,g=rx,o=rx "$dir";
+      done
+      chown -R --no-dereference "$IMAGE_RUN_USER_ID:$IMAGE_RUN_GROUP_ID" "$CRAFT_OVERLAY$APACHE_LOG_DIR"
+      ln -sfT ../../../dev/stdout "$CRAFT_OVERLAY$APACHE_LOG_DIR/other_vhosts_access.log"
+      rsync -abP $CRAFT_PART_SRC/etc/apache2/  $CRAFT_OVERLAY/etc/apache2
+
+      # Enable apache2 modules
+      chroot $CRAFT_OVERLAY /bin/sh -x <<'EOF'
+      a2enconf docker-php
+      a2enmod headers
+      a2enmod mpm_prefork
+      a2enmod proxy
+      a2enmod proxy_http
+      a2enmod rewrite
+      a2enmod ssl
+      EOF
+  wordpress:
+    after:
+      - apache2
+    plugin: nil
+    build-environment:
+      - WP_VERSION: 5.9.3
+    build-packages:
+      - curl
+    override-build: |
+      curl -sSL --create-dirs https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o wp
+      chmod +x wp
+
+      mkdir -p wordpress_install_dir
+      (cd wordpress_install_dir; $CRAFT_PART_BUILD/wp core download --version=${WP_VERSION} --allow-root)
+
+      cp -R . $CRAFT_PART_INSTALL
+    organize:
+      wordpress_install_dir: /var/www/html
+      wp: /usr/local/bin/wp
+  # Wordpress plugins
+  get-wordpress-plugins:
+    plugin: nil
+    after:
+      - wordpress
+    build-packages:
+      - curl
+      - unzip
+    build-environment:
+      - WP_PLUGINS: >-
+          404page
+          all-in-one-event-calendar
+          coschedule-by-todaymade
+          elementor
+          essential-addons-for-elementor-lite
+          favicon-by-realfavicongenerator
+          feedwordpress
+          genesis-columns-advanced
+          line-break-shortcode
+          no-category-base-wpml
+          post-grid
+          powerpress
+          redirection
+          relative-image-urls
+          rel-publisher
+          safe-svg
+          show-current-template
+          simple-301-redirects
+          simple-custom-css
+          so-widgets-bundle
+          svg-support
+          syntaxhighlighter
+          wordpress-importer
+          wp-font-awesome
+          wp-lightbox-2
+          wp-markdown
+          wp-mastodon-share
+          wp-polls
+          wp-statistics
+    override-build: |
+      for plugin in $WP_PLUGINS;
+        do
+          curl -sSL "https://downloads.wordpress.org/plugin/${plugin}.latest-stable.zip" -o "${plugin}.zip"
+          unzip -q "${plugin}.zip"
+          rm "${plugin}.zip"
+      done
+      curl -sSL "https://downloads.wordpress.org/plugin/openid.3.5.0.zip" -o "openid.zip"
+      unzip -q "openid.zip"
+      rm "openid.zip"
+      # Latest YoastSEO does not support 5.9.3 version of WordPress.
+      curl -sSL "https://downloads.wordpress.org/plugin/wordpress-seo.18.9.zip" -o "wordpress-seo.zip"
+      unzip -q "wordpress-seo.zip"
+      rm "wordpress-seo.zip"
+      cp -R . $CRAFT_PART_INSTALL
+    organize:
+      "*": /var/www/html/wp-content/plugins/
+  ## Plugins fetched via git
+  get-wordpress-launchpad-integration:
+    after:
+      - get-wordpress-plugins
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/wordpress-launchpad-integration
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/plugins/wordpress-launchpad-integration/
+  get-wordpress-teams-integration:
+    after:
+      - get-wordpress-plugins
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/plugins/wordpress-teams-integration/
+  get-openstack-objectstorage-k8s:
+    after:
+      - get-wordpress-plugins
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/plugins/openstack-objectstorage-k8s/
+  get-wp-plugin-xubuntu-team-members:
+    after:
+      - get-wordpress-plugins
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-plugin-xubuntu-team-members
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/plugins/xubuntu-team-members/
+  # Wordpress themes
+  get-light-wordpress-theme:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-webthemes/+git/light-wordpress-theme
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/light-wordpress-theme/
+  get-wp-theme-mscom:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-mscom
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/mscom/
+  get-wp-theme-thematic:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-thematic
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/thematic/
+  get-wp-theme-twentyeleven:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-twentyeleven
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/twentyeleven/
+  get-ubuntu-cloud-website:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/ubuntu-cloud-website/+git/ubuntu-cloud-website
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/ubuntu-cloud-website/
+  get-wp-theme-ubuntu-community:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-community
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/ubuntu-community/
+  get-ubuntu-community-wordpress-theme:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/ubuntu-community-wordpress-theme/+git/ubuntu-community-wordpress-theme
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/ubuntu-community-wordpress-theme/
+  get-wp-theme-ubuntu-fi:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-fi
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/ubuntu-fi/
+  get-wp-theme-ubuntu-light:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntu-light
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/ubuntu-light/
+  get-wp-theme-ubuntustudio-wp:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-ubuntustudio-wp
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/ubuntustudio-wp/
+  get-wp-theme-launchpad:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-launchpad
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/launchpad/
+  get-wp-theme-xubuntu-website:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-xubuntu-website
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/xubuntu-website/
+  get-resource-centre:
+    after:
+      - wordpress
+    plugin: nil
+    build-packages: [bzr]
+    override-build: |
+      bzr branch lp:resource-centre
+      cp -R . $CRAFT_PART_INSTALL
+    organize:
+      resource-centre: /var/www/html/wp-content/themes/resource-centre/
+  # Post-install configuration
+  wordpress-configure:
+    plugin: nil
+    after:
+      - get-wordpress-launchpad-integration
+      - get-wordpress-teams-integration
+      - get-openstack-objectstorage-k8s
+      - get-wp-plugin-xubuntu-team-members
+      - get-light-wordpress-theme
+      - get-wp-theme-mscom
+      - get-wp-theme-thematic
+      - get-wp-theme-twentyeleven
+      - get-ubuntu-cloud-website
+      - get-wp-theme-ubuntu-community
+      - get-wp-theme-ubuntu-fi
+      - get-wp-theme-ubuntu-light
+      - get-wp-theme-ubuntustudio-wp
+      - get-wp-theme-launchpad
+      - get-wp-theme-xubuntu-website
+      - get-resource-centre
+      - get-ubuntu-community-wordpress-theme
+    build-environment:
+      - IMAGE_RUN_USER_ID: 584792
+      - IMAGE_RUN_GROUP_ID: 584792
+    override-prime: |
+      craftctl default
+      rm -rf **/.git
+      chown $IMAGE_RUN_USER_ID:$IMAGE_RUN_GROUP_ID -R --no-dereference "$CRAFT_PRIME/var/www/html"

@@ -27,7 +27,7 @@ from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, PebbleReadyEvent, StartEvent
+from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, PebbleReadyEvent
 from ops.framework import EventBase, StoredState
 from ops.main import main
 from ops.model import (
@@ -147,10 +147,6 @@ class WordpressCharm(CharmBase):
             self, relation_name=self._DATABASE_RELATION_NAME, database_name=self.app.name
         )
 
-        self.state.set_default(
-            started=False,
-        )
-
         self._require_nginx_route()
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
@@ -169,7 +165,6 @@ class WordpressCharm(CharmBase):
         )
 
         self.framework.observe(self.on.leader_elected, self._setup_replica_data)
-        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
         self.framework.observe(self.database.on.database_created, self._reconciliation)
         self.framework.observe(self.database.on.endpoints_changed, self._reconciliation)
@@ -182,10 +177,6 @@ class WordpressCharm(CharmBase):
             self.on.apache_prometheus_exporter_pebble_ready,
             self._on_apache_prometheus_exporter_pebble_ready,
         )
-
-    def _on_start(self, _event: StartEvent):
-        """Record if the start event is emitted."""
-        self.state.started = True
 
     def _set_version(self, _: PebbleReadyEvent):
         """Set WordPress application version to Juju charm's app version status."""

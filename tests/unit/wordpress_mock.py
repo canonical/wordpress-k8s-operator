@@ -390,7 +390,7 @@ class WordpressContainerMock:
         """Mock method for :meth:`ops.charm.model.Container.exists`."""
         return path in self.fs
 
-    def list_files(self, path: str):
+    def list_files(self, path: str, itself=False):
         """Mock method for :meth:`ops.charm.model.Container.list_files`."""
         if not path.endswith("/"):
             path += "/"

@@ -78,6 +78,7 @@ class WordpressCharm(CharmBase):
         "twentytwenty",
         "twentytwentyone",
         "twentytwentytwo",
+        "twentytwentythree",
         "ubuntu-cloud-website",
         "ubuntu-community-wordpress-theme/ubuntu-community",
         "ubuntu-community/ubuntu-community",

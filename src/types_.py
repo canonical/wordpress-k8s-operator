@@ -39,12 +39,14 @@ class DatabaseConfig(NamedTuple):
 
     Attrs:
         hostname: The hostname under which the database is being served.
+        port: The port which the database is listening on.
         database: The name of the database to connect to.
         username: The username to use to authenticate to the database.
         password: The password to use to authenticat to the database.
     """
 
     hostname: Optional[str]
+    port: Optional[int]
     database: Optional[str]
     username: Optional[str]
     password: Optional[str]

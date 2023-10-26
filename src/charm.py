@@ -5,7 +5,6 @@
 
 """Charm for WordPress on kubernetes."""
 
-import collections
 import itertools
 import json
 import logging
@@ -16,7 +15,7 @@ import string
 import textwrap
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import mysql.connector
 import ops.charm
@@ -66,6 +65,7 @@ class WordpressCharm(CharmBase):
     _WORDPRESS_GROUP = "_daemon_"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
     _DATABASE_RELATION_NAME = "database"
+    _DEFAULT_MYSQL_PORT = 3306
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
     _WORDPRESS_DEFAULT_THEMES = [
@@ -178,7 +178,7 @@ class WordpressCharm(CharmBase):
             self._on_apache_prometheus_exporter_pebble_ready,
         )
 
-    def _set_version(self, _: PebbleReadyEvent):
+    def _set_version(self, _: PebbleReadyEvent) -> None:
         """Set WordPress application version to Juju charm's app version status."""
         version_result = self._run_wp_cli(
             ["wp", "core", "version"],
@@ -189,7 +189,7 @@ class WordpressCharm(CharmBase):
                 "WordPress version command failed with exit code %d.", version_result.return_code
             )
             return
-        self.unit.set_workload_version(version_result.stdout)
+        self.unit.set_workload_version(cast(str, version_result.stdout))
 
     def _require_nginx_route(self):
         """Require nginx-route relation based on current configuration."""
@@ -377,7 +377,9 @@ class WordpressCharm(CharmBase):
         ]
 
         if self._current_effective_db_info:
-            wp_config.append(f"define( 'DB_HOST', '{self._current_effective_db_info.hostname}' );")
+            wp_config.append(
+                f"define( 'DB_HOST', '{self._current_effective_db_info.hostname}:{self._current_effective_db_info.port}' );"
+            )
             wp_config.append(f"define( 'DB_NAME', '{self._current_effective_db_info.database}' );")
             wp_config.append(f"define( 'DB_USER', '{self._current_effective_db_info.username}' );")
             wp_config.append(
@@ -460,7 +462,6 @@ class WordpressCharm(CharmBase):
             A named tuple with three fields: return code, stdout and stderr. Stdout and stderr are
             both string.
         """
-        Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
         process: ExecProcess = self._container().exec(
             cmd,
             user=user,
@@ -473,7 +474,11 @@ class WordpressCharm(CharmBase):
             stdout, stderr = process.wait_output()
             result = types_.CommandExecResult(return_code=0, stdout=stdout, stderr=stderr)
         except ops.pebble.ExecError as error:
-            result = Result(error.exit_code, error.stdout, error.stderr)
+            result = types_.CommandExecResult(
+                error.exit_code,
+                cast(Union[str, bytes], error.stdout),
+                cast(Union[str, bytes, None], error.stderr),
+            )
         return_code = result.return_code
         if combine_stderr:
             logger.debug(
@@ -555,28 +560,28 @@ class WordpressCharm(CharmBase):
         logger.debug("Check if WordPress is installed")
         return self._run_wp_cli(["wp", "core", "is-installed"]).return_code == 0
 
-    def _parse_database_endpoints(self, endpoint: Optional[str]) -> Optional[str]:
+    def _parse_database_endpoints(
+        self, endpoint: Optional[str]
+    ) -> Tuple[Optional[str], Optional[int]]:
         """Retrieve a single database endpoint.
 
         Args:
             endpoint: An endpoint of format host:port
 
         Returns:
-            Hostname of database running on port 3306. None if no endpoints are provided.
-            Note that WordPress will throw MySQL Error when supplying a port with the hostname
-            (i.e. host:port).
+            Hostname and port of database. These are None if no endpoints are provided.
 
         Raises:
-            WordPressBlockedStatusException: Provided endpoint contains port other than 3306.
+            RuntimeError: Provided endpoint has unknown format.
         """
         if not endpoint:
-            return None
+            return None, None
         host_port = endpoint.split(":")
-        if len(host_port) == 2 and host_port[1] != "3306":
-            raise exceptions.WordPressBlockedStatusException(f"Invalid port {host_port[1]}")
-        # The endpoint might not contain port, we assume it to be 3306. If not, it will be caught
-        # by `_test_database_connectivity` function later on.
-        return host_port[0]
+        if len(host_port) == 1:
+            return host_port[0], self._DEFAULT_MYSQL_PORT
+        if len(host_port) == 2:
+            return host_port[0], int(host_port[1])
+        raise RuntimeError(f"unknown mysql endpoint format: {endpoint!r}")
 
     @property
     def _current_effective_db_info(self) -> Optional[types_.DatabaseConfig]:
@@ -587,10 +592,12 @@ class WordpressCharm(CharmBase):
             None if not exists.
         """
         relation = self.model.get_relation(self._DATABASE_RELATION_NAME)
-        if not relation:
+        if not relation or relation.app is None:
             return None
+        host, port = self._parse_database_endpoints(relation.data[relation.app].get("endpoints"))
         return types_.DatabaseConfig(
-            hostname=self._parse_database_endpoints(relation.data[relation.app].get("endpoints")),
+            hostname=host,
+            port=port,
             database=relation.data[relation.app].get("database"),
             username=relation.data[relation.app].get("username"),
             password=relation.data[relation.app].get("password"),
@@ -607,6 +614,7 @@ class WordpressCharm(CharmBase):
             # TODO: add database charset check later
             cnx = mysql.connector.connect(
                 host=self._current_effective_db_info.hostname,
+                port=self._current_effective_db_info.port,
                 database=self._current_effective_db_info.database,
                 user=self._current_effective_db_info.username,
                 password=self._current_effective_db_info.password,
@@ -926,7 +934,7 @@ class WordpressCharm(CharmBase):
         self._addon_reconciliation("theme")
 
     def _wp_option_update(
-        self, option: str, value: Union[str, dict], format_: str = "plaintext"
+        self, option: str, value: str, format_: str = "plaintext"
     ) -> types_.ExecResult:
         """Create or update a WordPress option value.
 
@@ -934,9 +942,7 @@ class WordpressCharm(CharmBase):
 
         Args:
             option (str): WordPress option name.
-            value (Union[str, dict]): WordPress option value. If the format is ``"plaintext"``,
-                then it's a str. If the format is ``"json"``, the value should be a json compatible
-                dict.
+            value (Union[str, dict]): WordPress option value.
             format_ (str): ``"plaintext"`` or ``"json"``
 
         Returns:
@@ -1332,9 +1338,9 @@ class WordpressCharm(CharmBase):
             "enabled" if swift_apache_config_enabled else "disabled",
         )
         if swift_config and not swift_apache_config_enabled:
-            swift_url = swift_config.get("swift-url")
-            bucket = swift_config.get("bucket")
-            object_prefix = swift_config.get("object-prefix")
+            swift_url = swift_config["swift-url"]
+            bucket = swift_config["bucket"]
+            object_prefix = swift_config["object-prefix"]
             redirect_url = os.path.join(swift_url, bucket, object_prefix)
             conf = textwrap.dedent(
                 f"""\

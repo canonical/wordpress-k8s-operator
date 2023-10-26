@@ -113,6 +113,8 @@ class WordpressDatabaseMock:
 
         Returns: host and database
         """
+        if ":" in host:
+            return host.split(":")[0], database
         return host, database
 
     def prepare_database(self, host: str, database: str, user: str, password: str) -> None:
@@ -240,7 +242,7 @@ class MysqlConnectorMock:
         """
         self._wordpress_database_mock = wordpress_database_mock
 
-    def connect(self, host: str, database: str, user: str, password: str, charset: str):
+    def connect(self, host: str, port: int, database: str, user: str, password: str, charset: str):
         """Mock method for :meth:`mysql.connector.connect`.
 
         Raises:

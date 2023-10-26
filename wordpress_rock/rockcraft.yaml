@@ -71,7 +71,7 @@ parts:
       - apache2
     plugin: nil
     build-environment:
-      - WP_VERSION: 5.9.3
+      - WP_VERSION: 6.3.2
     build-packages:
       - curl
     override-build: |

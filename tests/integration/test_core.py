@@ -19,7 +19,7 @@ from tests.integration.helper import WordpressApp, WordpressClient
 
 @pytest.mark.usefixtures("prepare_mysql")
 @pytest.mark.abort_on_fail
-async def test_wordpress_up(wordpress: WordpressApp):
+async def test_wordpress_up(wordpress: WordpressApp, ops_test: OpsTest):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: test wordpress server is up.
@@ -28,6 +28,29 @@ async def test_wordpress_up(wordpress: WordpressApp):
     await wordpress.model.wait_for_idle(status="active")
     for unit_ip in await wordpress.get_unit_ips():
         assert requests.get(f"http://{unit_ip}", timeout=10).status_code == 200
+
+
+@pytest.mark.usefixtures("prepare_mysql")
+@pytest.mark.abort_on_fail
+async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
+    """
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: get uploads directory owner
+    assert: uploads belongs to wordpress user.
+    """
+    cmd = [
+        "juju",
+        "ssh",
+        wordpress.app.name,
+        "stat",
+        "-c",
+        '"%U"',
+        "/var/www/html/wp-content/uploads",
+    ]
+
+    retcode, stdout, _ = await ops_test.run(*cmd)
+    assert retcode == 0
+    assert WordpressCharm._WORDPRESS_USER == stdout
 
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")

@@ -1391,21 +1391,6 @@ class WordpressCharm(CharmBase):
         mount_info: str = container.pull("/proc/mounts").read()
         return self._WP_UPLOADS_PATH in mount_info
 
-    def _set_data_dir_permissions(self) -> None:
-        """Ensure the data directory for WordPress is writable for the WordPress user."""
-        container = self._container()
-        paths = container.list_files(path=self._WP_UPLOADS_PATH, itself=True)
-        if len(paths) < 1:
-            logger.error("list_files didn't return uploads path")
-            return
-        logger.debug("Data directory ownership: %s:%s", paths[0].user, paths[0].group)
-        if paths[0].user != self._WORDPRESS_USER or paths[0].group != self._WORDPRESS_GROUP:
-            container.exec(
-                f"chown {self._WORDPRESS_USER}:{self._WORDPRESS_GROUP} -R {self._WP_UPLOADS_PATH}".split(
-                    " "
-                )
-            )
-
     def _reconciliation(self, _event: EventBase) -> None:
         """Reconcile the WordPress charm on juju event.
 
@@ -1422,7 +1407,12 @@ class WordpressCharm(CharmBase):
             self.unit.status = WaitingStatus("Waiting for storage")
             _event.defer()
             return
-        self._set_data_dir_permissions()
+        # Ensure the data directory for WordPress is writable for the WordPress user.
+        self._container().exec(
+            f"chown {self._WORDPRESS_USER}:{self._WORDPRESS_GROUP} -R {self._WP_UPLOADS_PATH}".split(
+                " "
+            )
+        )
         try:
             self._core_reconciliation()
             self._theme_reconciliation()

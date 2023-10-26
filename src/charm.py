@@ -65,6 +65,7 @@ class WordpressCharm(CharmBase):
     _WORDPRESS_GROUP = "_daemon_"
     _WORDPRESS_DB_CHARSET = "utf8mb4"
     _DATABASE_RELATION_NAME = "database"
+    _DEFAULT_MYSQL_PORT = 3306
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
     _WORDPRESS_DEFAULT_THEMES = [
@@ -568,16 +569,16 @@ class WordpressCharm(CharmBase):
             endpoint: An endpoint of format host:port
 
         Returns:
-            Hostname and port of database. None if no endpoints are provided.
+            Hostname and port of database. These are None if no endpoints are provided.
 
         Raises:
-            RuntimeError: Provided endpoint contains port other than 3306.
+            RuntimeError: Provided endpoint has unknown format.
         """
         if not endpoint:
             return None, None
         host_port = endpoint.split(":")
         if len(host_port) == 1:
-            return host_port[0], 3306
+            return host_port[0], self._DEFAULT_MYSQL_PORT
         if len(host_port) == 2:
             return host_port[0], int(host_port[1])
         raise RuntimeError(f"unknown mysql endpoint format: {endpoint!r}")

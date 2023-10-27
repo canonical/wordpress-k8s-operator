@@ -50,6 +50,7 @@ async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
     assert retcode == 0
     assert WordpressCharm._WORDPRESS_USER == stdout
 
+
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
 async def test_wordpress_functionality(wordpress: WordpressApp):
     """

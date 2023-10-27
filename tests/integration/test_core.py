@@ -31,7 +31,6 @@ async def test_wordpress_up(wordpress: WordpressApp, ops_test: OpsTest):
 
 
 @pytest.mark.usefixtures("prepare_mysql")
-@pytest.mark.abort_on_fail
 async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
     """
     arrange: after WordPress charm has been deployed and db relation established.
@@ -43,15 +42,13 @@ async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
         "ssh",
         f"{wordpress.app.name}/0",
         "stat",
-        "-c",
-        '"%U"',
+        '--printf="%U"',
         "/var/www/html/wp-content/uploads",
     ]
 
     retcode, stdout, _ = await ops_test.run(*cmd)
     assert retcode == 0
     assert WordpressCharm._WORDPRESS_USER == stdout
-
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
 async def test_wordpress_functionality(wordpress: WordpressApp):

@@ -41,7 +41,7 @@ async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
     cmd = [
         "juju",
         "ssh",
-        wordpress.app.name,
+        f"{wordpress.app.name}/0",
         "stat",
         "-c",
         '"%U"',

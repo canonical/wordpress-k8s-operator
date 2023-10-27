@@ -1409,9 +1409,13 @@ class WordpressCharm(CharmBase):
             return
         # Ensure the data directory for WordPress is writable for the WordPress user.
         self._container().exec(
-            f"chown {self._WORDPRESS_USER}:{self._WORDPRESS_GROUP} -R {self._WP_UPLOADS_PATH}".split(
-                " "
-            )
+            [
+                "chown",
+                f"{self._WORDPRESS_USER}:{self._WORDPRESS_GROUP}",
+                "-R",
+                self._WP_UPLOADS_PATH,
+            ],
+            timeout=120,
         )
         try:
             self._core_reconciliation()

@@ -637,6 +637,13 @@ class WordpressContainerMock:
         lambda cmd: cmd[:4]
         == ["chown", "_daemon_:_daemon_", "-R", "/var/www/html/wp-content/uploads"]
     )
+    def _mock_chown_uploads_recursive(self, _cmd):
+        """Simulate ``chown`` command execution in the container."""
+        return ExecProcessMock(return_code=0, stdout="", stderr="")
+
+    @_exec_handler.register(
+        lambda cmd: cmd[:4] == ["chown", "_daemon_:_daemon_", "/var/www/html/wp-content/uploads"]
+    )
     def _mock_chown_uploads(self, _cmd):
         """Simulate ``chown`` command execution in the container."""
         return ExecProcessMock(return_code=0, stdout="", stderr="")

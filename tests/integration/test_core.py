@@ -19,7 +19,7 @@ from tests.integration.helper import WordpressApp, WordpressClient
 
 @pytest.mark.usefixtures("prepare_mysql")
 @pytest.mark.abort_on_fail
-async def test_wordpress_up(wordpress: WordpressApp):
+async def test_wordpress_up(wordpress: WordpressApp, ops_test: OpsTest):
     """
     arrange: after WordPress charm has been deployed and db relation established.
     act: test wordpress server is up.
@@ -130,3 +130,24 @@ async def test_apache_config(wordpress: WordpressApp, ops_test: OpsTest):
     assert exit_code == 0
     assert "Apache config docker-php-swift-proxy is enabled" in stdout
     assert "Conf docker-php-swift-proxy already enabled" not in stdout
+
+
+@pytest.mark.usefixtures("prepare_mysql")
+async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
+    """
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: get uploads directory owner
+    assert: uploads belongs to wordpress user.
+    """
+    cmd = [
+        "juju",
+        "ssh",
+        f"{wordpress.app.name}/0",
+        "stat",
+        '--printf="%u"',
+        "/var/www/html/wp-content/uploads",
+    ]
+
+    retcode, stdout, _ = await ops_test.run(*cmd)
+    assert retcode == 0
+    assert "584792" == stdout

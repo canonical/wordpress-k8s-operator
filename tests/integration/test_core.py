@@ -144,10 +144,10 @@ async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
         "ssh",
         f"{wordpress.app.name}/0",
         "stat",
-        '--printf="%U"',
+        '--printf="%u"',
         "/var/www/html/wp-content/uploads",
     ]
 
     retcode, stdout, _ = await ops_test.run(*cmd)
     assert retcode == 0
-    assert WordpressCharm._WORDPRESS_USER == stdout
+    assert "584792" == stdout

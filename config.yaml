@@ -26,18 +26,6 @@ options:
       default: |
         user_name: admin
         admin_email: devnull@example.com
-  mysql-interface-user:
-    type: string
-    description: >
-      Database username for mysql relation. See mysql-k8s relation documentation at
-      https://charmhub.io/mysql/configure
-    default: ""
-  mysql-interface-database:
-    type: string
-    description: >
-      Database name for mysql relation. See mysql-k8s relation documentation at
-      https://charmhub.io/mysql/configure
-    default: ""
   plugins:
     type: string
     description: |

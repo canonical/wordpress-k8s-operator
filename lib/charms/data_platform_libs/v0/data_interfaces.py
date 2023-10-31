@@ -320,7 +320,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 21
+LIBPATCH = 22
 
 PYDEPS = ["ops>=2.0.0"]
 
@@ -763,14 +763,23 @@ class DataRelation(Object, ABC):
         req_secret_fields: Optional[List[str]],
         impacted_rel_fields: List[str],
         operation: Callable,
-        second_chance_as_normal_field: bool = True,
         *args,
         **kwargs,
     ) -> Tuple[Dict[str, str], Set[str]]:
         """Isolate target secret fields of manipulation, and execute requested operation by Secret Group."""
         result = {}
+
+        # If the relation started on a databag, we just stay on the databag
+        # (Rolling upgrades may result in a relation starting on databag, getting secrets enabled on-the-fly)
+        # self.local_app is sufficient to check (ignored if Requires, never has secrets -- works if Provides)
+        fallback_to_databag = (
+            req_secret_fields
+            and self.local_unit.is_leader()
+            and set(req_secret_fields) & set(relation.data[self.local_app])
+        )
+
         normal_fields = set(impacted_rel_fields)
-        if req_secret_fields and self.secrets_enabled:
+        if req_secret_fields and self.secrets_enabled and not fallback_to_databag:
             normal_fields = normal_fields - set(req_secret_fields)
             secret_fields = set(impacted_rel_fields) - set(normal_fields)
 
@@ -779,8 +788,10 @@ class DataRelation(Object, ABC):
             for group in secret_fieldnames_grouped:
                 # operation() should return nothing when all goes well
                 if group_result := operation(relation, group, secret_fields, *args, **kwargs):
-                    result.update(group_result)
-                elif second_chance_as_normal_field:
+                    # If "meaningful" data was returned, we take it. (Some 'operation'-s only return success/failure.)
+                    if isinstance(group_result, dict):
+                        result.update(group_result)
+                else:
                     # If it wasn't found as a secret, let's give it a 2nd chance as "normal" field
                     # Needed when Juju3 Requires meets Juju2 Provider
                     normal_fields |= set(secret_fieldnames_grouped[group])
@@ -999,12 +1010,12 @@ class DataProvides(DataRelation):
     @juju_secrets_only
     def _add_relation_secret(
         self, relation: Relation, content: Dict[str, str], group_mapping: SecretGroup
-    ) -> Optional[Secret]:
+    ) -> bool:
         """Add a new Juju Secret that will be registered in the relation databag."""
         secret_field = self._generate_secret_field_name(group_mapping)
         if relation.data[self.local_app].get(secret_field):
             logging.error("Secret for relation %s already exists, not adding again", relation.id)
-            return
+            return False
 
         label = self._generate_secret_label(self.relation_name, relation.id, group_mapping)
         secret = self.secrets.add(label, content, relation)
@@ -1013,21 +1024,27 @@ class DataProvides(DataRelation):
         if secret.meta and secret.meta.id:
             relation.data[self.local_app][secret_field] = secret.meta.id
 
+        # Return the content that was added
+        return True
+
     @juju_secrets_only
     def _update_relation_secret(
         self, relation: Relation, content: Dict[str, str], group_mapping: SecretGroup
-    ):
+    ) -> bool:
         """Update the contents of an existing Juju Secret, referred in the relation databag."""
         secret = self._get_relation_secret(relation.id, group_mapping)
 
         if not secret:
             logging.error("Can't update secret for relation %s", relation.id)
-            return
+            return False
 
         old_content = secret.get_content()
         full_content = copy.deepcopy(old_content)
         full_content.update(content)
         secret.set_content(full_content)
+
+        # Return True on success
+        return True
 
     def _add_or_update_relation_secrets(
         self,
@@ -1035,34 +1052,47 @@ class DataProvides(DataRelation):
         group: SecretGroup,
         secret_fields: Set[str],
         data: Dict[str, str],
-    ) -> None:
+    ) -> bool:
         """Update contents for Secret group. If the Secret doesn't exist, create it."""
         secret_content = self._content_for_secret_group(data, secret_fields, group)
         if self._get_relation_secret(relation.id, group):
-            self._update_relation_secret(relation, secret_content, group)
+            return self._update_relation_secret(relation, secret_content, group)
         else:
-            self._add_relation_secret(relation, secret_content, group)
+            return self._add_relation_secret(relation, secret_content, group)
 
     @juju_secrets_only
     def _delete_relation_secret(
         self, relation: Relation, group: SecretGroup, secret_fields: List[str], fields: List[str]
-    ):
+    ) -> bool:
         """Update the contents of an existing Juju Secret, referred in the relation databag."""
         secret = self._get_relation_secret(relation.id, group)
 
         if not secret:
-            logging.error("Can't update secret for relation %s", relation.id)
-            return
+            logging.error("Can't update secret for relation %s", str(relation.id))
+            return False
 
         old_content = secret.get_content()
         new_content = copy.deepcopy(old_content)
         for field in fields:
-            new_content.pop(field)
+            try:
+                new_content.pop(field)
+            except KeyError:
+                logging.error(
+                    "Non-existing secret was attempted to be removed %s, %s",
+                    str(relation.id),
+                    str(field),
+                )
+                return False
+
         secret.set_content(new_content)
 
+        # Remove secret from the relation if it's fully gone
         if not new_content:
             field = self._generate_secret_field_name(group)
             relation.data[self.local_app].pop(field)
+
+        # Return the content that was removed
+        return True
 
     # Mandatory internal overrides
 

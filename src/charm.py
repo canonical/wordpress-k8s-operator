@@ -26,7 +26,7 @@ from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops.charm import ActionEvent, CharmBase, LeaderElectedEvent, PebbleReadyEvent
+from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
 from ops.framework import EventBase, StoredState
 from ops.main import main
 from ops.model import (
@@ -59,6 +59,7 @@ class WordpressCharm(CharmBase):
         """Replica databag was accessed before peer relations are established."""
 
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
+    _WP_UPLOADS_PATH = "/var/www/html/wp-content/uploads"
     _CONTAINER_NAME = "wordpress"
     _SERVICE_NAME = "wordpress"
     _WORDPRESS_USER = "_daemon_"
@@ -170,7 +171,7 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.database.on.database_created, self._reconciliation)
         self.framework.observe(self.database.on.endpoints_changed, self._reconciliation)
         self.framework.observe(self.on.config_changed, self._reconciliation)
-        self.framework.observe(self.on.upgrade_charm, self._setup_replica_data)
+        self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
         self.framework.observe(self.on.wordpress_pebble_ready, self._set_version)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
@@ -331,7 +332,7 @@ class WordpressCharm(CharmBase):
             return False
         return all(replica_data.get(f) for f in fields)
 
-    def _setup_replica_data(self, _event: LeaderElectedEvent) -> None:
+    def _setup_replica_data(self, _event: HookEvent) -> None:
         """Initialize the synchronized data required for WordPress replication.
 
         Only the leader can update the data shared with all replicas. Leader should check if
@@ -346,6 +347,15 @@ class WordpressCharm(CharmBase):
             new_replica_data = self._generate_wp_secret_keys()
             for secret_key, secret_value in new_replica_data.items():
                 replica_relation_data[secret_key] = secret_value
+
+    def _on_upgrade_charm(self, _event: UpgradeCharmEvent):
+        """Handle the upgrade charm event.
+
+        Args:
+            _event: required by ops framework, not used.
+        """
+        self._setup_replica_data(_event)
+        self._change_uploads_directory_ownership(recursive=True)
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.
@@ -1389,7 +1399,27 @@ class WordpressCharm(CharmBase):
         if not container.can_connect():
             return False
         mount_info: str = container.pull("/proc/mounts").read()
-        return "/var/www/html/wp-content/uploads" in mount_info
+        return self._WP_UPLOADS_PATH in mount_info
+
+    def _change_uploads_directory_ownership(self, recursive=False):
+        """Change uploads directory ownership.
+
+        Args:
+            recursive: Run chown recursively. Defaults to False.
+        """
+        command_list = [
+            "chown",
+            f"{self._WORDPRESS_USER}:{self._WORDPRESS_GROUP}",
+        ]
+
+        if recursive:
+            command_list.append("-R")
+
+        command_list.append(self._WP_UPLOADS_PATH)
+        self._container().exec(
+            command_list,
+            timeout=120,
+        )
 
     def _reconciliation(self, _event: EventBase) -> None:
         """Reconcile the WordPress charm on juju event.
@@ -1407,6 +1437,7 @@ class WordpressCharm(CharmBase):
             self.unit.status = WaitingStatus("Waiting for storage")
             _event.defer()
             return
+        self._change_uploads_directory_ownership()
         try:
             self._core_reconciliation()
             self._theme_reconciliation()

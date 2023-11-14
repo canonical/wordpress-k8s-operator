@@ -29,13 +29,7 @@ from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
 from ops.framework import EventBase, StoredState
 from ops.main import main
-from ops.model import (
-    ActiveStatus,
-    BlockedStatus,
-    MaintenanceStatus,
-    RelationDataContent,
-    WaitingStatus,
-)
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, Relation, WaitingStatus
 from ops.pebble import ExecProcess
 from yaml import safe_load
 
@@ -53,6 +47,7 @@ class WordpressCharm(CharmBase):
 
     Attrs:
         state: Persistent charm state used to store metadata after various events.
+        replica_relation: Relation connecting replicas (peers)
     """
 
     class _ReplicaRelationNotReady(Exception):
@@ -212,7 +207,9 @@ class WordpressCharm(CharmBase):
             event: Used for returning result or failure of action.
         """
         if self._replica_consensus_reached():
-            default_admin_password = self._replica_relation_data().get("default_admin_password")
+            default_admin_password = self._get_replica_relation_data().get(
+                "default_admin_password"
+            )
             event.set_results({"password": default_admin_password})
         else:
             logger.error("Action get-initial-password failed. Replica consensus not reached.")
@@ -243,10 +240,9 @@ class WordpressCharm(CharmBase):
             return
 
         # Update the secrets in peer relation.
-        replica_relation_data = self._replica_relation_data()
         wordpress_secrets = self._generate_wp_secret_keys()
         for secret_key, secret_value in wordpress_secrets.items():
-            replica_relation_data[secret_key] = secret_value
+            self._set_replica_relation_data(secret_key, secret_value)
 
         # Leader need to call `_reconciliation` manually.
         # Followers call it automatically due to relation_changed event.
@@ -299,24 +295,52 @@ class WordpressCharm(CharmBase):
         wp_secrets["default_admin_password"] = secrets.token_urlsafe(32)
         return wp_secrets
 
-    def _replica_relation_data(self) -> RelationDataContent:
-        """Retrieve data shared with WordPress peers (replicas).
-
-        The relation data content object is used to share (read and write) necessary secret data
-        used by WordPress to enhance security and must be synchronized.
+    @property
+    def replica_relation(self) -> Relation:
+        """The relation connecting with WordPress peers (replicas).
 
         Raises:
             _ReplicaRelationNotReady: if replica relation is not established.
 
         Returns:
-            Read/Write-able mapping for WordPress application shared among its replicas.
+            Wordpress replica relation.
         """
         relation = self.model.get_relation("wordpress-replica")
         if relation is None:
             raise self._ReplicaRelationNotReady(
                 "Access replica peer relation data before relation established"
             )
-        return relation.data[self.app]
+        return relation
+
+    def _get_replica_relation_data(self) -> dict:
+        """Retrieve data shared with WordPress peers (replicas).
+
+        The returned dict is a read-only snapshot of the data set for the relation.
+        Note: certain pieces of information set on the databag, others -- typically
+        sensitive data -- may come from Juju secrets. To be accessed ONLY via
+        DatabaseRequires public 'fetch' functions.
+        Used by WordPress to enhance security and must be synchronized.
+
+        Returns:
+            'dict' snapshot of data shared among WordPress application replicas.
+        """
+        return self.database.fetch_relation_data([self.replica_relation.id]).get(
+            self.replica_relation.id
+        )
+
+    def _set_replica_relation_data(self, key: str, value: str) -> None:
+        """Set data shared with WordPress peers (replicas).
+
+        The relation data used to reference secret data, that's to be manipulated
+        by Database Requires interface functions.
+        Used by WordPress to enhance security and must be synchronized.
+
+        Args:
+            key: The field name to be set for the relation
+                 (either on the databag or within a secret).
+            value: The (new) value of the field.
+        """
+        self.database.update_relation_data(self.replica_relation.id, {key: value})
 
     def _replica_consensus_reached(self):
         """Test if the synchronized data required for WordPress replication are initialized.
@@ -326,7 +350,7 @@ class WordpressCharm(CharmBase):
         """
         fields = self._wordpress_secret_key_fields()
         try:
-            replica_data = self._replica_relation_data()
+            replica_data = self._get_replica_relation_data()
         except self._ReplicaRelationNotReady:
             return False
         return all(replica_data.get(f) for f in fields)
@@ -342,10 +366,9 @@ class WordpressCharm(CharmBase):
             _event: required by ops framework, not used.
         """
         if not self._replica_consensus_reached() and self.unit.is_leader():
-            replica_relation_data = self._replica_relation_data()
             new_replica_data = self._generate_wp_secret_keys()
             for secret_key, secret_value in new_replica_data.items():
-                replica_relation_data[secret_key] = secret_value
+                self._set_replica_relation_data(secret_key, secret_value)
 
     def _on_upgrade_charm(self, _event: UpgradeCharmEvent):
         """Handle the upgrade charm event.
@@ -397,7 +420,7 @@ class WordpressCharm(CharmBase):
             )
             wp_config.append(f"define( 'DB_CHARSET',  '{self._WORDPRESS_DB_CHARSET}' );")
 
-        replica_relation_data = self._replica_relation_data()
+        replica_relation_data = self._get_replica_relation_data()
         for secret_key in self._wordpress_secret_key_fields():
             secret_value = replica_relation_data[secret_key]
             wp_config.append(f"define( '{secret_key.upper()}', '{secret_value}' );")
@@ -604,13 +627,15 @@ class WordpressCharm(CharmBase):
         relation = self.model.get_relation(self._DATABASE_RELATION_NAME)
         if not relation or relation.app is None:
             return None
-        host, port = self._parse_database_endpoints(relation.data[relation.app].get("endpoints"))
+        host, port = self._parse_database_endpoints(
+            self.database.fetch_relation_field(relation.id, "endpoints")
+        )
         return types_.DatabaseConfig(
             hostname=host,
             port=port,
-            database=relation.data[relation.app].get("database"),
-            username=relation.data[relation.app].get("username"),
-            password=relation.data[relation.app].get("password"),
+            database=self.database.fetch_relation_field(relation.id, "database"),
+            username=self.database.fetch_relation_field(relation.id, "username"),
+            password=self.database.fetch_relation_field(relation.id, "password"),
         )
 
     def _test_database_connectivity(self):
@@ -646,7 +671,7 @@ class WordpressCharm(CharmBase):
         initial_settings = yaml.safe_load(self.model.config["initial_settings"])
         admin_user = initial_settings.get("user_name", "admin_username")
         admin_email = initial_settings.get("admin_email", "name@example.com")
-        default_admin_password = self._replica_relation_data()["default_admin_password"]
+        default_admin_password = self._get_replica_relation_data()["default_admin_password"]
         admin_password = initial_settings.get("admin_password", default_admin_password)
         return [
             "wp",

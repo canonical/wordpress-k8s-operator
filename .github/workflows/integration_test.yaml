@@ -23,23 +23,3 @@ jobs:
           ./tests/integration/pre_run_script.sh"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
-
-  integration-test-juju3:
-    name: Integration Test
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
-    secrets: inherit
-    with:
-      extra-arguments: >-
-        --openstack-rc=${GITHUB_WORKSPACE}/openrc
-        --kube-config=${GITHUB_WORKSPACE}/kube-config
-        --screenshot-dir=/tmp
-      juju-channel: 3.1/stable
-      modules: '["test_addon", "test_core"]'
-      pre-run-script: |
-        -c "sudo microk8s enable hostpath-storage
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-          sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config
-          chmod +x tests/integration/pre_run_script.sh
-          ./tests/integration/pre_run_script.sh"
-      setup-devstack-swift: true
-      trivy-image-config: ./trivy.yaml

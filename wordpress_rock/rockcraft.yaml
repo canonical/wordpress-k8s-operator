@@ -82,6 +82,7 @@ parts:
       (cd wordpress_install_dir; $CRAFT_PART_BUILD/wp core download --version=${WP_VERSION} --allow-root)
 
       rm -rf wordpress_install_dir/wp-content/themes/twentytwentythree
+      rm -rf wordpress_install_dir/wp-content/themes/twentytwentyfour
       cp -R . $CRAFT_PART_INSTALL
     organize:
       wordpress_install_dir: /var/www/html

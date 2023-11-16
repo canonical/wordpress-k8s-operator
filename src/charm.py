@@ -53,7 +53,6 @@ class WordpressCharm(CharmBase):
 
     Attrs:
         state: Persistent charm state used to store metadata after various events.
-        replica_relation: Relation connecting replicas (peers)
     """
 
     class _ReplicaRelationNotReady(Exception):
@@ -302,10 +301,13 @@ class WordpressCharm(CharmBase):
 
     def _replica_relation_data(self) -> RelationDataContent:
         """Retrieve data shared with WordPress peers (replicas).
+
         The relation data content object is used to share (read and write) necessary secret data
         used by WordPress to enhance security and must be synchronized.
+
         Raises:
             _ReplicaRelationNotReady: if replica relation is not established.
+
         Returns:
             Read/Write-able mapping for WordPress application shared among its replicas.
         """

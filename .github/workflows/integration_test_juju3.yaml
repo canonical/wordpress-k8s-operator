@@ -22,6 +22,7 @@ jobs:
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config
           chmod +x tests/integration/pre_run_script_juju3.sh
-          ./tests/integration/pre_run_script_juju3.sh"
+          ./tests/integration/pre_run_script_juju3.sh
+          sed -i 's/juju>=2.9,<3/juju>=3.2.2/' ./tests/integration/requirements.txt"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml

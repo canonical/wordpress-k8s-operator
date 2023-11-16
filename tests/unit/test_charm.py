@@ -847,7 +847,7 @@ def test_missing_peer_relation(harness: ops.testing.Harness):
     harness.begin()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     with pytest.raises(WordpressCharm._ReplicaRelationNotReady):
-        charm._get_replica_relation_data()
+        charm._replica_relation_data()
 
 
 @pytest.mark.usefixtures("attach_storage")

@@ -79,6 +79,7 @@ class WordpressCharm(CharmBase):
         "twentytwenty",
         "twentytwentyone",
         "twentytwentytwo",
+        "twentytwentythree",
         "ubuntu-cloud-website",
         "ubuntu-community-wordpress-theme/ubuntu-community",
         "ubuntu-community/ubuntu-community",
@@ -382,7 +383,8 @@ class WordpressCharm(CharmBase):
             define( 'WP_CONTENT_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] . '/wp-content' );
             define( 'WP_SITEURL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
             define( 'WP_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
-            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );"""
+            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
+            define( 'WP_DEFAULT_THEME', "twentytwentythree" );"""
             )
         ]
 

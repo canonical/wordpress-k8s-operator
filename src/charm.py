@@ -604,13 +604,15 @@ class WordpressCharm(CharmBase):
         relation = self.model.get_relation(self._DATABASE_RELATION_NAME)
         if not relation or relation.app is None:
             return None
-        host, port = self._parse_database_endpoints(relation.data[relation.app].get("endpoints"))
+        host, port = self._parse_database_endpoints(
+            self.database.fetch_relation_field(relation.id, "endpoints")
+        )
         return types_.DatabaseConfig(
             hostname=host,
             port=port,
-            database=relation.data[relation.app].get("database"),
-            username=relation.data[relation.app].get("username"),
-            password=relation.data[relation.app].get("password"),
+            database=self.database.fetch_relation_field(relation.id, "database"),
+            username=self.database.fetch_relation_field(relation.id, "username"),
+            password=self.database.fetch_relation_field(relation.id, "password"),
         )
 
     def _test_database_connectivity(self):

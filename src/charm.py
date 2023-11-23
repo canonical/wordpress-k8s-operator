@@ -42,6 +42,7 @@ from yaml import safe_load
 import exceptions
 import types_
 from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
+from state import CharmConfigInvalidError, State
 
 # MySQL logger prints database credentials on debug level, silence it
 logging.getLogger(mysql.connector.__name__).setLevel(logging.WARNING)
@@ -144,6 +145,12 @@ class WordpressCharm(CharmBase):
             kwargs: keyword arguments passed into Charmbase superclass.
         """
         super().__init__(*args, **kwargs)
+
+        try:
+            self._state = State.from_charm(self)
+        except CharmConfigInvalidError as exc:
+            self.unit.status = ops.BlockedStatus(exc.msg)
+            return
 
         self.database = DatabaseRequires(
             self, relation_name=self._DATABASE_RELATION_NAME, database_name=self.app.name
@@ -422,6 +429,17 @@ class WordpressCharm(CharmBase):
                 """
             )
         )
+
+        if proxy := self._state.proxy_config:
+            if proxy.http_proxy:
+                wp_config.append(f"define( 'WP_PROXY_HOST',  '{proxy.http_proxy}' );")
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.http_proxy.port}' );")
+            elif proxy.https_proxy:
+                wp_config.append(f"define( 'WP_PROXY_HOST',  '{proxy.https_proxy}' );")
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.https_proxy.port}' );")
+            if proxy.no_proxy:
+                wp_config.append(f"define( 'WP_PROXY_BYPASS_HOSTS',  '{proxy.no_proxy}' );")
+
         return "\n".join(wp_config)
 
     def _container(self):

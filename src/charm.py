@@ -80,6 +80,7 @@ class WordpressCharm(CharmBase):
         "twentytwentyone",
         "twentytwentytwo",
         "twentytwentythree",
+        "twentytwentyfour",
         "ubuntu-cloud-website",
         "ubuntu-community-wordpress-theme/ubuntu-community",
         "ubuntu-community/ubuntu-community",
@@ -383,8 +384,7 @@ class WordpressCharm(CharmBase):
             define( 'WP_CONTENT_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] . '/wp-content' );
             define( 'WP_SITEURL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
             define( 'WP_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
-            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
-            define( 'WP_DEFAULT_THEME', "twentytwentythree" );"""
+            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );"""
             )
         ]
 
@@ -634,6 +634,7 @@ class WordpressCharm(CharmBase):
                 password=self._current_effective_db_info.password,
                 charset="latin1",
             )
+            cnx._ssl_active
             cnx.close()
             return True, ""
         except mysql.connector.Error as err:

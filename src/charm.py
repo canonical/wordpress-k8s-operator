@@ -417,6 +417,19 @@ class WordpressCharm(CharmBase):
         wp_config.append("define( 'AUTOMATIC_UPDATER_DISABLED', true );")
 
         wp_config.append("define( 'WP_CACHE', true );")
+        if proxy := self._state.proxy_config:
+            if proxy.http_proxy:
+                wp_config.append(
+                    f"define( 'WP_PROXY_HOST',  '{proxy.http_proxy.scheme}://{proxy.http_proxy.host}' );"
+                )
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.http_proxy.port}' );")
+            elif proxy.https_proxy:
+                wp_config.append(
+                    f"define( 'WP_PROXY_HOST',  '{proxy.https_proxy.scheme}://{proxy.https_proxy.host}' );"
+                )
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.https_proxy.port}' );")
+            if proxy.no_proxy:
+                wp_config.append(f"define( 'WP_PROXY_BYPASS_HOSTS',  '{proxy.no_proxy}' );")
         wp_config.append(
             textwrap.dedent(
                 """\
@@ -429,16 +442,6 @@ class WordpressCharm(CharmBase):
                 """
             )
         )
-
-        if proxy := self._state.proxy_config:
-            if proxy.http_proxy:
-                wp_config.append(f"define( 'WP_PROXY_HOST',  '{proxy.http_proxy}' );")
-                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.http_proxy.port}' );")
-            elif proxy.https_proxy:
-                wp_config.append(f"define( 'WP_PROXY_HOST',  '{proxy.https_proxy}' );")
-                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.https_proxy.port}' );")
-            if proxy.no_proxy:
-                wp_config.append(f"define( 'WP_PROXY_BYPASS_HOSTS',  '{proxy.no_proxy}' );")
 
         return "\n".join(wp_config)
 

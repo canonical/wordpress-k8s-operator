@@ -4,7 +4,7 @@
 name: wordpress
 summary: Wordpress rock
 description: Wordpress OCI image for the Wordpress charm
-base: ubuntu:20.04
+base: ubuntu:22.04
 run-user: _daemon_
 license: Apache-2.0
 version: "1.0"

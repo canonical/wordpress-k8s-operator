@@ -27,7 +27,7 @@ from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
-from ops.framework import EventBase, StoredState
+from ops.framework import EventBase
 from ops.main import main
 from ops.model import (
     ActiveStatus,
@@ -50,11 +50,7 @@ logger = logging.getLogger()
 
 
 class WordpressCharm(CharmBase):
-    """Charm for WordPress on kubernetes.
-
-    Attrs:
-        state: Persistent charm state used to store metadata after various events.
-    """
+    """Charm for WordPress on kubernetes."""
 
     class _ReplicaRelationNotReady(Exception):
         """Replica databag was accessed before peer relations are established."""
@@ -134,8 +130,6 @@ class WordpressCharm(CharmBase):
 
     _DB_CHECK_INTERVAL = 5
     _DB_CHECK_TIMEOUT = 60 * 10
-
-    state = StoredState()
 
     def __init__(self, *args, **kwargs):
         """Initialize the instance.

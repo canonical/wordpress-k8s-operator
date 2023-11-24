@@ -13,7 +13,6 @@ import pytest
 import requests
 from pytest_operator.plugin import OpsTest
 
-from charm import WordpressCharm
 from tests.integration.helper import WordpressApp, WordpressClient
 
 

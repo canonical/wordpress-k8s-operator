@@ -220,7 +220,7 @@ async def prepare_nginx_ingress(wordpress: WordpressApp, prepare_mysql):
 async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate prometheus-k8s charm for integration tests."""
     prometheus = await wordpress.model.deploy(
-        "prometheus-k8s", channel="1.0/stable", revision=129, trust=True
+        "prometheus-k8s", channel="1.0/stable", revision=129, series="jammy", trust=True
     )
     await wordpress.model.wait_for_idle(
         status="active", apps=[prometheus.name], raise_on_error=False, timeout=30 * 60

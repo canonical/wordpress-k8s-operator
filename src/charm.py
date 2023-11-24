@@ -76,10 +76,9 @@ class WordpressCharm(CharmBase):
         "resource-centre",
         "thematic",
         "twentyeleven",
-        "twentytwenty",
-        "twentytwentyone",
-        "twentytwentytwo",
+        "twentytwentyfour",
         "twentytwentythree",
+        "twentytwentytwo",
         "ubuntu-cloud-website",
         "ubuntu-community-wordpress-theme/ubuntu-community",
         "ubuntu-community/ubuntu-community",
@@ -103,6 +102,7 @@ class WordpressCharm(CharmBase):
         "favicon-by-realfavicongenerator",
         "feedwordpress",
         "genesis-columns-advanced",
+        "hello",
         "line-break-shortcode",
         "wp-mastodon-share",
         "no-category-base-wpml",
@@ -383,8 +383,7 @@ class WordpressCharm(CharmBase):
             define( 'WP_CONTENT_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] . '/wp-content' );
             define( 'WP_SITEURL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
             define( 'WP_URL', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
-            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );
-            define( 'WP_DEFAULT_THEME', "twentytwentythree" );"""
+            define( 'WP_HOME', $_w_p_http_protocol . $_SERVER['HTTP_HOST'] );"""
             )
         ]
 

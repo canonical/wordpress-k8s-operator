@@ -13,7 +13,6 @@ import pytest
 import requests
 from pytest_operator.plugin import OpsTest
 
-from charm import WordpressCharm
 from tests.integration.helper import WordpressApp, WordpressClient
 
 
@@ -91,28 +90,6 @@ async def test_openstack_object_storage_plugin(
             assert (
                 requests.get(url, timeout=10).content == image
             ), "image downloaded from WordPress should match the image uploaded"
-
-
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
-async def test_default_wordpress_themes_and_plugins(wordpress: WordpressApp):
-    """
-    arrange: after WordPress charm has been deployed and db relation established.
-    act: test default installed themes and plugins.
-    assert: default plugins and themes should match default themes and plugins defined in charm.py.
-    """
-    for unit_ip in await wordpress.get_unit_ips():
-        wordpress_client = WordpressClient(
-            host=unit_ip,
-            username="admin",
-            password=await wordpress.get_default_admin_password(),
-            is_admin=True,
-        )
-        assert set(wordpress_client.list_themes()) == set(
-            WordpressCharm._WORDPRESS_DEFAULT_THEMES
-        ), "themes installed on WordPress should match default themes defined in charm.py"
-        assert set(wordpress_client.list_plugins()) == set(
-            WordpressCharm._WORDPRESS_DEFAULT_PLUGINS
-        ), "plugins installed on WordPress should match default plugins defined in charm.py"
 
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")

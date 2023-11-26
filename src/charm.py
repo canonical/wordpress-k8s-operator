@@ -418,16 +418,14 @@ class WordpressCharm(CharmBase):
 
         wp_config.append("define( 'WP_CACHE', true );")
         if proxy := self._state.proxy_config:
-            if proxy.http_proxy:
-                wp_config.append(
-                    f"define( 'WP_PROXY_HOST',  '{proxy.http_proxy.scheme}://{proxy.http_proxy.host}' );"
-                )
-                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.http_proxy.port}' );")
-            elif proxy.https_proxy:
-                wp_config.append(
-                    f"define( 'WP_PROXY_HOST',  '{proxy.https_proxy.scheme}://{proxy.https_proxy.host}' );"
-                )
-                wp_config.append(f"define( 'WP_PROXY_PORT',  '{proxy.https_proxy.port}' );")
+            if http_proxy := proxy.http_proxy:
+                http_proxy_host = f"{http_proxy.scheme}://{http_proxy.host}"
+                wp_config.append(f"define( 'WP_PROXY_HOST',  '{http_proxy_host}' );")
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{http_proxy.port}' );")
+            elif https_proxy := proxy.https_proxy:
+                https_proxy_host = f"{https_proxy.scheme}://{https_proxy.host}"
+                wp_config.append(f"define( 'WP_PROXY_HOST',  '{https_proxy_host}' );")
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{https_proxy.port}' );")
             if proxy.no_proxy:
                 wp_config.append(f"define( 'WP_PROXY_BYPASS_HOSTS',  '{proxy.no_proxy}' );")
         wp_config.append(

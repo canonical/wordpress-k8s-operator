@@ -876,3 +876,43 @@ def test_wordpress_version_set(harness: ops.testing.Harness):
     harness.begin_with_initial_hooks()
 
     assert harness.get_workload_version() == WordpressContainerMock._WORDPRESS_VERSION
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_leader_installation_failure(
+    patch: WordpressPatch, harness: ops.testing.Harness, app_name
+):
+    """
+    arrange: charm peer and database relation is ready, the storage is attached.
+    act: start the charm as a follower unit.
+    assert: charm unit should enter blocked state, and the installation error should be seen
+        in the status.
+    """
+    replica_relation_id = harness.add_relation("wordpress-replica", app_name)
+    harness.update_relation_data(
+        relation_id=replica_relation_id,
+        app_or_unit=app_name,
+        key_values={k: "test" for k in WordpressCharm._wordpress_secret_key_fields()},
+    )
+    db_relation_id = harness.add_relation("database", "mysql")
+    harness.add_relation_unit(db_relation_id, "mysql/0")
+    harness.update_relation_data(
+        relation_id=db_relation_id,
+        app_or_unit="mysql",
+        key_values={
+            "endpoints": "test",
+            "database": "test",
+            "username": "test",
+            "password": "test",
+        },
+    )
+    # ignore bandit B106:hardcoded_password_funcarg
+    patch.database.prepare_database(
+        host="test", database="test", user="test", password="test"
+    )  # nosec
+    harness.begin_with_initial_hooks()
+    assert harness.charm.unit.status.name == "blocked"
+    assert (
+        harness.charm.unit.status.message
+        == "leader unit failed to initialize WordPress database in given time."
+    )

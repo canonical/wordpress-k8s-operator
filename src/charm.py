@@ -141,7 +141,7 @@ class WordpressCharm(CharmBase):
         super().__init__(*args, **kwargs)
 
         try:
-            self._state = State.from_charm(self)
+            self.state = State.from_charm(self)
         except CharmConfigInvalidError as exc:
             self.unit.status = ops.BlockedStatus(exc.msg)
             return
@@ -410,7 +410,7 @@ class WordpressCharm(CharmBase):
         wp_config.append("define( 'AUTOMATIC_UPDATER_DISABLED', true );")
 
         wp_config.append("define( 'WP_CACHE', true );")
-        if proxy := self._state.proxy_config:
+        if proxy := self.state.proxy_config:
             if http_proxy := proxy.http_proxy:
                 http_proxy_host = f"{http_proxy.scheme}://{http_proxy.host}"
                 wp_config.append(f"define( 'WP_PROXY_HOST',  '{http_proxy_host}' );")

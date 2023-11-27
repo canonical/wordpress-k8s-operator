@@ -5,6 +5,7 @@
 
 # pylint:disable=protected-access
 
+import os
 import json
 import typing
 import unittest.mock
@@ -21,6 +22,9 @@ import types_
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
+from state import CharmConfigInvalidError
+
+BLOCKED_STATUS = "blocked"
 
 
 def test_generate_wp_secret_keys(harness: ops.testing.Harness):
@@ -876,3 +880,61 @@ def test_wordpress_version_set(harness: ops.testing.Harness):
     harness.begin_with_initial_hooks()
 
     assert harness.get_workload_version() == WordpressContainerMock._WORDPRESS_VERSION
+
+
+def test_invalid_proxy_config(harness: ops.testing.Harness):
+    """
+    arrange: no arrange.
+    act: charm container is ready.
+    assert: workload version is set.
+    """
+    http_proxy = "http://proxy.internal:3128"
+    https_proxy = "http://proxy.internal:3128"
+    no_proxy = "127.0.0.1,::1"
+    os.environ["JUJU_CHARM_HTTP_PROXY"] = http_proxy
+    os.environ["JUJU_CHARM_HTTPS_PROXY"] = https_proxy
+    os.environ["JUJU_CHARM_NO_PROXY"] = no_proxy
+
+    harness.begin_with_initial_hooks()
+    charm: WordpressCharm = harness.charm
+    assert str(charm.state.proxy_config.http_proxy) == http_proxy
+    assert str(charm.state.proxy_config.https_proxy) == https_proxy
+    assert str(charm.state.proxy_config.no_proxy) == no_proxy
+
+
+def test_invalid_proxy_config(harness: ops.testing.Harness):
+    """
+    arrange: no arrange.
+    act: charm container is ready.
+    assert: workload version is set.
+    """
+    os.environ["JUJU_CHARM_HTTP_PROXY"] = "invalid"
+    harness.begin()
+    charm: WordpressCharm = harness.charm
+    assert charm.unit.status.name == BLOCKED_STATUS
+
+
+def test_only_valid_http_proxy_config(harness: ops.testing.Harness):
+    """
+    arrange: no arrange.
+    act: charm container is ready.
+    assert: workload version is set.
+    """
+    http_proxy = "http://proxy.internal:3128"
+    os.environ["JUJU_CHARM_HTTP_PROXY"] = http_proxy
+    harness.begin_with_initial_hooks()
+    charm: WordpressCharm = harness.charm
+    assert str(charm.state.proxy_config.http_proxy) == http_proxy
+
+
+def test_only_valid_https_proxy_config(harness: ops.testing.Harness):
+    """
+    arrange: no arrange.
+    act: charm container is ready.
+    assert: workload version is set.
+    """
+    https_proxy = "http://proxy.internal:3128"
+    os.environ["JUJU_CHARM_HTTP_PROXY"] = https_proxy
+    harness.begin_with_initial_hooks()
+    charm: WordpressCharm = harness.charm
+    assert str(charm.state.proxy_config.http_proxy) == https_proxy

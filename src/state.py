@@ -59,8 +59,8 @@ class ProxyConfig(BaseModel):
             return None
 
         return cls(
-            http_proxy=tools.parse_obj_as(HttpUrl, http_proxy),
-            https_proxy=tools.parse_obj_as(HttpUrl, https_proxy),
+            http_proxy=tools.parse_obj_as(typing.Optional[HttpUrl], http_proxy),
+            https_proxy=tools.parse_obj_as(typing.Optional[HttpUrl], https_proxy),
             no_proxy=no_proxy,
         )
 

@@ -5,8 +5,8 @@
 
 # pylint:disable=protected-access
 
-import os
 import json
+import os
 import typing
 import unittest.mock
 
@@ -22,7 +22,6 @@ import types_
 from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
-from state import CharmConfigInvalidError
 
 BLOCKED_STATUS = "blocked"
 
@@ -882,7 +881,7 @@ def test_wordpress_version_set(harness: ops.testing.Harness):
     assert harness.get_workload_version() == WordpressContainerMock._WORDPRESS_VERSION
 
 
-def test_invalid_proxy_config(harness: ops.testing.Harness):
+def test_valid_proxy_config(harness: ops.testing.Harness):
     """
     arrange: no arrange.
     act: charm container is ready.

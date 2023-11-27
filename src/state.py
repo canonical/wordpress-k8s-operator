@@ -10,7 +10,7 @@ import typing
 import ops
 
 # pylint: disable=no-name-in-module
-from pydantic import BaseModel, HttpUrl, ValidationError, tools
+from pydantic import BaseModel, HttpUrl, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ class ProxyConfig(BaseModel):
             return None
 
         return cls(
-            http_proxy=tools.parse_obj_as(typing.Optional[HttpUrl], http_proxy),
-            https_proxy=tools.parse_obj_as(typing.Optional[HttpUrl], https_proxy),
+            http_proxy=http_proxy,
+            https_proxy=https_proxy,
             no_proxy=no_proxy,
         )
 

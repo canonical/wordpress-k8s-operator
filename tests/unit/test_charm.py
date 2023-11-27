@@ -24,6 +24,9 @@ from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusEx
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
 
 BLOCKED_STATUS = "blocked"
+TEST_PROXY_HOST = "http://proxy.internal"
+TEST_PROXY_PORT = "3128"
+TEST_NO_PROXY = "127.0.0.1,::1"
 
 
 def test_generate_wp_secret_keys(harness: ops.testing.Harness):
@@ -881,26 +884,30 @@ def test_wordpress_version_set(harness: ops.testing.Harness):
     assert harness.get_workload_version() == WordpressContainerMock._WORDPRESS_VERSION
 
 
-def test_valid_proxy_config(harness: ops.testing.Harness):
+@pytest.mark.usefixtures("reset_proxy_env")
+def test_valid_proxy_config(
+    harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
+):
     """
     arrange: no arrange.
     act: charm container is ready.
     assert: workload version is set.
     """
-    http_proxy = "http://proxy.internal:3128"
-    https_proxy = "http://proxy.internal:3128"
-    no_proxy = "127.0.0.1,::1"
-    os.environ["JUJU_CHARM_HTTP_PROXY"] = http_proxy
-    os.environ["JUJU_CHARM_HTTPS_PROXY"] = https_proxy
-    os.environ["JUJU_CHARM_NO_PROXY"] = no_proxy
+    os.environ["JUJU_CHARM_HTTP_PROXY"] = f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    os.environ["JUJU_CHARM_HTTPS_PROXY"] = f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    os.environ["JUJU_CHARM_NO_PROXY"] = TEST_NO_PROXY
 
-    harness.begin_with_initial_hooks()
+    setup_replica_consensus()
+
     charm: WordpressCharm = harness.charm
-    assert str(charm.state.proxy_config.http_proxy) == http_proxy
-    assert str(charm.state.proxy_config.https_proxy) == https_proxy
-    assert str(charm.state.proxy_config.no_proxy) == no_proxy
+    assert charm.state.proxy_config.http_proxy == f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    assert charm.state.proxy_config.https_proxy == f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    assert charm.state.proxy_config.no_proxy == TEST_NO_PROXY
+    wp_config = charm._gen_wp_config()
+    assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT, TEST_NO_PROXY])
 
 
+@pytest.mark.usefixtures("reset_proxy_env")
 def test_invalid_proxy_config(harness: ops.testing.Harness):
     """
     arrange: no arrange.
@@ -913,27 +920,39 @@ def test_invalid_proxy_config(harness: ops.testing.Harness):
     assert charm.unit.status.name == BLOCKED_STATUS
 
 
-def test_only_valid_http_proxy_config(harness: ops.testing.Harness):
+@pytest.mark.usefixtures("reset_proxy_env")
+def test_only_valid_http_proxy_config(
+    harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
+):
     """
     arrange: no arrange.
     act: charm container is ready.
     assert: workload version is set.
     """
-    http_proxy = "http://proxy.internal:3128"
-    os.environ["JUJU_CHARM_HTTP_PROXY"] = http_proxy
-    harness.begin_with_initial_hooks()
+    os.environ["JUJU_CHARM_HTTP_PROXY"] = f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+
+    setup_replica_consensus()
+
     charm: WordpressCharm = harness.charm
-    assert str(charm.state.proxy_config.http_proxy) == http_proxy
+    assert charm.state.proxy_config.http_proxy == f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    wp_config = charm._gen_wp_config()
+    assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])
 
 
-def test_only_valid_https_proxy_config(harness: ops.testing.Harness):
+@pytest.mark.usefixtures("reset_proxy_env")
+def test_only_valid_https_proxy_config(
+    harness: ops.testing.Harness, setup_replica_consensus: typing.Callable[[], dict]
+):
     """
     arrange: no arrange.
     act: charm container is ready.
     assert: workload version is set.
     """
-    https_proxy = "http://proxy.internal:3128"
-    os.environ["JUJU_CHARM_HTTP_PROXY"] = https_proxy
-    harness.begin_with_initial_hooks()
+    os.environ["JUJU_CHARM_HTTPS_PROXY"] = f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+
+    setup_replica_consensus()
+
     charm: WordpressCharm = harness.charm
-    assert str(charm.state.proxy_config.http_proxy) == https_proxy
+    assert charm.state.proxy_config.https_proxy == f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    wp_config = charm._gen_wp_config()
+    assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])

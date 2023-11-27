@@ -59,8 +59,8 @@ class ProxyConfig(BaseModel):
             return None
 
         return cls(
-            http_proxy=http_proxy,
-            https_proxy=https_proxy,
+            http_proxy=http_proxy if http_proxy else None,
+            https_proxy=https_proxy if https_proxy else None,
             no_proxy=no_proxy,
         )
 

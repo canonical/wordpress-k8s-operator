@@ -608,6 +608,8 @@ class WordpressCharm(CharmBase):
         host, port = self._parse_database_endpoints(
             self.database.fetch_relation_field(relation.id, "endpoints")
         )
+        if host is None:
+            return None
         return types_.DatabaseConfig(
             hostname=host,
             port=port,

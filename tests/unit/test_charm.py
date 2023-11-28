@@ -879,7 +879,7 @@ def test_wordpress_version_set(harness: ops.testing.Harness):
 
 
 @pytest.mark.usefixtures("attach_storage")
-def test_leader_installation_failure(
+def test_waiting_for_leader_installation_timeout(
     patch: WordpressPatch, harness: ops.testing.Harness, app_name
 ):
     """

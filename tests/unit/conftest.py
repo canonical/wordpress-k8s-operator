@@ -315,11 +315,3 @@ def attach_storage(
     patch.container.fs["/proc/mounts"] = "/var/www/html/wp-content/uploads"
     yield
     patch.container.fs["/proc/mounts"] = ""
-
-
-@pytest.fixture(scope="function", name="reset_proxy_env")
-def reset_proxy_env():
-    """Reset proxy related env variables during charm init."""
-    os.environ["JUJU_CHARM_HTTP_PROXY"] = ""
-    os.environ["JUJU_CHARM_HTTPS_PROXY"] = ""
-    os.environ["JUJU_CHARM_NO_PROXY"] = ""

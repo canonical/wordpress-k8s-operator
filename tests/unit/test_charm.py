@@ -942,7 +942,6 @@ def test_only_valid_http_proxy_config(
     assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])
 
 
-@pytest.mark.usefixtures("reset_proxy_env")
 def test_only_valid_https_proxy_config(
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],

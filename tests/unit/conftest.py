@@ -3,7 +3,6 @@
 
 """Fixtures for WordPress charm unit tests."""
 
-import os
 import typing
 import unittest
 import unittest.mock

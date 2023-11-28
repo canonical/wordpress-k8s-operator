@@ -32,7 +32,7 @@ class CharmConfigInvalidError(Exception):
 
 
 class ProxyConfig(BaseModel):
-    """Configuration for accessing Jenkins through proxy.
+    """Configuration for external access through proxy.
 
     Attributes:
         http_proxy: The http proxy URL.

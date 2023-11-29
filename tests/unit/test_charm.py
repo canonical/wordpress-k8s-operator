@@ -6,6 +6,7 @@
 # pylint:disable=protected-access
 
 import json
+import secrets
 import typing
 import unittest.mock
 
@@ -31,14 +32,14 @@ def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     """
     harness.begin()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    secrets = charm._generate_wp_secret_keys()
+    wordpress_secrets = charm._generate_wp_secret_keys()
     assert (
-        "default_admin_password" in secrets
+        "default_admin_password" in wordpress_secrets
     ), "WordPress should generate a default admin password"
 
-    del secrets["default_admin_password"]
-    key_values = list(secrets.values())
-    assert set(secrets.keys()) == set(
+    del wordpress_secrets["default_admin_password"]
+    key_values = list(wordpress_secrets.values())
+    assert set(wordpress_secrets.keys()) == set(
         charm._wordpress_secret_key_fields()
     ), "generated WordPress secrets should contain all required fields"
     assert len(key_values) == len(set(key_values)), "no two secret values should be the same"
@@ -896,6 +897,7 @@ def test_waiting_for_leader_installation_timeout(
     )
     db_relation_id = harness.add_relation("database", "mysql")
     harness.add_relation_unit(db_relation_id, "mysql/0")
+    test_database_password = secrets.token_urlsafe(8)
     harness.update_relation_data(
         relation_id=db_relation_id,
         app_or_unit="mysql",
@@ -903,13 +905,12 @@ def test_waiting_for_leader_installation_timeout(
             "endpoints": "test",
             "database": "test",
             "username": "test",
-            "password": "test",
+            "password": test_database_password,
         },
     )
-    # ignore bandit B106:hardcoded_password_funcarg
     patch.database.prepare_database(
-        host="test", database="test", user="test", password="test"
-    )  # nosec
+        host="test", database="test", user="test", password=test_database_password
+    )
     harness.begin_with_initial_hooks()
     assert harness.charm.unit.status.name == "blocked"
     assert (

@@ -42,6 +42,7 @@ from yaml import safe_load
 import exceptions
 import types_
 from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
+from state import CharmConfigInvalidError, State
 
 # MySQL logger prints database credentials on debug level, silence it
 logging.getLogger(mysql.connector.__name__).setLevel(logging.WARNING)
@@ -138,6 +139,12 @@ class WordpressCharm(CharmBase):
             kwargs: keyword arguments passed into Charmbase superclass.
         """
         super().__init__(*args, **kwargs)
+
+        try:
+            self.state = State.from_charm(self)
+        except CharmConfigInvalidError as exc:
+            self.unit.status = ops.BlockedStatus(exc.msg)
+            return
 
         self.database = DatabaseRequires(
             self, relation_name=self._DATABASE_RELATION_NAME, database_name=self.app.name
@@ -403,6 +410,17 @@ class WordpressCharm(CharmBase):
         wp_config.append("define( 'AUTOMATIC_UPDATER_DISABLED', true );")
 
         wp_config.append("define( 'WP_CACHE', true );")
+        if proxy := self.state.proxy_config:
+            if http_proxy := proxy.http_proxy:
+                http_proxy_host = f"{http_proxy.scheme}://{http_proxy.host}"
+                wp_config.append(f"define( 'WP_PROXY_HOST',  '{http_proxy_host}' );")
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{http_proxy.port}' );")
+            elif https_proxy := proxy.https_proxy:
+                https_proxy_host = f"{https_proxy.scheme}://{https_proxy.host}"
+                wp_config.append(f"define( 'WP_PROXY_HOST',  '{https_proxy_host}' );")
+                wp_config.append(f"define( 'WP_PROXY_PORT',  '{https_proxy.port}' );")
+            if proxy.no_proxy:
+                wp_config.append(f"define( 'WP_PROXY_BYPASS_HOSTS',  '{proxy.no_proxy}' );")
         wp_config.append(
             textwrap.dedent(
                 """\
@@ -415,6 +433,7 @@ class WordpressCharm(CharmBase):
                 """
             )
         )
+
         return "\n".join(wp_config)
 
     def _container(self):

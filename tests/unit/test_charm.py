@@ -22,6 +22,11 @@ from charm import WordpressCharm
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
 
+BLOCKED_STATUS = "blocked"
+TEST_PROXY_HOST = "http://proxy.internal"
+TEST_PROXY_PORT = "3128"
+TEST_NO_PROXY = "127.0.0.1,::1"
+
 
 def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     """
@@ -876,3 +881,82 @@ def test_wordpress_version_set(harness: ops.testing.Harness):
     harness.begin_with_initial_hooks()
 
     assert harness.get_workload_version() == WordpressContainerMock._WORDPRESS_VERSION
+
+
+def test_valid_proxy_config(
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: charm peer relation is ready and relevant environment variables are set.
+    act: charm container is ready.
+    assert: The correct proxy information is set in state and present in wp-config.
+    """
+    proxy_url = f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    monkeypatch.setenv("JUJU_CHARM_HTTP_PROXY", proxy_url)
+    monkeypatch.setenv("JUJU_CHARM_HTTPS_PROXY", proxy_url)
+    monkeypatch.setenv("JUJU_CHARM_NO_PROXY", TEST_NO_PROXY)
+
+    setup_replica_consensus()
+
+    charm: WordpressCharm = harness.charm
+    assert charm.state.proxy_config.http_proxy == proxy_url
+    assert charm.state.proxy_config.https_proxy == proxy_url
+    assert charm.state.proxy_config.no_proxy == TEST_NO_PROXY
+    wp_config = charm._gen_wp_config()
+    assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT, TEST_NO_PROXY])
+
+
+def test_invalid_proxy_config(harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Incorrect value for proxy is set.
+    act: charm container is ready.
+    assert: Charm is in blocked state.
+    """
+    monkeypatch.setenv("JUJU_CHARM_HTTP_PROXY", "invalid")
+    harness.begin()
+    charm: WordpressCharm = harness.charm
+    assert charm.unit.status.name == BLOCKED_STATUS
+
+
+def test_only_valid_http_proxy_config(
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: charm peer relation is ready and relevant environment variables are set.
+    act: charm container is ready.
+    assert: The correct proxy information is set in state and present in wp-config.
+    """
+    proxy_url = f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    monkeypatch.setenv("JUJU_CHARM_HTTP_PROXY", proxy_url)
+
+    setup_replica_consensus()
+
+    charm: WordpressCharm = harness.charm
+    assert charm.state.proxy_config.http_proxy == proxy_url
+    wp_config = charm._gen_wp_config()
+    assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])
+
+
+def test_only_valid_https_proxy_config(
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: charm peer relation is ready and relevant environment variables are set.
+    act: charm container is ready.
+    assert: The correct proxy information is set in state and present in wp-config.
+    """
+    proxy_url = f"{TEST_PROXY_HOST}:{TEST_PROXY_PORT}"
+    monkeypatch.setenv("JUJU_CHARM_HTTPS_PROXY", proxy_url)
+
+    setup_replica_consensus()
+
+    charm: WordpressCharm = harness.charm
+    assert charm.state.proxy_config.https_proxy == proxy_url
+    wp_config = charm._gen_wp_config()
+    assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])

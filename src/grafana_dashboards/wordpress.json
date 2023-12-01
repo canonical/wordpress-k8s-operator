@@ -119,7 +119,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -133,7 +135,7 @@
             "uid": "${DS_JUJU_COS_244D2E79-63C4-434F-853B-9D7DBCCC307B_PROMETHEUS_0}"
           },
           "editorMode": "builder",
-          "expr": "apache_version{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
+          "expr": "apache_version{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -182,7 +184,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -196,7 +200,7 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "builder",
-          "expr": "apache_workers{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
+          "expr": "apache_workers{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -298,7 +302,7 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "builder",
-          "expr": "apache_scoreboard{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
+          "expr": "apache_scoreboard{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -413,7 +417,7 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "code",
-          "expr": "rate(apache_accesses_total{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}[5m])",
+          "expr": "rate(apache_accesses_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -475,7 +479,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "ms"
         },
         "overrides": []
       },
@@ -485,7 +490,7 @@
         "x": 12,
         "y": 15
       },
-      "id": 23,
+      "id": 25,
       "options": {
         "legend": {
           "calcs": [],
@@ -504,14 +509,14 @@
             "type": "prometheus",
             "uid": "${prometheusds}"
           },
-          "editorMode": "builder",
-          "expr": "apache_cpuload{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
+          "editorMode": "code",
+          "expr": "increase(apache_duration_ms_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[5m]) / increase(apache_accesses_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Apache CPU load (%)",
+      "title": "Average Request Duration",
       "transformations": [
         {
           "id": "renameByRegex",
@@ -606,7 +611,7 @@
             "uid": "${DS_JUJU_COS_244D2E79-63C4-434F-853B-9D7DBCCC307B_PROMETHEUS_0}"
           },
           "editorMode": "builder",
-          "expr": "apache_load{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}",
+          "expr": "apache_load{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "instant": true,
           "key": "Q-9894a0a7-16fc-4c07-be4d-e41ae29e7590-0",
           "legendFormat": "__auto",
@@ -680,7 +685,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -689,6 +695,108 @@
         "w": 12,
         "x": 12,
         "y": 23
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheusds}"
+          },
+          "editorMode": "builder",
+          "expr": "apache_cpuload{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Apache CPU load",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*juju_unit=\"(.*)\".*",
+            "renamePattern": "$1"
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheusds}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
       },
       "id": 17,
       "options": {
@@ -710,7 +818,7 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "code",
-          "expr": "rate(apache_sent_kilobytes_total{juju_application=\"$juju_application\",juju_model=\"$juju_model\",juju_model_uuid=\"$juju_model_uuid\",juju_unit=\"$juju_unit\"}[5m])",
+          "expr": "rate(apache_sent_kilobytes_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -898,6 +1006,6 @@
   "timepicker": {},
   "timezone": "",
   "title": "Wordpress Operator Overview",
-  "version": 9,
+  "version": 10,
   "weekStart": ""
 }

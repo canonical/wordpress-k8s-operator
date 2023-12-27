@@ -621,6 +621,12 @@ class WordpressCharm(CharmBase):
         host, port = self._parse_database_endpoints(
             self.database.fetch_relation_field(relation.id, "endpoints")
         )
+        if host is None:
+            logger.warning(
+                "`endpoints` is missing in database relation data: %s",
+                dict(relation.data[relation.app]),
+            )
+            return None
         return types_.DatabaseConfig(
             hostname=host,
             port=port,

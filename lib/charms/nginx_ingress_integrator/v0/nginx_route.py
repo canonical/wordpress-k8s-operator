@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # Licensed under the Apache2.0, see LICENCE file in charm source for details.
 """Library for the nginx-route relation.
 

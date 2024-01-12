@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -320,7 +320,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 25
+LIBPATCH = 26
 
 PYDEPS = ["ops>=2.0.0"]
 
@@ -477,12 +477,19 @@ class CachedSecret:
     The data structure is precisely re-using/simulating as in the actual Secret Storage
     """
 
-    def __init__(self, charm: CharmBase, label: str, secret_uri: Optional[str] = None):
+    def __init__(
+        self,
+        charm: CharmBase,
+        component: Union[Application, Unit],
+        label: str,
+        secret_uri: Optional[str] = None,
+    ):
         self._secret_meta = None
         self._secret_content = {}
         self._secret_uri = secret_uri
         self.label = label
         self.charm = charm
+        self.component = component
 
     def add_secret(self, content: Dict[str, str], relation: Relation) -> Secret:
         """Create a new secret."""
@@ -491,7 +498,7 @@ class CachedSecret:
                 "Secret is already defined with uri %s", self._secret_uri
             )
 
-        secret = self.charm.app.add_secret(content, label=self.label)
+        secret = self.component.add_secret(content, label=self.label)
         if relation.app != self.charm.app:
             # If it's not a peer relation, grant is to be applied
             secret.grant(relation)
@@ -523,8 +530,13 @@ class CachedSecret:
                 except (ValueError, ModelError) as err:
                     # https://bugs.launchpad.net/juju/+bug/2042596
                     # Only triggered when 'refresh' is set
-                    msg = "ERROR either URI or label should be used for getting an owned secret but not both"
-                    if isinstance(err, ModelError) and msg not in str(err):
+                    known_model_errors = [
+                        "ERROR either URI or label should be used for getting an owned secret but not both",
+                        "ERROR secret owner cannot use --refresh",
+                    ]
+                    if isinstance(err, ModelError) and not any(
+                        msg in str(err) for msg in known_model_errors
+                    ):
                         raise
                     # Due to: ValueError: Secret owner cannot use refresh=True
                     self._secret_content = self.meta.get_content()
@@ -550,14 +562,15 @@ class CachedSecret:
 class SecretCache:
     """A data structure storing CachedSecret objects."""
 
-    def __init__(self, charm):
+    def __init__(self, charm: CharmBase, component: Union[Application, Unit]):
         self.charm = charm
+        self.component = component
         self._secrets: Dict[str, CachedSecret] = {}
 
     def get(self, label: str, uri: Optional[str] = None) -> Optional[CachedSecret]:
         """Getting a secret from Juju Secret store or cache."""
         if not self._secrets.get(label):
-            secret = CachedSecret(self.charm, label, uri)
+            secret = CachedSecret(self.charm, self.component, label, uri)
             if secret.meta:
                 self._secrets[label] = secret
         return self._secrets.get(label)
@@ -567,7 +580,7 @@ class SecretCache:
         if self._secrets.get(label):
             raise SecretAlreadyExistsError(f"Secret {label} already exists")
 
-        secret = CachedSecret(self.charm, label)
+        secret = CachedSecret(self.charm, self.component, label)
         secret.add_secret(content, relation)
         self._secrets[label] = secret
         return self._secrets[label]
@@ -578,6 +591,8 @@ class SecretCache:
 
 class DataRelation(Object, ABC):
     """Base relation data mainpulation (abstract) class."""
+
+    SCOPE = Scope.APP
 
     # Local map to associate mappings with secrets potentially as a group
     SECRET_LABEL_MAP = {
@@ -599,8 +614,8 @@ class DataRelation(Object, ABC):
             self._on_relation_changed_event,
         )
         self._jujuversion = None
-        self.secrets = SecretCache(self.charm)
-        self.component = self.local_app
+        self.component = self.local_app if self.SCOPE == Scope.APP else self.local_unit
+        self.secrets = SecretCache(self.charm, self.component)
 
     @property
     def relations(self) -> List[Relation]:
@@ -808,7 +823,7 @@ class DataRelation(Object, ABC):
         return (result, normal_fields)
 
     def _fetch_relation_data_without_secrets(
-        self, app: Union[Application, Unit], relation: Relation, fields: Optional[List[str]]
+        self, component: Union[Application, Unit], relation: Relation, fields: Optional[List[str]]
     ) -> Dict[str, str]:
         """Fetching databag contents when no secrets are involved.
 
@@ -817,17 +832,19 @@ class DataRelation(Object, ABC):
         This is used typically when the Provides side wants to read the Requires side's data,
         or when the Requires side may want to read its own data.
         """
-        if app not in relation.data or not relation.data[app]:
+        if component not in relation.data or not relation.data[component]:
             return {}
 
         if fields:
-            return {k: relation.data[app][k] for k in fields if k in relation.data[app]}
+            return {
+                k: relation.data[component][k] for k in fields if k in relation.data[component]
+            }
         else:
-            return dict(relation.data[app])
+            return dict(relation.data[component])
 
     def _fetch_relation_data_with_secrets(
         self,
-        app: Union[Application, Unit],
+        component: Union[Application, Unit],
         req_secret_fields: Optional[List[str]],
         relation: Relation,
         fields: Optional[List[str]] = None,
@@ -843,10 +860,10 @@ class DataRelation(Object, ABC):
         normal_fields = []
 
         if not fields:
-            if app not in relation.data or not relation.data[app]:
+            if component not in relation.data or not relation.data[component]:
                 return {}
 
-            all_fields = list(relation.data[app].keys())
+            all_fields = list(relation.data[component].keys())
             normal_fields = [field for field in all_fields if not self._is_secret_field(field)]
 
             # There must have been secrets there
@@ -863,30 +880,30 @@ class DataRelation(Object, ABC):
         # (Typically when Juju3 Requires meets Juju2 Provides)
         if normal_fields:
             result.update(
-                self._fetch_relation_data_without_secrets(app, relation, list(normal_fields))
+                self._fetch_relation_data_without_secrets(component, relation, list(normal_fields))
             )
         return result
 
     def _update_relation_data_without_secrets(
-        self, app: Union[Application, Unit], relation: Relation, data: Dict[str, str]
+        self, component: Union[Application, Unit], relation: Relation, data: Dict[str, str]
     ) -> None:
         """Updating databag contents when no secrets are involved."""
-        if app not in relation.data or relation.data[app] is None:
+        if component not in relation.data or relation.data[component] is None:
             return
 
         if relation:
-            relation.data[app].update(data)
+            relation.data[component].update(data)
 
     def _delete_relation_data_without_secrets(
-        self, app: Union[Application, Unit], relation: Relation, fields: List[str]
+        self, component: Union[Application, Unit], relation: Relation, fields: List[str]
     ) -> None:
         """Remove databag fields 'fields' from Relation."""
-        if app not in relation.data or relation.data[app] is None:
+        if component not in relation.data or relation.data[component] is None:
             return
 
         for field in fields:
             try:
-                relation.data[app].pop(field)
+                relation.data[component].pop(field)
             except KeyError:
                 logger.error(
                     "Non-existing field '%s' was attempted to be removed from the databag (relation ID: %s)",
@@ -1311,7 +1328,7 @@ class DataRequires(DataRelation):
         label = self._generate_secret_label(relation_name, relation_id, group)
 
         # Fetchin the Secret's meta information ensuring that it's locally getting registered with
-        CachedSecret(self.charm, label, secret_id).meta
+        CachedSecret(self.charm, self.component, label, secret_id).meta
 
     def _register_secrets_to_relation(self, relation: Relation, params_name_list: List[str]):
         """Make sure that secrets of the provided list are locally 'registered' from the databag.
@@ -1648,9 +1665,10 @@ class DataPeer(DataRequires, DataProvides):
 class DataPeerUnit(DataPeer):
     """Unit databag representation."""
 
+    SCOPE = Scope.UNIT
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.component = self.local_unit
 
 
 # General events

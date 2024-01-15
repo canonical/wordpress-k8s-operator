@@ -1,5 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
+# STRING PUT HERE FOR TESTING
 name: wordpress-k8s
 display-name: WordPress
 summary: WordPress is an OSS to create a beautiful website.

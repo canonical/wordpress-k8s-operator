@@ -29,19 +29,18 @@ from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
 from ops.framework import EventBase
 from ops.main import main
-from ops.model import (
-    ActiveStatus,
-    BlockedStatus,
-    MaintenanceStatus,
-    RelationDataContent,
-    WaitingStatus,
-)
+from ops.model import ActiveStatus, RelationDataContent, WaitingStatus
 from ops.pebble import ExecProcess
 from yaml import safe_load
 
 import exceptions
 import types_
-from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
+from cos import (
+    _APACHE_EXPORTER_PEBBLE_SERVICE,
+    APACHE_LOG_PATHS,
+    PROM_EXPORTER_PEBBLE_CONFIG,
+    WORDPRESS_SCRAPE_JOBS,
+)
 from state import CharmConfigInvalidError, State
 
 # MySQL logger prints database credentials on debug level, silence it
@@ -176,10 +175,6 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.wordpress_pebble_ready, self._set_version)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
-        self.framework.observe(
-            self.on.apache_prometheus_exporter_pebble_ready,
-            self._on_apache_prometheus_exporter_pebble_ready,
-        )
 
     def _set_version(self, _: PebbleReadyEvent) -> None:
         """Set WordPress application version to Juju charm's app version status."""
@@ -716,6 +711,9 @@ class WordpressCharm(CharmBase):
             },
         }
         self._container().add_layer("wordpress", layer, combine=True)
+        self._container().add_layer(
+            _APACHE_EXPORTER_PEBBLE_SERVICE.name, PROM_EXPORTER_PEBBLE_CONFIG, combine=True
+        )
 
     def _start_server(self):
         """Start WordPress (apache) server. On leader unit, also make sure WordPress is installed.
@@ -761,6 +759,8 @@ class WordpressCharm(CharmBase):
         self._init_pebble_layer()
         if not self._container().get_service(self._SERVICE_NAME).is_running():
             self._container().start(self._SERVICE_NAME)
+        if not self._container().get_service(_APACHE_EXPORTER_PEBBLE_SERVICE.name).is_running():
+            self._container().start(_APACHE_EXPORTER_PEBBLE_SERVICE.name)
 
     def _current_wp_config(self):
         """Retrieve the current version of wp-config.php from server, return None if not exists.
@@ -1472,23 +1472,6 @@ class WordpressCharm(CharmBase):
             self.unit.status = ActiveStatus()
         else:
             self.unit.status = WaitingStatus("Waiting for pebble")
-
-    def _on_apache_prometheus_exporter_pebble_ready(self, event: PebbleReadyEvent):
-        """Configure and start apache prometheus exporter.
-
-        Args:
-            event: Event triggering the handler.
-        """
-        if not event.workload:
-            self.unit.status = BlockedStatus("Internal Error, pebble container not found.")
-            return
-        container = event.workload
-        pebble: ops.pebble.Client = container.pebble
-        self.unit.status = MaintenanceStatus(f"Adding {container.name} layer to pebble")
-        container.add_layer(container.name, PROM_EXPORTER_PEBBLE_CONFIG, combine=True)
-        self.unit.status = MaintenanceStatus(f"Starting {container.name} container")
-        pebble.replan_services()
-        self._reconciliation(event)
 
 
 if __name__ == "__main__":  # pragma: no cover

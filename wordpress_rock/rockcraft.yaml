@@ -74,6 +74,8 @@ parts:
       - WP_VERSION: 6.4.2
     build-packages:
       - curl
+    stage-snaps:
+    - rocks-apache-prometheus-exporter/latest/edge
     override-build: |
       curl -sSL --create-dirs https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o wp
       chmod +x wp

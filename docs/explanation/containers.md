@@ -1,7 +1,6 @@
 # Containers
 
-The core component of wordpress-k8s charm consists of a wordpress-k8s main workload container and a
-`apache-prometheus-exporter` sidecar container. Both services inside the containers are driven by
+The core component of wordpress-k8s charm consists of a wordpress-k8s main workload container with an Apache Prometheus exporter. The services inside the container are driven by
 Pebble, a lightweight API-driven process supervisor that controls the lifecycle of a service.
 Learn more about pebble and its layer configurations [here](https://github.com/canonical/pebble).
 
@@ -34,14 +33,6 @@ pushing Apache server logs to Loki. The configurations for Apache have been set 
 to both `access.log`, `error.log` files and container logs in
 [`000-default.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/files/000-default.conf).
 These files are essential for promtail to read and push latest logs to loki periodically.
-
-### apache-prometheus-exporter
-
-This is a sidecar container that contains a golang binary to periodically scrape `/server-status`
-route from the main wordpress container. It exposes WordPress Apache server’s metrics in open
-metrics format on port 9117. It should be noted that some of its own metrics from the Prometheus
-Golang client are exposed that are not part of the WordPress Apache’s metrics and are denoted by
-`go_` prefix.
 
 ### charm
 

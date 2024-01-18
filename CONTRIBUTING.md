@@ -17,8 +17,7 @@ Deploy the charm:
 ```bash
 charmcraft pack
 juju deploy ./wordpress-k8s_ubuntu-22.04-amd64.charm \
-    --resource jenkins-image=localhost:32000/wordpress:test \
-    --resource apache-prometheus-exporter-image=bitnami/apache-exporter:0.11.0
+    --resource jenkins-image=localhost:32000/wordpress:test
 ```
 
 ## Generating src docs for every commit

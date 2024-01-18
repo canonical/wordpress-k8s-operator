@@ -84,7 +84,6 @@ async def wordpress_fixture(
         charm,
         resources={
             "wordpress-image": wordpress_image,
-            "apache-prometheus-exporter-image": "bitnami/apache-exporter:0.11.0",
         },
         num_units=1,
         series="focal",

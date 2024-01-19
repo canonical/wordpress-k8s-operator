@@ -59,8 +59,7 @@ Deploy the locally built WordPress charm with the following command.
 
 ```
 juju deploy ./wordpress-k8s_ubuntu-22.04-amd64_ubuntu-20.04-amd64.charm \
-  --resource wordpress-image=wordpress \
-  --resource apache-prometheus-exporter-image=bitnami/apache-exporter:0.11.0
+  --resource wordpress-image=wordpress
 ```
 
 You should now be able to see your local wordpress-k8s charm progress through the stages of the

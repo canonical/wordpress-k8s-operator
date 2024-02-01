@@ -7,7 +7,7 @@ on:
 jobs:
   integration-test-juju3:
     name: Integration Test on Juju3
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@test-runs-on
     secrets: inherit
     with:
       extra-arguments: >-

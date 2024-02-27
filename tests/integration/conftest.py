@@ -99,7 +99,7 @@ async def prepare_mysql(ops_test: OpsTest, wordpress: WordpressApp, model: Model
         "deploy", "mysql-k8s", "--channel=8.0/candidate", "--revision=75", "--trust"
     )
     await model.wait_for_idle(status="active", apps=["mysql-k8s"], timeout=30 * 60)
-    await model.add_relation(f"{wordpress.name}:database", "mysql-k8s:database")
+    await model.relate(f"{wordpress.name}:database", "mysql-k8s:database")
     await model.wait_for_idle(
         status="active", apps=["mysql-k8s", wordpress.name], timeout=40 * 60, idle_period=30
     )
@@ -113,7 +113,7 @@ async def prepare_machine_mysql(
     await machine_model.deploy("mysql", channel="8.0/edge", trust=True)
     await machine_model.create_offer("mysql:database")
     await machine_model.wait_for_idle(status="active", apps=["mysql"], timeout=30 * 60)
-    await model.add_relation(
+    await model.relate(
         f"{wordpress.name}:database",
         f"{machine_controller.controller_name}:admin/{machine_model.name}.mysql",
     )
@@ -211,7 +211,7 @@ async def prepare_nginx_ingress(wordpress: WordpressApp, prepare_mysql):
     await wordpress.model.wait_for_idle(
         status="active", apps=["nginx-ingress-integrator"], timeout=30 * 60
     )
-    await wordpress.model.add_relation(f"{wordpress.name}:nginx-route", "nginx-ingress-integrator")
+    await wordpress.model.relate(f"{wordpress.name}:nginx-route", "nginx-ingress-integrator")
     await wordpress.model.wait_for_idle(status="active")
 
 
@@ -224,7 +224,7 @@ async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
     await wordpress.model.wait_for_idle(
         status="active", apps=[prometheus.name], raise_on_error=False, timeout=30 * 60
     )
-    await wordpress.model.add_relation(f"{wordpress.name}:metrics-endpoint", prometheus.name)
+    await wordpress.model.relate(f"{wordpress.name}:metrics-endpoint", prometheus.name)
     await wordpress.model.wait_for_idle(
         status="active",
         apps=[prometheus.name, wordpress.name],
@@ -238,7 +238,7 @@ async def prepare_loki(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate loki-k8s charm for integration tests."""
     loki = await wordpress.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
     await wordpress.model.wait_for_idle(apps=[loki.name], status="active", timeout=20 * 60)
-    await wordpress.model.add_relation(f"{wordpress.name}:logging", loki.name)
+    await wordpress.model.relate(f"{wordpress.name}:logging", loki.name)
     await wordpress.model.wait_for_idle(
         apps=[loki.name, wordpress.name], status="active", timeout=40 * 60
     )

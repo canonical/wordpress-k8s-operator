@@ -8,6 +8,8 @@ from typing import Dict, List, TypedDict
 
 from ops.pebble import Check, Layer, Service
 
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
+
 
 class PrometheusStaticConfig(TypedDict, total=False):
     """Configuration parameters for prometheus metrics endpoint scraping.
@@ -83,3 +85,56 @@ APACHE_LOG_PATHS = [
     "/var/log/apache2/access.log",
     "/var/log/apache2/error.log",
 ]
+
+
+class ApacheLogProxyConsumer(LogProxyConsumer):
+    def _scrape_configs(self) -> dict:
+        """Generates the scrape_configs section of the Promtail config file.
+
+        Returns:
+            A dict representing the `scrape_configs` section.
+        """
+        scrape_configs = super()._scrape_configs()
+        common_labels = {
+            "juju_{}".format(k): v
+            for k, v in self.topology.as_dict(remapped_keys={"charm_name": "charm"}).items()
+        }
+        scrape_configs["scrape_configs"].append(
+            {
+                "job_name": "access_log_exporter",
+                "static_configs": {"__path__": "/var/log/apache2/access.log"},
+                "pipeline_stages": [
+                    {"logfmt": {}},
+                    {"labelallow": ["request_time_ms"]},
+                    {"labels": common_labels},
+                    {
+                        "metrics": {
+                            "apache_access_log_request_time_ms": {
+                                "type": "Histogram",
+                                "source": "request_time_ms",
+                                "config": {
+                                    "bucket": [
+                                        10,
+                                        25,
+                                        50,
+                                        100,
+                                        200,
+                                        300,
+                                        400,
+                                        500,
+                                        750,
+                                        1000,
+                                        1500,
+                                        2000,
+                                        2500,
+                                        5000,
+                                        10000,
+                                    ]
+                                },
+                            }
+                        }
+                    },
+                ],
+            }
+        )
+        return scrape_configs

@@ -23,7 +23,6 @@ import ops.pebble
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
-from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
@@ -40,6 +39,7 @@ from cos import (
     APACHE_LOG_PATHS,
     PROM_EXPORTER_PEBBLE_CONFIG,
     WORDPRESS_SCRAPE_JOBS,
+    ApacheLogProxyConsumer,
 )
 from state import CharmConfigInvalidError, State
 
@@ -154,7 +154,7 @@ class WordpressCharm(CharmBase):
             self,
             jobs=WORDPRESS_SCRAPE_JOBS,
         )
-        self._logging = LogProxyConsumer(
+        self._logging = ApacheLogProxyConsumer(
             self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
         )
         self._grafana_dashboards = GrafanaDashboardProvider(self)

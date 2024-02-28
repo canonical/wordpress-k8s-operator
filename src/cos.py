@@ -74,6 +74,24 @@ APACHE_LOG_PATHS = [
     "/var/log/apache2/error.log",
 ]
 
+REQUEST_DURATION_MICROSECONDS_BUCKETS = [
+    10000,
+    25000,
+    50000,
+    100000,
+    200000,
+    300000,
+    400000,
+    500000,
+    750000,
+    1000000,
+    1500000,
+    2000000,
+    2500000,
+    5000000,
+    10000000,
+]
+
 
 class ApacheLogProxyConsumer(LogProxyConsumer):
     """Extends LogProxyConsumer to add a metrics pipeline to promtail."""
@@ -104,25 +122,7 @@ class ApacheLogProxyConsumer(LogProxyConsumer):
                                 "type": "Histogram",
                                 "source": "request_duration_microseconds",
                                 "prefix": "apache_access_log_",
-                                "config": {
-                                    "buckets": [
-                                        10000,
-                                        25000,
-                                        50000,
-                                        100000,
-                                        200000,
-                                        300000,
-                                        400000,
-                                        500000,
-                                        750000,
-                                        1000000,
-                                        1500000,
-                                        2000000,
-                                        2500000,
-                                        5000000,
-                                        10000000,
-                                    ]
-                                },
+                                "config": {"buckets": REQUEST_DURATION_MICROSECONDS_BUCKETS},
                             }
                         }
                     },

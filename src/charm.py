@@ -38,7 +38,6 @@ from cos import (
     _APACHE_EXPORTER_PEBBLE_SERVICE,
     APACHE_LOG_PATHS,
     PROM_EXPORTER_PEBBLE_CONFIG,
-    WORDPRESS_SCRAPE_JOBS,
     ApacheLogProxyConsumer,
 )
 from state import CharmConfigInvalidError, State
@@ -150,12 +149,33 @@ class WordpressCharm(CharmBase):
         )
 
         self._require_nginx_route()
-        self.metrics_endpoint = MetricsEndpointProvider(
-            self,
-            jobs=WORDPRESS_SCRAPE_JOBS,
-        )
         self._logging = ApacheLogProxyConsumer(
             self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
+        )
+        prometheus_jobs = [{"static_configs": [{"targets": ["*:9117"]}]}]
+        if self._logging.loki_endpoints:
+            prometheus_jobs.append(
+                {
+                    "static_configs": [
+                        {
+                            "targets": ["*:9080"],
+                        }
+                    ],
+                    "metric_relabel_configs": {
+                        "source_labels": ["__name__"],
+                        "regex": "apache_access_log.*",
+                        "action": "keep",
+                    },
+                }
+            )
+        self.metrics_endpoint = MetricsEndpointProvider(
+            self,
+            jobs=prometheus_jobs,
+            refresh_event=[
+                self.on.wordpress_pebble_ready,
+                self._logging.on.log_proxy_endpoint_departed,
+                self._logging.on.log_proxy_endpoint_joined,
+            ],
         )
         self._grafana_dashboards = GrafanaDashboardProvider(self)
 
@@ -706,7 +726,8 @@ class WordpressCharm(CharmBase):
                 "wordpress-ready": {
                     "override": "replace",
                     "level": "alive",
-                    "http": {"url": "http://localhost/index.php"},
+                    "http": {"url": "http://localhost"},
+                    "timeout": "5s",
                 },
             },
         }

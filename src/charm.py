@@ -152,20 +152,18 @@ class WordpressCharm(CharmBase):
         self._logging = ApacheLogProxyConsumer(
             self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
         )
-        prometheus_jobs = [{"static_configs": [{"targets": ["*:9117"]}]}]
+        prometheus_jobs = [
+            {"job_name": "apache_exporter", "static_configs": [{"targets": ["*:9117"]}]}
+        ]
         if self._logging.loki_endpoints:
             prometheus_jobs.append(
                 {
+                    "job_name": "promtail",
                     "static_configs": [
                         {
                             "targets": ["*:9080"],
                         }
                     ],
-                    "metric_relabel_configs": {
-                        "source_labels": ["__name__"],
-                        "regex": "apache_access_log.*",
-                        "action": "keep",
-                    },
                 }
             )
         self.metrics_endpoint = MetricsEndpointProvider(

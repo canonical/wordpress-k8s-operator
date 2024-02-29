@@ -984,7 +984,7 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
         for static_config in scrape_config["static_configs"]:
             if "job" in static_config["labels"]:
                 pass
-
+    metrics_name = "request_duration_microseconds"
     assert harness.charm._logging._promtail_config == {
         "clients": [],
         "positions": {"filename": "/opt/promtail/positions.yaml"},
@@ -1021,17 +1021,10 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
             {
                 "job_name": "access_log_exporter",
                 "pipeline_stages": [
-                    {
-                        "logfmt": {
-                            "mapping": {
-                                "request_duration_microseconds": "request_duration_microseconds"
-                            }
-                        }
-                    },
-                    {"labelallow": ["request_time_ms"]},
+                    {"logfmt": {"mapping": {metrics_name: metrics_name}}},
                     {
                         "metrics": {
-                            "request_duration_microseconds": {
+                            metrics_name: {
                                 "config": {"buckets": REQUEST_DURATION_MICROSECONDS_BUCKETS},
                                 "prefix": "apache_access_log_",
                                 "source": "request_duration_microseconds",

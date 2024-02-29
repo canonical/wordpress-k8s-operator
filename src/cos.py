@@ -115,7 +115,6 @@ class ApacheLogProxyConsumer(LogProxyConsumer):
                             }
                         }
                     },
-                    {"labelallow": ["request_time_ms"]},
                     {
                         "metrics": {
                             "request_duration_microseconds": {

@@ -858,7 +858,15 @@ class WordpressCharm(CharmBase):
         # FIXME: the feedwordpress plugin causes the `wp theme list` command to fail occasionally
         # use retries as a temporary workaround for this issue
         for wait in (1, 3, 5, 5, 5):
-            process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
+            process = self._run_wp_cli(
+                [
+                    "wp",
+                    addon_type,
+                    "list",
+                    "--exec=define( 'WP_HTTP_BLOCK_EXTERNAL', TRUE );",
+                    "--format=json",
+                ],
+            )
             if process.return_code == 0:
                 break
             time.sleep(wait)

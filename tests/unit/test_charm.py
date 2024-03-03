@@ -17,7 +17,6 @@ import pytest
 
 import types_
 from charm import WordpressCharm
-from cos import REQUEST_DURATION_MICROSECONDS_BUCKETS
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
 
@@ -984,7 +983,6 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
         for static_config in scrape_config["static_configs"]:
             if "job" in static_config["labels"]:
                 pass
-    metrics_name = "request_duration_microseconds"
     assert harness.charm._logging._promtail_config == {
         "clients": [],
         "positions": {"filename": "/opt/promtail/positions.yaml"},
@@ -994,7 +992,7 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
                 "static_configs": [
                     {
                         "labels": {
-                            "__path__": "/var/log/apache2/access.log",
+                            "__path__": "/var/log/apache2/access.*.log",
                             "job": "juju_test_fa1212ac_wordpress-k8s",
                             "juju_application": "wordpress-k8s",
                             "juju_charm": "wordpress-k8s",
@@ -1006,7 +1004,7 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
                     },
                     {
                         "labels": {
-                            "__path__": "/var/log/apache2/error.log",
+                            "__path__": "/var/log/apache2/error.*.log",
                             "job": "juju_test_fa1212ac_wordpress-k8s",
                             "juju_application": "wordpress-k8s",
                             "juju_charm": "wordpress-k8s",
@@ -1021,11 +1019,38 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
             {
                 "job_name": "access_log_exporter",
                 "pipeline_stages": [
-                    {"logfmt": {"mapping": {metrics_name: metrics_name}}},
+                    {
+                        "logfmt": {
+                            "mapping": {
+                                "content_type": "content_type",
+                                "request_duration_microseconds": "request_duration_microseconds",
+                            }
+                        }
+                    },
+                    {"match": {"action": "drop", "selector": "!= " '"/server-status"'}},
+                    {"labeldrop": ["filename"]},
                     {
                         "metrics": {
-                            metrics_name: {
-                                "config": {"buckets": REQUEST_DURATION_MICROSECONDS_BUCKETS},
+                            "request_duration_microseconds": {
+                                "config": {
+                                    "buckets": [
+                                        10000,
+                                        25000,
+                                        50000,
+                                        100000,
+                                        200000,
+                                        300000,
+                                        400000,
+                                        500000,
+                                        750000,
+                                        1000000,
+                                        1500000,
+                                        2000000,
+                                        2500000,
+                                        5000000,
+                                        10000000,
+                                    ]
+                                },
                                 "prefix": "apache_access_log_",
                                 "source": "request_duration_microseconds",
                                 "type": "Histogram",
@@ -1033,7 +1058,7 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
                         }
                     },
                 ],
-                "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.log"}}],
+                "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.*.log"}}],
             },
         ],
         "server": {"grpc_listen_port": 9095, "http_listen_port": 9080},

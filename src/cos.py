@@ -70,8 +70,8 @@ PROM_EXPORTER_PEBBLE_CONFIG = Layer(
 )
 
 APACHE_LOG_PATHS = [
-    "/var/log/apache2/access.log",
-    "/var/log/apache2/error.log",
+    "/var/log/apache2/access.*.log",
+    "/var/log/apache2/error.*.log",
 ]
 
 REQUEST_DURATION_MICROSECONDS_BUCKETS = [
@@ -106,15 +106,23 @@ class ApacheLogProxyConsumer(LogProxyConsumer):
         scrape_configs["scrape_configs"].append(
             {
                 "job_name": "access_log_exporter",
-                "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.log"}}],
+                "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.*.log"}}],
                 "pipeline_stages": [
                     {
                         "logfmt": {
                             "mapping": {
-                                "request_duration_microseconds": "request_duration_microseconds"
+                                "request_duration_microseconds": "request_duration_microseconds",
+                                "content_type": "content_type",
                             }
                         }
                     },
+                    {
+                        "match": {
+                            "selector": '!= "/server-status"',
+                            "action": "drop",
+                        }
+                    },
+                    {"labeldrop": ["filename"]},
                     {
                         "metrics": {
                             "request_duration_microseconds": {

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+log_pattern="/var/log/apache2/error.*.log"
+max_size=$((4*1024*1024*1024))
+
+while [ $(du -cb $log_pattern | tail -n 1 | cut -f1) -gt $max_size ]; do
+    oldest=$(ls $log_pattern | sort | head -n 1)
+    if [ -n "$oldest" ]; then
+        rm -f "$oldest"
+    else
+        break
+    fi
+done

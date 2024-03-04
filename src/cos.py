@@ -135,6 +135,7 @@ class ApacheLogProxyConsumer(LogProxyConsumer):
                             }
                         }
                     },
+                    {"drop": {"expression": ".*"}},
                 ],
             }
         )

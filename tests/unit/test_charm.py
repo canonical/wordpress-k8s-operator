@@ -1042,6 +1042,7 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
                             }
                         }
                     },
+                    {"drop": {"expression": ".*"}},
                 ],
                 "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.*.log"}}],
             },

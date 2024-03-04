@@ -1,4 +1,8 @@
 #!/bin/bash
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+# shellcheck disable=SC2012,SC2046,SC2086
 
 log_pattern="/var/log/apache2/error.*.log"
 max_size=$((4*1024*1024*1024))

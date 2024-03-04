@@ -17,6 +17,7 @@ import pytest
 
 import types_
 from charm import WordpressCharm
+from cos import REQUEST_DURATION_MICROSECONDS_BUCKETS
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
 
@@ -1023,34 +1024,18 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
                         "logfmt": {
                             "mapping": {
                                 "content_type": "content_type",
+                                "path": "path",
                                 "request_duration_microseconds": "request_duration_microseconds",
                             }
                         }
                     },
-                    {"match": {"action": "drop", "selector": "!= " '"/server-status"'}},
-                    {"labeldrop": ["filename"]},
+                    {"labels": {"content_type": "content_type", "path": "path"}},
+                    {"match": {"action": "drop", "selector": '{path=~"^/server-status.*$"}'}},
+                    {"labeldrop": ["filename", "path"]},
                     {
                         "metrics": {
                             "request_duration_microseconds": {
-                                "config": {
-                                    "buckets": [
-                                        10000,
-                                        25000,
-                                        50000,
-                                        100000,
-                                        200000,
-                                        300000,
-                                        400000,
-                                        500000,
-                                        750000,
-                                        1000000,
-                                        1500000,
-                                        2000000,
-                                        2500000,
-                                        5000000,
-                                        10000000,
-                                    ]
-                                },
+                                "config": {"buckets": REQUEST_DURATION_MICROSECONDS_BUCKETS},
                                 "prefix": "apache_access_log_",
                                 "source": "request_duration_microseconds",
                                 "type": "Histogram",

@@ -113,16 +113,18 @@ class ApacheLogProxyConsumer(LogProxyConsumer):
                             "mapping": {
                                 "request_duration_microseconds": "request_duration_microseconds",
                                 "content_type": "content_type",
+                                "path": "path",
                             }
                         }
                     },
+                    {"labels": {"content_type": "content_type", "path": "path"}},
                     {
                         "match": {
-                            "selector": '!= "/server-status"',
+                            "selector": '{path=~"^/server-status.*$"}',
                             "action": "drop",
                         }
                     },
-                    {"labeldrop": ["filename"]},
+                    {"labeldrop": ["filename", "path"]},
                     {
                         "metrics": {
                             "request_duration_microseconds": {

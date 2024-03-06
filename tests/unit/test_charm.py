@@ -17,6 +17,7 @@ import pytest
 
 import types_
 from charm import WordpressCharm
+from cos import REQUEST_DURATION_MICROSECONDS_BUCKETS
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
 
@@ -964,3 +965,87 @@ def test_only_valid_https_proxy_config(
     assert charm.state.proxy_config.https_proxy == proxy_url
     wp_config = charm._gen_wp_config()
     assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_wordpress_promtail_config(harness: ops.testing.Harness):
+    """
+    arrange: no arrange.
+    act: generate loki promtail config..
+    assert: promtail configuration contains pipeline stages to export apache access logs.
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.set_model_name("test")
+    harness.set_model_uuid("fa1212ac-4cc7-4390-82df-485a1aefc8e8")
+
+    harness.begin_with_initial_hooks()
+    promtail_config = harness.charm._logging._promtail_config
+    for scrape_config in promtail_config["scrape_configs"]:
+        for static_config in scrape_config["static_configs"]:
+            if "job" in static_config["labels"]:
+                pass
+    assert harness.charm._logging._promtail_config == {
+        "clients": [],
+        "positions": {"filename": "/opt/promtail/positions.yaml"},
+        "scrape_configs": [
+            {
+                "job_name": "system",
+                "static_configs": [
+                    {
+                        "labels": {
+                            "__path__": "/var/log/apache2/access.*.log",
+                            "job": "juju_test_fa1212ac_wordpress-k8s",
+                            "juju_application": "wordpress-k8s",
+                            "juju_charm": "wordpress-k8s",
+                            "juju_model": "test",
+                            "juju_model_uuid": "fa1212ac-4cc7-4390-82df-485a1aefc8e8",
+                            "juju_unit": "wordpress-k8s/0",
+                        },
+                        "targets": ["localhost"],
+                    },
+                    {
+                        "labels": {
+                            "__path__": "/var/log/apache2/error.*.log",
+                            "job": "juju_test_fa1212ac_wordpress-k8s",
+                            "juju_application": "wordpress-k8s",
+                            "juju_charm": "wordpress-k8s",
+                            "juju_model": "test",
+                            "juju_model_uuid": "fa1212ac-4cc7-4390-82df-485a1aefc8e8",
+                            "juju_unit": "wordpress-k8s/0",
+                        },
+                        "targets": ["localhost"],
+                    },
+                ],
+            },
+            {
+                "job_name": "access_log_exporter",
+                "pipeline_stages": [
+                    {
+                        "logfmt": {
+                            "mapping": {
+                                "content_type": "content_type",
+                                "path": "path",
+                                "request_duration_microseconds": "request_duration_microseconds",
+                            }
+                        }
+                    },
+                    {"labels": {"content_type": "content_type", "path": "path"}},
+                    {"match": {"action": "drop", "selector": '{path=~"^/server-status.*$"}'}},
+                    {"labeldrop": ["filename", "path"]},
+                    {
+                        "metrics": {
+                            "request_duration_microseconds": {
+                                "config": {"buckets": REQUEST_DURATION_MICROSECONDS_BUCKETS},
+                                "prefix": "apache_access_log_",
+                                "source": "request_duration_microseconds",
+                                "type": "Histogram",
+                            }
+                        }
+                    },
+                    {"drop": {"expression": ".*"}},
+                ],
+                "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.*.log"}}],
+            },
+        ],
+        "server": {"grpc_listen_port": 9095, "http_listen_port": 9080},
+    }

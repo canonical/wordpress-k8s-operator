@@ -23,7 +23,6 @@ import ops.pebble
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
-from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
@@ -39,7 +38,7 @@ from cos import (
     _APACHE_EXPORTER_PEBBLE_SERVICE,
     APACHE_LOG_PATHS,
     PROM_EXPORTER_PEBBLE_CONFIG,
-    WORDPRESS_SCRAPE_JOBS,
+    ApacheLogProxyConsumer,
 )
 from state import CharmConfigInvalidError, State
 
@@ -150,12 +149,30 @@ class WordpressCharm(CharmBase):
         )
 
         self._require_nginx_route()
+        self._logging = ApacheLogProxyConsumer(
+            self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
+        )
+        prometheus_jobs = [
+            {
+                "job_name": "apache_exporter",
+                "static_configs": [{"targets": ["*:9117"]}],
+            }
+        ]
+        if self._logging.loki_endpoints:
+            prometheus_jobs.append(
+                {
+                    "job_name": "promtail",
+                    "static_configs": [{"targets": ["*:9080"]}],
+                }
+            )
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
-            jobs=WORDPRESS_SCRAPE_JOBS,
-        )
-        self._logging = LogProxyConsumer(
-            self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
+            jobs=prometheus_jobs,
+            refresh_event=[
+                self.on.wordpress_pebble_ready,
+                self._logging.on.log_proxy_endpoint_departed,
+                self._logging.on.log_proxy_endpoint_joined,
+            ],
         )
         self._grafana_dashboards = GrafanaDashboardProvider(self)
 
@@ -706,7 +723,8 @@ class WordpressCharm(CharmBase):
                 "wordpress-ready": {
                     "override": "replace",
                     "level": "alive",
-                    "http": {"url": "http://localhost/index.php"},
+                    "http": {"url": "http://localhost"},
+                    "timeout": "5s",
                 },
             },
         }

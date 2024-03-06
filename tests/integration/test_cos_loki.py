@@ -4,7 +4,7 @@
 # pylint: disable=protected-access,too-many-locals
 
 """Integration tests for WordPress charm COS integration."""
-
+import fnmatch
 import functools
 from typing import Iterable
 
@@ -29,7 +29,7 @@ def log_files_exist(unit_address: str, application_name: str, filenames: Iterabl
     """
     series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
     log_files = set(series_data["filename"] for series_data in series["data"])
-    if not all(filename in log_files for filename in filenames):
+    if not all(any(fnmatch.fnmatch(file, pattern) for file in log_files) for pattern in filenames):
         return False
     log_query = requests.get(
         f"http://{unit_address}:3100/loki/api/v1/query",
@@ -59,7 +59,7 @@ async def test_loki_integration(
                 log_files_exist,
                 unit.address,
                 wordpress.name,
-                ("/var/log/apache2/error.log", "/var/log/apache2/access.log"),
+                ("/var/log/apache2/error.*.log", "/var/log/apache2/access.*.log"),
             ),
             timeout=10 * 60,
         )

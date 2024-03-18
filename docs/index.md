@@ -29,3 +29,31 @@ The WordPress Operator is a member of the Ubuntu family. It's an open-source pro
 - [Contribute](Contribute)
 
 Thinking about using the WordPress Operator for your next project? [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
+
+# Contents
+
+1. [Tutorial](tutorial.md)
+1. [How-to](how-to)
+  1. [Contribute](how-to/contribute.md)
+  1. [Integrate with COS](how-to/integrate-with-cos.md)
+  1. [Enable antispam](how-to/enable-antispam.md)
+  1. [Enable WAF](how-to/enable-waf.md)
+  1. [Configure hostname](how-to/configure-hostname.md)
+  1. [Configure initial settings](how-to/configure-initial-settings.md)
+  1. [Retrieve initial credentials](how-to/retrieve-initial-credentials.md)
+  1. [Install plugins](how-to/install-plugins.md)
+  1. [Install themes](how-to/install-themes.md)
+  1. [Configure object storage](how-to/configure-object-storage.md)
+  1. [Rotate secrets](how-to/rotate-secrets.md)
+1. [Reference](reference)
+  1. [Actions](reference/actions.md)
+  1. [Configurations](reference/configurations.md)
+  1. [Integrations](reference/integrations.md)
+  1. [Plugins](reference/plugins.md)
+  1. [Themes](reference/themes.md)
+1. [Explanation](explanation)
+  1. [Overview](explanation/overview.md)
+  1. [Containers](explanation/containers.md)
+  1. [Lifecycle events](explanation/lifecycle-events.md)
+  1. [OCI image](explanation/oci-image.md)
+  1. [Relations](explanation/relations.md)

@@ -394,6 +394,11 @@ class WordpressContainerMock:
 
     def list_files(self, path: str, itself=False):
         """Mock method for :meth:`ops.charm.model.Container.list_files`."""
+        if path == "/var/www/html/wp-content/uploads":
+            file_info_mock = unittest.mock.MagicMock()
+            file_info_mock.user = "_daemon_"
+            file_info_mock.group = "_daemon_"
+            return [file_info_mock]
         if not path.endswith("/"):
             path += "/"
         file_list = []

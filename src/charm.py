@@ -368,7 +368,6 @@ class WordpressCharm(CharmBase):
             _event: required by ops framework, not used.
         """
         self._setup_replica_data(_event)
-        self._change_uploads_directory_ownership(recursive=True)
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.
@@ -1448,25 +1447,20 @@ class WordpressCharm(CharmBase):
         mount_info: str = container.pull("/proc/mounts").read()
         return self._WP_UPLOADS_PATH in mount_info
 
-    def _change_uploads_directory_ownership(self, recursive=False):
-        """Change uploads directory ownership.
+    def _change_uploads_directory_ownership(self):
+        """Change uploads directory ownership, noop if ownership is correct."""
+        dir_current = self._container().list_files(self._WP_UPLOADS_PATH, itself=True)[0]
+        if dir_current.user == self._WORDPRESS_USER and dir_current.group == self._WORDPRESS_GROUP:
+            return
 
-        Args:
-            recursive: Run chown recursively. Defaults to False.
-        """
-        command_list = [
-            "chown",
-            f"{self._WORDPRESS_USER}:{self._WORDPRESS_GROUP}",
-        ]
-
-        if recursive:
-            command_list.append("-R")
-
-        command_list.append(self._WP_UPLOADS_PATH)
         self._container().exec(
-            command_list,
-            timeout=120,
-        )
+            [
+                "chown",
+                f"{self._WORDPRESS_USER}:{self._WORDPRESS_GROUP}",
+                "-R",
+                self._WP_UPLOADS_PATH,
+            ]
+        ).wait()
 
     def _reconciliation(self, _event: EventBase) -> None:
         """Reconcile the WordPress charm on juju event.

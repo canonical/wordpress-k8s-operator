@@ -29,7 +29,7 @@ options:
   plugins:
     type: string
     description: |
-      Plugin slugs of plugins to be installed, separated by comma. Including or excluding
+      Plugin slugs of plugins to be installed and their versions (separated by colons), plugins are separated by comma. Including or excluding
       a default plugin here will have no effect.
     default: ""
   themes:
@@ -37,56 +37,6 @@ options:
     description: |
       Theme slugs of themes to be installed, separated by comma. Including or excluding
       a default theme here will have no effect.
-    default: ""
-  wp_plugin_akismet_key:
-    type: string
-    description: Akismet key. If empty, akismet will not be automatically enabled
-    default: ""
-  wp_plugin_openid_team_map:
-    type: string
-    description: >
-      Launchpad teams and corresponding access levels, for use with the openid plugins.
-
-      Valid WordPress access levels are: administrator, editor, author, contributor, subscriber
-
-      If empty, OpenID will not be enabled.
-
-      Format is key=value pairs (where key is the Launchpad team, and value is
-      the WordPress role) - commas separate multiple pairs.
-
-      Example format:
-
-          "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
-    default: ""
-  wp_plugin_openstack-objectstorage_config:
-    type: string
-    description: |
-      YAML dictionary with keys named after WordPress settings and the desired values.
-      Please note that the settings will be reset to values provided every time hooks run.
-      It is important to note that for multi-unit deployments, the `openstack-objectstorage-k8s`
-      plugin must be enabled to sync data across WordPress applications. Furthermore, object ACLs
-      must be configured beforehand to be accessible by public. See openstack 
-      documentation(https://docs.openstack.org/swift/latest/overview_acl.html) for more detail.
-
-      ```
-      auth-url: authentication URL to openstack. Example: http://10.100.115.2/identity/v3
-      bucket: name of the bucket for WordPress. Example: WordPress
-      copy-to-swift: Value ‘1’ or ‘0’ denoting true, false respectively on whether to
-        copy the local data to swift. Example: 1
-      domain: OpenStack Project domain ID. Example: Default
-      object-prefix: Object path prefix. Example: wp-content/uploads/
-      password: OpenStack password. Example: openstack_secret_password
-      region: OpenStack region. Example: RegionOne
-      remove-local-file: Value ‘1’ or ‘0’ denoting true, false respectively on whether to remove local
-        file. Example: 0
-      serve-from-swift: Value ‘1’ or ‘0’ denoting true, false respectively on whether to serve the
-        contents file directly from swift. If set, media URLs to path $WORDPRESS_IP/wp-content/uploads/
-        will be proxied to $OPENSTACK_IP/{account}/{container}/{object-prefix}/. Example: 1
-      swift-url: OpenStack Swift URL.
-        example: http://10.100.115.2:8080/v3/AUTH_1d449b4237d3499dabd95210c33ca150
-      tenant: OpenStack tenant name. Example: demo
-      username: OpenStack username. Example: demo
-      ```
     default: ""
   use_nginx_ingress_modsec:
     type: boolean

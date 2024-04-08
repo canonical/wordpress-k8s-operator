@@ -59,3 +59,5 @@ requires:
     limit: 1
   logging:
     interface: loki_push_api
+  plugin:
+    interface: plugin

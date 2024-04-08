@@ -288,10 +288,10 @@ def test_core_reconciliation_before_database_ready(
     ), "unit should wait for database connection info"
 
 
-def test_addon_reconciliation_fail(harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch):
+def test_theme_reconciliation_fail(harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched _wp_addon_list that returns an unsuccessful ExecResult.
-    act: when _addon_reconciliation is called.
+    act: when _theme_reconciliation is called.
     assert: WordPressBlockedStatusException is raised
     """
     harness.begin()
@@ -304,7 +304,7 @@ def test_addon_reconciliation_fail(harness: ops.testing.Harness, monkeypatch: py
     )
 
     with pytest.raises(WordPressBlockedStatusException):
-        charm._addon_reconciliation("theme")
+        charm._theme_reconciliation()
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -540,19 +540,19 @@ def test_plugin_reconciliation(
     )
 
     assert patch.container.installed_plugins == set(
-        charm._WORDPRESS_DEFAULT_PLUGINS
-    ), "installed plugins should match the default installed plugins with the default plugins config"
+        []
+    ), "there should be no plugins installed"
 
-    harness.update_config({"plugins": "123, abc"})
+    harness.update_config({"plugins": "123,abc"})
 
     assert patch.container.installed_plugins == set(
-        charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]
+        ["abc", "123"]
     ), "adding plugins to plugins config should trigger plugin installation"
 
     harness.update_config({"plugins": "123"})
 
     assert patch.container.installed_plugins == set(
-        charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]
+        ["123"]
     ), "removing plugins from plugins config should trigger plugin deletion"
 
 

@@ -18,3 +18,5 @@ parts:
       - ops-lib-mysql
     charm-binary-python-packages:
       - mysql-connector-python
+    build-packages:
+      - git

@@ -357,7 +357,7 @@ class WordpressContainerMock:
         self.original_pebble = None
         self.fs: typing.Dict[str, str] = {"/proc/mounts": ""}
         self._wordpress_database_mock = wordpress_database_mock
-        self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
+        self.installed_plugins = set([])
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
         self.wp_eval_history: typing.List[str] = []
 

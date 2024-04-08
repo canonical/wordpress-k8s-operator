@@ -5,6 +5,7 @@ name: wordpress
 summary: Wordpress rock
 description: Wordpress OCI image for the Wordpress charm
 base: ubuntu:20.04
+build-base: ubuntu:20.04
 run-user: _daemon_
 license: Apache-2.0
 version: "1.0"
@@ -74,6 +75,9 @@ parts:
       - WP_VERSION: 6.4.3
     build-packages:
       - curl
+    stage-packages:
+      - git
+      - zip
     stage-snaps:
     - rocks-apache-prometheus-exporter/latest/edge
     override-build: |
@@ -87,93 +91,6 @@ parts:
     organize:
       wordpress_install_dir: /var/www/html
       wp: /usr/local/bin/wp
-  # Wordpress plugins
-  get-wordpress-plugins:
-    plugin: nil
-    after:
-      - wordpress
-    build-packages:
-      - curl
-      - unzip
-    build-environment:
-      - WP_PLUGINS: >-
-          404page
-          all-in-one-event-calendar
-          coschedule-by-todaymade
-          elementor
-          essential-addons-for-elementor-lite
-          favicon-by-realfavicongenerator
-          feedwordpress
-          genesis-columns-advanced
-          line-break-shortcode
-          no-category-base-wpml
-          post-grid
-          powerpress
-          redirection
-          relative-image-urls
-          rel-publisher
-          safe-svg
-          show-current-template
-          simple-301-redirects
-          simple-custom-css
-          so-widgets-bundle
-          svg-support
-          syntaxhighlighter
-          wordpress-importer
-          wp-font-awesome
-          wp-lightbox-2
-          wp-markdown
-          wp-mastodon-share
-          wp-polls
-          wp-statistics
-          wordpress-seo
-    override-build: |
-      for plugin in $WP_PLUGINS;
-        do
-          curl -sSL "https://downloads.wordpress.org/plugin/${plugin}.latest-stable.zip" -o "${plugin}.zip"
-          unzip -q "${plugin}.zip"
-          rm "${plugin}.zip"
-      done
-      curl -sSL "https://downloads.wordpress.org/plugin/openid.3.5.0.zip" -o "openid.zip"
-      unzip -q "openid.zip"
-      rm "openid.zip"
-      cp -R . $CRAFT_PART_INSTALL
-    organize:
-      "*": /var/www/html/wp-content/plugins/
-  ## Plugins fetched via git
-  get-wordpress-launchpad-integration:
-    after:
-      - get-wordpress-plugins
-    plugin: dump
-    source: https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/wordpress-launchpad-integration
-    source-type: git
-    organize:
-      "*": /var/www/html/wp-content/plugins/wordpress-launchpad-integration/
-  get-wordpress-teams-integration:
-    after:
-      - get-wordpress-plugins
-    plugin: dump
-    source: https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration
-    source-type: git
-    organize:
-      "*": /var/www/html/wp-content/plugins/wordpress-teams-integration/
-  get-openstack-objectstorage-k8s:
-    after:
-      - get-wordpress-plugins
-    plugin: dump
-    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s
-    source-type: git
-    organize:
-      "*": /var/www/html/wp-content/plugins/openstack-objectstorage-k8s/
-  get-wp-plugin-xubuntu-team-members:
-    after:
-      - get-wordpress-plugins
-    plugin: dump
-    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-plugin-xubuntu-team-members
-    source-type: git
-    organize:
-      "*": /var/www/html/wp-content/plugins/xubuntu-team-members/
-  # Wordpress themes
   get-light-wordpress-theme:
     after:
       - wordpress
@@ -284,10 +201,6 @@ parts:
   wordpress-configure:
     plugin: nil
     after:
-      - get-wordpress-launchpad-integration
-      - get-wordpress-teams-integration
-      - get-openstack-objectstorage-k8s
-      - get-wp-plugin-xubuntu-team-members
       - get-light-wordpress-theme
       - get-wp-theme-mscom
       - get-wp-theme-thematic

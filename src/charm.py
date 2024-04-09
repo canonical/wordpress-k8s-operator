@@ -11,9 +11,7 @@ import logging
 import os
 import re
 import secrets
-import shutil
 import string
-import tempfile
 import textwrap
 import time
 import traceback
@@ -26,14 +24,20 @@ import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
-from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.plugin_integrator.v0.plugin import PluginRequires
-from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
+from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
+from ops.charm import (
+    ActionEvent,
+    CharmBase,
+    HookEvent,
+    PebbleReadyEvent,
+    RelationEvent,
+    UpgradeCharmEvent,
+)
 from ops.framework import EventBase
 from ops.main import main
 from ops.model import ActiveStatus, RelationDataContent, WaitingStatus
 from ops.pebble import ExecProcess
-from yaml import safe_load
 
 import exceptions
 import types_
@@ -157,7 +161,9 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.wordpress_pebble_ready, self._set_version)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
-        self.framework.observe(self.plugins.on.reconcile_plugins, self._complex_plugin_reconciliation)
+        self.framework.observe(
+            self.plugins.on.reconcile_plugins, self._complex_plugin_reconciliation
+        )
 
     def _set_version(self, _: PebbleReadyEvent) -> None:
         """Set WordPress application version to Juju charm's app version status."""
@@ -866,12 +872,16 @@ class WordpressCharm(CharmBase):
                 message=f"wp {addon_type} list command failed, stdout is not json",
             )
 
-    def _wp_addon_install(self, addon_type: str, addon_name: str = "", addon_version: str = "", addon_zip: str = "") -> types_.ExecResult:
+    def _wp_addon_install(
+        self, addon_type: str, addon_name: str = "", addon_version: str = "", addon_zip: str = ""
+    ) -> types_.ExecResult:
         """Install WordPress addon (plugin/theme).
 
         Args:
-            addon_type (str): ``"theme"`` or ``"plugin"``.
-            addon_name (str): name of the addon that needs to be installed.
+            addon_type: ``"theme"`` or ``"plugin"``.
+            addon_name: name of the addon that needs to be installed.
+            addon_version: version of the addon that needs to be installed.
+            addon_zip: zip file containing the addon.
 
         Returns:
             Result of installation command.
@@ -888,14 +898,13 @@ class WordpressCharm(CharmBase):
                 addon_version = "latest"
             cmd = ["wp", "plugin", "install", addon_name, f"--version={addon_version}"]
         return self._wrapped_run_wp_cli(cmd, timeout=600)
-    
 
     def _wp_plugin_update(self, plugin_name: str, plugin_version: str = "") -> types_.ExecResult:
         """Install WordPress addon (plugin/theme).
 
         Args:
-            addon_type (str): ``"theme"`` or ``"plugin"``.
-            addon_name (str): name of the addon that needs to be installed.
+            plugin_name: name of the plugin that needs to be installed.
+            plugin_version: version of the plugin that needs to be installed.
 
         Returns:
             Result of installation command.
@@ -904,7 +913,6 @@ class WordpressCharm(CharmBase):
             plugin_version = "latest"
         cmd = ["wp", "plugin", "update", plugin_name, f"--version={plugin_version}"]
         return self._wrapped_run_wp_cli(cmd, timeout=600)
-
 
     def _wp_addon_uninstall(self, addon_type: str, addon_name: str) -> types_.ExecResult:
         """Uninstall WordPress addon (theme/plugin).
@@ -940,25 +948,66 @@ class WordpressCharm(CharmBase):
             return
         current_installed_plugins = set((t["name"], t["version"]) for t in exec_result.result)
         plugins_in_config_no_filter = [
-            (t.strip().split(":")[0], t.strip().split(":")[1]) for t in self.model.config[f"plugins"].split(",") if t.strip()
+            (t.strip().split(":")[0], t.strip().split(":")[1])
+            for t in self.model.config["plugins"].split(",")
+            if t.strip()
         ]
         complex_plugins = ["akismet", "openid", "openstack-objectstorage-k8s"]
-        filtered_plugins = filter(lambda a: a[0] not in complex_plugins, plugins_in_config_no_filter)
+        filtered_plugins = filter(
+            lambda a: a[0] not in complex_plugins, plugins_in_config_no_filter
+        )
         plugins_in_config = list(filtered_plugins)
-        plugins_update = [tup for tup in plugins_in_config if any(i[1] not in tup and i[0] in tup for i in current_installed_plugins)]
-        plugins_install_no_filter = [tup for tup in plugins_in_config if all(i[0] not in tup for i in current_installed_plugins)]
-        plugins_uninstall = [tup for tup in current_installed_plugins if all(i[0] not in tup for i in plugins_in_config)]
+        plugins_update = [
+            tup
+            for tup in plugins_in_config
+            if any(i[1] not in tup and i[0] in tup for i in current_installed_plugins)
+        ]
+        plugins_install_no_filter = [
+            tup
+            for tup in plugins_in_config
+            if all(i[0] not in tup for i in current_installed_plugins)
+        ]
+        plugins_uninstall = [
+            tup
+            for tup in current_installed_plugins
+            if all(i[0] not in tup for i in plugins_in_config)
+        ]
         filtered_install = filter(lambda a: a[0] not in complex_plugins, plugins_install_no_filter)
-        plugins_install= list(filtered_install)
+        plugins_install = list(filtered_install)
+        self._simple_plugin_install(plugins_install)
+        self._simple_plugin_update(plugins_update)
+        self._simple_plugin_uninstall(plugins_uninstall)
+
+    def _simple_plugin_install(self, plugins_install: list[str]) -> None:
+        """Installation of simple plugins.
+
+        Args:
+            plugins_install: Plugins that need to be installed
+
+        Raises:
+            WordPressBlockedStatusException: When the installation fails for a plugin
+        """
         for plugin in plugins_install:
             if len(plugin) == 1:
                 plugin.append("")
             logger.info("Install plugin: %s", repr(plugin))
-            exec_result = self._wp_addon_install(addon_type="plugin", addon_name=plugin[0], addon_version=plugin[1])
+            exec_result = self._wp_addon_install(
+                addon_type="plugin", addon_name=plugin[0], addon_version=plugin[1]
+            )
             if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to install plugin {repr(plugin)}"
                 )
+
+    def _simple_plugin_update(self, plugins_update: list[str]) -> None:
+        """Update of simple plugins.
+
+        Args:
+            plugins_update: Plugins that need to be updated
+
+        Raises:
+            WordPressBlockedStatusException: When the update fails for a plugin
+        """
         for plugin in plugins_update:
             logger.info("Update plugin: %s", repr(plugin))
             if len(plugin) == 1 and ".zip" not in plugin[0]:
@@ -968,6 +1017,16 @@ class WordpressCharm(CharmBase):
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to update plugin {repr(plugin)}"
                 )
+
+    def _simple_plugin_uninstall(self, plugins_uninstall: list[str]) -> None:
+        """Uninstallation of simple plugins.
+
+        Args:
+            plugins_uninstall: Plugins that need to be uninstalled
+
+        Raises:
+            WordPressBlockedStatusException: When the uninstallation fails for a plugin
+        """
         for plugin in plugins_uninstall:
             logger.info("Uninstall plugin: %s", repr(plugin))
             exec_result = self._wp_addon_uninstall(addon_type="plugin", addon_name=plugin[0])
@@ -980,6 +1039,10 @@ class WordpressCharm(CharmBase):
         """Reconciliation process for WordPress themes.
 
         Install and uninstall themes to match the themes setting in config.
+
+        Raises:
+            WordPressBlockedStatusException: If the themes can't be managed
+
         """
         logger.info("Start theme reconciliation process")
         exec_result = self._wp_addon_list("theme")
@@ -990,12 +1053,8 @@ class WordpressCharm(CharmBase):
             return
         current_installed_themes = set(t["name"] for t in exec_result.result)
         logger.debug("Currently installed themes: %s", current_installed_themes)
-        themes_in_config = [
-            t.strip() for t in self.model.config["themes"].split(",") if t.strip()
-        ]
-        default_themes = (
-            self._WORDPRESS_DEFAULT_THEMES
-        )
+        themes_in_config = [t.strip() for t in self.model.config["themes"].split(",") if t.strip()]
+        default_themes = self._WORDPRESS_DEFAULT_THEMES
         desired_themes = set(itertools.chain(themes_in_config, default_themes))
         install_themes = desired_themes - current_installed_themes
         uninstall_themes = current_installed_themes - desired_themes
@@ -1412,7 +1471,14 @@ class WordpressCharm(CharmBase):
             )
 
     def _plugin_swift_reconciliation(self, event) -> None:
-        """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin."""        
+        """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin.
+
+        Args:
+            event: RelationEvent fired by the plugin integrator.
+
+        Raises:
+            WordPressBlockedStatusException: If the plugins can't be listed
+        """
         exec_result = self._wp_addon_list("plugin")
         if not exec_result.success:
             logger.error("Failed to list plugins, %s", exec_result.message)
@@ -1420,10 +1486,12 @@ class WordpressCharm(CharmBase):
         if not exec_result.result:
             return
         current_installed_plugins = set(t["name"] for t in exec_result.result)
-        swift_installed = any(name=="openstack-objectstorage-k8s" for name in current_installed_plugins)
+        swift_installed = any(
+            name == "openstack-objectstorage-k8s" for name in current_installed_plugins
+        )
         if not swift_installed:
             self._zip_swift_plugin()
-            
+
         swift_config = self._swift_config()
         if self.unit.is_leader():
             self._config_swift_plugin(swift_config)
@@ -1449,12 +1517,17 @@ class WordpressCharm(CharmBase):
             self._apache_enable_config(apache_swift_conf, conf)
         elif not swift_config and swift_apache_config_enabled:
             self._apache_disable_config(apache_swift_conf)
-    
+
     def _zip_swift_plugin(self) -> str:
         """Get the openstack-objectstorage-k8s repo and zip it."""
         container = self._container()
         process_git = container.exec(
-            ["git", "clone", "https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s", "/var/www/html/wp-content/plugins/openstack-objectstorage-k8s/"]
+            [
+                "git",
+                "clone",
+                "https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s",
+                "/var/www/html/wp-content/plugins/openstack-objectstorage-k8s/",
+            ]
         )
         process_git.wait()
 
@@ -1469,12 +1542,15 @@ class WordpressCharm(CharmBase):
             for container_name in self.model.unit.containers
         )
 
-    def _complex_plugin_reconciliation(self, event) -> None:
+    def _complex_plugin_reconciliation(self, event: RelationEvent) -> None:
         """Reconciliation process for WordPress plugins.
 
         Install and uninstall plugins to match the plugins setting in config.
         Activate and deactivate three charm managed plugins (akismet, openid, openstack-swift)
         and adjust plugin options for these three plugins according to charm config.
+
+        Args:
+            event: The relation event fired by the plugin integrator.
         """
         if self._current_wp_config() is None:
             logger.info("WP config file is not yet created, deferring plugin event")

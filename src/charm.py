@@ -958,7 +958,9 @@ class WordpressCharm(CharmBase):
         current_installed_addons = set(t["name"] for t in exec_result.result)
         logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
         addons_in_config = [
-            t.strip() for t in self.model.config[f"{addon_type}s"].split(",") if t.strip()
+            t.strip()
+            for t in cast(str, self.model.config[f"{addon_type}s"]).split(",")
+            if t.strip()
         ]
         default_addons = (
             self._WORDPRESS_DEFAULT_THEMES
@@ -1156,7 +1158,7 @@ class WordpressCharm(CharmBase):
         Raises:
             WordPressBlockedStatusException: if askimet plugin reconciliation process fails.
         """
-        akismet_key = self.model.config["wp_plugin_akismet_key"].strip()
+        akismet_key = cast(str, self.model.config["wp_plugin_akismet_key"]).strip()
         if not akismet_key:
             result = self._deactivate_plugin(
                 "akismet",
@@ -1215,7 +1217,7 @@ class WordpressCharm(CharmBase):
 
     def _plugin_openid_reconciliation(self) -> None:
         """Reconciliation process for the openid plugin."""
-        openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
+        openid_team_map = cast(str, self.model.config["wp_plugin_openid_team_map"]).strip()
         result = None
 
         def check_result():
@@ -1310,7 +1312,7 @@ class WordpressCharm(CharmBase):
         Returns:
             Swift configuration in dict.
         """
-        swift_config_str = self.model.config["wp_plugin_openstack-objectstorage_config"]
+        swift_config_str = cast(str, self.model.config["wp_plugin_openstack-objectstorage_config"])
         required_swift_config_key = [
             "auth-url",
             "bucket",

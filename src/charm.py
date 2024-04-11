@@ -944,14 +944,12 @@ class WordpressCharm(CharmBase):
         if not exec_result.success:
             logger.error("Failed to list plugins, %s", exec_result.message)
             raise exceptions.WordPressBlockedStatusException("Failed to list plugins.")
-        if not exec_result.result:
-            return
-        current_installed_plugins = set((t["name"], t["version"]) for t in exec_result.result)
+        current_installed_plugins = set() if not exec_result.result else set((t["name"], t["version"]) for t in exec_result.result)
         plugins_in_config_no_filter = [
-            (t.strip().split(":")[0], t.strip().split(":")[1])
+            (t.strip().split(":")[0], "" if len(t.strip().split(":")) == 1 else t.strip().split(":")[1])
             for t in self.model.config["plugins"].split(",")
             if t.strip()
-        ]
+        ] if self.model.config["plugins"] else []
         complex_plugins = ["akismet", "openid", "openstack-objectstorage-k8s"]
         filtered_plugins = filter(
             lambda a: a[0] not in complex_plugins, plugins_in_config_no_filter
@@ -1049,8 +1047,6 @@ class WordpressCharm(CharmBase):
         if not exec_result.success:
             logger.error("Failed to list themes, %s", exec_result.message)
             raise exceptions.WordPressBlockedStatusException("Failed to list themes.")
-        if not exec_result.result:
-            return
         current_installed_themes = set(t["name"] for t in exec_result.result)
         logger.debug("Currently installed themes: %s", current_installed_themes)
         themes_in_config = [t.strip() for t in self.model.config["themes"].split(",") if t.strip()]
@@ -1483,8 +1479,6 @@ class WordpressCharm(CharmBase):
         if not exec_result.success:
             logger.error("Failed to list plugins, %s", exec_result.message)
             raise exceptions.WordPressBlockedStatusException("Failed to list plugins.")
-        if not exec_result.result:
-            return
         current_installed_plugins = set(t["name"] for t in exec_result.result)
         swift_installed = any(
             name == "openstack-objectstorage-k8s" for name in current_installed_plugins

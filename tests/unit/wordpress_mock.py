@@ -334,6 +334,18 @@ class ExecProcessMock:
                 [], exit_code=self._return_code, stdout=self._stdout, stderr=self._stderr
             )
         return self._stdout, self._stderr
+    
+    def wait(self) -> None:
+        """Mock method for :meth:`ops.pebble.ExecProcess.wait`.
+
+        Raises:
+            ExecError: if the command execution fails.
+        """
+        if self._return_code != 0:
+            raise ops.pebble.ExecError(
+                [], exit_code=self._return_code, stdout=self._stdout, stderr=self._stderr
+            )
+        return
 
 
 class WordpressContainerMock:
@@ -515,6 +527,13 @@ class WordpressContainerMock:
             )
         self.installed_themes.remove(theme)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
+    
+    @_exec_handler.register(lambda cmd: cmd[:2] == ["git", "clone"])
+    def _mock_git_clone(self, cmd):
+        """Simulate ``git clone <repo>`` command execution in the container."""
+        repo = cmd[2]
+        self.fs[f"/var/www/html/wp-content/plugins/openstack-objectstorage-k8s"] = repo
+        return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "list"])
     def _mock_wp_plugin_list(self, cmd):
@@ -525,7 +544,7 @@ class WordpressContainerMock:
             return_code=0,
             stdout=json.dumps(
                 [
-                    {"name": t, "status": "active" if t in active_plugins else "inactive"}
+                    {"name": t, "status": "active" if t in active_plugins else "inactive", "version": "latest"}
                     for t in self.installed_plugins
                 ]
             ),
@@ -535,6 +554,13 @@ class WordpressContainerMock:
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "install"])
     def _mock_wp_plugin_install(self, cmd):
         """Simulate ``wp plugin install <plugin>`` command execution in the container."""
+        plugin = cmd[3]
+        self.installed_plugins.add(plugin)
+        return ExecProcessMock(return_code=0, stdout="", stderr="")
+    
+    @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "update"])
+    def _mock_wp_plugin_update(self, cmd):
+        """Simulate ``wp plugin update <plugin>`` command execution in the container."""
         plugin = cmd[3]
         self.installed_plugins.add(plugin)
         return ExecProcessMock(return_code=0, stdout="", stderr="")

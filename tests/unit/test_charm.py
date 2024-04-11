@@ -542,8 +542,6 @@ def test_plugin_reconciliation(
 
     harness.update_config({"plugins": "123,abc"})
 
-    # import pdb; pdb.set_trace()
-
     assert patch.container.installed_plugins == set(
         ["abc", "123"]
     ), "adding plugins to plugins config should trigger plugin installation"
@@ -692,6 +690,7 @@ def test_swift_plugin(
     patch: WordpressPatch,
     setup_replica_consensus: typing.Callable[[], dict],
     setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
+    monkeypatch: pytest.MonkeyPatch,
 ):
     """
     arrange: after peer relation established and database ready.
@@ -727,6 +726,14 @@ def test_swift_plugin(
         "wordpress_tests.integration.test_upgrade/wp-content/uploads/",
         "prefix": "wp-content/uploads/",
     }
+    del swift_config["url"]
+    del swift_config["prefix"]
+    swift_config.update(
+        {
+            "swift-url": "http://swift.test:8080/v1/AUTH_fa8326b9fd4f405fb1c5eaafe988f5fd",
+            "object-prefix": "wp-content/uploads/",
+        }
+    )
     relation_id = harness.add_relation("plugin", "openstack-objectstorage-k8s-integrator")
     harness.update_relation_data(
         relation_id=relation_id,
@@ -734,9 +741,17 @@ def test_swift_plugin(
         key_values=swift_config,
     )
     name_dict = {"name": "openstack-objectstorage-k8s-integrator"}
-    app = SimpleNamespace(**name_dict)
-    relation = harness.charm.framework.model.get_relation("plugin", 0)
-    harness.charm.plugins.on.reconcile_plugins.emit(relation, app)
+    name = SimpleNamespace(**name_dict)
+    app_dict = {"app": name}
+    app = SimpleNamespace(**app_dict)
+    # import pdb; pdb.set_trace()
+    monkeypatch.setattr(
+        harness.charm,
+        "_config_swift_plugin",
+        lambda *_args, **_kwargs: None,
+    )
+    with pytest.raises(WordPressBlockedStatusException):
+        harness.charm._complex_plugin_reconciliation(app)
     assert patch.container.installed_plugins == set(["abc", "123"])
 
 

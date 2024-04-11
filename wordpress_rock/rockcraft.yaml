@@ -77,7 +77,6 @@ parts:
       - curl
     stage-packages:
       - git
-      - zip
     stage-snaps:
     - rocks-apache-prometheus-exporter/latest/edge
     override-build: |

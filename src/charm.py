@@ -987,7 +987,7 @@ class WordpressCharm(CharmBase):
         self._simple_plugin_update(plugins_update)
         self._simple_plugin_uninstall(plugins_uninstall)
 
-    def _simple_plugin_install(self, plugins_install: list[tuple[str, str]]) -> None:
+    def _simple_plugin_install(self, plugins_install: List[Tuple[str, str]]) -> None:
         """Installation of simple plugins.
 
         Args:
@@ -1008,7 +1008,7 @@ class WordpressCharm(CharmBase):
                     f"failed to install plugin {repr(plugin)}"
                 )
 
-    def _simple_plugin_update(self, plugins_update: list[tuple[str, str]]) -> None:
+    def _simple_plugin_update(self, plugins_update: List[Tuple[str, str]]) -> None:
         """Update of simple plugins.
 
         Args:
@@ -1027,7 +1027,7 @@ class WordpressCharm(CharmBase):
                     f"failed to update plugin {repr(plugin)}"
                 )
 
-    def _simple_plugin_uninstall(self, plugins_uninstall: list[tuple[Any, Any]]) -> None:
+    def _simple_plugin_uninstall(self, plugins_uninstall: List[Tuple[Any, Any]]) -> None:
         """Uninstallation of simple plugins.
 
         Args:
@@ -1418,7 +1418,6 @@ class WordpressCharm(CharmBase):
             "remove-local-file",
         ]
         swift_config = relation.data[relation.app]  # type: ignore[union-attr]
-        logger.error(swift_config)
         if not swift_config:
             return {}
         # legacy version of the WordPress charm accepts the ``url`` options

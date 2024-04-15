@@ -83,7 +83,6 @@ async def test_wordpress_install_uninstall_plugins(wordpress: WordpressApp):
 
         for wordpress_client in await wordpress.client_for_units():
             expected_plugins = plugins
-            expected_plugins.update(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
             actual_plugins = set(wordpress_client.list_plugins())
             assert (
                 expected_plugins == actual_plugins

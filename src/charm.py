@@ -944,12 +944,23 @@ class WordpressCharm(CharmBase):
         if not exec_result.success:
             logger.error("Failed to list plugins, %s", exec_result.message)
             raise exceptions.WordPressBlockedStatusException("Failed to list plugins.")
-        current_installed_plugins = set() if not exec_result.result else set((t["name"], t["version"]) for t in exec_result.result)
-        plugins_in_config_no_filter = [
-            (t.strip().split(":")[0], "" if len(t.strip().split(":")) == 1 else t.strip().split(":")[1])
-            for t in self.model.config["plugins"].split(",")
-            if t.strip()
-        ] if self.model.config["plugins"] else []
+        current_installed_plugins = (
+            set()
+            if not exec_result.result
+            else set((t["name"], t["version"]) for t in exec_result.result)
+        )
+        plugins_in_config_no_filter = (
+            [
+                (
+                    t.strip().split(":")[0],
+                    "" if len(t.strip().split(":")) == 1 else t.strip().split(":")[1],
+                )
+                for t in self.model.config["plugins"].split(",")
+                if t.strip()
+            ]
+            if self.model.config["plugins"]
+            else []
+        )
         complex_plugins = ["akismet", "openid", "openstack-objectstorage-k8s"]
         filtered_plugins = filter(
             lambda a: a[0] not in complex_plugins, plugins_in_config_no_filter
@@ -976,7 +987,7 @@ class WordpressCharm(CharmBase):
         self._simple_plugin_update(plugins_update)
         self._simple_plugin_uninstall(plugins_uninstall)
 
-    def _simple_plugin_install(self, plugins_install: list[str]) -> None:
+    def _simple_plugin_install(self, plugins_install: list[tuple[str, str]]) -> None:
         """Installation of simple plugins.
 
         Args:
@@ -997,7 +1008,7 @@ class WordpressCharm(CharmBase):
                     f"failed to install plugin {repr(plugin)}"
                 )
 
-    def _simple_plugin_update(self, plugins_update: list[str]) -> None:
+    def _simple_plugin_update(self, plugins_update: list[tuple[str, str]]) -> None:
         """Update of simple plugins.
 
         Args:
@@ -1016,7 +1027,7 @@ class WordpressCharm(CharmBase):
                     f"failed to update plugin {repr(plugin)}"
                 )
 
-    def _simple_plugin_uninstall(self, plugins_uninstall: list[str]) -> None:
+    def _simple_plugin_uninstall(self, plugins_uninstall: list[tuple[Any, Any]]) -> None:
         """Uninstallation of simple plugins.
 
         Args:
@@ -1229,31 +1240,31 @@ class WordpressCharm(CharmBase):
                 )
         return types_.ExecResult(success=True, result=None, message="")
 
-    def _plugin_akismet_reconciliation(self) -> None:
-        """Reconciliation process for the akismet plugin.
+    # def _plugin_akismet_reconciliation(self) -> None:
+    #     """Reconciliation process for the akismet plugin.
 
-        Raises:
-            WordPressBlockedStatusException: if askimet plugin reconciliation process fails.
-        """
-        akismet_key = self.model.config["wp_plugin_akismet_key"].strip()
-        if not akismet_key:
-            result = self._deactivate_plugin(
-                "akismet",
-                ["akismet_strictness", "akismet_show_user_comments_approved", "wordpress_api_key"],
-            )
-        else:
-            result = self._activate_plugin(
-                "akismet",
-                {
-                    "akismet_strictness": "0",
-                    "akismet_show_user_comments_approved": "0",
-                    "wordpress_api_key": akismet_key,
-                },
-            )
-        if not result.success:
-            raise exceptions.WordPressBlockedStatusException(
-                f"Unable to config akismet plugin, {result.message}"
-            )
+    #     Raises:
+    #         WordPressBlockedStatusException: if askimet plugin reconciliation process fails.
+    #     """
+    #     akismet_key = self.model.config["wp_plugin_akismet_key"].strip()
+    #     if not akismet_key:
+    #         result = self._deactivate_plugin(
+    #             "akismet",
+    #           ["akismet_strictness", "akismet_show_user_comments_approved", "wordpress_api_key"],
+    #         )
+    #     else:
+    #         result = self._activate_plugin(
+    #             "akismet",
+    #             {
+    #                 "akismet_strictness": "0",
+    #                 "akismet_show_user_comments_approved": "0",
+    #                 "wordpress_api_key": akismet_key,
+    #             },
+    #         )
+    #     if not result.success:
+    #         raise exceptions.WordPressBlockedStatusException(
+    #             f"Unable to config akismet plugin, {result.message}"
+    #         )
 
     def _wp_eval(self, php_code: str):
         """Execute arbitrary PHP code.
@@ -1292,53 +1303,53 @@ class WordpressCharm(CharmBase):
             )
         return f"array({''.join(array_items)})"
 
-    def _plugin_openid_reconciliation(self) -> None:
-        """Reconciliation process for the openid plugin."""
-        openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
-        result = None
+    # def _plugin_openid_reconciliation(self) -> None:
+    #     """Reconciliation process for the openid plugin."""
+    #     openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
+    #     result = None
 
-        def check_result():
-            """Assert successful result of executed command.
+    #     def check_result():
+    #         """Assert successful result of executed command.
 
-            Raises:
-                WordPressBlockedStatusException: if unsuccessful result was returned.
-            """
-            if not result or not result.success:
-                raise exceptions.WordPressBlockedStatusException(
-                    f"Unable to config openid plugin, {result.message}"
-                )
+    #         Raises:
+    #             WordPressBlockedStatusException: if unsuccessful result was returned.
+    #         """
+    #         if not result or not result.success:
+    #             raise exceptions.WordPressBlockedStatusException(
+    #                 f"Unable to config openid plugin, {result.message}"
+    #             )
 
-        if not openid_team_map:
-            result = self._wp_option_update("users_can_register", "0")
-            check_result()
-            result = self._deactivate_plugin(
-                "wordpress-teams-integration", ["openid_teams_trust_list"]
-            )
-            check_result()
-            result = self._deactivate_plugin("wordpress-launchpad-integration", [])
-            check_result()
-            result = self._deactivate_plugin("openid", ["openid_required_for_registration"])
-            check_result()
-        else:
-            result = self._activate_plugin(
-                "openid",
-                {
-                    "openid_required_for_registration": "1",
-                },
-            )
-            check_result()
-            result = self._activate_plugin("wordpress-launchpad-integration", {})
-            check_result()
-            result = self._activate_plugin("wordpress-teams-integration", {})
-            check_result()
-            result = self._wp_eval(
-                "update_option("
-                f"'openid_teams_trust_list', {self._encode_openid_team_map(openid_team_map)}"
-                ");"
-            )
-            check_result()
-            result = self._wp_option_update("users_can_register", "1")
-            check_result()
+    #     if not openid_team_map:
+    #         result = self._wp_option_update("users_can_register", "0")
+    #         check_result()
+    #         result = self._deactivate_plugin(
+    #             "wordpress-teams-integration", ["openid_teams_trust_list"]
+    #         )
+    #         check_result()
+    #         result = self._deactivate_plugin("wordpress-launchpad-integration", [])
+    #         check_result()
+    #         result = self._deactivate_plugin("openid", ["openid_required_for_registration"])
+    #         check_result()
+    #     else:
+    #         result = self._activate_plugin(
+    #             "openid",
+    #             {
+    #                 "openid_required_for_registration": "1",
+    #             },
+    #         )
+    #         check_result()
+    #         result = self._activate_plugin("wordpress-launchpad-integration", {})
+    #         check_result()
+    #         result = self._activate_plugin("wordpress-teams-integration", {})
+    #         check_result()
+    #         result = self._wp_eval(
+    #             "update_option("
+    #             f"'openid_teams_trust_list', {self._encode_openid_team_map(openid_team_map)}"
+    #             ");"
+    #         )
+    #         check_result()
+    #         result = self._wp_option_update("users_can_register", "1")
+    #         check_result()
 
     def _apache_config_is_enabled(self, conf_name: str) -> bool:
         """Check if a specified apache configuration file is enabled.
@@ -1390,7 +1401,7 @@ class WordpressCharm(CharmBase):
             Swift configuration in dict.
         """
         relation = self.model.get_relation("plugin")
-        if relation.data[self.app] is None:
+        if relation.data[self.app] is None:  # type: ignore[union-attr]
             return {}
         required_swift_config_key = [
             "auth-url",
@@ -1406,7 +1417,7 @@ class WordpressCharm(CharmBase):
             "serve-from-swift",
             "remove-local-file",
         ]
-        swift_config = relation.data[relation.app]
+        swift_config = relation.data[relation.app]  # type: ignore[union-attr]
         logger.error(swift_config)
         if not swift_config:
             return {}
@@ -1454,7 +1465,6 @@ class WordpressCharm(CharmBase):
         Raises:
             WordPressBlockedStatusException: if configuration of openstack objectstorage failed.
         """
-        logger.error(swift_config)
         if not swift_config:
             result = self._deactivate_plugin("openstack-objectstorage-k8s", ["object_storage"])
         else:
@@ -1466,11 +1476,8 @@ class WordpressCharm(CharmBase):
                 f"Unable to config openstack-objectstorage-k8s plugin, {result.message}"
             )
 
-    def _plugin_swift_reconciliation(self, event) -> None:
+    def _plugin_swift_reconciliation(self) -> None:
         """Reconciliation process for swift object storage (openstack-objectstorage-k8s) plugin.
-
-        Args:
-            event: RelationEvent fired by the plugin integrator.
 
         Raises:
             WordPressBlockedStatusException: If the plugins can't be listed
@@ -1512,7 +1519,7 @@ class WordpressCharm(CharmBase):
         elif not swift_config and swift_apache_config_enabled:
             self._apache_disable_config(apache_swift_conf)
 
-    def _zip_swift_plugin(self) -> str:
+    def _zip_swift_plugin(self) -> None:
         """Get the openstack-objectstorage-k8s repo and zip it."""
         container = self._container()
         process_git = container.exec(
@@ -1553,11 +1560,11 @@ class WordpressCharm(CharmBase):
             return
         if self.unit.is_leader():
             if event.app.name == "openstack-objectstorage-k8s-integrator":
-                self._plugin_swift_reconciliation(event)
-            elif event.app.name == "akismet-integrator":
-                self._plugin_akismet_reconciliation(event)
-            elif event.app.name == "openid-integrator":
-                self._plugin_openid_reconciliation(event)
+                self._plugin_swift_reconciliation()
+            # elif event.app.name == "akismet-integrator":
+            #     self._plugin_akismet_reconciliation(event)
+            # elif event.app.name == "openid-integrator":
+            #     self._plugin_openid_reconciliation(event)
 
     def _storage_mounted(self) -> bool:
         """Check if the upload storage mounted in the wordpress container.

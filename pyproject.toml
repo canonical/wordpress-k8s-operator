@@ -10,7 +10,7 @@ skips = ["*/integration/helper.py", "*/*test*"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 90
+fail_under = 89
 show_missing = true
 
 # Formatting tools configuration

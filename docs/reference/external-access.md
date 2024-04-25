@@ -1,4 +1,4 @@
-# External Connectivity
+# External Access Requirements
 
 The WordPress charm may need to connect to external services and resources for
 certain functionalities.

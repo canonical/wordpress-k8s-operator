@@ -1,6 +1,6 @@
 # Redeployment Guide
 
-This guide provides the steps necessary for migrating an existing WordPress
+This guide provides the necessary steps for migrating an existing WordPress
 instance to a new charm instance.
 
 ## Migrate Database
@@ -17,10 +17,10 @@ If your media files are stored in Kubernetes
 storage (`wp_plugin_openstack-objectstorage_config` is not configured), use the
 following steps to migrate your files:
 
-1. Use the `kubectl cp` command to transfer files from
+1. Use the `juju scp` command to transfer files from
    the `/var/www/html/wp-content/uploads` directory of the old `wordpress`
    container to a local directory.
-2. Use the `kubectl cp` command again to copy these files from the local
+2. Use the `juju scp` command again to copy these files from the local
    directory to the `/var/www/html/wp-content/uploads` directory in the new
    WordPress charm instance's `wordpress` container.
 

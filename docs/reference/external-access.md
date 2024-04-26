@@ -11,7 +11,8 @@ OpenStack object storage for uploading and retrieval of media and assets.
 ## Akismet Spam Protection Plugin
 
 The Akismet spam protection plugin, when enabled via the `wp_plugin_akismet_key`
-configuration, requires internet access to connect with the Akismet API server.
+configuration, requires internet access to connect with
+the [Akismet API server](https://akismet.com/support/general/connection-issues/).
 This connection is essential for verifying and managing spam content.
 
 ## Installing Additional Plugins or Themes

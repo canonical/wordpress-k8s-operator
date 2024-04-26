@@ -7,7 +7,7 @@ on:
 jobs:
   integration-test:
     name: Integration Test
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@better-build
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       extra-arguments: >-

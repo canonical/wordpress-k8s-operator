@@ -1,4 +1,4 @@
-# Redeployment Guide
+# Redeploy
 
 This guide provides the necessary steps for migrating an existing WordPress
 instance to a new charm instance.

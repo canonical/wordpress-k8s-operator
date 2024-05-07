@@ -27,23 +27,17 @@ WordPress operator.
 
 To build and deploy wordpress-k8s charm from source follow the steps below.
 
-#### Docker image build
+#### Rockcraft image build and upload
 
-Build the `wordpress.Dockerfile` image with the following command.
+Enable MicroK8S registry:
 
-```
-docker build -t wordpress -f wordpress.Dockerfile .
-```
+    microk8s enable registry
 
-#### Microk8s upload docker artifacts
+The following commands import the images in the Docker daemon and push them into
+the registry:
 
-For microk8s to pick up the locally built image, you must export the image and import it within
-microk8s.
-
-```
-docker save wordpress > wordpress.tar
-microk8s ctr image import wordpress.tar
-```
+    cd [project_dir]/wordpress_rock && rockcraft pack
+    skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:wordpress_1.0_amd64.rock docker://localhost:32000/wordpress:latest
 
 #### Build the charm
 
@@ -58,8 +52,8 @@ charmcraft pack
 Deploy the locally built WordPress charm with the following command.
 
 ```
-juju deploy ./wordpress-k8s_ubuntu-22.04-amd64_ubuntu-20.04-amd64.charm \
-  --resource wordpress-image=wordpress
+juju deploy ./wordpress-k8s_ubuntu-22.04-amd64.charm \
+  --resource wordpress-image=localhost:32000/wordpress:latest
 ```
 
 You should now be able to see your local wordpress-k8s charm progress through the stages of the

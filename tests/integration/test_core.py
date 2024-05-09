@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for WordPress charm core functionality."""
@@ -127,4 +127,4 @@ async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
 
     retcode, stdout, _ = await ops_test.run(*cmd)
     assert retcode == 0
-    assert "584792" == stdout
+    assert "584792" == stdout.strip()

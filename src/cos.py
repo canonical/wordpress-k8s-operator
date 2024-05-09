@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """COS integration for WordPress charm."""
 from typing import Dict, List, TypedDict
 
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from ops.pebble import Check, Layer, Service
 
 
@@ -40,17 +41,6 @@ class PrometheusMetricsJob(TypedDict, total=False):
 
 
 APACHE_PROMETHEUS_SCRAPE_PORT = "9117"
-WORDPRESS_SCRAPE_JOBS = [
-    PrometheusMetricsJob(
-        static_configs=[
-            PrometheusStaticConfig(
-                targets=[
-                    f"*:{APACHE_PROMETHEUS_SCRAPE_PORT}",
-                ]
-            )
-        ]
-    )
-]
 _APACHE_EXPORTER_PEBBLE_SERVICE = Service(
     name="apache-exporter",
     raw={
@@ -80,6 +70,73 @@ PROM_EXPORTER_PEBBLE_CONFIG = Layer(
 )
 
 APACHE_LOG_PATHS = [
-    "/var/log/apache2/access.log",
-    "/var/log/apache2/error.log",
+    "/var/log/apache2/access.*.log",
+    "/var/log/apache2/error.*.log",
 ]
+
+REQUEST_DURATION_MICROSECONDS_BUCKETS = [
+    10000,
+    25000,
+    50000,
+    100000,
+    200000,
+    300000,
+    400000,
+    500000,
+    750000,
+    1000000,
+    1500000,
+    2000000,
+    2500000,
+    5000000,
+    10000000,
+]
+
+
+class ApacheLogProxyConsumer(LogProxyConsumer):
+    """Extends LogProxyConsumer to add a metrics pipeline to promtail."""
+
+    def _scrape_configs(self) -> dict:
+        """Generate the scrape_configs section of the Promtail config file.
+
+        Returns:
+            A dict representing the `scrape_configs` section.
+        """
+        scrape_configs = super()._scrape_configs()
+        scrape_configs["scrape_configs"].append(
+            {
+                "job_name": "access_log_exporter",
+                "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.*.log"}}],
+                "pipeline_stages": [
+                    {
+                        "logfmt": {
+                            "mapping": {
+                                "request_duration_microseconds": "request_duration_microseconds",
+                                "content_type": "content_type",
+                                "path": "path",
+                            }
+                        }
+                    },
+                    {"labels": {"content_type": "content_type", "path": "path"}},
+                    {
+                        "match": {
+                            "selector": '{path=~"^/server-status.*$"}',
+                            "action": "drop",
+                        }
+                    },
+                    {"labeldrop": ["filename", "path"]},
+                    {
+                        "metrics": {
+                            "request_duration_microseconds": {
+                                "type": "Histogram",
+                                "source": "request_duration_microseconds",
+                                "prefix": "apache_access_log_",
+                                "config": {"buckets": REQUEST_DURATION_MICROSECONDS_BUCKETS},
+                            }
+                        }
+                    },
+                    {"drop": {"expression": ".*"}},
+                ],
+            }
+        )
+        return scrape_configs

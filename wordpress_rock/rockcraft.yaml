@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 name: wordpress
@@ -71,9 +71,11 @@ parts:
       - apache2
     plugin: nil
     build-environment:
-      - WP_VERSION: 6.4.1
+      - WP_VERSION: 6.4.3
     build-packages:
       - curl
+    stage-snaps:
+    - rocks-apache-prometheus-exporter/latest/edge
     override-build: |
       curl -sSL --create-dirs https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o wp
       chmod +x wp

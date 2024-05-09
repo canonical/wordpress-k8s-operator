@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Charm for WordPress on kubernetes."""
@@ -23,25 +23,23 @@ import ops.pebble
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
-from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import ActionEvent, CharmBase, HookEvent, PebbleReadyEvent, UpgradeCharmEvent
 from ops.framework import EventBase
 from ops.main import main
-from ops.model import (
-    ActiveStatus,
-    BlockedStatus,
-    MaintenanceStatus,
-    RelationDataContent,
-    WaitingStatus,
-)
+from ops.model import ActiveStatus, RelationDataContent, WaitingStatus
 from ops.pebble import ExecProcess
 from yaml import safe_load
 
 import exceptions
 import types_
-from cos import APACHE_LOG_PATHS, PROM_EXPORTER_PEBBLE_CONFIG, WORDPRESS_SCRAPE_JOBS
+from cos import (
+    _APACHE_EXPORTER_PEBBLE_SERVICE,
+    APACHE_LOG_PATHS,
+    PROM_EXPORTER_PEBBLE_CONFIG,
+    ApacheLogProxyConsumer,
+)
 from state import CharmConfigInvalidError, State
 
 # MySQL logger prints database credentials on debug level, silence it
@@ -151,12 +149,30 @@ class WordpressCharm(CharmBase):
         )
 
         self._require_nginx_route()
+        self._logging = ApacheLogProxyConsumer(
+            self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
+        )
+        prometheus_jobs = [
+            {
+                "job_name": "apache_exporter",
+                "static_configs": [{"targets": ["*:9117"]}],
+            }
+        ]
+        if self._logging.loki_endpoints:
+            prometheus_jobs.append(
+                {
+                    "job_name": "promtail",
+                    "static_configs": [{"targets": ["*:9080"]}],
+                }
+            )
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
-            jobs=WORDPRESS_SCRAPE_JOBS,
-        )
-        self._logging = LogProxyConsumer(
-            self, relation_name="logging", log_files=APACHE_LOG_PATHS, container_name="wordpress"
+            jobs=prometheus_jobs,
+            refresh_event=[
+                self.on.wordpress_pebble_ready,
+                self._logging.on.log_proxy_endpoint_departed,
+                self._logging.on.log_proxy_endpoint_joined,
+            ],
         )
         self._grafana_dashboards = GrafanaDashboardProvider(self)
 
@@ -176,10 +192,6 @@ class WordpressCharm(CharmBase):
         self.framework.observe(self.on.wordpress_pebble_ready, self._set_version)
         self.framework.observe(self.on.wordpress_pebble_ready, self._reconciliation)
         self.framework.observe(self.on["wordpress-replica"].relation_changed, self._reconciliation)
-        self.framework.observe(
-            self.on.apache_prometheus_exporter_pebble_ready,
-            self._on_apache_prometheus_exporter_pebble_ready,
-        )
 
     def _set_version(self, _: PebbleReadyEvent) -> None:
         """Set WordPress application version to Juju charm's app version status."""
@@ -356,7 +368,6 @@ class WordpressCharm(CharmBase):
             _event: required by ops framework, not used.
         """
         self._setup_replica_data(_event)
-        self._change_uploads_directory_ownership(recursive=True)
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.
@@ -621,6 +632,12 @@ class WordpressCharm(CharmBase):
         host, port = self._parse_database_endpoints(
             self.database.fetch_relation_field(relation.id, "endpoints")
         )
+        if host is None:
+            logger.warning(
+                "`endpoints` is missing in database relation data: %s",
+                dict(relation.data[relation.app]),
+            )
+            return None
         return types_.DatabaseConfig(
             hostname=host,
             port=port,
@@ -705,11 +722,15 @@ class WordpressCharm(CharmBase):
                 "wordpress-ready": {
                     "override": "replace",
                     "level": "alive",
-                    "http": {"url": "http://localhost/index.php"},
+                    "http": {"url": "http://localhost"},
+                    "timeout": "5s",
                 },
             },
         }
         self._container().add_layer("wordpress", layer, combine=True)
+        self._container().add_layer(
+            _APACHE_EXPORTER_PEBBLE_SERVICE.name, PROM_EXPORTER_PEBBLE_CONFIG, combine=True
+        )
 
     def _start_server(self):
         """Start WordPress (apache) server. On leader unit, also make sure WordPress is installed.
@@ -755,6 +776,8 @@ class WordpressCharm(CharmBase):
         self._init_pebble_layer()
         if not self._container().get_service(self._SERVICE_NAME).is_running():
             self._container().start(self._SERVICE_NAME)
+        if not self._container().get_service(_APACHE_EXPORTER_PEBBLE_SERVICE.name).is_running():
+            self._container().start(_APACHE_EXPORTER_PEBBLE_SERVICE.name)
 
     def _current_wp_config(self):
         """Retrieve the current version of wp-config.php from server, return None if not exists.
@@ -852,7 +875,15 @@ class WordpressCharm(CharmBase):
         # FIXME: the feedwordpress plugin causes the `wp theme list` command to fail occasionally
         # use retries as a temporary workaround for this issue
         for wait in (1, 3, 5, 5, 5):
-            process = self._run_wp_cli(["wp", addon_type, "list", "--format=json"], timeout=600)
+            process = self._run_wp_cli(
+                [
+                    "wp",
+                    addon_type,
+                    "list",
+                    "--exec=define( 'WP_HTTP_BLOCK_EXTERNAL', TRUE );",
+                    "--format=json",
+                ],
+            )
             if process.return_code == 0:
                 break
             time.sleep(wait)
@@ -927,7 +958,9 @@ class WordpressCharm(CharmBase):
         current_installed_addons = set(t["name"] for t in exec_result.result)
         logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
         addons_in_config = [
-            t.strip() for t in self.model.config[f"{addon_type}s"].split(",") if t.strip()
+            t.strip()
+            for t in cast(str, self.model.config[f"{addon_type}s"]).split(",")
+            if t.strip()
         ]
         default_addons = (
             self._WORDPRESS_DEFAULT_THEMES
@@ -1125,7 +1158,7 @@ class WordpressCharm(CharmBase):
         Raises:
             WordPressBlockedStatusException: if askimet plugin reconciliation process fails.
         """
-        akismet_key = self.model.config["wp_plugin_akismet_key"].strip()
+        akismet_key = cast(str, self.model.config["wp_plugin_akismet_key"]).strip()
         if not akismet_key:
             result = self._deactivate_plugin(
                 "akismet",
@@ -1184,7 +1217,7 @@ class WordpressCharm(CharmBase):
 
     def _plugin_openid_reconciliation(self) -> None:
         """Reconciliation process for the openid plugin."""
-        openid_team_map = self.model.config["wp_plugin_openid_team_map"].strip()
+        openid_team_map = cast(str, self.model.config["wp_plugin_openid_team_map"]).strip()
         result = None
 
         def check_result():
@@ -1279,7 +1312,7 @@ class WordpressCharm(CharmBase):
         Returns:
             Swift configuration in dict.
         """
-        swift_config_str = self.model.config["wp_plugin_openstack-objectstorage_config"]
+        swift_config_str = cast(str, self.model.config["wp_plugin_openstack-objectstorage_config"])
         required_swift_config_key = [
             "auth-url",
             "bucket",
@@ -1416,25 +1449,20 @@ class WordpressCharm(CharmBase):
         mount_info: str = container.pull("/proc/mounts").read()
         return self._WP_UPLOADS_PATH in mount_info
 
-    def _change_uploads_directory_ownership(self, recursive=False):
-        """Change uploads directory ownership.
+    def _change_uploads_directory_ownership(self):
+        """Change uploads directory ownership, noop if ownership is correct."""
+        dir_current = self._container().list_files(self._WP_UPLOADS_PATH, itself=True)[0]
+        if dir_current.user == self._WORDPRESS_USER and dir_current.group == self._WORDPRESS_GROUP:
+            return
 
-        Args:
-            recursive: Run chown recursively. Defaults to False.
-        """
-        command_list = [
-            "chown",
-            f"{self._WORDPRESS_USER}:{self._WORDPRESS_GROUP}",
-        ]
-
-        if recursive:
-            command_list.append("-R")
-
-        command_list.append(self._WP_UPLOADS_PATH)
         self._container().exec(
-            command_list,
-            timeout=120,
-        )
+            [
+                "chown",
+                f"{self._WORDPRESS_USER}:{self._WORDPRESS_GROUP}",
+                "-R",
+                self._WP_UPLOADS_PATH,
+            ]
+        ).wait()
 
     def _reconciliation(self, _event: EventBase) -> None:
         """Reconcile the WordPress charm on juju event.
@@ -1466,23 +1494,6 @@ class WordpressCharm(CharmBase):
             self.unit.status = ActiveStatus()
         else:
             self.unit.status = WaitingStatus("Waiting for pebble")
-
-    def _on_apache_prometheus_exporter_pebble_ready(self, event: PebbleReadyEvent):
-        """Configure and start apache prometheus exporter.
-
-        Args:
-            event: Event triggering the handler.
-        """
-        if not event.workload:
-            self.unit.status = BlockedStatus("Internal Error, pebble container not found.")
-            return
-        container = event.workload
-        pebble: ops.pebble.Client = container.pebble
-        self.unit.status = MaintenanceStatus(f"Adding {container.name} layer to pebble")
-        container.add_layer(container.name, PROM_EXPORTER_PEBBLE_CONFIG, combine=True)
-        self.unit.status = MaintenanceStatus(f"Starting {container.name} container")
-        pebble.replan_services()
-        self._reconciliation(event)
 
 
 if __name__ == "__main__":  # pragma: no cover

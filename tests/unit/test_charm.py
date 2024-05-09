@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """WordPress charm unit tests."""
@@ -6,6 +6,7 @@
 # pylint:disable=protected-access
 
 import json
+import secrets
 import typing
 import unittest.mock
 
@@ -13,12 +14,10 @@ import ops.charm
 import ops.pebble
 import ops.testing
 import pytest
-from ops.charm import PebbleReadyEvent
-from ops.model import Container
-from ops.pebble import Client
 
 import types_
 from charm import WordpressCharm
+from cos import REQUEST_DURATION_MICROSECONDS_BUCKETS
 from exceptions import WordPressBlockedStatusException, WordPressWaitingStatusException
 from tests.unit.wordpress_mock import WordpressContainerMock, WordpressPatch
 
@@ -36,14 +35,14 @@ def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     """
     harness.begin()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    secrets = charm._generate_wp_secret_keys()
+    wordpress_secrets = charm._generate_wp_secret_keys()
     assert (
-        "default_admin_password" in secrets
+        "default_admin_password" in wordpress_secrets
     ), "WordPress should generate a default admin password"
 
-    del secrets["default_admin_password"]
-    key_values = list(secrets.values())
-    assert set(secrets.keys()) == set(
+    del wordpress_secrets["default_admin_password"]
+    key_values = list(wordpress_secrets.values())
+    assert set(wordpress_secrets.keys()) == set(
         charm._wordpress_secret_key_fields()
     ), "generated WordPress secrets should contain all required fields"
     assert len(key_values) == len(set(key_values)), "no two secret values should be the same"
@@ -306,40 +305,6 @@ def test_addon_reconciliation_fail(harness: ops.testing.Harness, monkeypatch: py
 
     with pytest.raises(WordPressBlockedStatusException):
         charm._addon_reconciliation("theme")
-
-
-@pytest.mark.usefixtures("attach_storage")
-def test_prom_exporter_pebble_ready(
-    patch: WordpressPatch,
-    harness: ops.testing.Harness,
-    setup_replica_consensus: typing.Callable[[], dict],
-    setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
-):
-    """
-    arrange: after required relations ready but before prometheus exporter pebble ready.
-    act: run prometheus exporter pebble ready.
-    assert: unit should be active.
-    """
-    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
-    setup_replica_consensus()
-    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    _, db_info = setup_database_relation_no_port()
-    patch.database.prepare_database(
-        host=db_info["endpoints"],
-        database=db_info["database"],
-        user=db_info["username"],
-        password=db_info["password"],
-    )
-    mock_event = unittest.mock.MagicMock(spec=PebbleReadyEvent)
-    mock_event.workload = unittest.mock.MagicMock(spec=Container)
-    mock_event.workload.name = "apache-prometheus-exporter"
-    mock_event.workload.pebble = unittest.mock.MagicMock(spec=Client)
-
-    charm._on_apache_prometheus_exporter_pebble_ready(mock_event)
-
-    assert isinstance(
-        harness.model.unit.status, ops.charm.model.ActiveStatus
-    ), "unit should be in ActiveStatus"
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -883,6 +848,46 @@ def test_wordpress_version_set(harness: ops.testing.Harness):
     assert harness.get_workload_version() == WordpressContainerMock._WORDPRESS_VERSION
 
 
+@pytest.mark.usefixtures("attach_storage")
+def test_waiting_for_leader_installation_timeout(
+    patch: WordpressPatch, harness: ops.testing.Harness, app_name
+):
+    """
+    arrange: charm peer and database relation is ready, the storage is attached.
+    act: start the charm as a follower unit.
+    assert: charm unit should enter blocked state, and the installation error should be seen
+        in the status.
+    """
+    replica_relation_id = harness.add_relation("wordpress-replica", app_name)
+    harness.update_relation_data(
+        relation_id=replica_relation_id,
+        app_or_unit=app_name,
+        key_values={k: "test" for k in WordpressCharm._wordpress_secret_key_fields()},
+    )
+    db_relation_id = harness.add_relation("database", "mysql")
+    harness.add_relation_unit(db_relation_id, "mysql/0")
+    test_database_password = secrets.token_urlsafe(8)
+    harness.update_relation_data(
+        relation_id=db_relation_id,
+        app_or_unit="mysql",
+        key_values={
+            "endpoints": "test",
+            "database": "test",
+            "username": "test",
+            "password": test_database_password,
+        },
+    )
+    patch.database.prepare_database(
+        host="test", database="test", user="test", password=test_database_password
+    )
+    harness.begin_with_initial_hooks()
+    assert harness.charm.unit.status.name == "blocked"
+    assert (
+        harness.charm.unit.status.message
+        == "leader unit failed to initialize WordPress database in given time."
+    )
+
+
 def test_valid_proxy_config(
     harness: ops.testing.Harness,
     setup_replica_consensus: typing.Callable[[], dict],
@@ -960,3 +965,87 @@ def test_only_valid_https_proxy_config(
     assert charm.state.proxy_config.https_proxy == proxy_url
     wp_config = charm._gen_wp_config()
     assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])
+
+
+@pytest.mark.usefixtures("attach_storage")
+def test_wordpress_promtail_config(harness: ops.testing.Harness):
+    """
+    arrange: no arrange.
+    act: generate loki promtail config..
+    assert: promtail configuration contains pipeline stages to export apache access logs.
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.set_model_name("test")
+    harness.set_model_uuid("fa1212ac-4cc7-4390-82df-485a1aefc8e8")
+
+    harness.begin_with_initial_hooks()
+    promtail_config = harness.charm._logging._promtail_config
+    for scrape_config in promtail_config["scrape_configs"]:
+        for static_config in scrape_config["static_configs"]:
+            if "job" in static_config["labels"]:
+                pass
+    assert harness.charm._logging._promtail_config == {
+        "clients": [],
+        "positions": {"filename": "/opt/promtail/positions.yaml"},
+        "scrape_configs": [
+            {
+                "job_name": "system",
+                "static_configs": [
+                    {
+                        "labels": {
+                            "__path__": "/var/log/apache2/access.*.log",
+                            "job": "juju_test_fa1212ac_wordpress-k8s",
+                            "juju_application": "wordpress-k8s",
+                            "juju_charm": "wordpress-k8s",
+                            "juju_model": "test",
+                            "juju_model_uuid": "fa1212ac-4cc7-4390-82df-485a1aefc8e8",
+                            "juju_unit": "wordpress-k8s/0",
+                        },
+                        "targets": ["localhost"],
+                    },
+                    {
+                        "labels": {
+                            "__path__": "/var/log/apache2/error.*.log",
+                            "job": "juju_test_fa1212ac_wordpress-k8s",
+                            "juju_application": "wordpress-k8s",
+                            "juju_charm": "wordpress-k8s",
+                            "juju_model": "test",
+                            "juju_model_uuid": "fa1212ac-4cc7-4390-82df-485a1aefc8e8",
+                            "juju_unit": "wordpress-k8s/0",
+                        },
+                        "targets": ["localhost"],
+                    },
+                ],
+            },
+            {
+                "job_name": "access_log_exporter",
+                "pipeline_stages": [
+                    {
+                        "logfmt": {
+                            "mapping": {
+                                "content_type": "content_type",
+                                "path": "path",
+                                "request_duration_microseconds": "request_duration_microseconds",
+                            }
+                        }
+                    },
+                    {"labels": {"content_type": "content_type", "path": "path"}},
+                    {"match": {"action": "drop", "selector": '{path=~"^/server-status.*$"}'}},
+                    {"labeldrop": ["filename", "path"]},
+                    {
+                        "metrics": {
+                            "request_duration_microseconds": {
+                                "config": {"buckets": REQUEST_DURATION_MICROSECONDS_BUCKETS},
+                                "prefix": "apache_access_log_",
+                                "source": "request_duration_microseconds",
+                                "type": "Histogram",
+                            }
+                        }
+                    },
+                    {"drop": {"expression": ".*"}},
+                ],
+                "static_configs": [{"labels": {"__path__": "/var/log/apache2/access.*.log"}}],
+            },
+        ],
+        "server": {"grpc_listen_port": 9095, "http_listen_port": 9080},
+    }

@@ -153,9 +153,8 @@ parts:
     after:
       - get-wordpress-plugins
     plugin: dump
-    source: https://git.launchpad.net/~javierdelapuente/wordpress-teams-integration
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration
     source-type: git
-    source-branch: allow-wp-option-update-json
     organize:
       "*": /var/www/html/wp-content/plugins/wordpress-teams-integration/
   get-openstack-objectstorage-k8s:

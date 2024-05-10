@@ -8,8 +8,58 @@ COS integration for WordPress charm.
 **Global Variables**
 ---------------
 - **APACHE_PROMETHEUS_SCRAPE_PORT**
-- **WORDPRESS_SCRAPE_JOBS**
 - **APACHE_LOG_PATHS**
+- **REQUEST_DURATION_MICROSECONDS_BUCKETS**
+
+
+---
+
+## <kbd>class</kbd> `ApacheLogProxyConsumer`
+Extends LogProxyConsumer to add a metrics pipeline to promtail. 
+
+
+---
+
+#### <kbd>property</kbd> loki_endpoints
+
+Fetch Loki Push API endpoints sent from LokiPushApiProvider through relation data. 
+
+
+
+**Returns:**
+  A list of dictionaries with Loki Push API endpoints, for instance:  [ 
+ - <b>`{"url"`</b>:  "http://loki1:3100/loki/api/v1/push"}, 
+ - <b>`{"url"`</b>:  "http://loki2:3100/loki/api/v1/push"}, ] 
+
+---
+
+#### <kbd>property</kbd> model
+
+Shortcut for more simple access the model. 
+
+---
+
+#### <kbd>property</kbd> rsyslog_config
+
+Generates a config line for use with rsyslog. 
+
+
+
+**Returns:**
+  The rsyslog config line as a string 
+
+---
+
+#### <kbd>property</kbd> syslog_port
+
+Gets the port on which promtail is listening for syslog. 
+
+
+
+**Returns:**
+  A str representing the port 
+
+
 
 
 ---

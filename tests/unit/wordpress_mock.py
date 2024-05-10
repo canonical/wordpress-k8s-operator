@@ -359,7 +359,6 @@ class WordpressContainerMock:
         self._wordpress_database_mock = wordpress_database_mock
         self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
-        self.wp_eval_history: typing.List[str] = []
 
     def exec(
         self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
@@ -600,13 +599,6 @@ class WordpressContainerMock:
         db = self._current_database()
         option = cmd[3]
         db.delete_option(option)
-        return ExecProcessMock(return_code=0, stdout="", stderr="")
-
-    @_exec_handler.register(lambda cmd: cmd[:2] == ["wp", "eval"])
-    def _mock_wp_eval(self, cmd):
-        """Simulate ``wp eval <php_code>`` command execution in the container."""
-        php_code = cmd[2]
-        self.wp_eval_history.append(php_code)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[0] == "a2enconf")

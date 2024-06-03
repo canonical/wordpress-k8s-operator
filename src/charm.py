@@ -1178,19 +1178,8 @@ class WordpressCharm(CharmBase):
                 f"Unable to config akismet plugin, {result.message}"
             )
 
-    def _wp_eval(self, php_code: str):
-        """Execute arbitrary PHP code.
-
-        Args:
-            php_code: PHP code to be executed.
-
-        Returns:
-            An instance of :attr:`types_.ExecResult`.
-        """
-        return self._wrapped_run_wp_cli(["wp", "eval", php_code])
-
     @staticmethod
-    def _encode_openid_team_map(team_map: str) -> str:
+    def _encode_openid_team_map(team_map: str) -> dict:
         """Convert wp_plugin_openid_team_map setting to openid_teams_trust_list WordPress option.
 
         example input: site-sysadmins=administrator,site-editors=editor,site-executives=editor
@@ -1199,21 +1188,20 @@ class WordpressCharm(CharmBase):
             team_map (str): team definition.
 
         Returns:
-            A PHP array, as a Python string.
+            A Python structure that will be converted to json
         """
-        array_items = []
+        teams_parsed: dict = {}
         for idx, mapping in enumerate(team_map.split(","), start=1):
             launchpad_role, wordpress_role = mapping.split("=")
             launchpad_role = launchpad_role.strip()
             wordpress_role = wordpress_role.strip()
-            array_items.append(
-                f"{idx} => (object) array ("
-                f"'id'=>{idx},"
-                f"'team'=>'{launchpad_role}',"
-                f"'role'=>'{wordpress_role}',"
-                f"'server' => '0',),"
-            )
-        return f"array({''.join(array_items)})"
+            teams_parsed[str(idx)] = {
+                "id": idx,
+                "team": launchpad_role,
+                "role": wordpress_role,
+                "server": "0",
+            }
+        return teams_parsed
 
     def _plugin_openid_reconciliation(self) -> None:
         """Reconciliation process for the openid plugin."""
@@ -1254,10 +1242,10 @@ class WordpressCharm(CharmBase):
             check_result()
             result = self._activate_plugin("wordpress-teams-integration", {})
             check_result()
-            result = self._wp_eval(
-                "update_option("
-                f"'openid_teams_trust_list', {self._encode_openid_team_map(openid_team_map)}"
-                ");"
+            result = self._wp_option_update(
+                "openid_teams_trust_list",
+                value=json.dumps(self._encode_openid_team_map(openid_team_map)),
+                format_="json",
             )
             check_result()
             result = self._wp_option_update("users_can_register", "1")

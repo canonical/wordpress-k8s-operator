@@ -560,40 +560,15 @@ def test_team_map():
     """
     arrange: no arrange.
     act: convert the team_map config using _encode_openid_team_map method.
-    assert: the converted result should be a valid PHP array with the meaning matching the config.
+    assert: the converted result should be a valid dict with the meaning matching the config.
     """
     team_map = "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
     option = WordpressCharm._encode_openid_team_map(team_map)
-    assert (
-        option.replace(" ", "").replace("\n", "")
-        == """array (
-              1 =>
-              (object) array(
-                 'id' => 1,
-                 'team' => 'site-sysadmins',
-                 'role' => 'administrator',
-                 'server' => '0',
-              ),
-              2 =>
-              (object) array(
-                 'id' => 2,
-                 'team' => 'site-editors',
-                 'role' => 'editor',
-                 'server' => '0',
-              ),
-              3 =>
-              (object) array(
-                 'id' => 3,
-                 'team' => 'site-executives',
-                 'role' => 'editor',
-                 'server' => '0',
-              ),
-            )""".replace(
-            " ", ""
-        ).replace(
-            "\n", ""
-        )
-    )
+    assert option == {
+        "1": {"id": 1, "team": "site-sysadmins", "role": "administrator", "server": "0"},
+        "2": {"id": 2, "team": "site-editors", "role": "editor", "server": "0"},
+        "3": {"id": 3, "team": "site-executives", "role": "editor", "server": "0"},
+    }
 
 
 def test_swift_config(
@@ -657,7 +632,7 @@ def test_akismet_plugin(run_standard_plugin_test: typing.Callable):
 
 
 @pytest.mark.usefixtures("attach_storage")
-def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.Callable):
+def test_openid_plugin(run_standard_plugin_test: typing.Callable):
     """
     arrange: after peer relation established and database ready.
     act: update openid plugin configuration.
@@ -669,12 +644,32 @@ def test_openid_plugin(patch: WordpressPatch, run_standard_plugin_test: typing.C
         plugin_config={
             "wp_plugin_openid_team_map": "site-sysadmins=administrator,site-editors=editor,site-executives=editor"
         },
-        excepted_options={"openid_required_for_registration": "1", "users_can_register": "1"},
+        excepted_options={
+            "openid_required_for_registration": "1",
+            "users_can_register": "1",
+            "openid_teams_trust_list": {
+                "1": {
+                    "id": 1,
+                    "role": "administrator",
+                    "server": "0",
+                    "team": "site-sysadmins",
+                },
+                "2": {
+                    "id": 2,
+                    "role": "editor",
+                    "server": "0",
+                    "team": "site-editors",
+                },
+                "3": {
+                    "id": 3,
+                    "role": "editor",
+                    "server": "0",
+                    "team": "site-executives",
+                },
+            },
+        },
         excepted_options_after_removed={"users_can_register": "0"},
     )
-    assert patch.container.wp_eval_history[-1].startswith(
-        "update_option('openid_teams_trust_list',"
-    ), "PHP function update_option should be invoked after openid plugin enabled"
 
 
 @pytest.mark.usefixtures("attach_storage")

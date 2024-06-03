@@ -23,7 +23,7 @@ Attrs:  return_code: exit code from executed command.  stdout: standard output f
 ## <kbd>class</kbd> `DatabaseConfig`
 Configuration values required to connect to database. 
 
-Attrs:  hostname: The hostname under which the database is being served.  database: The name of the database to connect to.  username: The username to use to authenticate to the database.  password: The password to use to authenticat to the database. 
+Attrs:  hostname: The hostname under which the database is being served.  port: The port which the database is listening on.  database: The name of the database to connect to.  username: The username to use to authenticate to the database.  password: The password to use to authenticat to the database. 
 
 
 

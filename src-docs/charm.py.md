@@ -8,7 +8,6 @@ Charm for WordPress on kubernetes.
 **Global Variables**
 ---------------
 - **APACHE_LOG_PATHS**
-- **WORDPRESS_SCRAPE_JOBS**
 
 
 ---
@@ -16,9 +15,7 @@ Charm for WordPress on kubernetes.
 ## <kbd>class</kbd> `WordpressCharm`
 Charm for WordPress on kubernetes. 
 
-Attrs:  state: Persistent charm state used to store metadata after various events. 
-
-<a href="../src/charm.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

@@ -19,9 +19,3 @@ Currently, WordPress version 5.9.3 is used alongside Ubuntu 20.04 base image. Th
 hasn't yet been upgraded to 22.04 due to an unsupported php version 8 for
 `wordpress-launchpad-integration` plugin (supported php version 7). All other plugins and themes use
 the latest stable version by default, downloaded from the source.
-
-### apache-prometheus-exporter-image
-
-This is the image required for sidecar container apache-prometheus-exporter. Openly available image
-`bitnami/apache-exporter` is used. Read more about the image from the official Docker Hub
-[source](https://hub.docker.com/r/bitnami/apache-exporter/).

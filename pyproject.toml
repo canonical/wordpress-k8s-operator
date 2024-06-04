@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 [tool.bandit]
 exclude_dirs = ["/venv/"]
@@ -52,6 +52,7 @@ markers = [
 [tool.mypy]
 ignore_missing_imports = true
 allow_redefinition = true
+plugins = ["pydantic.mypy"]
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = "too-few-public-methods,too-many-arguments,too-many-lines,line-too-long,fixme"

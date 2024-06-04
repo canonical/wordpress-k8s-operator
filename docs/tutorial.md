@@ -43,7 +43,7 @@ juju deploy wordpress-k8s
 The following commands deploy the mysql-k8s charm and integrate it with the wordpress-k8s charm.
 
 ```
-juju deploy mysql-k8s
+juju deploy mysql-k8s --trust
 
 # 'database' interface is required since mysql-k8s charm provides multiple compatible interfaces
 juju relate wordpress-k8s mysql-k8s:database

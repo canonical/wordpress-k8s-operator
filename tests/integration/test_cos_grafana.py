@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # pylint: disable=protected-access,too-many-locals
@@ -42,7 +42,9 @@ async def test_grafana_integration(
     act: grafana charm joins relation
     assert: grafana wordpress dashboard can be found
     """
-    grafana = await wordpress.model.deploy("grafana-k8s", channel="1.0/stable", trust=True)
+    grafana = await wordpress.model.deploy(
+        "grafana-k8s", channel="1.0/stable", revision=82, series="focal", trust=True
+    )
     await wordpress.model.wait_for_idle(status="active", apps=["grafana-k8s"], timeout=20 * 60)
     await wordpress.model.add_relation("wordpress-k8s:grafana-dashboard", "grafana-k8s")
     await wordpress.model.wait_for_idle(

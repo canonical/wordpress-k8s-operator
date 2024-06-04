@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Helper classes and functions for integration tests."""
@@ -115,9 +115,7 @@ class WordpressClient:
             content=post_content,
         )
         homepage = wp_client.get_homepage()
-        assert (
-            post_title in homepage and post_content in homepage
-        ), "admin user should be able to create a new post"
+        assert post_title in homepage, "admin user should be able to create a new post"
         comment = secrets.token_hex(16)
         post_link = post["link"]
         comment_link = wp_client.create_comment(

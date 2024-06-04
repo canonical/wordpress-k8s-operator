@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # pylint:disable=invalid-name,protected-access,unused-argument
@@ -359,7 +359,6 @@ class WordpressContainerMock:
         self._wordpress_database_mock = wordpress_database_mock
         self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
-        self.wp_eval_history: typing.List[str] = []
 
     def exec(
         self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
@@ -394,6 +393,11 @@ class WordpressContainerMock:
 
     def list_files(self, path: str, itself=False):
         """Mock method for :meth:`ops.charm.model.Container.list_files`."""
+        if path == "/var/www/html/wp-content/uploads":
+            file_info_mock = unittest.mock.MagicMock()
+            file_info_mock.user = "_daemon_"
+            file_info_mock.group = "_daemon_"
+            return [file_info_mock]
         if not path.endswith("/"):
             path += "/"
         file_list = []
@@ -595,13 +599,6 @@ class WordpressContainerMock:
         db = self._current_database()
         option = cmd[3]
         db.delete_option(option)
-        return ExecProcessMock(return_code=0, stdout="", stderr="")
-
-    @_exec_handler.register(lambda cmd: cmd[:2] == ["wp", "eval"])
-    def _mock_wp_eval(self, cmd):
-        """Simulate ``wp eval <php_code>`` command execution in the container."""
-        php_code = cmd[2]
-        self.wp_eval_history.append(php_code)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[0] == "a2enconf")

@@ -95,7 +95,7 @@ async def wordpress_fixture(
 @pytest_asyncio.fixture(scope="module")
 async def prepare_mysql(ops_test: OpsTest, wordpress: WordpressApp, model: Model):
     """Deploy and relate the mysql-k8s charm for integration tests."""
-    app = await model.deploy("msysql-k8s", channel="8.0/stable", trust=True)
+    app = await model.deploy("mysql-k8s", channel="8.0/stable", trust=True)
     await model.wait_for_idle(status="active", apps=[app.name], timeout=30 * 60)
     await model.relate(f"{wordpress.name}:database", f"{app.name}:database")
     await model.wait_for_idle(

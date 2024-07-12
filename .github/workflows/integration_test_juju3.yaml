@@ -14,7 +14,7 @@ jobs:
         --openstack-rc=${GITHUB_WORKSPACE}/openrc
         --kube-config=${GITHUB_WORKSPACE}/kube-config
         --screenshot-dir=/tmp
-      juju-channel: 3.1/stable
+      juju-channel: 3/stable
       channel: 1.27-strict/stable
       modules: '["test_addon", "test_core"]'
       pre-run-script: |

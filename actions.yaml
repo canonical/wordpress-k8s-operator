@@ -11,3 +11,7 @@ rotate-wordpress-secrets:
     auth_key, auth_salt, logged_in_key, logged_in_salt, nonce_key, nonce_salt, secure_auth_key,
     secure_auth_salt.
     Users will be forced to log in again. This might be useful under security breach circumstances.
+update-database:
+  description: >
+    After upgrading WordPress to a new version it is typically necessary to run 'wp core update-db'
+    to migrate the database schema. This action does exactly that.

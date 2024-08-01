@@ -648,12 +648,10 @@ class WordpressContainerMock:
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "update-db"])
     def _mock_wp_update_database(self, _cmd):
         """Simulate ``wp core update-db`` command execution in the container."""
-        return ExecProcessMock(return_code=0, stdout="", stderr="")
-
-    @_exec_handler.register(lambda cmd: cmd[:4] == ["wp", "core", "update-db", "--dry-run"])
-    def _mock_wp_update_database_dry_run(self, _cmd):
-        """Simulate ``wp core update-db --dry-run`` command execution in the container."""
-        return ExecProcessMock(return_code=0, stdout="", stderr="")
+        if self._fail_wp_update_database:
+            return ExecProcessMock(return_code=1, stdout="", stderr="")
+        else:
+            return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     def __getattr__(self, item):
         """Passthrough anything else to :class:`ops.charm.model.Container`.

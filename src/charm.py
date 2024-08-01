@@ -283,7 +283,7 @@ class WordpressCharm(CharmBase):
 
         result = self._run_wp_cli(cmd, timeout=600)
         if result.return_code != 0:
-            err_msg = str(result.stderr) if result.stderr else "command_failed"
+            err_msg = str(result.stderr) if result.stderr else "Database update failed"
             event.fail(err_msg)
             return
         event.set_results({"result": "ok"})

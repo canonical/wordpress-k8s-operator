@@ -276,13 +276,15 @@ class WordpressCharm(CharmBase):
         Args:
             event: Used for returning result or failure of action.
         """
-        logger.info("update-database is running: bip bop bap...")
         cmd = ["wp", "core", "update-db"]
+        event.params.get("dry-run")
+        if event.params.get("dry-run"):
+            cmd.append("--dry-run")
 
-        result = self._wrapped_run_wp_cli(cmd, timeout=600)
-        if not result.success:
+        result = self._run_wp_cli(cmd, timeout=600)
+        if result.return_code != 0:
             event.fail(result.message)
-
+            return
         event.set_results({"result": "ok"})
 
     @staticmethod

@@ -15,3 +15,7 @@ update-database:
   description: >
     After upgrading WordPress to a new version it is typically necessary to run 'wp core update-db'
     to migrate the database schema. This action does exactly that.
+  params:
+    dry-run:
+      type: boolean
+      description: Runs the 'wp core update-db --dry-run' command.

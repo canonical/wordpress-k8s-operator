@@ -283,7 +283,7 @@ class WordpressCharm(CharmBase):
 
         result = self._run_wp_cli(cmd, timeout=600)
         if result.return_code != 0:
-            event.fail(result.message)
+            event.fail(result.stderr)
             return
         event.set_results({"result": "ok"})
 

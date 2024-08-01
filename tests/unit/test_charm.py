@@ -476,6 +476,46 @@ def test_rotate_wordpress_secrets(
     action_event_mock.fail.assert_not_called()
 
 
+def test_update_database(
+    harness: ops.testing.Harness,
+    action_event_mock: unittest.mock.MagicMock,
+):
+    """
+    arrange: after charm is initialized and database ready.
+    act: run update-database action.
+    assert: update-database action should success and return "ok".
+    """
+
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.begin_with_initial_hooks()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    charm._on_update_database_action(action_event_mock)
+
+    action_event_mock.set_results.assert_called_once_with({"result": "ok"})
+    action_event_mock.fail.assert_not_called()
+
+
+def test_update_database_dry_run(
+    harness: ops.testing.Harness,
+    action_event_mock: unittest.mock.MagicMock,
+):
+    """
+    arrange: after charm is initialized and database ready.
+    act: run update-database action with dry-run.
+    assert: update-database action should success and return "ok".
+    """
+
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    harness.begin_with_initial_hooks()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    dry_run = {"dry-run": True}
+    action_event_mock.configure_mock(**dry_run)
+    charm._on_update_database_action(action_event_mock)
+
+    action_event_mock.set_results.assert_called_once_with({"result": "ok"})
+    action_event_mock.fail.assert_not_called()
+
+
 @pytest.mark.usefixtures("attach_storage")
 def test_theme_reconciliation(
     patch: WordpressPatch,

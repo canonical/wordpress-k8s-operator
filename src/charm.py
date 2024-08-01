@@ -283,7 +283,8 @@ class WordpressCharm(CharmBase):
 
         result = self._run_wp_cli(cmd, timeout=600)
         if result.return_code != 0:
-            event.fail(result.stderr)
+            err_msg = str(result.stderr) if result.stderr else "command_failed"
+            event.fail(err_msg)
             return
         event.set_results({"result": "ok"})
 

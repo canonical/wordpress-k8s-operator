@@ -485,7 +485,6 @@ def test_update_database(
     act: run update-database action.
     assert: update-database action should success and return "ok".
     """
-
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
@@ -504,7 +503,6 @@ def test_update_database_dry_run(
     act: run update-database action with dry-run.
     assert: update-database action should success and return "ok".
     """
-
     harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
     harness.begin_with_initial_hooks()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)

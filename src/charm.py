@@ -278,7 +278,6 @@ class WordpressCharm(CharmBase):
         Returns:
             Execution result.
         """
-
         cmd = ["wp", "core", "update-db"]
         if dry_run:
             cmd.append("--dry-run")

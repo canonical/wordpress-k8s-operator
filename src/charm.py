@@ -269,7 +269,7 @@ class WordpressCharm(CharmBase):
         event.set_results({"result": "ok"})
 
     def _update_database(self, dry_run: bool = False) -> types_.ExecResult:
-        """Updates database.
+        """Update database.
 
         Args:
             dry_run (bool, optional): Runs update as a dry-run, useful to check

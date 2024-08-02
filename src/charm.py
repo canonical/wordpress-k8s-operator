@@ -268,6 +268,25 @@ class WordpressCharm(CharmBase):
         self._reconciliation(event)
         event.set_results({"result": "ok"})
 
+    def _update_database(self, dry_run: bool = False) -> types_.ExecResult:
+
+        cmd = ["wp", "core", "update-db"]
+        if dry_run:
+            cmd.append("--dry-run")
+        logger.info("Starting Database update process.")
+        result = self._run_wp_cli(cmd, timeout=600)
+        if result.return_code != 0:
+            return types_.ExecResult(
+                success=False,
+                result=None,
+                message=str(result.stderr) if result.stderr else "Database update failed",
+            )
+        logger.info("Finished Database update process.")
+
+        return types_.ExecResult(
+            success=True, result=None, message=str(result.stdout) if result.stdout else "ok"
+        )
+
     def _on_update_database_action(self, event: ActionEvent):
         """Handle the update-database action.
 
@@ -276,17 +295,12 @@ class WordpressCharm(CharmBase):
         Args:
             event: Used for returning result or failure of action.
         """
-        cmd = ["wp", "core", "update-db"]
-        event.params.get("dry-run")
-        if event.params.get("dry-run"):
-            cmd.append("--dry-run")
+        result = self._update_database(event.params.get("dry-run"))
 
-        result = self._run_wp_cli(cmd, timeout=600)
-        if result.return_code != 0:
-            err_msg = str(result.stderr) if result.stderr else "Database update failed"
-            event.fail(err_msg)
+        if not result.success:
+            event.fail(result.message)
             return
-        event.set_results({"result": "ok"})
+        event.set_results({"result": result.message})
 
     @staticmethod
     def _wordpress_secret_key_fields():
@@ -389,6 +403,7 @@ class WordpressCharm(CharmBase):
             _event: required by ops framework, not used.
         """
         self._setup_replica_data(_event)
+        self._update_database()
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.

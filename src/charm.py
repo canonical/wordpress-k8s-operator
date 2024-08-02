@@ -303,8 +303,7 @@ class WordpressCharm(CharmBase):
         Args:
             event: Used for returning result or failure of action.
         """
-        dry_run = True if event.params.get("dry-run") else False
-        result = self._update_database(dry_run)
+        result = self._update_database(bool(event.params.get("dry-run")))
 
         if not result.success:
             event.fail(result.message)

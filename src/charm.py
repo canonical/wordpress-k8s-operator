@@ -182,6 +182,7 @@ class WordpressCharm(CharmBase):
         self.framework.observe(
             self.on.rotate_wordpress_secrets_action, self._on_rotate_wordpress_secrets_action
         )
+        self.framework.observe(self.on.update_database_action, self._on_update_database_action)
 
         self.framework.observe(self.on.leader_elected, self._setup_replica_data)
         self.framework.observe(self.on.uploads_storage_attached, self._reconciliation)
@@ -266,6 +267,49 @@ class WordpressCharm(CharmBase):
         # Followers call it automatically due to relation_changed event.
         self._reconciliation(event)
         event.set_results({"result": "ok"})
+
+    def _on_update_database_action(self, event: ActionEvent):
+        """Handle the update-database action.
+
+        This action is to upgrade the database schema after the WordPress version is upgraded.
+
+        Args:
+            event: Used for returning result or failure of action.
+        """
+        logger.info("Starting Database update process.")
+        result = self._update_database(bool(event.params.get("dry-run")))
+        if result.success:
+            logger.info("Finished Database update process.")
+            event.set_results({"result": result.message})
+            return
+        logger.error("Failed to update database schema: %s", result.message)
+        event.fail(result.message)
+
+    def _update_database(self, dry_run: bool = False) -> types_.ExecResult:
+        """Update database.
+
+        Args:
+            dry_run (bool, optional): Runs update as a dry-run, useful to check
+            if update is necessary without doing the update. Defaults to False.
+
+        Returns:
+            Execution result.
+        """
+        cmd = ["wp", "core", "update-db"]
+        if dry_run:
+            cmd.append("--dry-run")
+
+        result = self._run_wp_cli(cmd, timeout=600)
+        if result.return_code != 0:
+            return types_.ExecResult(
+                success=False,
+                result=None,
+                message=str(result.stderr) if result.stderr else "Database update failed",
+            )
+        logger.info("Finished Database update process.")
+        return types_.ExecResult(
+            success=True, result=None, message=str(result.stdout) if result.stdout else "ok"
+        )
 
     @staticmethod
     def _wordpress_secret_key_fields():

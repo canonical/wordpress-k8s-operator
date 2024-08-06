@@ -299,14 +299,16 @@ class WordpressCharm(CharmBase):
         if dry_run:
             cmd.append("--dry-run")
 
-        command_result = self._run_wp_cli(cmd, timeout=600)
-
+        result = self._run_wp_cli(cmd, timeout=600)
+        if result.return_code != 0:
+            return types_.ExecResult(
+                success=False,
+                result=None,
+                message=str(result.stderr) if result.stderr else "Database update failed",
+            )
+        logger.info("Finished Database update process.")
         return types_.ExecResult(
-            success=bool(command_result.return_code == 0),
-            result=None,
-            message=(
-                command_result.stdout if command_result.return_code == 0 else command_result.stderr
-            ),
+            success=True, result=None, message=str(result.stdout) if result.stdout else "ok"
         )
 
     @staticmethod

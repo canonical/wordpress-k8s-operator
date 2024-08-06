@@ -298,7 +298,16 @@ class WordpressCharm(CharmBase):
         cmd = ["wp", "core", "update-db"]
         if dry_run:
             cmd.append("--dry-run")
-        return self._run_wp_cli(cmd, timeout=600)
+
+        command_result = self._run_wp_cli(cmd, timeout=600)
+
+        return types_.ExecResult(
+            success=bool(command_result.return_code == 0),
+            result=None,
+            message=(
+                command_result.stdout if command_result.return_code == 0 else command_result.stderr
+            ),
+        )
 
     @staticmethod
     def _wordpress_secret_key_fields():

@@ -650,8 +650,8 @@ class WordpressContainerMock:
     def _mock_wp_update_database(self, _cmd):
         """Simulate ``wp core update-db`` command execution in the container."""
         if self._fail_wp_update_database:
-            return ExecProcessMock(return_code=1, stdout="", stderr="")
-        return ExecProcessMock(return_code=0, stdout="", stderr="")
+            return ExecProcessMock(return_code=1, stdout="", stderr="Database update failed")
+        return ExecProcessMock(return_code=0, stdout="ok", stderr="")
 
     def __getattr__(self, item):
         """Passthrough anything else to :class:`ops.charm.model.Container`.

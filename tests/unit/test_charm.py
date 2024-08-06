@@ -502,7 +502,7 @@ def test_update_database_fail(
     action_event_mock: unittest.mock.MagicMock,
 ):
     """
-    arrange: after charm is initialized and database is not ready.
+    arrange: after charm is initialized and database is mocked to fail.
     act: run update-database action.
     assert: update-database action should fail.
     """

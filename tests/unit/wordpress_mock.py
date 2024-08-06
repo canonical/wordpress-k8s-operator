@@ -359,6 +359,7 @@ class WordpressContainerMock:
         self._wordpress_database_mock = wordpress_database_mock
         self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
+        self._fail_wp_update_database = False
 
     def exec(
         self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None

@@ -268,6 +268,23 @@ class WordpressCharm(CharmBase):
         self._reconciliation(event)
         event.set_results({"result": "ok"})
 
+    def _on_update_database_action(self, event: ActionEvent):
+        """Handle the update-database action.
+
+        This action is to upgrade the database schema after the WordPress version is upgraded.
+
+        Args:
+            event: Used for returning result or failure of action.
+        """
+        logger.info("Starting Database update process.")
+        result = self._update_database(bool(event.params.get("dry-run")))
+        if result.success:
+            logger.info("Finished Database update process.")
+            event.set_results({"result": result.message})
+            return
+        logger.error("Failed to update database schema: %s", result.message)
+        event.fail(result.message)
+
     def _update_database(self, dry_run: bool = False) -> types_.ExecResult:
         """Update database.
 
@@ -281,34 +298,7 @@ class WordpressCharm(CharmBase):
         cmd = ["wp", "core", "update-db"]
         if dry_run:
             cmd.append("--dry-run")
-        logger.info("Starting Database update process.")
-        result = self._run_wp_cli(cmd, timeout=600)
-        if result.return_code != 0:
-            return types_.ExecResult(
-                success=False,
-                result=None,
-                message=str(result.stderr) if result.stderr else "Database update failed",
-            )
-        logger.info("Finished Database update process.")
-
-        return types_.ExecResult(
-            success=True, result=None, message=str(result.stdout) if result.stdout else "ok"
-        )
-
-    def _on_update_database_action(self, event: ActionEvent):
-        """Handle the update-database action.
-
-        This action is to upgrade the database schema after the WordPress version is upgraded.
-
-        Args:
-            event: Used for returning result or failure of action.
-        """
-        result = self._update_database(bool(event.params.get("dry-run")))
-
-        if not result.success:
-            event.fail(result.message)
-            return
-        event.set_results({"result": result.message})
+        return self._run_wp_cli(cmd, timeout=600)
 
     @staticmethod
     def _wordpress_secret_key_fields():
@@ -411,7 +401,6 @@ class WordpressCharm(CharmBase):
             _event: required by ops framework, not used.
         """
         self._setup_replica_data(_event)
-        self._update_database()
 
     def _gen_wp_config(self):
         """Generate the wp-config.php file WordPress needs based on charm config and relations.

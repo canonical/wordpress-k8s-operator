@@ -60,7 +60,7 @@ By running the `get-initial-password` action on a wordpress-k8s unit, juju will 
 admin credentials setup for you. You can use the following command below.
 
 ```
-juju run-action wordpress-k8s/0 get-initial-password --wait
+juju run wordpress-k8s/0 get-initial-password 
 ```
 
 The result should look something similar to the contents below:
@@ -87,5 +87,5 @@ Congratulations! You have successfully finished the wordpress-k8s tutorial. You 
 model environment that you’ve created using the following command.
 
 ```
-juju destroy model wordpress-tutorial -y --release-storage
+juju destroy-model wordpress-tutorial --destroy-storage
 ```

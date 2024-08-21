@@ -25,10 +25,10 @@ The WordPress Operator is a member of the Ubuntu family. It's an open-source pro
 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
-- [Join our online chat](https://chat.charmhub.io/charmhub/channels/charm-dev)
+- [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 - [Contribute](Contribute)
 
-Thinking about using the WordPress Operator for your next project? [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
+Thinking about using the WordPress Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 
 # Contents
 

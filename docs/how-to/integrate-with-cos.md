@@ -48,7 +48,7 @@ To access the Grafana dashboard for wordpress-k8s charm, run the following comma
 credentials for admin access.
 
 ```
-juju run-action grafana-k8s/0 get-admin-password --wait
+juju run grafana-k8s/0 get-admin-password
 ```
 
 You can now log into the grafana dashboard by visiting `http://<grafana-unit-ip>:3000`. Navigate to

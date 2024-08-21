@@ -36,7 +36,7 @@ nginx-ingress-integrator/0*  active    idle  <nginx-ingress-integrator-ip>      
 wordpress-k8s/0*             active    idle   <wordpress-k8s-ip>
 ```
 
-Note the Service IP(s): next to nginx-ingress-integrator charm’s Status output.
+Note the Service IP(s) next to nginx-ingress-integrator charm’s Status output.
 
 Test the ingress by sending a GET request to the service with `Host` headers.
 

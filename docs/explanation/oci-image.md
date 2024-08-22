@@ -13,7 +13,7 @@ happen during database relation changed, database relation joined or database co
 events.
 To facilitate the WordPress installation process,
 [WordPress CLI](https://make.wordpress.org/cli/handbook/guides/installing/) is embedded in the OCI
-image during build step. The latest CLI php archive file from source is used.
+image during the build step. The latest CLI php archive file from source is used.
 
 Currently, WordPress version 5.9.3 is used alongside Ubuntu 20.04 base image. The Ubuntu base image
 hasn't yet been upgraded to 22.04 due to an unsupported php version 8 for

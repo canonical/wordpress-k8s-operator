@@ -767,7 +767,7 @@ class WordpressCharm(CharmBase):
                     "override": "replace",
                     "level": "alive",
                     "http": {"url": "http://localhost"},
-                    "timeout": "5s",
+                    "timeout": f"{self.config.get('health_check_timeout_seconds')}s",
                 },
             },
         }

@@ -50,6 +50,23 @@ juju deploy mysql-k8s --trust
 juju integrate wordpress-k8s mysql-k8s:database
 ```
 
+Run `juju status` to see the current status of the deployment. The output should be similar to the following:
+
+```
+Model               Controller          Cloud/Region        Version  SLA          Timestamp
+wordpress-tutorial  microk8s-localhost  microk8s/localhost  3.5.3    unsupported  18:48:09Z
+
+App            Version                  Status  Scale  Charm          Channel        Rev  Address         Exposed  Message
+mysql-k8s      8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s      8.0/stable     180  10.152.183.254  no       
+wordpress-k8s  6.4.3                    active      1  wordpress-k8s  latest/stable   87  10.152.183.56   no       
+
+Unit              Workload  Agent  Address       Ports  Message
+mysql-k8s/0*      active    idle   10.1.200.163         Primary
+wordpress-k8s/0*  active    idle   10.1.200.161
+```
+
+The deployment finishes when the status shows "Active".
+
 ### Get admin credentials <a name="get-admin-credentials"></a>
 
 After the database has been configured, you can now access the WordPress

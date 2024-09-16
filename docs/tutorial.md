@@ -50,7 +50,7 @@ juju deploy mysql-k8s --trust
 juju relate wordpress-k8s mysql-k8s:database
 ```
 
-### Get admin credentials <a name="#get-admin-credentials"></a>
+### Get admin credentials <a name="get-admin-credentials"></a>
 
 After the database has been configured in the
 [Deploy and relate database section](#deploy-and-relate-database), you can now access the WordPress

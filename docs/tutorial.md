@@ -3,7 +3,7 @@
 ## What you'll do
 
 - Deploy the [wordpress-k8s charm](https://charmhub.io/wordpress-k8s)
-- [Deploy and relate database](#deploy-and-relate-database)
+- [Deploy and integrate database](#deploy-and-integrate-database)
 - [Get admin credentials](#get-admin-credentials)
 
 The wordpress-k8s charm helps deploy a horizontally scalable WordPress application with ease and
@@ -17,10 +17,10 @@ To see how to bootstrap your Juju installation with MicroK8s, please refer to th
 on MicroK8s [installation](https://juju.is/docs/olm/microk8s).
 
 ## Steps
-### Setting up the tutorial model
+### Set up the tutorial model
 
 To easily clean up the resources and to separate your workload from the contents of this tutorial,
-it is recommended to set up a new model with the following command.
+set up a new model with the following command.
 
 ```
 juju add-model wordpress-tutorial
@@ -39,7 +39,7 @@ the wordpress-k8s charm.
 juju deploy wordpress-k8s
 ```
 
-### Deploy and integrate database
+### Deploy and integrate database <a name="deploy-and-integrate-database"></a>
 
 The following commands deploy the mysql-k8s charm and integrate it with the wordpress-k8s charm.
 
@@ -50,7 +50,7 @@ juju deploy mysql-k8s --trust
 juju relate wordpress-k8s mysql-k8s:database
 ```
 
-### Get admin credentials
+### Get admin credentials <a name="#get-admin-credentials"></a>
 
 After the database has been configured in the
 [Deploy and relate database section](#deploy-and-relate-database), you can now access the WordPress
@@ -82,7 +82,7 @@ unit-wordpress-k8s-0:
 You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with
 username admin and password the action above.
 
-### Cleaning up the environment
+### Clean up the environment
 
 Congratulations! You have successfully finished the wordpress-k8s tutorial. You can now remove the
 model environment that you’ve created using the following command.

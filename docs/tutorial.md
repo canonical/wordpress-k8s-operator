@@ -1,4 +1,4 @@
-# Getting Started
+# Deploy the Wordpress charm for the first time
 
 ## What you'll do
 

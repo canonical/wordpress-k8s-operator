@@ -83,16 +83,12 @@ juju run wordpress-k8s/0 get-initial-password
 The result should look something similar to the contents below:
 
 ```
-unit-wordpress-k8s-0:
-  UnitId: wordpress-k8s/0
-  id: "6"
-  results:
-    password: <password> # should look something like: XXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXX
-  status: completed
-  timing:
-    completed: <timestamp>
-    enqueued: <timestamp>
-    started: <timestamp>
+Running operation 1 with 1 task
+  - task 2 on unit-wordpress-k8s-0
+
+Waiting for task 2...
+password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 ```
 
 You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with

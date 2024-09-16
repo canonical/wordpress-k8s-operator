@@ -10,12 +10,13 @@ The wordpress-k8s charm helps deploy a horizontally scalable WordPress applicati
 also helps operate the charm by liaising with the Canonical Observability Stack (COS). This
 tutorial will walk you through each step of deployment to get a basic WordPress deployment.
 
-### Prerequisites
+## Prerequisites
 
 To deploy wordpress-k8s charm, you will need a juju bootstrapped with any kubernetes controller.
 To see how to bootstrap your juju installation with microk8s, please refer to the documentation
 on microk8s [installation](https://juju.is/docs/olm/microk8s).
 
+## Steps
 ### Setting up the tutorial model
 
 To easily clean up the resources and to separate your workload from the contents of this tutorial,

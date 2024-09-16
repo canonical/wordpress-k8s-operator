@@ -32,7 +32,7 @@ Deployment of WordPress requires a relational database. The integration with the
 `mysql` [interface](https://juju.is/docs/sdk/integration) is required by the wordpress-k8s
 charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
-Start off by deploying the wordpress charm. By default it will deploy the latest stable release of
+Start off by deploying the Wordpress charm. By default it will deploy the latest stable release of
 the wordpress-k8s charm.
 
 ```
@@ -47,17 +47,16 @@ The following commands deploy the mysql-k8s charm and integrate it with the word
 juju deploy mysql-k8s --trust
 
 # 'database' interface is required since mysql-k8s charm provides multiple compatible interfaces
-juju relate wordpress-k8s mysql-k8s:database
+juju integrate wordpress-k8s mysql-k8s:database
 ```
 
 ### Get admin credentials <a name="get-admin-credentials"></a>
 
-After the database has been configured in the
-[Deploy and relate database section](#deploy-and-relate-database), you can now access the WordPress
+After the database has been configured, you can now access the WordPress
 application by accessing the IP of a wordpress-k8s unit. To start managing WordPress as an
 administrator, you need to get the credentials for the admin account.
 
-By running the `get-initial-password` action on a wordpress-k8s unit, juju will read and fetch the
+By running the `get-initial-password` action on a wordpress-k8s unit, Juju will read and fetch the
 admin credentials setup for you. You can use the following command below.
 
 ```

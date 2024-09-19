@@ -752,6 +752,7 @@ class WordpressCharm(CharmBase):
     def _init_pebble_layer(self):
         """Ensure WordPress layer exists in pebble."""
         logger.debug("Ensure WordPress layer exists in pebble")
+        health_check_timeout = self.config.get("health_check_timeout_seconds")
         layer = {
             "summary": "WordPress layer",
             "description": "WordPress server",
@@ -767,7 +768,8 @@ class WordpressCharm(CharmBase):
                     "override": "replace",
                     "level": "alive",
                     "http": {"url": "http://localhost"},
-                    "timeout": f"{self.config.get('health_check_timeout_seconds')}s",
+                    "period": f"{max(10, health_check_timeout*2)}s",
+                    "timeout": f"{health_check_timeout}s",
                 },
             },
         }

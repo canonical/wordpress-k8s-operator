@@ -26,7 +26,7 @@ The WordPress Operator is a member of the Ubuntu family. It's an open-source pro
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-- [Contribute](https://github.com/canonical/wordpress-k8s-operator/blob/a5d7e240b47c0d2cfe9c12f88adbf6ab93a48b80/CONTRIBUTING.md)
+- [Contribute](https://github.com/canonical/wordpress-k8s-operator/blob/main/CONTRIBUTING.md)
 
 Thinking about using the WordPress Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 

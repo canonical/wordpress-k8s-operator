@@ -519,6 +519,7 @@ class WordpressCharm(CharmBase):
     def _run_cli(
         self,
         cmd: List[str],
+        *,
         user: Union[str, None] = None,
         group: Union[str, None] = None,
         working_dir: Union[str, None] = None,

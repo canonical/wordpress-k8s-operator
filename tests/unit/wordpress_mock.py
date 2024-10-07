@@ -242,7 +242,9 @@ class MysqlConnectorMock:
         """
         self._wordpress_database_mock = wordpress_database_mock
 
-    def connect(self, host: str, port: int, database: str, user: str, password: str, charset: str):
+    def connect(
+        self, *, host: str, port: int, database: str, user: str, password: str, charset: str
+    ):
         """Mock method for :meth:`mysql.connector.connect`.
 
         Raises:
@@ -362,7 +364,7 @@ class WordpressContainerMock:
         self._fail_wp_update_database = False
 
     def exec(
-        self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
+        self, cmd, *, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
     ):
         """Mock method for :meth:`ops.charm.model.Container.exec`.
 
@@ -384,7 +386,7 @@ class WordpressContainerMock:
         """Mock method for :meth:`ops.charm.model.Container.pull`."""
         return io.StringIO(self.fs[path])
 
-    def push(self, path: str, source: str, user=None, group=None, permissions=None) -> None:
+    def push(self, path: str, source: str, *, user=None, group=None, permissions=None) -> None:
         """Mock method for :meth:`ops.charm.model.Container.push`."""
         self.fs[path] = source
 

@@ -41,7 +41,7 @@ juju add-model wordpress-tutorial
 
 Deployment of WordPress requires a relational database. The integration with the
 `mysql` [interface](https://juju.is/docs/sdk/integration) is required by the wordpress-k8s
-charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.For more information, see [Charm Architecture](https://charmhub.io/indico/docs/explanation-charm-architecture).
+charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
 Start off by deploying the Wordpress charm. By default it will deploy the latest stable release of
 the wordpress-k8s charm.
@@ -100,7 +100,7 @@ password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ```
 
-> NOTE: If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of he Multipass VM.
+> NOTE: If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of the Multipass VM.
 > Outside the Multipass VM run:
 > ```
 > multipass info my-juju-vm
@@ -113,7 +113,7 @@ password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 > ```
 
 
-You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with username admin and password the action above.
+You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with the admin username and password from the previous action.
 
 
 ### Clean up the environment

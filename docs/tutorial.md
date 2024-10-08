@@ -16,9 +16,6 @@ tutorial will walk you through each step of deployment to get a basic WordPress 
 
 For more information about how to install Juju, see [Get started with Juju](https://juju.is/docs/olm/get-started-with-juju).
 
-:warning: When using a Multipass VM, make sure to replace `127.0.0.1` IP addresses with the
-VM IP in steps that assume you're running locally. To get the IP address of the
-Multipass instance run ```multipass info my-juju-vm```.
 ### Shell into the Multipass VM
 > NOTE: If you're working locally, you don't need to do this step.
 
@@ -113,7 +110,7 @@ password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 > ```
 
 
-You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with the admin username and password from the previous action.
+You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the admin username and password from the previous action.
 
 
 ### Clean up the environment
@@ -125,7 +122,7 @@ model environment that you’ve created using the following command.
 juju destroy-model wordpress-tutorial --destroy-storage
 ```
 
-If you used Multipass, to remove the Multipass instance you created for this tutorial, use the following command.
+If you used Multipass, to remove the Multipass instance you created for this tutorial, run the following command outside of the VM.
 
 ```
 multipass delete --purge my-juju-vm

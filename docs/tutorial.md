@@ -2,7 +2,7 @@
 
 ## What you'll do
 
-- Deploy the [wordpress-k8s charm](https://charmhub.io/wordpress-k8s)
+- Deploy the [Wordpress K8s charm](https://charmhub.io/wordpress-k8s)
 - [Deploy and integrate database](#deploy-and-integrate-database)
 - [Get admin credentials](#get-admin-credentials)
 
@@ -11,26 +11,37 @@ also helps operate the charm by liaising with the Canonical Observability Stack 
 tutorial will walk you through each step of deployment to get a basic WordPress deployment.
 
 ## Requirements
+- A working station, e.g., a laptop, with amd64 architecture.
+- Juju 3 installed and bootstrapped to a MicroK8s controller. You can accomplish this process by using a Multipass VM as outlined in this guide: [Set up / Tear down your test environment](https://juju.is/docs/juju/set-up--tear-down-your-test-environment)
 
-To deploy wordpress-k8s charm, you will need a Juju bootstrapped with any Kubernetes controller.
-To see how to bootstrap your Juju installation with MicroK8s, please refer to the documentation
-on MicroK8s [installation](https://juju.is/docs/olm/microk8s).
+For more information about how to install Juju, see [Get started with Juju](https://juju.is/docs/olm/get-started-with-juju).
 
-## Steps
-### Set up the tutorial model
+:warning: When using a Multipass VM, make sure to replace `127.0.0.1` IP addresses with the
+VM IP in steps that assume you're running locally. To get the IP address of the
+Multipass instance run ```multipass info my-juju-vm```.
+### Shell into the Multipass VM
+> NOTE: If you're working locally, you don't need to do this step.
 
-To easily clean up the resources and to separate your workload from the contents of this tutorial,
-set up a new model with the following command.
+To be able to work inside the Multipass VM first you need to log in with the following command:
+```bash
+multipass shell my-juju-vm
+```
+
+### Add a Juju model for the tutorial
+
+To manage resources effectively and to separate this tutorial's workload from
+your usual work, create a new model in the MicroK8s controller using the following command:
+
 
 ```
 juju add-model wordpress-tutorial
 ```
 
-### Deploy wordpress-k8s charm
+### Deploy Wordpress K8s charm
 
 Deployment of WordPress requires a relational database. The integration with the
 `mysql` [interface](https://juju.is/docs/sdk/integration) is required by the wordpress-k8s
-charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
+charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.For more information, see [Charm Architecture](https://charmhub.io/indico/docs/explanation-charm-architecture).
 
 Start off by deploying the Wordpress charm. By default it will deploy the latest stable release of
 the wordpress-k8s charm.
@@ -45,11 +56,9 @@ The following commands deploy the mysql-k8s charm and integrate it with the word
 
 ```
 juju deploy mysql-k8s --trust
-
 # 'database' interface is required since mysql-k8s charm provides multiple compatible interfaces
 juju integrate wordpress-k8s mysql-k8s:database
 ```
-
 Run `juju status` to see the current status of the deployment. The output should be similar to the following:
 
 ```
@@ -57,15 +66,15 @@ Model               Controller          Cloud/Region        Version  SLA        
 wordpress-tutorial  microk8s-localhost  microk8s/localhost  3.5.3    unsupported  18:48:09Z
 
 App            Version                  Status  Scale  Charm          Channel        Rev  Address         Exposed  Message
-mysql-k8s      8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s      8.0/stable     180  10.152.183.254  no       
-wordpress-k8s  6.4.3                    active      1  wordpress-k8s  latest/stable   87  10.152.183.56   no       
+mysql-k8s      8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s      8.0/stable     180  10.152.183.254  no
+wordpress-k8s  6.4.3                    active      1  wordpress-k8s  latest/stable   87  10.152.183.56   no
 
 Unit              Workload  Agent  Address       Ports  Message
 mysql-k8s/0*      active    idle   10.1.200.163         Primary
 wordpress-k8s/0*  active    idle   10.1.200.161
 ```
 
-The deployment finishes when the status shows "Active".
+The deployment finishes when the status shows "Active" for both the WordPress and MySQL charms.
 
 ### Get admin credentials <a name="get-admin-credentials"></a>
 
@@ -77,7 +86,7 @@ By running the `get-initial-password` action on a wordpress-k8s unit, Juju will 
 admin credentials setup for you. You can use the following command below.
 
 ```
-juju run wordpress-k8s/0 get-initial-password 
+juju run wordpress-k8s/0 get-initial-password
 ```
 
 The result should look something similar to the contents below:
@@ -91,8 +100,21 @@ password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ```
 
-You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with
-username admin and password the action above.
+> NOTE: If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of he Multipass VM.
+> Outside the Multipass VM run:
+> ```
+> multipass info my-juju-vm
+> ```
+> The IP you see here will be called <VM_IP> in this example.
+>
+> Then route:
+> ```
+> sudo ip route add <UNIT_IP> via <VM_IP>
+> ```
+
+
+You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and login with username admin and password the action above.
+
 
 ### Clean up the environment
 
@@ -101,4 +123,10 @@ model environment that you’ve created using the following command.
 
 ```
 juju destroy-model wordpress-tutorial --destroy-storage
+```
+
+If you used Multipass, to remove the Multipass instance you created for this tutorial, use the following command.
+
+```
+multipass delete --purge my-juju-vm
 ```

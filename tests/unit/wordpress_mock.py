@@ -242,7 +242,9 @@ class MysqlConnectorMock:
         """
         self._wordpress_database_mock = wordpress_database_mock
 
-    def connect(self, host: str, port: int, database: str, user: str, password: str, charset: str):
+    def connect(
+        self, *, host: str, port: int, database: str, user: str, password: str, charset: str
+    ):
         """Mock method for :meth:`mysql.connector.connect`.
 
         Raises:
@@ -359,9 +361,10 @@ class WordpressContainerMock:
         self._wordpress_database_mock = wordpress_database_mock
         self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
+        self._fail_wp_update_database = False
 
     def exec(
-        self, cmd, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
+        self, cmd, *, user=None, group=None, working_dir=None, combine_stderr=None, timeout=None
     ):
         """Mock method for :meth:`ops.charm.model.Container.exec`.
 
@@ -383,7 +386,7 @@ class WordpressContainerMock:
         """Mock method for :meth:`ops.charm.model.Container.pull`."""
         return io.StringIO(self.fs[path])
 
-    def push(self, path: str, source: str, user=None, group=None, permissions=None) -> None:
+    def push(self, path: str, source: str, *, user=None, group=None, permissions=None) -> None:
         """Mock method for :meth:`ops.charm.model.Container.push`."""
         self.fs[path] = source
 
@@ -644,6 +647,13 @@ class WordpressContainerMock:
     def _mock_chown_uploads(self, _cmd):
         """Simulate ``chown`` command execution in the container."""
         return ExecProcessMock(return_code=0, stdout="", stderr="")
+
+    @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "update-db"])
+    def _mock_wp_update_database(self, _cmd):
+        """Simulate ``wp core update-db`` command execution in the container."""
+        if self._fail_wp_update_database:
+            return ExecProcessMock(return_code=1, stdout="", stderr="Database update failed")
+        return ExecProcessMock(return_code=0, stdout="ok", stderr="")
 
     def __getattr__(self, item):
         """Passthrough anything else to :class:`ops.charm.model.Container`.

@@ -2,7 +2,7 @@
 
 By default, the following WordPress plugins are installed with the latest version during the OCI
 image build time. If the plugins are installed during runtime with
-`juju config wordpress-k8s plugins=<plugin-slug>`, the plugin will also be installed to it's latest
+`juju config wordpress-k8s plugins=<plugin-slug>`, the plugin will also be installed to its latest
 version by default and may cause version differences between pods.
 The wordpress-k8s charm supports multi-unit deployments. Therefore, installing plugins through UI
 has been disabled and can only be installed through the plugins configuration. Please see

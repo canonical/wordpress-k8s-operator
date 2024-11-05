@@ -35,8 +35,8 @@ more about COS [here](https://charmhub.io/topics/canonical-observability-stack).
 ### logging
 
 Logging relation is a part of the COS integration to enhance logging observability. The
-wordpress-k8s charm satisfies the loki_push_api by integrating promtail that pushes apache logs to
-Loki. Requires [loki-k8s](https://charmhub.io/loki-k8s) charm. Learn more about COS
+wordpress-k8s charm satisfies the `loki_push_api` by integrating promtail that pushes apache logs to
+Loki. Requires the [loki-k8s](https://charmhub.io/loki-k8s) charm. Learn more about COS
 [here](https://charmhub.io/topics/canonical-observability-stack).
 
 ### grafana-dashboard

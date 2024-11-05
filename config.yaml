@@ -94,3 +94,9 @@ options:
     description: >
       Boolean value denoting whether modsec based WAF should be enabled. Applied if ingress
       relation is available.
+  health_check_timeout_seconds:
+    type: int
+    default: 5
+    description: >
+      This setting specifies the duration, in seconds, that pebble will wait for a WordPress health check to complete
+      before timing out. Use this setting to adjust the timeout based on expected system performance and conditions

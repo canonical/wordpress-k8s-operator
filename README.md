@@ -37,7 +37,15 @@ You can find more information on this [here](https://charmhub.io/wordpress-k8s/a
 
 ## Integrations
 
-This charm can be integrated with other Juju charms and services. You can find the full list of integrations [here](https://charmhub.io/wordpress-k8s/integrations)
+Deployment of WordPress requires a relational database. The integration with the mysql interface is required by the wordpress-k8s charm for which `mysql-k8s` charm can be deployed as follows -
+
+```
+juju deploy mysql-k8s --trust
+# 'database' interface is required since mysql-k8s charm provides multiple compatible interfaces
+juju integrate wordpress-k8s mysql-k8s:database
+```
+
+Apart from this, the charm can be integrated with other Juju charms and services as well. You can find the full list of integrations [here](https://charmhub.io/wordpress-k8s/integrations)
 
 ## Learn more
 

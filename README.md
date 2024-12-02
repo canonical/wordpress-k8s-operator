@@ -61,6 +61,6 @@ It's an open source project that warmly welcomes community projects, contributio
 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
-- [Contribute](https://charmhub.io/wordpress-k8s/docs/contributing-hacking)
+- [Contribute](https://charmhub.io/wordpress-k8s/docs/how-to-contribute)
 - [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 

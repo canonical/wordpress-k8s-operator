@@ -66,6 +66,14 @@ parts:
       a2enmod rewrite
       a2enmod ssl
       EOF
+  apache-exporter:
+    plugin: go
+    build-snaps:
+      - go/1.22/stable
+    source: https://github.com/Lusitaniae/apache_exporter.git
+    source-type: git
+    source-tag: v1.0.9
+    source-depth: 1
   wordpress:
     after:
       - apache2
@@ -74,8 +82,6 @@ parts:
       - WP_VERSION: 6.4.3
     build-packages:
       - curl
-    stage-snaps:
-    - rocks-apache-prometheus-exporter/latest/edge
     override-build: |
       curl -sSL --create-dirs https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o wp
       chmod +x wp

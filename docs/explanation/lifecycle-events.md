@@ -21,7 +21,7 @@ uploaded content from the WordPress user.
 
 ### leader_elected
 
-This event is fired when Juju elects a leader unit among the replica peers. Wordpress-k8s charm
+This event is fired when juju elects a leader unit among the replica peers. Wordpress-k8s charm
 then responds by setting up secrets and sharing them with peers through peer relation databag if
 not already set.
 
@@ -34,14 +34,14 @@ state and the desired state. See the list of
 ### wordpress_pebble_ready
 
 When this event is fired, wordpress-k8s charm installs, configures and starts Apache server for
-WordPress through Pebble if the storage is available. Configurations that are set dynamically
+WordPress through pebble if the storage is available. Configurations that are set dynamically
 include database connection and secrets used by the WordPress application. Dynamic configurations
-are modified in `wp-config.php` file and the changes are pushed through Pebble.
+are modified in `wp-config.php` file and the changes are pushed through pebble.
 
 ### apache_prometheus_exporter_pebble_ready
 
 This event signals that the `apache_prometheus_exporter` container is ready in the pod. Apache
-prometheus exporter service is then started through Pebble.
+prometheus exporter service is then started through pebble.
 
 ### wordpress-replica_relation_changed
 
@@ -54,5 +54,5 @@ installed themes and plugins with the incoming list of themes and plugins.
 
 ### upgrade-charm
 
-The `upgrade-charm` event is fired on the upgrade charm command `juju refresh wordpress-k8s`. The command sets up
-secrets in peer-relation databag for upgraded deployment of WordPress if it was not already set.
+Upgrade charm event is fired on the upgrade charm command `juju refresh wordpress-k8s`. Sets up
+secrets in peer-relation databag for upgraded deployment of WordPress if not already set.

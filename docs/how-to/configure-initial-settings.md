@@ -1,6 +1,6 @@
-# How to configure initial settings
+# How to configure initial settings\*
 
-> **NOTE** This only works when setting up WordPress initially, before database relation setup. Changing the
+\*This only works when setting up WordPress initially, before database relation setup. Changing the
 value afterwards has no effect.
 
 By providing configuration value for `initial_settings` at deployment, you can tweak a few

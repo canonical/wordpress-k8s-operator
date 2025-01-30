@@ -12,9 +12,9 @@ juju deploy nginx-ingress-integrator
 juju relate wordpress-k8s nginx-ingress-integrator
 ```
 
-### Enable Modsecurity 3.0 WAF
+### Enable Modsecurity 3.0 WAF\*
 
-> **NOTE** This feature is only available for
+\*This feature is only available for
 [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
 
 The modsecurity WAF is enabled by default.

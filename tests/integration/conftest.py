@@ -205,7 +205,9 @@ async def prepare_swift(wordpress: WordpressApp, swift_config: Dict[str, str]):
 @pytest_asyncio.fixture(scope="module")
 async def prepare_nginx_ingress(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate nginx-ingress-integrator charm for integration tests."""
-    await wordpress.model.deploy("nginx-ingress-integrator", series="focal", trust=True)
+    await wordpress.model.deploy(
+        "nginx-ingress-integrator", channel="latest/edge", series="focal", revision=133, trust=True
+    )
     await wordpress.model.wait_for_idle(apps=["nginx-ingress-integrator"], timeout=30 * 60)
     await wordpress.model.relate(f"{wordpress.name}:nginx-route", "nginx-ingress-integrator")
     await wordpress.model.wait_for_idle(status="active")

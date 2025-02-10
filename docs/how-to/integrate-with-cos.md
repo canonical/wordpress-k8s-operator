@@ -24,7 +24,7 @@ juju relate wordpress-k8s loki-k8s
 
 ### grafana-k8s
 
-In order for the Grafana dashboard to function properly, Grafana should be able to connect to
+In order for the Grafana dashboard to function properly, grafana should be able to connect to
 Prometheus and Loki as its datasource. Deploy and relate prometheus-k8s and lok-k8s charm with
 [grafana-k8s](https://charmhub.io/grafana-k8s) charm through `grafana-source` relation.
 
@@ -37,7 +37,7 @@ juju relate prometheus-k8s:grafana-source grafana-k8s:grafana-source
 juju relate loki-k8s:grafana-source grafana-k8s:grafana-source
 ```
 
-Then, wordpress-k8s charm can be related with Grafana using the `grafana-dashboard` relation with
+Then, wordpress-k8s charm can be related with grafana using the `grafana-dashboard` relation with
 `grafana_dashboard` interface.
 
 ```
@@ -48,9 +48,9 @@ To access the Grafana dashboard for wordpress-k8s charm, run the following comma
 credentials for admin access.
 
 ```
-juju run grafana-k8s/0 get-admin-password
+juju run-action grafana-k8s/0 get-admin-password --wait
 ```
 
-You can now log into the Grafana dashboard by visiting `http://<grafana-unit-ip>:3000`. Navigate to
+You can now log into the grafana dashboard by visiting `http://<grafana-unit-ip>:3000`. Navigate to
 `http://<grafana-unit-ip>:3000/dashboards` and access the WordPress dashboard named Wordpress Operator
 Overview.

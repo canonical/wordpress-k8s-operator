@@ -16,6 +16,8 @@ installation. Source `openrc` and load the credentials by running
 source openrc && printenv | grep OS_
 ```
 
+You should be able to see
+
 The contents of the command above should look something similar to the following.
 
 ```

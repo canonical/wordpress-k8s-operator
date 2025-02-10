@@ -24,3 +24,4 @@ jobs:
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
       tmate-debug: true
+      channel: 1.31/stable

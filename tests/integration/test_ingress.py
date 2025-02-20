@@ -3,9 +3,6 @@
 
 """Integration tests for WordPress charm ingress integration."""
 
-import socket
-import unittest.mock
-
 import kubernetes
 import pytest
 import requests
@@ -21,37 +18,6 @@ async def test_ingress(wordpress: WordpressApp):
         and WordPress charm.
     assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections.
     """
-
-    def gen_patch_getaddrinfo(host: str, resolve_to: str):
-        """Generate patched getaddrinfo function.
-
-        This function is used to generate a patched getaddrinfo function that will resolve to the
-        resolve_to address without having to actually register a host.
-
-        Args:
-            host: intended hostname of a given application.
-            resolve_to: destination address for host to resolve to.
-
-        Returns:
-            A patching function for getaddrinfo.
-        """
-        original_getaddrinfo = socket.getaddrinfo
-
-        def patched_getaddrinfo(*args):
-            """Patch getaddrinfo to point to desired ip address.
-
-            Args:
-                args: original arguments to getaddrinfo when creating network connection.
-
-            Returns:
-                Patched getaddrinfo function.
-            """
-            if args[0] == host:
-                return original_getaddrinfo(resolve_to, *args[1:])
-            return original_getaddrinfo(*args)
-
-        return patched_getaddrinfo
-
     response = requests.get("http://127.0.0.1", headers={"Host": wordpress.name}, timeout=5)
     assert (
         response.status_code == 200 and "wordpress" in response.text.lower()
@@ -60,13 +26,12 @@ async def test_ingress(wordpress: WordpressApp):
     new_hostname = "wordpress.test"
     await wordpress.set_config({"blog_hostname": new_hostname})
     await wordpress.model.wait_for_idle(status="active")
-    with unittest.mock.patch.multiple(
-        socket, getaddrinfo=gen_patch_getaddrinfo(new_hostname, "127.0.0.1")
-    ):
-        response = requests.get(f"https://{new_hostname}", timeout=5, verify=False)  # nosec
-        assert (
-            response.status_code == 200 and "wordpress" in response.text.lower()
-        ), "Ingress should update the server name indication based routing after blog_hostname updated"
+    response = requests.get(
+        "https://127.0.0.1", headers={"Host": new_hostname}, timeout=5, verify=False
+    )  # nosec
+    assert (
+        response.status_code == 200 and "wordpress" in response.text.lower()
+    ), "Ingress should update the server name indication based routing after blog_hostname updated"
 
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_nginx_ingress", "prepare_swift")

@@ -9,13 +9,13 @@ and using the WordPress charm.
 
 ## Basic operations
 * [Integrate with COS]
-* [Enable antispam]
 * [Configure hostname]
 * [Install plugins]
 * [Install themes]
 * [Configure object storage]
 
 ## Security
+* [Enable antispam]
 * [Enable WAF]
 * [Rotate secrets]
 
@@ -25,3 +25,19 @@ and using the WordPress charm.
 
 ## Development
 * [Contribute]
+
+<!--Links-->
+
+[Retrieve initial credentials]: /t/8864
+[Configure initial settings]: /t/8863
+[Integrate with COS]: /t/8859
+[Configure hostname]: /t/8862
+[Install plugins]: /t/8865
+[Install themes]: /t/8866
+[Configure object storage]: /t/8867
+[Enable antispam]: /t/8860
+[Enable WAF]: /t/8861
+[Rotate secrets]: /t/8868
+[Upgrade WordPress charm]: /t/16874
+[Redeploy]: /t/16873
+[Contribute]: /t/8858

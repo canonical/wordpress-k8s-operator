@@ -33,7 +33,7 @@ Thinking about using the WordPress Operator for your next project? [Get in touch
 # Contents
 
 1. [Tutorial](tutorial.md)
-1. [How-to](how-to)
+1. [How-to](how-to/index.md)
   1. [Contribute](how-to/contribute.md)
   1. [Integrate with COS](how-to/integrate-with-cos.md)
   1. [Enable antispam](how-to/enable-antispam.md)

@@ -8,11 +8,11 @@ and using the WordPress charm.
 * [Configure initial settings]
 
 ## Basic operations
-* [Integrate with COS]
 * [Configure hostname]
+* [Configure object storage]
 * [Install plugins]
 * [Install themes]
-* [Configure object storage]
+* [Integrate with COS]
 
 ## Security
 * [Enable antispam]

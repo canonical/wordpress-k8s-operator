@@ -28,16 +28,16 @@ and using the WordPress charm.
 
 <!--Links-->
 
-[Retrieve initial credentials]: /t/8864
-[Configure initial settings]: /t/8863
-[Integrate with COS]: /t/8859
-[Configure hostname]: /t/8862
-[Install plugins]: /t/8865
-[Install themes]: /t/8866
-[Configure object storage]: /t/8867
-[Enable antispam]: /t/8860
-[Enable WAF]: /t/8861
-[Rotate secrets]: /t/8868
-[Upgrade WordPress charm]: /t/16874
-[Redeploy]: /t/16873
-[Contribute]: /t/8858
+[Retrieve initial credentials]: retrieve-initial-credentials.md
+[Configure initial settings]: configure-initial-settings.md
+[Integrate with COS]: integrate-with-cos.md
+[Configure hostname]: configure-hostname.md
+[Install plugins]: install-plugins.md
+[Install themes]: install-themes.md
+[Configure object storage]: configure-object-storage.md
+[Enable antispam]: enable-antispam.md
+[Enable WAF]: enable-waf.md
+[Rotate secrets]: rotate-secrets.md
+[Upgrade WordPress charm]: upgrade-wordpress-charm.md
+[Redeploy]: redeploy.md
+[Contribute]: contribute.md

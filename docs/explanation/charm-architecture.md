@@ -52,7 +52,7 @@ In order to enable monitoring of Apache server status, redirection to WordPress 
 `/server-status` endpoint is accessed by `apache-exporter` service to convert and re-expose with
 open metrics compliant format for integration with `prometheus_scrape` interface.
 
-When a logging relation is joined, a promtail application is started via pebble which starts
+When a logging relation is joined, a promtail application is started via Pebble which starts
 pushing Apache server logs to Loki. The configurations for Apache have been set up to stream logs
 to both `access.log`, `error.log` files and container logs in
 [`000-default.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/wordpress_rock/files/etc/apache2/sites-available/000-default.conf).

@@ -33,7 +33,7 @@ Learn more about Pebble and its layer configurations [in the Pebble documentatio
 This container runs the main workload of the charm. The OCI image is custom built and includes
 the WordPress CLI, Apache server and default WordPress plugins and themes. By
 default, Apache server accepts all the web traffic on port 80 and redirects the requests to
-WordPress php index file, handled by the default `x-httpd-php` handler. The configuration of the
+WordPress PHP index file, handled by the default `x-httpd-php` handler. The configuration of the
 Apache server redirects can be found in
 [`wordpress_rock/files/etc/apache2`](https://github.com/canonical/wordpress-k8s-operator/blob/main/wordpress_rock/files/etc/apache2)
 folder.
@@ -41,12 +41,12 @@ folder.
 WordPress, by default, stores uploaded content files locally at `/wp-content/uploads` directory.
 To make the content accessible across WordPress replication servers, a swift-proxy is added to
 enable content storage on OpenStack Swift through the use of
-`wp_plugin_openstack-objectstorage_config` configuration parameter. Swift proxy settings can be found
+[`wp_plugin_openstack-objectstorage_config` configuration parameter](https://charmhub.io/wordpress-k8s/configurations#wp_plugin_openstack-objectstorage_config). Swift proxy settings can be found
 in [`docker-php-swift-proxy.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/wordpress_rock/files/etc/apache2/conf-available/docker-php-swift-proxy.conf)
 in the repository. The settings are dynamically modified during runtime when the
 `wp_plugin_openstack-objectstorage_config` parameter is configured.
 
-In order to enable monitoring of Apache server status, redirection to WordPress php for route
+In order to enable monitoring of Apache server status, redirection to WordPress PHP for route
 `/server-status` is overridden in
 [`apache2.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/wordpress_rock/files/etc/apache2/apache2.conf).
 `/server-status` endpoint is accessed by `apache-exporter` service to convert and re-expose with
@@ -56,22 +56,22 @@ When a logging relation is joined, a promtail application is started via Pebble 
 pushing Apache server logs to Loki. The configurations for Apache have been set up to stream logs
 to both `access.log`, `error.log` files and container logs in
 [`000-default.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/wordpress_rock/files/etc/apache2/sites-available/000-default.conf).
-These files are essential for promtail to read and push latest logs to loki periodically.
+These files are essential for promtail to read and push latest logs to Loki periodically.
 
 ### charm
 
-This container is the main point of contact with the juju controller. It communicates with juju to
+This container is the main point of contact with the Juju controller. It communicates with Juju to
 run necessary charm code defined by the main `src/charm.py`. The source code is copied to the
 `/var/lib/juju/agents/unit-UNIT_NAME/charm` directory.
 
-## OCI Image
+## OCI image
 
 ### wordpress-image
 
 The wordpress-image is custom built to include a default set of plugins and themes. The list of
 plugins and themes can be found at the reference section of the
 [documentation](https://charmhub.io/wordpress-k8s/docs/reference-plugins). Since WordPress is
-an application running on php, required libraries and dependencies are installed during the build
+an application running on PHP, required libraries and dependencies are installed during the build
 process.
 
 WordPress application installation is done at runtime during database connection setup. This can
@@ -79,11 +79,11 @@ happen during database relation changed, database relation joined or database co
 events.
 To facilitate the WordPress installation process,
 [WordPress CLI](https://make.wordpress.org/cli/handbook/guides/installing/) is embedded in the OCI
-image during the build step. The latest CLI php archive file from source is used.
+image during the build step. The latest CLI PHP archive file from source is used.
 
 Currently, WordPress version 5.9.3 is used alongside Ubuntu 20.04 base image. The Ubuntu base image
-hasn't yet been upgraded to 22.04 due to an unsupported php version 8 for
-`wordpress-launchpad-integration` plugin (supported php version 7). All other plugins and themes use
+hasn't yet been upgraded to 22.04 due to an unsupported PHP version 8 for
+`wordpress-launchpad-integration` plugin (which currently supports PHP version 7). All other plugins and themes use
 the latest stable version by default, downloaded from the source.
 
 ## Integrations
@@ -99,7 +99,7 @@ among peers. See more about the secrets in the `rotate-wordpress-secrets` action
 
 The database relation is the standard database relation in accordance with the latest data platform
 library. It is a required relation for wordpress-k8s charm to become active. It provides a
-connection with `mysql_client` interface, meaning that any charms supporting mysql client can
+connection with `mysql_client` interface, meaning that any charms supporting MySQL client can
 connect to the wordpress-k8s charm. It should be noted that the connection port on the database
 side must be on 3306.
 
@@ -110,7 +110,7 @@ additional capabilities depending on the ingress charm. The wordpress-k8s charm'
 is best enhanced with the [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
 charm, providing additional capabilities such as ModSecurity enabled
 Web Application Firewall ([WAF](https://docs.nginx.com/nginx-waf/)) through the wordpress-k8s charm
-configuration parameter `use_nginx_ingress_modsec`. The ingress relation interface is subject to
+configuration parameter [`use_nginx_ingress_modsec`](https://charmhub.io/wordpress-k8s/configurations#use_nginx_ingress_modsec). The ingress relation interface is subject to
 renaming due to additional ingress interface definition supported by the Traefik charm.
 
 ### metrics-endpoint
@@ -123,7 +123,7 @@ more about COS [here](https://charmhub.io/topics/canonical-observability-stack).
 ### logging
 
 Logging relation is a part of the COS integration to enhance logging observability. The
-wordpress-k8s charm satisfies the `loki_push_api` by integrating promtail that pushes apache logs to
+wordpress-k8s charm satisfies the `loki_push_api` by integrating promtail that pushes Apache logs to
 Loki. Requires the [loki-k8s](https://charmhub.io/loki-k8s) charm. Learn more about COS
 [here](https://charmhub.io/topics/canonical-observability-stack).
 
@@ -136,7 +136,7 @@ Grafana relation data bag under the "dashboards" key. Requires Prometheus dataso
 integrated with Grafana.
 
 
-## Lifecycle Events
+## Lifecycle events
 
 Juju events allow progression of the charm in its lifecycle and encapsulates part of the execution
 context of a charm. Below is the list of observed events for wordpress-k8s charm with how the charm
@@ -165,7 +165,7 @@ not already set.
 
 ### config-changed
 
-WordPress-k8s charm reacts to any configuration change and runs reconciliation between the current
+The wordPress-k8s charm reacts to any configuration change and runs reconciliation between the current
 state and the desired state. See the list of
 [configurations](https://charmhub.io/wordpress-k8s/configure).
 
@@ -179,14 +179,14 @@ are modified in `wp-config.php` file and the changes are pushed through Pebble.
 ### apache_prometheus_exporter_pebble_ready
 
 This event signals that the `apache_prometheus_exporter` container is ready in the pod. Apache
-prometheus exporter service is then started through Pebble.
+Prometheus exporter service is then started through Pebble.
 
 ### wordpress-replica_relation_changed
 
 When any of the relation is changed, wordpress-k8s charm must run reconciliation between the
 current state and the desired state with new relation data to synchronize the replication
 instances. The reconciliation process is divided into 3 distinct steps: core, theme and plugin
-reconciliation. Core reconciliation setups up the necessary WordPress application configuration:
+reconciliation. Core reconciliation sets up the necessary WordPress application configuration:
 secrets and database connection. Theme and Plugin respectively reconcile between currently
 installed themes and plugins with the incoming list of themes and plugins.
 
@@ -201,7 +201,7 @@ The `src/charm.py` is the default entry point for a charm and has the WordpressC
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 
-See more information in [Charm](https://juju.is/docs/sdk/constructs#heading--charm).
+> See more in the Juju docs: [Charm](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/charm/).
 
 The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
 

@@ -31,7 +31,7 @@ Learn more about Pebble and its layer configurations [in the Pebble documentatio
 ### wordpress
 
 This container runs the main workload of the charm. The OCI image is custom built and includes
-the WordPress cli, Apache server and default WordPress plugins and themes. By
+the WordPress CLI, Apache server and default WordPress plugins and themes. By
 default, Apache server accepts all the web traffic on port 80 and redirects the requests to
 WordPress php index file, handled by the default `x-httpd-php` handler. The configuration of the
 Apache server redirects can be found in

@@ -159,7 +159,7 @@ uploaded content from the WordPress user.
 
 ### leader_elected
 
-This event is fired when Juju elects a leader unit among the replica peers. Wordpress-k8s charm
+This event is fired when Juju elects a leader unit among the replica peers. The wordpress-k8s charm
 then responds by setting up secrets and sharing them with peers through peer relation databag if
 not already set.
 

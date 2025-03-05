@@ -26,5 +26,3 @@ jobs:
       test-tox-env: "integration-juju3"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
-      tmate-debug: true
-      tmate-timeout: 60

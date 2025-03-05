@@ -9,7 +9,7 @@ charms.
 ## Charm architecture diagram
 
 ```mermaid
-C4Component
+C4Context
 title Component diagram for Wordpress Charm
 
 Container_Boundary(wordpress, "Wordpress") {

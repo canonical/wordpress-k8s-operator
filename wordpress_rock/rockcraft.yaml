@@ -4,7 +4,7 @@
 name: wordpress
 summary: Wordpress rock
 description: Wordpress OCI image for the Wordpress charm
-base: ubuntu:20.04
+base: ubuntu@24.04
 run-user: _daemon_
 license: Apache-2.0
 version: "1.0"
@@ -281,7 +281,11 @@ parts:
       - wordpress
     plugin: nil
     build-packages: [bzr]
+    build-environment:
+      # bzr is unable to import system python package breezy
+      - PYTHONPATH: "/usr/lib/python3/dist-packages:/usr/local/lib/python3.12/dist-packages"
     override-build: |
+      pip3 install breezy launchpadlib --break-system-packages 
       bzr branch lp:resource-centre
       cp -R . $CRAFT_PART_INSTALL
     organize:

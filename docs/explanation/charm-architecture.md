@@ -26,7 +26,7 @@ Container_Boundary(wordpress, "Wordpress") {
 
 The core component of wordpress-k8s charm consists of a wordpress-k8s main workload container with an Apache Prometheus exporter. The services inside the container are driven by
 Pebble, a lightweight API-driven process supervisor that controls the lifecycle of a service.
-Learn more about pebble and its layer configurations [here](https://github.com/canonical/pebble).
+Learn more about Pebble and its layer configurations [in the Pebble documentation](https://github.com/canonical/pebble).
 
 ### wordpress
 

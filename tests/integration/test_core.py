@@ -44,7 +44,7 @@ async def test_wordpress_functionality(wordpress: WordpressApp):
         )
 
 
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
+@pytest.mark.usefixtures("prepare_mysql")
 async def test_change_upload_limit(wordpress: WordpressApp):
     """
     arrange: after WordPress charm has been deployed and db relation established.

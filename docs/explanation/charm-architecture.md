@@ -6,21 +6,6 @@ capabilities are enhanced through integration with the
 Canonical Observability Stack ([COS](https://charmhub.io/topics/canonical-observability-stack/))
 charms.
 
-## Charm architecture diagram
-
-```mermaid
-C4Context
-title Component diagram for Wordpress Charm
-
-Container_Boundary(wordpress, "Wordpress") {
-  Component(pebble, "Pebble", "", "Starts the Wordpress server and app")
-  Component(apache-server, "Apache server", "", "Serves the Wordpress application")
-  Component(charm, "Wordpress App", "", "Wordpress application")
-
-  Rel(pebble, apache-server, "")
-  Rel(apache-server, charm, "")
-}
-```
 
 ## Containers
 
@@ -28,7 +13,21 @@ The core component of wordpress-k8s charm consists of a wordpress-k8s main workl
 Pebble, a lightweight API-driven process supervisor that controls the lifecycle of a service.
 Learn more about Pebble and its layer configurations [in the Pebble documentation](https://github.com/canonical/pebble).
 
-### wordpress
+```mermaid
+C4Context
+title Component diagram for Wordpress Charm
+
+Container_Boundary(wordpress, "WordPress") {
+  Component(pebble, "Pebble", "", "Starts the WordPress server and app")
+  Component(apache-server, "Apache server", "", "Serves the WordPress application")
+  Component(charm, "WordPress App", "", "WordPress application")
+
+  Rel(pebble, apache-server, "")
+  Rel(apache-server, charm, "")
+}
+```
+
+### WordPress
 
 This container runs the main workload of the charm. The OCI image is custom built and includes
 the WordPress CLI, Apache server and default WordPress plugins and themes. By

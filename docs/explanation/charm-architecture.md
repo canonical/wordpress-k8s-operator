@@ -133,7 +133,7 @@ Grafana relation data bag under the "dashboards" key. Requires Prometheus dataso
 integrated with Grafana.
 
 
-## Lifecycle events
+## Juju events
 
 Juju events allow progression of the charm in its lifecycle and encapsulates part of the execution
 context of a charm. Below is the list of observed events for wordpress-k8s charm with how the charm

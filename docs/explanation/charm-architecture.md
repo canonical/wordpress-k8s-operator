@@ -80,7 +80,7 @@ To facilitate the WordPress installation process,
 [WordPress CLI](https://make.wordpress.org/cli/handbook/guides/installing/) is embedded in the OCI
 image during the build step. The latest CLI PHP archive file from source is used.
 
-Currently, WordPress version 5.9.3 is used alongside Ubuntu 20.04 base image. The Ubuntu base image
+Currently, WordPress version 6.4.3 is used alongside Ubuntu 20.04 base image. The Ubuntu base image
 hasn't yet been upgraded to 22.04 due to an unsupported PHP version 8 for
 `wordpress-launchpad-integration` plugin (which currently supports PHP version 7). All other plugins and themes use
 the latest stable version by default, downloaded from the source.

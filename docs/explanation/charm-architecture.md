@@ -65,8 +65,6 @@ run necessary charm code defined by the main `src/charm.py`. The source code is 
 
 ## OCI image
 
-### wordpress-image
-
 The wordpress-image is custom built to include a default set of plugins and themes. The list of
 plugins and themes can be found at the reference section of the
 [documentation](https://charmhub.io/wordpress-k8s/docs/reference-plugins). Since WordPress is

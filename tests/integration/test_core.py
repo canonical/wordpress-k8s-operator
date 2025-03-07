@@ -62,6 +62,7 @@ async def test_change_upload_limit(wordpress: WordpressApp):
             is_admin=True,
         )
         text = wordpress_client.get_post(f"http://{unit_ip}/wp-admin/upload.php")
+        # upload limit = min(upload_max_filesize, post_max_size)
         assert "Maximum upload file size: 8 MB" in text
     await wordpress.set_config({"post_max_size": "16M"})
     await wordpress.model.wait_for_idle(status="active")

@@ -100,3 +100,19 @@ options:
     description: >
       This setting specifies the duration, in seconds, that pebble will wait for a WordPress health check to complete
       before timing out. Use this setting to adjust the timeout based on expected system performance and conditions
+  upload_max_filesize:
+    type: string
+    default: 2M
+    description: >
+       The maximum size of an uploaded file. https://www.php.net/manual/en/ini.core.php#ini.upload-max-filesize
+  post_max_size:
+    type: string
+    default: 8M
+    description: >
+      Sets max size of post data allowed. https://www.php.net/manual/en/ini.core.php#ini.post-max-size
+  max_execution_time:
+    type: int
+    default: 30
+    description: >
+      This sets the maximum time in seconds a script is allowed to run before it is terminated by the parser.
+      https://www.php.net/manual/en/info.configuration.php#ini.max-execution-time

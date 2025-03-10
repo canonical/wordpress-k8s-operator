@@ -7,6 +7,7 @@
 
 import json
 import secrets
+import textwrap
 import typing
 import unittest.mock
 
@@ -1085,3 +1086,27 @@ def test_wordpress_promtail_config(harness: ops.testing.Harness):
         ],
         "server": {"grpc_listen_port": 9095, "http_listen_port": 9080},
     }
+
+
+def test_php_ini(
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+):
+    """
+    arrange: after WordPress application unit consensus has been reached.
+    act: update php.ini related charm configurations.
+    assert: updated php.ini should be valid.
+    """
+    setup_replica_consensus()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    harness.update_config(
+        {"upload_max_filesize": "16M", "post_max_size": "32M", "max_execution_time": 60}
+    )
+    assert charm._gen_php_ini() == textwrap.dedent(
+        """
+        [PHP]
+        post_max_size = 32M
+        upload_max_filesize = 16M
+        max_execution_time = 60
+        """
+    )

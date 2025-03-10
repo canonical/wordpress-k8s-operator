@@ -346,7 +346,7 @@ class WordpressContainerMock:
     """
 
     _exec_handler = HandlerRegistry()
-    _WORDPRESS_VERSION = "5.9.3"
+    _WORDPRESS_VERSION = "6.4.3"
 
     def __init__(
         self,

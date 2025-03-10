@@ -30,7 +30,7 @@ Container_Boundary(wordpress, "WordPress") {
 ### WordPress
 
 This container runs the main workload of the charm. The OCI image is custom built and includes
-the WordPress CLI, Apache server and default WordPress plugins and themes. By
+the [WordPress CLI](https://make.wordpress.org/cli/handbook/), Apache server and default WordPress plugins and themes. By
 default, Apache server accepts all the web traffic on port 80 and redirects the requests to
 WordPress PHP index file, handled by the default `x-httpd-php` handler. The configuration of the
 Apache server redirects can be found in

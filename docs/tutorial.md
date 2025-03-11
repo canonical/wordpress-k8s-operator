@@ -17,7 +17,9 @@ tutorial will walk you through each step of deployment to get a basic WordPress 
 For more information about how to install Juju, see [Get started with Juju](https://juju.is/docs/olm/get-started-with-juju).
 
 ### Shell into the Multipass VM
-> NOTE: If you're working locally, you don't need to do this step.
+[note]
+If you're working locally, you don't need to do this step.
+[/note]
 
 To be able to work inside the Multipass VM first you need to log in with the following command:
 ```bash
@@ -97,18 +99,19 @@ password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ```
 
-> NOTE: If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of the Multipass VM.
-> Outside the Multipass VM run:
-> ```
-> multipass info my-juju-vm
-> ```
-> The IP you see here will be called <VM_IP> in this example.
->
-> Then route:
-> ```
-> sudo ip route add <UNIT_IP> via <VM_IP>
-> ```
+[note]
+ If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of the Multipass VM.
+ Outside the Multipass VM run:
+ ```
+ multipass info my-juju-vm
+ ```
+ The IP you see here will be called <VM_IP> in this example.
 
+ Then route:
+ ```
+ sudo ip route add <UNIT_IP> via <VM_IP>
+ ```
+[/note]
 
 You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the admin username and password from the previous action.
 

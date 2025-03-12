@@ -4,7 +4,7 @@ Run the following command to get the initial admin password that can be used to 
 `http://<wordpress-unit-ip>/wp-login.php`.
 
 ```
-juju run wordpress-k8s/0 get-initial-password
+juju run wordpress-k8s/0 get-initial-password 
 ```
 
 The output of the action should look something similar to the following:
@@ -20,7 +20,5 @@ unit-wordpress-k8s-0:
 
 You can use the password to login to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
 
-[note]
-If the `admin_password` value was passed in the `initial_settings` configuration, the
+> **NOTE** If the `admin_password` value was passed in the `initial_settings` configuration, the
 password from the action is invalid.
-[/note]

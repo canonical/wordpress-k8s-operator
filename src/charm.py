@@ -863,7 +863,12 @@ class WordpressCharm(CharmBase):
             the content of the php.ini file.
         """
         current = self._current_php_ini()
-        php_configs = ["upload_max_filesize", "post_max_size", "max_execution_time"]
+        php_configs = [
+            "upload_max_filesize",
+            "post_max_size",
+            "max_execution_time",
+            "max_input_time",
+        ]
         new = current
         for php_config in php_configs:
             search = f"^{php_config}\\s*=\\s*[^\\s]+"

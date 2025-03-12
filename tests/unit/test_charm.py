@@ -1108,5 +1108,6 @@ def test_php_ini(
         post_max_size = 32M
         upload_max_filesize = 16M
         max_execution_time = 60
+        max_input_time = -1
         """
     )

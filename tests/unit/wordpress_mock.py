@@ -366,6 +366,7 @@ class WordpressContainerMock:
                 post_max_size = 8M
                 upload_max_filesize = 2M
                 max_execution_time = 30
+                max_input_time = 60
                 """
             ),
         }

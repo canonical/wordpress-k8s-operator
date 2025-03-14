@@ -20,10 +20,14 @@ title Component diagram for Wordpress Charm
 Container_Boundary(wordpress, "WordPress") {
   Component(pebble, "Pebble", "", "Starts the WordPress server and app")
   Component(apache-server, "Apache server", "", "Serves the WordPress application")
-  Component(charm, "WordPress App", "", "WordPress application")
 
   Rel(pebble, apache-server, "")
-  Rel(apache-server, charm, "")
+}
+
+Container_Boundary(charm, "WordPress Operator") {
+  Component(charm, "WordPress Operator", "", "WordPress Operator (charm)")
+  
+  Rel(pebble, charm, "")
 }
 ```
 

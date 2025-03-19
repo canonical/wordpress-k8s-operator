@@ -18,8 +18,8 @@ C4Context
 title Component diagram for Wordpress Charm
 
 Container_Boundary(wordpress, "WordPress") {
-  Component(pebble, "Pebble", "", "Starts the WordPress server and app")
   Component(apache-server, "Apache server", "", "Serves the WordPress application")
+  Component(pebble, "Pebble", "", "Starts the WordPress server and app")
 
   Rel(pebble, apache-server, "")
 }

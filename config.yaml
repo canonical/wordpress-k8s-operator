@@ -116,3 +116,9 @@ options:
     description: >
       This sets the maximum time in seconds a script is allowed to run before it is terminated by the parser.
       https://www.php.net/manual/en/info.configuration.php#ini.max-execution-time
+  max_input_time:
+    type: int
+    default: -1
+    description: >
+      This sets the maximum time in seconds a script is allowed to parse input data, like POST and GET.
+      https://www.php.net/manual/en/info.configuration.php#ini.max-input-time

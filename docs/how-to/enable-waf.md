@@ -5,11 +5,11 @@ Web Application Firewall.
 
 ### Prerequisites
 
-Deploy and relate [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
+Deploy and relate the [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
 
 ```
 juju deploy nginx-ingress-integrator
-juju relate wordpress-k8s nginx-ingress-integrator
+juju integrate wordpress-k8s nginx-ingress-integrator
 ```
 
 ### Enable Modsecurity 3.0 WAF
@@ -19,8 +19,9 @@ juju relate wordpress-k8s nginx-ingress-integrator
 
 The modsecurity WAF is enabled by default.
 
-By running `kubectl describe wordpress-k8s-ingress` in the appropriate namespace, the result should
-look something like the following:
+To check if WAF is enabled, run `kubectl describe wordpress-k8s-ingress -m <juju-model-name>`
+where `<juju-model-name>` is the name of the model that your WordPress app is deployed on. For the
+model name `wordpress-tutorial`, this command should output something like:
 
 ```
 Name:             wordpress-k8s-ingress

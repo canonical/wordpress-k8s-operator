@@ -1,7 +1,7 @@
 # How to configure object storage
 
-Object storage configuration is required for wordpress-k8s charm to work with multi-unit
-deployments.
+Object storage configuration is required for the `wordpress-k8s` charm to work with
+multi-unit deployments.
 
 ### Prerequisites
 
@@ -9,14 +9,14 @@ Follow the instructions on installing OpenStack from the OpenStack
 [documentation](https://docs.openstack.org/install-guide/). For testing purposes, you can install
 [DevStack](https://docs.openstack.org/devstack/latest/).
 
-After successful installations, you should be able to see `openrc` file at the location of
-installation. Source `openrc` and load the credentials by running
+After successful installations, you should be able to see the `openrc` file at the location of
+installation. Source `openrc` and load the credentials with:
 
-```
+```bash
 source openrc && printenv | grep OS_
 ```
 
-The contents of the command above should look something similar to the following.
+The output of the command above should look something similar to the following.
 
 ```
 export OS_CACERT=
@@ -35,7 +35,7 @@ export OS_VOLUME_API_VERSION=3
 
 ### Configure openstack-objectstorage plugin
 
-To configure Swift storage for wordpress-k8s, copy and paste the following yaml content and adjust
+To configure Swift storage for `wordpress-k8s`, copy and paste the following yaml content and adjust
 the values accordingly.
 
 ```
@@ -55,8 +55,8 @@ tenant: demo
 username: demo
 ```
 
-You can then configure wordpress-k8s charm using the yaml contents above.
+You can then configure the `wordpress-k8s` charm using the yaml contents above.
 
-```
+```bash
 juju config wordpress-k8s wp_plugin_openstack-objectstorage_config="$(cat <path-to-yaml>)"
 ```

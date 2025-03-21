@@ -18,7 +18,7 @@ unit-wordpress-k8s-0:
   status: completed
 ```
 
-You can use the password to login to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
+You can use the password to log in to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
 
 > **NOTE** If the `admin_password` value was passed in the `initial_settings` configuration, the
-password from the action is invalid.
+password from this action is invalid.

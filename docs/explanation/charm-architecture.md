@@ -89,6 +89,8 @@ the latest stable version by default, downloaded from the source.
 
 ## Integrations
 
+See [Relation endpoints](../reference/integrations.md).
+
 ### Peer relations
 
 When deploying multiple replications of the wordpress-k8s charm, peer relations are set up to
@@ -96,59 +98,18 @@ ensure synchronization of data among replications. Namely, secrets and admin cre
 among peers. See more about the secrets in the `rotate-wordpress-secrets` action of the
 [reference documentation](https://charmhub.io/wordpress-k8s/docs/reference-actions).
 
-### database
-
-The database relation is the standard database relation in accordance with the latest data platform
-library. It is a required relation for wordpress-k8s charm to become active. It provides a
-connection with `mysql_client` interface, meaning that any charms supporting MySQL client can
-connect to the wordpress-k8s charm. It should be noted that the connection port on the database
-side must be on 3306.
-
-### ingress
-
-Ingress interface provides external http/https access to the WordPress application along with other
-additional capabilities depending on the ingress charm. The wordpress-k8s charm's ingress relation
-is best enhanced with the [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
-charm, providing additional capabilities such as ModSecurity enabled
-Web Application Firewall ([WAF](https://docs.nginx.com/nginx-waf/)) through the wordpress-k8s charm
-configuration parameter [`use_nginx_ingress_modsec`](https://charmhub.io/wordpress-k8s/configurations#use_nginx_ingress_modsec). The ingress relation interface is subject to
-renaming due to additional ingress interface definition supported by the Traefik charm.
-
-### metrics-endpoint
-
-This interface is a part of the COS integration to enhance metrics observability. The wordpress-k8s
-charm satisfies the `prometheus_scrape` interface as a provider by exposing Open Metrics compliant
-`/metrics` endpoint. Requires [prometheus-k8s](https://charmhub.io/prometheus-k8s) charm. Learn
-more about COS [here](https://charmhub.io/topics/canonical-observability-stack).
-
-### logging
-
-Logging relation is a part of the COS integration to enhance logging observability. The
-wordpress-k8s charm satisfies the `loki_push_api` by integrating promtail that pushes Apache logs to
-Loki. Requires the [loki-k8s](https://charmhub.io/loki-k8s) charm. Learn more about COS
-[here](https://charmhub.io/topics/canonical-observability-stack).
-
-### grafana-dashboard
-
-Grafana-dashboard is a part of the COS integration to enhance observability. This relation provides
-a pre-made dashboard used for monitoring Apache server hosting WordPress. The wordpress-k8s charm
-satisfies the `grafana_dashboard` interface by providing the pre-made dashboard template to the
-Grafana relation data bag under the "dashboards" key. Requires Prometheus datasource to be already
-integrated with Grafana.
-
-
 ## Juju events
 
 Juju events allow progression of the charm in its lifecycle and encapsulates part of the execution
-context of a charm. Below is the list of observed events for wordpress-k8s charm with how the charm
+context of a charm. Below is the list of observed events for `wordpress-k8s charm` with how the charm
 reacts to the event. For more information about the charm’s lifecycle in general, refer to the
-charm’s life [documentation](https://juju.is/docs/sdk/a-charms-life#heading--the-graph).
+charm’s life [documentation](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/).
 
 ### start
 
 This event marks the charm’s state as started. The charm’s running state must be persisted by the
 charm in its own state. See the documentation on the
-[start event](https://juju.is/docs/sdk/start-event).
+[start event](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/#start).
 
 ### uploads_storage_attached
 

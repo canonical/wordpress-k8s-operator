@@ -82,7 +82,7 @@ juju integrate wordpress-k8s loki-k8s
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape-v0)  
 _Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)
 
-Metrics-endpoint relation allows scraping the `/metrics` endpoint provided by apache-exporter sidecar
+Metrics-endpoint relation allows scraping the `/metrics` endpoint provided by `apache-exporter` sidecar
 on port 9117, which provides apache metrics from apache’s `/server-status` route. This internal
 apache’s `/server-status` route is not exposed and can only be accessed from within the same
 Kubernetes pod. The metrics are exposed in the [open metrics format](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#data-model) and will only be scraped by Prometheus once the relation becomes active. For more

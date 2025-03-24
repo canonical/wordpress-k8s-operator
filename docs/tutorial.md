@@ -75,7 +75,7 @@ The deployment finishes when the status shows "Active" for both the WordPress an
 ### Get admin credentials <a name="get-admin-credentials"></a>
 
 Now that we have an active deployment, let’s access the WordPress
-application by accessing the IP of a wordpress-k8s unit. To start managing WordPress as an
+application by accessing the IP of a `wordpress-k8s` unit. To start managing WordPress as an
 administrator, you need to get the credentials for the admin account.
 
 By running the `get-initial-password` action on a `wordpress-k8s` unit, Juju will read and fetch the

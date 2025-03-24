@@ -41,8 +41,8 @@ Enable MicroK8S registry:
 microk8s enable registry
 ```
 
-The following commands import the images in the Docker daemon and push them into
-the registry:
+The following commands pack the OCI image and push it into
+the MicroK8s registry:
 
 ```bash
 cd <project_dir>

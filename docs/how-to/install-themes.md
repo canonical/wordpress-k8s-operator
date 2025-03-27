@@ -1,9 +1,11 @@
 # How to install themes
 
 Start by locating the theme from the WordPress themes page. Once you’ve located the theme, the
-theme slug is the name of the theme from the URL of the selected theme page. For example,
+theme slug is the name of the theme from the URL of the selected theme page. For example, for
 https://wordpress.org/themes/twentytwentytwo/ the plugin slug is “twentytwentytwo” after the
-“/themes/” path in the URL. You can now install the theme using the theme slug with `juju config`.
+`/themes/` path in the URL.
+
+You can now install the theme using the theme slug with `juju config`:
 
 ```
 juju config wordpress-k8s themes=<theme-slug>

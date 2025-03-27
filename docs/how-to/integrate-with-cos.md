@@ -26,9 +26,9 @@ juju integrate wordpress-k8s loki-k8s
 
 In order for the Grafana dashboard to function properly, Grafana should be able to connect to
 Prometheus and Loki as its datasource. Deploy and relate the `prometheus-k8s` and `loki-k8s`
-charms with [grafana-k8s](https://charmhub.io/grafana-k8s) charm through `grafana-source` relation.
+charms with [grafana-k8s](https://charmhub.io/grafana-k8s) charm through the `grafana-source` integration.
 
-Note that the relation `grafana-source` has to be explicitly stated since `prometheus-k8s` and
+Note that the integration `grafana-source` has to be explicitly stated since `prometheus-k8s` and
 `grafana-k8s` share multiple interfaces.
 
 ```

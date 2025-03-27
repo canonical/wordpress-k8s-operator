@@ -9,7 +9,7 @@ Follow the instructions on installing OpenStack from the OpenStack
 [documentation](https://docs.openstack.org/install-guide/). For testing purposes, you can install
 [DevStack](https://docs.openstack.org/devstack/latest/).
 
-After successful installations, you should be able to see the `openrc` file at the location of
+After a successful installation, you should be able to see the `openrc` file at the location of
 installation. Source `openrc` and load the credentials with:
 
 ```bash

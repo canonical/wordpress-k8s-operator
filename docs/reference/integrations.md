@@ -5,7 +5,7 @@
 _Interface_: mysql_client    
 _Supported charms_: [Charmed MySQL](https://charmhub.io/mysql), [Charmed MySQL-K8s](https://charmhub.io/mysql-k8s)
 
-Database endpoint can be related to MySQL based charms, providing long term storage for WordPress.
+The database endpoint can be integrated with MySQL based charms, providing long term storage for WordPress.
 Database relation connects wordpress-k8s with charms that support the `mysql_client` interface on port 3306
 in the database side.
 
@@ -20,7 +20,7 @@ _Interface_: grafana-dashboard
 _Supported charms_: [grafana-k8s](https://charmhub.io/grafana-k8s)
 
 Grafana-dashboard is a part of the COS integrate to enhance observability.
-The relation enables quick dashboard access already tailored to fit the needs of
+The integration enables quick dashboard access already tailored to fit the needs of
 operators to monitor the charm. The template for the Grafana dashboard for the
 `wordpress-k8s` charm can be found at `/src/grafana_dashboards/wordpress.json`.
 In the Grafana UI, it can be found as “WordPress
@@ -47,7 +47,7 @@ _Interface_: ingress
 _Supported charms_: [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
 
 Ingress manages external http/https access to services in a Kubernetes cluster.
-Ingress relation through [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
+The ingress integration through [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
 charm enables additional `blog_hostname` and `use_nginx_ingress_modesec` configurations that
 provide capabilities such as ModSecurity enabled
 Web Application Firewall ([WAF](https://docs.nginx.com/nginx-waf/)).
@@ -66,7 +66,7 @@ juju integrate wordpress-k8s nginx-ingress-integrator
 _Interface_: loki_push_api  
 _Supported charms_: [loki-k8s](https://charmhub.io/loki-k8s)
 
-Logging relation is a part of the COS integration to enhance logging observability.
+The logging integration is a part of the COS integration to enhance logging observability.
 Logging relation through the `loki_push_api` interface installs and runs promtail which ships the
 contents of local logs found at `/var/log/apache2/access.log` and `/var/log/apache2/error.log` to Loki.
 This can then be queried through the Loki API or easily visualized through Grafana. Learn more about COS
@@ -82,10 +82,10 @@ juju integrate wordpress-k8s loki-k8s
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape-v0)  
 _Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)
 
-Metrics-endpoint relation allows scraping the `/metrics` endpoint provided by `apache-exporter` sidecar
+The metrics-endpoint integration allows scraping the `/metrics` endpoint provided by `apache-exporter` sidecar
 on port 9117, which provides apache metrics from apache’s `/server-status` route. This internal
 apache’s `/server-status` route is not exposed and can only be accessed from within the same
-Kubernetes pod. The metrics are exposed in the [open metrics format](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#data-model) and will only be scraped by Prometheus once the relation becomes active. For more
+Kubernetes pod. The metrics are exposed in the [open metrics format](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#data-model) and will only be scraped by Prometheus once the integration becomes active. For more
 information about the metrics exposed, please refer to the [apache-exporter documentation](https://github.com/Lusitaniae/apache_exporter#collectors).
 
 Metrics-endpoint integrate command: 

@@ -6,7 +6,7 @@ _Interface_: mysql_client
 _Supported charms_: [Charmed MySQL](https://charmhub.io/mysql), [Charmed MySQL-K8s](https://charmhub.io/mysql-k8s)
 
 The database endpoint can be integrated with MySQL based charms, providing long term storage for WordPress.
-Database relation connects wordpress-k8s with charms that support the `mysql_client` interface on port 3306
+The database integration connects wordpress-k8s with charms that support the `mysql_client` interface on port 3306
 in the database side.
 
 Example database integrate command: 

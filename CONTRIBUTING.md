@@ -33,7 +33,11 @@ to the solution.
 
 To build and deploy the `wordpress-k8s` charm from source follow the steps below.
 
-#### Rockcraft image build and upload
+#### OCI image build and upload
+
+Use [Rockcraft](https://documentation.ubuntu.com/rockcraft/en/latest/) to create an
+OCI image for the WordPress app, and then upload the image to a MicroK8s registry,
+which stores OCI archives so they can be downloaded and deployed.
 
 Enable MicroK8S registry:
 

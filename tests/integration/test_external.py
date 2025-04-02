@@ -46,7 +46,7 @@ async def test_akismet_plugin(
 
 
 @pytest.mark.requires_secret
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
+@pytest.mark.usefixtures("prepare_mysql")
 async def test_openid_plugin(
     wordpress: WordpressApp,
     pytestconfig: Config,

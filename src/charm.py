@@ -55,6 +55,7 @@ class WordpressCharm(CharmBase):
 
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
     _WP_UPLOADS_PATH = "/var/www/html/wp-content/uploads"
+    _PHP_INI_PATH = "/etc/php/7.4/apache2/php.ini"
     _CONTAINER_NAME = "wordpress"
     _SERVICE_NAME = "wordpress"
     _WORDPRESS_USER = "_daemon_"
@@ -769,7 +770,7 @@ class WordpressCharm(CharmBase):
                     "override": "replace",
                     "level": "alive",
                     "http": {"url": "http://localhost"},
-                    "period": f"{max(10, health_check_timeout*2)}s",
+                    "period": f"{max(10, health_check_timeout * 2)}s",
                     "timeout": f"{health_check_timeout}s",
                 },
             },
@@ -855,6 +856,42 @@ class WordpressCharm(CharmBase):
             permissions=0o600,
         )
 
+    def _gen_php_ini(self) -> str:
+        """Generate the content of the php.ini based on the charm configuration.
+
+        Returns:
+            the content of the php.ini file.
+        """
+        current = self._current_php_ini()
+        php_configs = [
+            "upload_max_filesize",
+            "post_max_size",
+            "max_execution_time",
+            "max_input_time",
+        ]
+        new = current
+        for php_config in php_configs:
+            search = f"^{php_config}\\s*=\\s*[^\\s]+"
+            php_config_value = self.config[php_config]
+            new = re.sub(search, f"{php_config} = {php_config_value}", new, flags=re.MULTILINE)
+        return new
+
+    def _current_php_ini(self) -> str:
+        """Retrieve the current version of the php.ini from the server.
+
+        Returns:
+            The content of the current php.ini file.
+        """
+        return self._container().pull(self._PHP_INI_PATH).read()
+
+    def _update_php_ini(self, config: str) -> None:
+        """Update the content of the php.ini file.
+
+        Args:
+            config: the content of php.ini file.
+        """
+        self._container().push(self._PHP_INI_PATH, source=config, permissions=0o644)
+
     def _core_reconciliation(self) -> None:
         """Reconciliation process for the WordPress core services, returns True if successful.
 
@@ -865,6 +902,9 @@ class WordpressCharm(CharmBase):
 
         It will check if the current wp-config.php file matches the desired config.
         If not, update the wp-config.php file.
+
+        It will check if the current php.ini file matches the desired config.
+        If not, update the php.ini file.
 
         It will also check if WordPress is installed (WordPress-related tables exist in db).
         If not, install WordPress (create WordPress required tables in db).
@@ -890,6 +930,11 @@ class WordpressCharm(CharmBase):
             logger.info("Changes detected in wp-config.php, updating")
             self._stop_server()
             self._push_wp_config(wp_config)
+        php_ini = self._gen_php_ini()
+        if php_ini != self._current_php_ini():
+            logger.info("Changes detected in php.ini, updating")
+            self._stop_server()
+            self._update_php_ini(php_ini)
         self._start_server()
         logger.info("Wait until the pebble container exists")
 

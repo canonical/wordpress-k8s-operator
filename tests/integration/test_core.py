@@ -44,6 +44,39 @@ async def test_wordpress_functionality(wordpress: WordpressApp):
         )
 
 
+@pytest.mark.usefixtures("prepare_mysql")
+async def test_change_upload_limit(wordpress: WordpressApp):
+    """
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: change upload limit related settings.
+    assert: upload limit change should be reflected in the upload page.
+    """
+    await wordpress.set_config({"upload_max_filesize": "16M"})
+    await wordpress.model.wait_for_idle(status="active")
+    password = await wordpress.get_default_admin_password()
+    for unit_ip in await wordpress.get_unit_ips():
+        wordpress_client = WordpressClient(
+            host=unit_ip,
+            username="admin",
+            password=password,
+            is_admin=True,
+        )
+        text = wordpress_client.get_post(f"http://{unit_ip}/wp-admin/upload.php")
+        # upload limit = min(upload_max_filesize, post_max_size)
+        assert "Maximum upload file size: 8 MB" in text
+    await wordpress.set_config({"post_max_size": "16M"})
+    await wordpress.model.wait_for_idle(status="active")
+    for unit_ip in await wordpress.get_unit_ips():
+        wordpress_client = WordpressClient(
+            host=unit_ip,
+            username="admin",
+            password=password,
+            is_admin=True,
+        )
+        text = wordpress_client.get_post(f"http://{unit_ip}/wp-admin/upload.php")
+        assert "Maximum upload file size: 16 MB" in text
+
+
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
 async def test_openstack_object_storage_plugin(
     wordpress: WordpressApp,

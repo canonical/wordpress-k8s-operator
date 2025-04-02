@@ -8,6 +8,7 @@
 import io
 import json
 import re
+import textwrap
 import typing
 import unittest.mock
 
@@ -345,7 +346,7 @@ class WordpressContainerMock:
     """
 
     _exec_handler = HandlerRegistry()
-    _WORDPRESS_VERSION = "5.9.3"
+    _WORDPRESS_VERSION = "6.4.3"
 
     def __init__(
         self,
@@ -357,7 +358,18 @@ class WordpressContainerMock:
             wordpress_database_mock: An instance of the WordPress database mock system.
         """
         self.original_pebble = None
-        self.fs: typing.Dict[str, str] = {"/proc/mounts": ""}
+        self.fs: typing.Dict[str, str] = {
+            "/proc/mounts": "",
+            WordpressCharm._PHP_INI_PATH: textwrap.dedent(
+                """
+                [PHP]
+                post_max_size = 8M
+                upload_max_filesize = 2M
+                max_execution_time = 30
+                max_input_time = 60
+                """
+            ),
+        }
         self._wordpress_database_mock = wordpress_database_mock
         self.installed_plugins = set(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
         self.installed_themes = set(WordpressCharm._WORDPRESS_DEFAULT_THEMES)

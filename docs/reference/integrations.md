@@ -92,7 +92,3 @@ Metrics-endpoint integrate command:
 ```
 juju integrate wordpress-k8s prometheus-k8s
 ```
-
-
-
-

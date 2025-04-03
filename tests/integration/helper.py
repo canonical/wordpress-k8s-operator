@@ -259,7 +259,11 @@ class WordpressClient:
         options_permalink_page = self._get(
             f"http://{self.host}/wp-admin/options-permalink.php"
         ).text
-        wp_nonce = re.findall('name="_wpnonce" value="([a-zA-Z0-9]+)"', options_permalink_page)[0]
+        wp_nonce_matches = re.findall(
+            'name="_wpnonce" value="([a-zA-Z0-9]+)"', options_permalink_page
+        )
+        assert wp_nonce_matches, f"wpnonce not found in {options_permalink_page}"
+        wp_nonce = wp_nonce_matches[0]
         self._post(
             f"http://{self.host}/wp-admin/options-permalink.php",
             data={
@@ -451,6 +455,11 @@ class WordpressClient:
             username: Username of the launchpad account.
             password: Password of the launchpad account.
         """
+        # If the session was already used to log in, the openid page is different.
+        # Clear the session to avoid such behavior.
+        if self._session:
+            self._session.close()
+        self._session = requests.session()
         login_url = f"http://{self.host}/wp-login.php"
         self._get(login_url)
         openid_redirect = self._post(
@@ -494,7 +503,9 @@ class WordpressClient:
         csrf_token = re.findall(
             "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", confirm_page.text
         )[0]
-        team = re.findall("Team membership: ([^<]+)<", confirm_page.text)[0]
+        teams = re.findall("Team membership: ([^<]+)<", confirm_page.text)
+        assert teams, f"no teams found in {confirm_page.text}"
+        team = teams[0]
         self._post(
             confirm_page.url,
             data={

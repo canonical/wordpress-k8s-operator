@@ -1,2 +1,4 @@
-# Ignore charm libs
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+# # Ignore charm libs
 lib

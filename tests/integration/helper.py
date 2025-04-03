@@ -476,10 +476,6 @@ class WordpressClient:
                 html.unescape(openid_redirect.text),
             )
         )
-        openid_args["openid.ns"] = "http://specs.openid.net/auth/2.0"
-        openid_args["openid.ns.sreg"] = "http://openid.net/extensions/sreg/1.1"
-        openid_args["openid.sreg.required"] = "email,fullname"
-        openid_args["openid.realm"] = "https://"
         login_page = self._post(
             "https://login.launchpad.net/+openid",
             data=openid_args,

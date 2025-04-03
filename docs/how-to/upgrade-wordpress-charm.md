@@ -1,19 +1,22 @@
-# How to upgrade WordPress Charm
+# How to upgrade WordPress charm
 
-Before updating the Charm you need to backup the database using MySQL charm's `create-backup` action.
+Before updating the charm you need to back up the database using
+the MySQL charm's `create-backup` action.
 
-```
+```bash
 juju run mysql/leader create-backup
 ```
-Additional info can be found about backup in [the MySQL documentation](https://charmhub.io/mysql/docs/h-create-and-list-backups)
 
-Then you can upgrade the WordPress Charm.
+Additional information can be found about backing up in
+[the MySQL documentation](https://charmhub.io/mysql/docs/h-create-and-list-backups).
+
+Then you can upgrade the WordPress charm:
 
 ```
 juju refresh wordpress-k8s
 ```
 
-After upgrading the WordPress Charm you need to update the database schema.
+After upgrading the WordPress charm you need to update the database schema:
 
 ```
 juju run wordpress-k8s/0 update-database

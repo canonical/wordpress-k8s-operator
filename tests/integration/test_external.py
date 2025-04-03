@@ -46,7 +46,7 @@ async def test_akismet_plugin(
 
 
 @pytest.mark.requires_secret
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
+@pytest.mark.usefixtures("prepare_mysql")
 async def test_openid_plugin(
     wordpress: WordpressApp,
     pytestconfig: Config,
@@ -72,14 +72,19 @@ async def test_openid_plugin(
         # wordpress-teams-integration has a bug causing desired roles not to be assigned to
         # the user when first-time login. Login twice by creating the WordPressClient client twice
         # for the very first time.
-        for _ in range(2 if idx == 0 else 1):
-            wordpress_client = WordpressClient(
-                host=unit_ip,
-                username=openid_username,
-                password=openid_password,
-                is_admin=True,
-                use_launchpad_login=True,
-            )
+        for attempt in range(2 if idx == 0 else 1):
+            try:
+                wordpress_client = WordpressClient(
+                    host=unit_ip,
+                    username=openid_username,
+                    password=openid_password,
+                    is_admin=True,
+                    use_launchpad_login=True,
+                )
+            except AssertionError:
+                if attempt == 0:
+                    continue
+                raise
         assert (
             "administrator" in wordpress_client.list_roles()
         ), "An launchpad OpenID account should be associated with the WordPress admin user"

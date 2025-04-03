@@ -118,4 +118,3 @@ Congratulations! You have successfully deployed the WordPress charm, added a dat
 
 You can clean up your environment by following this guide:
 [Tear down your test environment](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/howto/manage-your-deployment/manage-your-deployment-environment/#tear-things-down)
-

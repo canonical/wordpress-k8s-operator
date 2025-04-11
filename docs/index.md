@@ -50,7 +50,7 @@ Thinking about using the WordPress Operator for your next project? [Get in touch
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
   1. [Configurations](reference/configurations.md)
-  1. [Integrations](reference/integrations.md)
+  1. [Relation endpoints](reference/relation-endpoints.md)
   1. [Plugins](reference/plugins.md)
   1. [Themes](reference/themes.md)
 1. [Explanation](explanation)

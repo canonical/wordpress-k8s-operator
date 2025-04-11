@@ -44,7 +44,7 @@ Thinking about using the WordPress Operator for your next project? [Get in touch
   1. [Enable antispam](how-to/enable-antispam.md)
   1. [Enable WAF](how-to/enable-waf.md)  
   1. [Rotate secrets](how-to/rotate-secrets.md)
-  1. [Upgrade WordPress charm](how-to/upgrade-wordpress-charm.md)
+  1. [Upgrade](how-to/upgrade.md)
   1. [Redeploy](how-to/redeploy.md)
   1. [Contribute](how-to/contribute.md)
 1. [Reference](reference)

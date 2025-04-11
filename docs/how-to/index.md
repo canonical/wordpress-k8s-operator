@@ -20,7 +20,7 @@ and using the WordPress charm.
 * [Rotate secrets]
 
 ## Upgrade and redeployment 
-* [Upgrade WordPress charm]
+* [Upgrade]
 * [Redeploy]
 
 ## Development
@@ -38,6 +38,6 @@ and using the WordPress charm.
 [Enable antispam]: enable-antispam.md
 [Enable WAF]: enable-waf.md
 [Rotate secrets]: rotate-secrets.md
-[Upgrade WordPress charm]: upgrade-wordpress-charm.md
+[Upgrade WordPress charm]: upgrade.md
 [Redeploy]: redeploy.md
 [Contribute]: contribute.md

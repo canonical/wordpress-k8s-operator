@@ -1,4 +1,4 @@
-# How to upgrade WordPress charm
+# How to upgrade
 
 Before updating the charm you need to back up the database using
 the MySQL charm's `create-backup` action.

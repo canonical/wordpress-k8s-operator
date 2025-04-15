@@ -16,13 +16,16 @@ For more information about how to install Juju, see [Get started with Juju](http
 - [Deploy and integrate database](#deploy-and-integrate-database)
 - [Get admin credentials](#get-admin-credentials)
 
-### Set up the environment
+## Set up the environment
 
 To be able to work inside the Multipass VM first you need to log in with the following command:
 ```bash
 multipass shell my-juju-vm
 ```
-> NOTE: If you're working locally, you don't need to do this step.
+
+[note]
+If you're working locally, you don't need to do this step.
+[/note]
 
 To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model in the MicroK8s controller using the following command:
@@ -32,7 +35,7 @@ your usual work, create a new model in the MicroK8s controller using the followi
 juju add-model wordpress-tutorial
 ```
 
-### Deploy WordPress K8s charm
+## Deploy WordPress K8s charm
 
 Deployment of WordPress requires a relational database. The integration with the
 `mysql` [interface](https://juju.is/docs/sdk/integration) is required by the wordpress-k8s
@@ -45,7 +48,7 @@ the `wordpress-k8s` charm.
 juju deploy wordpress-k8s
 ```
 
-### Deploy and integrate database <a name="deploy-and-integrate-database"></a>
+## Deploy and integrate database <a name="deploy-and-integrate-database"></a>
 
 The following commands deploy the mysql-k8s charm and integrate it with the wordpress-k8s charm.
 
@@ -72,7 +75,7 @@ wordpress-k8s/0*  active    idle   10.1.200.161
 
 The deployment finishes when the status shows "Active" for both the WordPress and MySQL charms.
 
-### Get admin credentials <a name="get-admin-credentials"></a>
+## Get admin credentials <a name="get-admin-credentials"></a>
 
 Now that we have an active deployment, let’s access the WordPress
 application by accessing the IP of a `wordpress-k8s` unit. To start managing WordPress as an
@@ -96,23 +99,25 @@ password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ```
 
-> NOTE: If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of the Multipass VM.
-> Outside the Multipass VM run:
-> ```
-> multipass info my-juju-vm
-> ```
-> The IP you see here will be called <VM_IP> in this example.
->
-> Then route:
-> ```
-> sudo ip route add <UNIT_IP> via <VM_IP>
-> ```
+[note]
+ If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of the Multipass VM.
+ Outside the Multipass VM run:
+ ```
+ multipass info my-juju-vm
+ ```
+ The IP you see here will be called <VM_IP> in this example.
+
+ Then route:
+ ```
+ sudo ip route add <UNIT_IP> via <VM_IP>
+ ```
+[/note]
 
 
 You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the admin username and password from the previous action.
 
 
-### Clean up the environment
+## Clean up the environment
 
 Congratulations! You have successfully deployed the WordPress charm, added a database, and accessed the application.
 

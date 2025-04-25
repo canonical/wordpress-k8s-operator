@@ -10,12 +10,12 @@ This charm will make operating WordPress simple and straightforward for DevOps o
 
 | | |
 |--|--|
-|  [Tutorials](https://charmhub.io/wordpress-k8s/docs/tutorials-getting-started)</br>  Get started - a hands-on introduction to using the Charmed WordPress operator for new users </br> |  [How-to guides](https://charmhub.io/wordpress-k8s/docs/how-to) </br> Step-by-step guides covering key operations and common tasks |
+|  [Tutorials](https://charmhub.io/wordpress-k8s/docs/tutorials-getting-started)</br>  Get started - a hands-on introduction to using the Charmed WordPress operator for new users </br> |  [How-to guides](https://charmhub.io/wordpress-k8s/docs/how-to-retrieve-initial-credentials) </br> Step-by-step guides covering key operations and common tasks |
 | [Reference](https://charmhub.io/wordpress-k8s/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/wordpress-k8s/docs/explanation-overview) </br> Concepts - discussion and clarification of key topics  |
 
 ## Contributing to this documentation
 
-Documentation is an important part of this project, and we take the same open-source approach to the documentation as the code. As such, we welcome community contributions, suggestions, and constructive feedback on our documentation. Our documentation is hosted on the [Charmhub forum](https://discourse.charmhub.io/t/wordpress-documentation-overview/4052) to enable easy collaboration. Please use the "Help us improve this documentation" links on each documentation page to either directly change something you see that's wrong, ask a question, or make a suggestion about a potential change via the comments section.
+Documentation is an important part of this project, and we take the same open-source approach to the documentation as the code. As such, we welcome community contributions, suggestions, and constructive feedback on our documentation. See [How to contribute](https://charmhub.io/wordpress-k8s/docs/how-to-contribute) for more information.
 
 If there's a particular area of documentation that you'd like to see that's missing, please [file a bug](https://github.com/canonical/wordpress-k8s-operator/issues).
 
@@ -44,13 +44,13 @@ Thinking about using the WordPress Operator for your next project? [Get in touch
   1. [Enable antispam](how-to/enable-antispam.md)
   1. [Enable WAF](how-to/enable-waf.md)
   1. [Rotate secrets](how-to/rotate-secrets.md)
-  1. [Upgrade WordPress charm](how-to/upgrade-wordpress-charm.md)
+  1. [Upgrade](how-to/upgrade.md)
   1. [Redeploy](how-to/redeploy.md)
   1. [Contribute](how-to/contribute.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
   1. [Configurations](reference/configurations.md)
-  1. [Integrations](reference/integrations.md)
+  1. [Relation endpoints](reference/relation-endpoints.md)
   1. [Plugins](reference/plugins.md)
   1. [Themes](reference/themes.md)
 1. [Explanation](explanation)

@@ -1,5 +1,7 @@
 # Relation endpoints
 
+See [Integrations](https://charmhub.io/wordpress-k8s/integrations).
+
 ### database
 
 _Interface_: mysql_client    

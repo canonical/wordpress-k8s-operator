@@ -20,5 +20,7 @@ unit-wordpress-k8s-0:
 
 You can use the password to log in to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
 
-> **NOTE** If the `admin_password` value was passed in the `initial_settings` configuration, the
+[note]
+If the `admin_password` value was passed in the `initial_settings` configuration, the
 password from this action is invalid.
+[/note]

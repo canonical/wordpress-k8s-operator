@@ -89,7 +89,7 @@ the latest stable version by default, downloaded from the source.
 
 ## Integrations
 
-See [Relation endpoints](../reference/integrations.md).
+See [Relation endpoints](../reference/relation-endpoints.md).
 
 ### Peer relations
 

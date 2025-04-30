@@ -72,7 +72,7 @@ parts:
       - go/1.22/stable
     source: https://github.com/Lusitaniae/apache_exporter.git
     source-type: git
-    source-tag: v1.0.9
+    source-tag: v1.0.10
     source-depth: 1
   wordpress:
     after:

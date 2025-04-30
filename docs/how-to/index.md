@@ -27,7 +27,6 @@ and using the WordPress charm.
 * [Contribute]
 
 <!--Links-->
-
 [Retrieve initial credentials]: retrieve-initial-credentials.md
 [Configure initial settings]: configure-initial-settings.md
 [Integrate with COS]: integrate-with-cos.md

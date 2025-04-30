@@ -14,11 +14,11 @@ It allows for deployment on many different Kubernetes platforms,
 from [MicroK8s](https://microk8s.io/) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) 
 to public cloud Kubernetes offerings.
 
-As such, the charm makes it easy for those looking to take control of their own content management system whilst keeping operations simple, 
+As such, the charm makes it straightforward for those looking to take control of their own content management system while simplifying operations, 
 and gives them the freedom to deploy on the Kubernetes platform of their choice.
 
-For DevOps or SRE teams this charm will make operating WordPress simple and straightforward through Juju's clean interface.
-It will allow easy deployment into multiple environments for testing of changes, 
+For DevOps or SRE teams this charm will make operating WordPress straightforward through Juju's clean interface.
+It will allow deployment into multiple environments for testing of changes, 
 and supports scaling out for enterprise deployments.
 
 For information about how to deploy, integrate, and manage this charm, see the Official [wordpress-k8s-operator Documentation](https://charmhub.io/wordpress-k8s/docs).

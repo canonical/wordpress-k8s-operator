@@ -4,7 +4,7 @@ A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) d
 
 This charm simplifies initial deployment and operations of WordPress on Kubernetes, including scaling the number of instances, integration with SSO, access to OpenStack Swift object storage for redundant file storage, and more. It allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://microk8s.io/) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) to public cloud Kubernetes offerings.
 
-This charm will make operating WordPress simple and straightforward for DevOps or SRE teams through Juju's clean interface. It will allow easy deployment into multiple environments to test changes and support scaling out for enterprise deployments.
+This charm will make operating WordPress straightforward for DevOps or SRE teams through Juju's clean interface. It will allow deployment into multiple environments to test changes and support scaling out for enterprise deployments.
 
 ## In this documentation
 

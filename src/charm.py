@@ -71,7 +71,6 @@ class WordpressCharm(CharmBase):
         "mscom",
         "resource-centre",
         "thematic",
-        "twentyeleven",
         "twentytwentyfive",
         "twentytwentyfour",
         "twentytwentythree",

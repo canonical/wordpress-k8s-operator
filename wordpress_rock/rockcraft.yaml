@@ -209,14 +209,6 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/themes/thematic/
-  get-wp-theme-twentyeleven:
-    after:
-      - wordpress
-    plugin: dump
-    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-twentyeleven
-    source-type: git
-    organize:
-      "*": /var/www/html/wp-content/themes/twentyeleven/
   get-ubuntu-cloud-website:
     after:
       - wordpress
@@ -295,14 +287,6 @@ parts:
       cp -R . $CRAFT_PART_INSTALL
     organize:
       resource-centre: /var/www/html/wp-content/themes/resource-centre/
-  get-wp-theme-twentytwentyfive:
-    after:
-      - wordpress
-    plugin: dump
-    source: https://downloads.wordpress.org/theme/twentytwentyfive.1.1.zip
-    source-type: zip
-    organize:
-      "*": /var/www/html/wp-content/themes/twentytwentyfive/
   # Post-install configuration
   wordpress-configure:
     plugin: nil
@@ -314,8 +298,6 @@ parts:
       - get-light-wordpress-theme
       - get-wp-theme-mscom
       - get-wp-theme-thematic
-      - get-wp-theme-twentyeleven
-      - get-wp-theme-twentytwentyfive
       - get-ubuntu-cloud-website
       - get-wp-theme-ubuntu-community
       - get-wp-theme-ubuntu-fi

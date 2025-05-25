@@ -55,7 +55,7 @@ class WordpressCharm(CharmBase):
 
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
     _WP_UPLOADS_PATH = "/var/www/html/wp-content/uploads"
-    _PHP_INI_PATH = "/etc/php/7.4/apache2/php.ini"
+    _PHP_INI_PATH = "/etc/php/8.3/apache2/php.ini"
     _CONTAINER_NAME = "wordpress"
     _SERVICE_NAME = "wordpress"
     _WORDPRESS_USER = "_daemon_"
@@ -72,6 +72,7 @@ class WordpressCharm(CharmBase):
         "resource-centre",
         "thematic",
         "twentyeleven",
+        "twentytwentyfive",
         "twentytwentyfour",
         "twentytwentythree",
         "twentytwentytwo",

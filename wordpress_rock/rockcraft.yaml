@@ -164,7 +164,7 @@ parts:
     after:
       - get-wordpress-plugins
     plugin: dump
-    source: https://github.com/weiiwang01/wordpress-teams-integration.git
+    source: https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration
     source-type: git
     organize:
       "*": /var/www/html/wp-content/plugins/wordpress-teams-integration/

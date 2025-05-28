@@ -4,7 +4,7 @@
 # pylint: disable=protected-access,too-many-locals
 
 """Integration tests for WordPress charm COS integration."""
-import fnmatch
+
 import functools
 from typing import Iterable
 

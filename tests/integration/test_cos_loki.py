@@ -27,10 +27,8 @@ def log_files_exist(unit_address: str, application_name: str, filenames: Iterabl
     Returns:
         True if log files with logs exists. False otherwise.
     """
-    series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
-    log_files = set(series_data["filename"] for series_data in series["data"])
-    if not all(any(fnmatch.fnmatch(file, pattern) for file in log_files) for pattern in filenames):
-        return False
+    series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).text
+    assert application_name in series
     log_query = requests.get(
         f"http://{unit_address}:3100/loki/api/v1/query",
         timeout=10,

@@ -15,7 +15,7 @@ Learn more about Pebble and its layer configurations [in the Pebble documentatio
 
 ```mermaid
 C4Context
-title Component diagram for Wordpress Charm
+title Component diagram for WordPress Charm
 
 Container_Boundary(wordpress, "WordPress") {
   Component(apache-server, "Apache server", "", "Serves the WordPress application")
@@ -61,7 +61,7 @@ to both `access.log`, `error.log` files and container logs in
 [`000-default.conf`](https://github.com/canonical/wordpress-k8s-operator/blob/main/wordpress_rock/files/etc/apache2/sites-available/000-default.conf).
 These files are essential for promtail to read and push latest logs to Loki periodically.
 
-### charm
+### Charm
 
 This container is the main point of contact with the Juju controller. It communicates with Juju to
 run necessary charm code defined by the main `src/charm.py`. The source code is copied to the
@@ -105,13 +105,13 @@ context of a charm. Below is the list of observed events for `wordpress-k8s char
 reacts to the event. For more information about the charm’s lifecycle in general, refer to the
 charm’s life [documentation](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/).
 
-### start
+### `start`
 
 This event marks the charm’s state as started. The charm’s running state must be persisted by the
 charm in its own state. See the documentation on the
 [start event](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/#start).
 
-### uploads_storage_attached
+### `uploads_storage_attached`
 
 This event marks the charm’s storage availability. The name of the event derived from the name of
 the storage noted in the `metadata.yaml` configuration under "storage" key.
@@ -119,31 +119,31 @@ the storage noted in the `metadata.yaml` configuration under "storage" key.
 `/var/www/html/wp-content/uploads` directory of the WordPress application, which is used to store
 uploaded content from the WordPress user.
 
-### leader_elected
+### `leader_elected`
 
 This event is fired when Juju elects a leader unit among the replica peers. The wordpress-k8s charm
 then responds by setting up secrets and sharing them with peers through peer relation databag if
 not already set.
 
-### config-changed
+### `config-changed`
 
 The wordPress-k8s charm reacts to any configuration change and runs reconciliation between the current
 state and the desired state. See the list of
 [configurations](https://charmhub.io/wordpress-k8s/configure).
 
-### wordpress_pebble_ready
+### `wordpress_pebble_ready`
 
 When this event is fired, wordpress-k8s charm installs, configures and starts Apache server for
 WordPress through Pebble if the storage is available. Configurations that are set dynamically
 include database connection and secrets used by the WordPress application. Dynamic configurations
 are modified in `wp-config.php` file and the changes are pushed through Pebble.
 
-### apache_prometheus_exporter_pebble_ready
+### `apache_prometheus_exporter_pebble_ready`
 
 This event signals that the `apache_prometheus_exporter` container is ready in the pod. Apache
 Prometheus exporter service is then started through Pebble.
 
-### wordpress-replica_relation_changed
+### `wordpress-replica_relation_changed`
 
 When any of the relation is changed, wordpress-k8s charm must run reconciliation between the
 current state and the desired state with new relation data to synchronize the replication
@@ -152,14 +152,14 @@ reconciliation. Core reconciliation sets up the necessary WordPress application 
 secrets and database connection. Theme and Plugin respectively reconcile between currently
 installed themes and plugins with the incoming list of themes and plugins.
 
-### upgrade-charm
+### `upgrade-charm`
 
 The `upgrade-charm` event is fired on the upgrade charm command `juju refresh wordpress-k8s`. The command sets up
 secrets in peer-relation databag for upgraded deployment of WordPress if it was not already set.
 
 ## Charm code overview
 
-The `src/charm.py` is the default entry point for a charm and has the WordpressCharm Python class which inherits from CharmBase.
+The `src/charm.py` is the default entry point for a charm and has the `WordpressCharm` Python class which inherits from CharmBase.
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 

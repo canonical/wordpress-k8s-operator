@@ -41,7 +41,7 @@ Deployment of WordPress requires a relational database. The integration with the
 `mysql` [interface](https://juju.is/docs/sdk/integration) is required by the wordpress-k8s
 charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
-Start off by deploying the Wordpress charm. By default it will deploy the latest stable release of
+Start off by deploying the WordPress charm. By default it will deploy the latest stable release of
 the `wordpress-k8s` charm.
 
 ```
@@ -95,9 +95,11 @@ Running operation 1 with 1 task
   - task 2 on unit-wordpress-k8s-0
 
 Waiting for task 2...
-password: <password> # should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+password: <password>
 
 ```
+
+Password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`.
 
 [note]
  If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of the Multipass VM.

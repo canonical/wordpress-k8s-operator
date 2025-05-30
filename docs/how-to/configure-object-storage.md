@@ -33,7 +33,7 @@ export OS_PROJECT_DOMAIN_ID=default
 export OS_VOLUME_API_VERSION=3
 ```
 
-### Configure openstack-objectstorage plugin
+### Configure the OpenStack object storage plugin
 
 To configure Swift storage for `wordpress-k8s`, copy and paste the following yaml content and adjust
 the values accordingly.
@@ -48,12 +48,16 @@ password: <strong-password>
 region: RegionOne
 remove-local-file: 0
 serve-from-swift: 1
-swift-url: swift_auth_url # obtain the value by running `swift auth`. The value should look
-something like http://<openstack-deployment-address>:8080/v3/AUTH_1d449b4237d3499dabd95210c33ca150, exported under
-OS_STORAGE_URL key.
+swift-url: swift_auth_url
 tenant: demo
 username: demo
 ```
+
+[note]
+The `swift-url` value can be obtained by running `swift auth`. The value should look
+something like http://<openstack-deployment-address>:8080/v3/AUTH_1d449b4237d3499dabd95210c33ca150, exported under
+OS_STORAGE_URL key.
+[/note]
 
 You can then configure the `wordpress-k8s` charm using the yaml contents above.
 

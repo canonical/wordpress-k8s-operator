@@ -1,0 +1,17 @@
+diff --git a/openid/common.php b/openid/common.php
+index df7737f..f8bbf07 100644
+--- a/openid/common.php
++++ b/openid/common.php
+@@ -760,6 +760,12 @@ function openid_page( $message, $title = '' ) {
+ 	if ( ( $wp_locale ) && ( 'rtl' == $wp_locale->text_direction ) ) {
+ 		wp_admin_css( 'login-rtl', true );
+ 	}
++	if ( function_exists( 'wp_scripts' ) ) {
++		wp_scripts();
++	}
++	if ( function_exists( 'wp_styles' ) ) {
++		wp_styles();
++	}
+ 
+ 	do_action( 'admin_head' );
+ 	do_action( 'openid_page_head' );

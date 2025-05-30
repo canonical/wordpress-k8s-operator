@@ -43,7 +43,7 @@ async def test_grafana_integration(
     assert: grafana wordpress dashboard can be found
     """
     grafana = await wordpress.model.deploy(
-        "grafana-k8s", channel="1/stable", revision=143, series="focal", trust=True
+        "grafana-k8s", channel="1.0/stable", revision=82, series="focal", trust=True
     )
     await wordpress.model.wait_for_idle(status="active", apps=["grafana-k8s"], timeout=20 * 60)
     await wordpress.model.add_relation("wordpress-k8s:grafana-dashboard", "grafana-k8s")

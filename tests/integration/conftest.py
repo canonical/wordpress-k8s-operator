@@ -217,7 +217,7 @@ async def prepare_nginx_ingress(wordpress: WordpressApp, prepare_mysql):
 async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate prometheus-k8s charm for integration tests."""
     prometheus = await wordpress.model.deploy(
-        "prometheus-k8s", channel="1.0/stable", revision=129, series="focal", trust=True
+        "prometheus-k8s", channel="1/stable", revision=247, series="focal", trust=True
     )
     await wordpress.model.wait_for_idle(
         status="active", apps=[prometheus.name], raise_on_error=False, timeout=30 * 60
@@ -234,7 +234,7 @@ async def prepare_prometheus(wordpress: WordpressApp, prepare_mysql):
 @pytest_asyncio.fixture(scope="module")
 async def prepare_loki(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate loki-k8s charm for integration tests."""
-    loki = await wordpress.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
+    loki = await wordpress.model.deploy("loki-k8s", channel="1/stable", trust=True)
     await wordpress.model.wait_for_idle(apps=[loki.name], status="active", timeout=20 * 60)
     await wordpress.model.relate(f"{wordpress.name}:logging", loki.name)
     await wordpress.model.wait_for_idle(

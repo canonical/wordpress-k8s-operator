@@ -1,4 +1,4 @@
 mysql-connector-python
 ops==2.21.0
-requests==2.32.3
+requests==2.32.4
 pydantic>=1,<2

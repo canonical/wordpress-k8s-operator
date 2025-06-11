@@ -14,9 +14,11 @@ unit-wordpress-k8s-0:
   UnitId: wordpress-k8s/0
   id: "10"
   results:
-    password: <password> # password should look something like: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    password: <password>
   status: completed
 ```
+
+The password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`.
 
 You can use the password to log in to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
 

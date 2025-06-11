@@ -16,7 +16,7 @@ jobs:
         --screenshot-dir=/tmp
       juju-channel: 3/stable
       channel: 1.29-strict/stable
-      modules: '["test_addon", "test_core"]'
+      modules: '["test_addon", "test_core", "test_cos_grafana", "test_cos_loki", "test_cos_prometheus"]'
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner

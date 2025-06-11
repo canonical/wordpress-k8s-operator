@@ -36,4 +36,5 @@ header:
     - 'trivy.yaml'
     - 'zap_rules.tsv'
     - 'lib/**'
+    - 'wordpress_rock/patches/**'
   comment: on-failure

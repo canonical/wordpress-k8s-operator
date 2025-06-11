@@ -3,7 +3,7 @@
 [![Promote charm](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/promote_charm.yaml)
 [![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
 
-# WordPress Operator
+# WordPress operator
 
 A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
 
@@ -23,11 +23,11 @@ and supports scaling out for enterprise deployments.
 
 For information about how to deploy, integrate, and manage this charm, see the Official [wordpress-k8s-operator Documentation](https://charmhub.io/wordpress-k8s/docs).
 
-## Get Started
+## Get started
 
 To begin, refer to the [Getting Started](https://charmhub.io/wordpress-k8s/docs/tutorial) tutorial for step-by-step instructions.
 
-### Basic Operations
+### Basic operations
 
 The following actions are available for the charm:
 - get-initial-password

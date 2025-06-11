@@ -4,7 +4,7 @@
 name: wordpress
 summary: Wordpress rock
 description: Wordpress OCI image for the Wordpress charm
-base: ubuntu@20.04
+base: ubuntu@24.04
 run-user: _daemon_
 license: Apache-2.0
 version: "1.0"
@@ -79,7 +79,7 @@ parts:
       - apache2
     plugin: nil
     build-environment:
-      - WP_VERSION: 6.4.3
+      - WP_VERSION: 6.8.1
     build-packages:
       - curl
     override-build: |
@@ -95,6 +95,7 @@ parts:
       wp: /usr/local/bin/wp
   # Wordpress plugins
   get-wordpress-plugins:
+    source: .
     plugin: nil
     after:
       - wordpress
@@ -139,9 +140,10 @@ parts:
           unzip -q "${plugin}.zip"
           rm "${plugin}.zip"
       done
-      curl -sSL "https://downloads.wordpress.org/plugin/openid.3.5.0.zip" -o "openid.zip"
+      curl -sSL "https://downloads.wordpress.org/plugin/openid.3.6.1.zip" -o "openid.zip"
       unzip -q "openid.zip"
       rm "openid.zip"
+      git apply $CRAFT_PART_SRC/patches/openid.patch
       # Latest YoastSEO does not support 5.9.3 version of WordPress.
       curl -sSL "https://downloads.wordpress.org/plugin/wordpress-seo.18.9.zip" -o "wordpress-seo.zip"
       unzip "wordpress-seo.zip"
@@ -207,14 +209,6 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/themes/thematic/
-  get-wp-theme-twentyeleven:
-    after:
-      - wordpress
-    plugin: dump
-    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-twentyeleven
-    source-type: git
-    organize:
-      "*": /var/www/html/wp-content/themes/twentyeleven/
   get-ubuntu-cloud-website:
     after:
       - wordpress
@@ -284,7 +278,11 @@ parts:
       - wordpress
     plugin: nil
     build-packages: [bzr]
+    build-environment:
+      # bzr is unable to import system python package breezy
+      - PYTHONPATH: "/usr/lib/python3/dist-packages:/usr/local/lib/python3.12/dist-packages"
     override-build: |
+      pip3 install breezy launchpadlib --break-system-packages 
       bzr branch lp:resource-centre
       cp -R . $CRAFT_PART_INSTALL
     organize:
@@ -300,7 +298,6 @@ parts:
       - get-light-wordpress-theme
       - get-wp-theme-mscom
       - get-wp-theme-thematic
-      - get-wp-theme-twentyeleven
       - get-ubuntu-cloud-website
       - get-wp-theme-ubuntu-community
       - get-wp-theme-ubuntu-fi

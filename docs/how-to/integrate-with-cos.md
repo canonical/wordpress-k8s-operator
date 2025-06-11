@@ -1,6 +1,6 @@
 # How to integrate with COS
 
-## prometheus-k8s
+## Integrate with Prometheus K8s operator
 
 Deploy and relate [prometheus-k8s](https://charmhub.io/prometheus-k8s) charm with wordpress-k8s
 charm through the `metrics-endpoint` relation via `prometheus_scrape` interface. Prometheus should
@@ -11,7 +11,7 @@ juju deploy prometheus-k8s
 juju integrate wordpress-k8s prometheus-k8s
 ```
 
-## loki-k8s
+## Integrate with Loki K8s operator
 
 Deploy and relate [loki-k8s](https://charmhub.io/loki-k8s) charm with wordpress-k8s charm through
 the `logging` relation via `loki_push_api` interface. Promtail worker should spawn and start pushing
@@ -22,7 +22,7 @@ juju deploy loki-k8s
 juju integrate wordpress-k8s loki-k8s
 ```
 
-## grafana-k8s
+## Integrate with Grafana K8s operator
 
 In order for the Grafana dashboard to function properly, Grafana should be able to connect to
 Prometheus and Loki as its datasource. Deploy and relate the `prometheus-k8s` and `loki-k8s`
@@ -52,5 +52,7 @@ juju run grafana-k8s/0 get-admin-password
 ```
 
 Log into the Grafana dashboard by visiting `http://<grafana-unit-ip>:3000`. Navigate to
-`http://<grafana-unit-ip>:3000/dashboards` and access the WordPress dashboard named Wordpress Operator
-Overview.
+`http://<grafana-unit-ip>:3000/dashboards` and access the WordPress dashboard named **Wordpress Operator
+Overview**.
+
+

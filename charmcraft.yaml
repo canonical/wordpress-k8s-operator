@@ -17,4 +17,4 @@ parts:
       - requests
       - ops-lib-mysql
     charm-binary-python-packages:
-      - mysql-connector-python==9.1.0
+      - mysql-connector-python==9.3.0

@@ -205,14 +205,6 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/themes/thematic/
-  get-wp-theme-twentyeleven:
-    after:
-      - wordpress
-    plugin: dump
-    source: https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/wp-theme-twentyeleven
-    source-type: git
-    organize:
-      "*": /var/www/html/wp-content/themes/twentyeleven/
   get-ubuntu-cloud-website:
     after:
       - wordpress

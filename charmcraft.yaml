@@ -19,3 +19,5 @@ parts:
       - libffi-dev
       - libssl-dev
       - pkg-config
+    charm-strict-dependencies: true
+    charm-binary-python-packages: ["mysql-connector-python"]

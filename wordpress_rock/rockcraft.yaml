@@ -144,6 +144,7 @@ parts:
       curl -sSL "https://downloads.wordpress.org/plugin/openid.3.6.1.zip" -o "openid.zip"
       unzip -q "openid.zip"
       rm "openid.zip"
+      git apply $CRAFT_PART_SRC/patches/openid.patch
       cp -R . $CRAFT_PART_INSTALL
     organize:
       "*": /var/www/html/wp-content/plugins/

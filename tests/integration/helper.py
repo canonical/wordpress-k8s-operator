@@ -480,6 +480,7 @@ class WordpressClient:
             "https://login.launchpad.net/+openid",
             data=openid_args,
         )
+        logger.info(login_page.text)
         csrf_token = re.findall(
             "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", login_page.text
         )[0]

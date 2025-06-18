@@ -86,7 +86,7 @@ async def wordpress_fixture(
             "wordpress-image": wordpress_image,
         },
         num_units=1,
-        series="focal",
+        series="jammy",
     )
     await model.wait_for_idle(status="blocked", apps=[app.name], timeout=30 * 60)
     return WordpressApp(app, ops_test=ops_test, kube_config=kube_config)
@@ -206,7 +206,7 @@ async def prepare_swift(wordpress: WordpressApp, swift_config: Dict[str, str]):
 async def prepare_nginx_ingress(wordpress: WordpressApp, prepare_mysql):
     """Deploy and relate nginx-ingress-integrator charm for integration tests."""
     await wordpress.model.deploy(
-        "nginx-ingress-integrator", channel="latest/edge", series="focal", revision=133, trust=True
+        "nginx-ingress-integrator", channel="latest/edge", series="jammy", revision=133, trust=True
     )
     await wordpress.model.wait_for_idle(apps=["nginx-ingress-integrator"], timeout=30 * 60)
     await wordpress.model.relate(f"{wordpress.name}:nginx-route", "nginx-ingress-integrator")

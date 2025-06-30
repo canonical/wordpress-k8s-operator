@@ -25,6 +25,10 @@ The WordPress charm has built-in spam protection that can be activated by provid
 
 ## Risks
 
+### Application CVEs
+
+WordPress can be vulnerable to new CVEs and may require updates to patch the CVEs. In case of an exposure to a CVE, it is recommended that you update your WordPress charm and rotate the secrets. See the [rotate-secrets](how-to/rotate-secrets.md) action in the how-to guide.
+
 ### Plugins installation
 
 The plugins that have been by the users via the Web UI are periodically deleted by the charm during the Juju hook events. There may be a risk of undesired plugins being installed for the duration of the charm until the next event.

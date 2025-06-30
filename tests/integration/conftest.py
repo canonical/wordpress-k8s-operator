@@ -86,7 +86,9 @@ async def wordpress_fixture(
             "wordpress-image": wordpress_image,
         },
         num_units=1,
-        series="noble",
+        # 2025/06/30 - use jammy since using noble will cause an error:
+        # 'Unknown series : %s', 'noble'
+        series="jammy",
     )
     await model.wait_for_idle(status="blocked", apps=[app.name], timeout=30 * 60)
     return WordpressApp(app, ops_test=ops_test, kube_config=kube_config)

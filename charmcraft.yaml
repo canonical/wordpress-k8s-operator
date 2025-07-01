@@ -10,11 +10,14 @@ bases:
       channel: "22.04"
 parts:
   charm:
-    # Tell charmcraft to not use requirements.txt
-    charm-requirements: []
-    charm-python-packages:
-      - ops
-      - requests
-      - ops-lib-mysql
-    charm-binary-python-packages:
-      - mysql-connector-python==9.1.0
+    build-snaps:
+      - rustup
+    override-build: |
+      rustup default stable
+      craftctl default
+    build-packages:
+      - libffi-dev
+      - libssl-dev
+      - pkg-config
+    charm-strict-dependencies: true
+    charm-binary-python-packages: ["mysql-connector-python"]

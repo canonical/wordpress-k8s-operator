@@ -943,8 +943,10 @@ def test_valid_proxy_config(
     setup_replica_consensus()
 
     charm: WordpressCharm = harness.charm
-    assert charm.state.proxy_config.http_proxy == proxy_url
-    assert charm.state.proxy_config.https_proxy == proxy_url
+    http_proxy = charm.state.proxy_config.http_proxy
+    assert f"{http_proxy.scheme}://{http_proxy.host}:{http_proxy.port}" == proxy_url
+    https_proxy = charm.state.proxy_config.https_proxy
+    assert f"{https_proxy.scheme}://{https_proxy.host}:{https_proxy.port}" == proxy_url
     assert charm.state.proxy_config.no_proxy == TEST_NO_PROXY
     wp_config = charm._gen_wp_config()
     assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT, TEST_NO_PROXY])
@@ -978,7 +980,8 @@ def test_only_valid_http_proxy_config(
     setup_replica_consensus()
 
     charm: WordpressCharm = harness.charm
-    assert charm.state.proxy_config.http_proxy == proxy_url
+    http_proxy = charm.state.proxy_config.http_proxy
+    assert f"{http_proxy.scheme}://{http_proxy.host}:{http_proxy.port}" == proxy_url
     wp_config = charm._gen_wp_config()
     assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])
 
@@ -999,7 +1002,8 @@ def test_only_valid_https_proxy_config(
     setup_replica_consensus()
 
     charm: WordpressCharm = harness.charm
-    assert charm.state.proxy_config.https_proxy == proxy_url
+    https_proxy = charm.state.proxy_config.https_proxy
+    assert f"{https_proxy.scheme}://{https_proxy.host}:{https_proxy.port}" == proxy_url
     wp_config = charm._gen_wp_config()
     assert all(field in wp_config for field in [TEST_PROXY_HOST, TEST_PROXY_PORT])
 

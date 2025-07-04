@@ -33,7 +33,7 @@ Thinking about using the WordPress Operator for your next project? [Get in touch
 # Contents
 
 1. [Tutorial](tutorial.md)
-1. [How-to](how-to)
+1. [How-to](how-to/index.md)
   1. [Retrieve initial credentials](how-to/retrieve-initial-credentials.md)
   1. [Configure initial settings](how-to/configure-initial-settings.md)
   1. [Configure hostname](how-to/configure-hostname.md)
@@ -55,4 +55,5 @@ Thinking about using the WordPress Operator for your next project? [Get in touch
   1. [Themes](reference/themes.md)
 1. [Explanation](explanation)
   1. [Charm architecture](explanation/charm-architecture.md)
+  1. [Security](explanation/security-overview.md)
 1. [Changelog](changelog.md)

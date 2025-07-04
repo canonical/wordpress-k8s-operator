@@ -35,6 +35,11 @@ The following actions are available for the charm:
 
 You can find more information about supported actions in [the Charmhub documentation](https://charmhub.io/wordpress-k8s/actions).
 
+The charm supports further customization, including:
+- [Installing additional plugins](docs/how-to/install-plugins.md)
+- [Installing additional themes](docs/how-to/install-themes.md)
+- [Connecting to observability](docs/how-to/integrate-with-cos.md)
+
 ## Integrations
 
 Deployment of WordPress requires a relational database. The integration with the mysql interface is required by the wordpress-k8s charm for which `mysql-k8s` charm can be deployed as follows:

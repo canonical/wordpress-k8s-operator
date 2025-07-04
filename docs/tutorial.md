@@ -6,9 +6,12 @@ tutorial will walk you through each step of deployment to get a basic WordPress 
 
 ## What you'll need
 - A working station, e.g., a laptop, with AMD64 architecture.
-- Juju 3 installed and bootstrapped to a MicroK8s controller. You can accomplish this process by using a Multipass VM as outlined in this guide: [Set up your test environment](https://canonical-juju.readthedocs-hosted.com/en/latest/user/howto/manage-your-deployment/manage-your-deployment-environment/#set-things-up)
+- Juju 3 installed. For more information about how to install Juju, see [Get started with Juju](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/tutorial/).
+- Juju bootstrapped to a MicroK8s controller: `juju bootstrap microk8s tutorial-controller`
 
-For more information about how to install Juju, see [Get started with Juju](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/tutorial/).
+[note]
+You can get a working setup by using a Multipass VM as outlined in the [Set up your test environment](https://canonical-juju.readthedocs-hosted.com/en/latest/user/howto/manage-your-deployment/manage-your-deployment-environment/#set-things-up) guide.
+[/note]
 
 ## What you'll do
 

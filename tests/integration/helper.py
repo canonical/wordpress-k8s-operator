@@ -26,12 +26,12 @@ from typing import (
     Union,
 )
 
+import kubernetes
 import requests
 import yaml
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
-import kubernetes
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)

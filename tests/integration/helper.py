@@ -31,7 +31,7 @@ import yaml
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
-from kubernetes import kubernetes
+import kubernetes
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)

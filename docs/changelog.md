@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+### 2025-07-02
+
+- docs: Update README and tutorial based on user feedback.
+
 ### 2025-05-29
 
 - docs: Fix issues found with local audit for style guide checks.

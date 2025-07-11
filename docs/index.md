@@ -55,4 +55,5 @@ Thinking about using the WordPress Operator for your next project? [Get in touch
   1. [Themes](reference/themes.md)
 1. [Explanation](explanation)
   1. [Charm architecture](explanation/charm-architecture.md)
+  1. [Security](explanation/security-overview.md)
 1. [Changelog](changelog.md)

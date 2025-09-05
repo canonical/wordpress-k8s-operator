@@ -26,7 +26,6 @@ Applicable spec: <link>
 - [ ] The [contributing guide](https://github.com/canonical/is-charms-contributing-guide) was applied
 - [ ] The changes are compliant with [ISD054 - Managing Charm Complexity](https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619)
 - [ ] The documentation for charmhub is updated.
-- [ ] The changelog `docs/changelog.md` is updated.
 - [ ] The PR is tagged with appropriate label (`urgent`, `trivial`, `complex`)
 - [ ] The docs/changelog.md is updated with user-relevant changes in the format of [keep a changelog v1.1.0](https://keepachangelog.com/en/1.1.0/)
 

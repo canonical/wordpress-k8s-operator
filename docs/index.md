@@ -1,6 +1,6 @@
 # WordPress operator
 
-A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com/) is the world's most popular website builder, and it's free and open-source.
+A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com/) is the world's most popular website builder, and it's free and open-source.
 
 This charm simplifies initial deployment and operations of WordPress on Kubernetes, including scaling the number of instances, integration with SSO, access to OpenStack Swift object storage for redundant file storage, and more. It allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://microk8s.io/) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) to public cloud Kubernetes offerings.
 
@@ -10,8 +10,8 @@ This charm will make operating WordPress straightforward for DevOps or SRE teams
 
 | | |
 |--|--|
-|  [Tutorials](https://charmhub.io/wordpress-k8s/docs/tutorials-getting-started)</br>  Get started - a hands-on introduction to using the Charmed WordPress operator for new users </br> |  [How-to guides](https://charmhub.io/wordpress-k8s/docs/how-to-retrieve-initial-credentials) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/wordpress-k8s/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/wordpress-k8s/docs/explanation-overview) </br> Concepts - discussion and clarification of key topics  |
+|  [Tutorials](https://charmhub.io/wordpress-k8s/docs/tutorial)</br>  Get started - a hands-on introduction to using the Charmed WordPress operator for new users </br> |  [How-to guides](https://charmhub.io/wordpress-k8s/docs/how-to-retrieve-initial-credentials) </br> Step-by-step guides covering key operations and common tasks |
+| [Reference](https://charmhub.io/wordpress-k8s/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/wordpress-k8s/docs/explanation-architecture) </br> Concepts - discussion and clarification of key topics  |
 
 ## Contributing to this documentation
 

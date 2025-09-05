@@ -1,5 +1,7 @@
 # Plugins
 
+<!-- vale Canonical.000-US-spellcheck = NO -->
+
 By default, the following WordPress plugins are installed with the latest version during the OCI
 image build time. If the plugins are installed during runtime with
 `juju config wordpress-k8s plugins=<plugin-slug>`, the plugin will also be installed to its latest
@@ -36,8 +38,8 @@ _\*The descriptions of the following plugins are taken from the WordPress plugin
   ‘Category Base’ from category permalinks remover.
 - [openid](https://wordpress.org/plugins/openid/): Authenticator that allows users to authenticate to
   websites without having to create a new password using OpenID standard.
-- [openstack-objectstorage-k8s](https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s):
-  Automatic image, video, document and other media storage provider using Openstack Swift.
+- [`openstack-objectstorage-k8s`](https://git.launchpad.net/~canonical-sysadmins/wordpress/+git/openstack-objectstorage-k8s):
+  Automatic image, video, document and other media storage provider using OpenStack Swift.
 - [powerpress](https://wordpress.org/plugins/powerpress/): Podcast manager, enabling podcast
   management directly from your WordPress website.
 - [post-grid](https://wordpress.org/plugins/post-grid/): Fully customizable post grid layout
@@ -63,10 +65,10 @@ _\*The descriptions of the following plugins are taken from the WordPress plugin
 - [wordpress-importer](https://wordpress.org/plugins/wordpress-importer/): A WordPress export file
   importer, importing the following content: posts, pages, comments, comment meta, custom fields,
   post meta, categories, tags and terms from custom taxonomies and term meta, authors.
-- [wordpress-launchpad-integration](https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/wordpress-launchpad-integration):
+- [`wordpress-launchpad-integration`](https://git.launchpad.net/~canonical-sysadmins/wordpress-launchpad-integration/+git/wordpress-launchpad-integration):
   WordPress authenticator using Launchpad's OpenID provider.
 - [wordpress-teams-integration](https://git.launchpad.net/~canonical-sysadmins/wordpress-teams-integration/+git/wordpress-teams-integration):
-  This plugin implements OpenID teams in Wordpress.
+  This plugin implements OpenID teams in WordPress.
 - [wp-mastodon-share](https://wordpress.org/plugins/wp-mastodon-share/): Post sharing plugin to share
   a post to a user’s Mastodon instance.
 - [wp-markdown](https://wordpress.org/plugins/wp-markdown/): Plugin to enable writing posts (of any

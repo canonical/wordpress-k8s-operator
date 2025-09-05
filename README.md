@@ -5,7 +5,7 @@
 
 # WordPress operator
 
-A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
+A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
 
 This charm simplifies the deployment and operations of WordPress on Kubernetes,
 including scaling the number of instances, integration with SSO, 
@@ -42,7 +42,7 @@ The charm supports further customization, including:
 
 ## Integrations
 
-Deployment of WordPress requires a relational database. The integration with the mysql interface is required by the wordpress-k8s charm for which `mysql-k8s` charm can be deployed as follows:
+Deployment of WordPress requires a relational database. The integration with the MySQL interface is required by the wordpress-k8s charm for which `mysql-k8s` charm can be deployed as follows:
 
 ```
 juju deploy mysql-k8s --trust

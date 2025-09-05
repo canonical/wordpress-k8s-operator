@@ -38,10 +38,10 @@ your usual work, create a new model in the MicroK8s controller using the followi
 juju add-model wordpress-tutorial
 ```
 
-## Deploy WordPress K8s charm
+## Deploy the WordPress charm
 
 Deployment of WordPress requires a relational database. The integration with the
-`mysql` [interface](https://juju.is/docs/sdk/integration) is required by the wordpress-k8s
+`mysql` [interface](https://documentation.ubuntu.com/juju/3.6/reference/relation/) is required by the `wordpress-k8s`
 charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
 Start off by deploying the WordPress charm. By default it will deploy the latest stable release of
@@ -53,7 +53,7 @@ juju deploy wordpress-k8s
 
 ## Deploy and integrate database <a name="deploy-and-integrate-database"></a>
 
-The following commands deploy the mysql-k8s charm and integrate it with the wordpress-k8s charm.
+The following commands deploy the `mysql-k8s` charm and integrate it with the `wordpress-k8s` charm.
 
 ```
 juju deploy mysql-k8s --trust
@@ -110,7 +110,7 @@ Password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  ```
  multipass info my-juju-vm
  ```
- The IP you see here will be called <VM_IP> in this example.
+ The IP you see here will be called `<VM_IP>` in this example.
 
  Then route:
  ```

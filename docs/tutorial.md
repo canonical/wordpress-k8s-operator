@@ -1,8 +1,7 @@
 # Deploy the WordPress charm for the first time
 
-The `wordpress-k8s` charm helps deploy a horizontally scalable WordPress application with ease and
-also helps operate the charm by liaising with the Canonical Observability Stack (COS). This
-tutorial will walk you through each step of deployment to get a basic WordPress deployment.
+The `wordpress-k8s` charm helps deploy a horizontally scalable WordPress application. This
+tutorial will walk you through each step to achieve a basic WordPress deployment.
 
 ## What you'll need
 - A working station, e.g., a laptop, with AMD64 architecture.
@@ -15,13 +14,16 @@ You can get a working setup by using a Multipass VM as outlined in the [Set up y
 
 ## What you'll do
 
-- Deploy the [WordPress K8s charm](https://charmhub.io/wordpress-k8s)
-- [Deploy and integrate database](#deploy-and-integrate-database)
-- [Get admin credentials](#get-admin-credentials)
+1. Deploy the [WordPress K8s charm](https://charmhub.io/wordpress-k8s)
+2. [Deploy and integrate a database](#deploy-and-integrate-database)
+3. [Get admin credentials](#get-admin-credentials)
+4. Access the WordPress instance
+5. Clean up the environment
 
 ## Set up the environment
 
-To be able to work inside the Multipass VM first you need to log in with the following command:
+To be able to work inside the Multipass VM, log in with the following command:
+
 ```bash
 multipass shell my-juju-vm
 ```
@@ -40,10 +42,6 @@ juju add-model wordpress-tutorial
 
 ## Deploy the WordPress charm
 
-Deployment of WordPress requires a relational database. The integration with the
-`mysql` [interface](https://documentation.ubuntu.com/juju/3.6/reference/relation/) is required by the `wordpress-k8s`
-charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
-
 Start off by deploying the WordPress charm. By default it will deploy the latest stable release of
 the `wordpress-k8s` charm.
 
@@ -52,6 +50,10 @@ juju deploy wordpress-k8s
 ```
 
 ## Deploy and integrate database <a name="deploy-and-integrate-database"></a>
+
+Deployment of WordPress requires a relational database. The integration with the
+`mysql` [interface](https://documentation.ubuntu.com/juju/3.6/reference/relation/) is required by the `wordpress-k8s`
+charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
 The following commands deploy the `mysql-k8s` charm and integrate it with the `wordpress-k8s` charm.
 
@@ -128,3 +130,20 @@ Congratulations! You have successfully deployed the WordPress charm, added a dat
 
 You can clean up your environment by following this guide:
 [Tear down your test environment](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/howto/manage-your-deployment/manage-your-deployment-environment/#tear-things-down)
+
+## Next steps
+
+You achieved a basic deployment of the WordPress charm. If you want to go farther in your deployment
+or learn more about the charm, check out these pages:
+
+- Perform basic operations with your deployment like
+  [installing plugins](https://charmhub.io/wordpress-k8s/docs/how-to-install-plugins)
+  or [themes](https://charmhub.io/wordpress-k8s/docs/how-to-install-themes).
+- Set up monitoring for your deployment by
+  [integrating with the Canonical Observability Stack (COS)](https://charmhub.io/wordpress-k8s/docs/how-to-integrate-with-cos).
+- Make your deployment more secure by [enabling antispam](https://charmhub.io/wordpress-k8s/docs/how-to-enable-antispam) or
+  [rotating secrets](https://charmhub.io/wordpress-k8s/docs/how-to-rotate-secrets),
+  and learn more about the charm's security in
+  [Security overview](https://charmhub.io/wordpress-k8s/docs/explanation-security).
+- Learn more about the available [relation endpoints](https://charmhub.io/wordpress-k8s/docs/reference-integrations)
+  for the WordPress charm.

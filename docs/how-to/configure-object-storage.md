@@ -3,7 +3,7 @@
 Object storage configuration is required for the `wordpress-k8s` charm to work with
 multi-unit deployments.
 
-### Prerequisites
+## Prerequisites
 
 Follow the instructions on installing OpenStack from the OpenStack
 [documentation](https://docs.openstack.org/install-guide/). For testing purposes, you can install
@@ -33,7 +33,7 @@ export OS_PROJECT_DOMAIN_ID=default
 export OS_VOLUME_API_VERSION=3
 ```
 
-### Configure the OpenStack object storage plugin
+## Configure the OpenStack object storage plugin
 
 To configure Swift storage for `wordpress-k8s`, copy and paste the following yaml content and adjust
 the values accordingly.

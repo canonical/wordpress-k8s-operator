@@ -2,7 +2,7 @@
 
 See [Integrations](https://charmhub.io/wordpress-k8s/integrations).
 
-### Database
+## Database
 
 _Interface_: mysql_client    
 _Supported charms_: [Charmed MySQL](https://charmhub.io/mysql), [Charmed MySQL-K8s](https://charmhub.io/mysql-k8s)
@@ -16,7 +16,7 @@ Example database integrate command:
 juju integrate wordpress-k8s:database mysql-k8s:database
 ```
 
-### Grafana dashboard
+## Grafana dashboard
 
 _Interface_: grafana-dashboard  
 _Supported charms_: [grafana-k8s](https://charmhub.io/grafana-k8s)
@@ -43,7 +43,7 @@ Grafana-dashboard integrate command:
 juju integrate wordpress-k8s grafana-dashboard
 ```
 
-### Ingress
+## Ingress
 
 _Interface_: ingress  
 _Supported charms_: [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
@@ -63,7 +63,7 @@ Example ingress integrate command:
 juju integrate wordpress-k8s nginx-ingress-integrator
 ```
 
-### Logging
+## Logging
 
 _Interface_: loki_push_api  
 _Supported charms_: [loki-k8s](https://charmhub.io/loki-k8s)
@@ -79,7 +79,7 @@ Logging-endpoint integrate command:
 juju integrate wordpress-k8s loki-k8s
 ```
 
-### Metrics endpoint
+## Metrics endpoint
 
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape)  
 _Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)

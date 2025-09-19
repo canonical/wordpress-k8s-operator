@@ -37,6 +37,24 @@ and using the WordPress charm.
 [Enable antispam]: enable-antispam.md
 [Enable WAF]: enable-waf.md
 [Rotate secrets]: rotate-secrets.md
-[Upgrade WordPress charm]: upgrade.md
+[Upgrade]: upgrade.md
 [Redeploy]: redeploy.md
 [Contribute]: contribute.md
+
+```{toctree}
+:hidden:
+
+Retrieve initial credentials <retrieve-initial-credentials.md>
+Configure initial settings <configure-initial-settings.md>
+Integrate with COS <integrate-with-cos.md>
+Configure hostname <configure-hostname.md>
+Install plugins <install-plugins.md>
+Install themes <install-themes.md>
+Configure object storage <configure-object-storage.md>
+Enable antispam <enable-antispam.md>
+Enable WAF <enable-waf.md>
+Rotate secrets <rotate-secrets.md>
+Upgrade <upgrade.md>
+Redeploy <redeploy.md>
+Contribute <contribute.md>
+```

@@ -13,7 +13,7 @@ The core component of wordpress-k8s charm consists of a wordpress-k8s main workl
 Pebble, a lightweight API-driven process supervisor that controls the lifecycle of a service.
 Learn more about Pebble and its layer configurations [in the Pebble documentation](https://github.com/canonical/pebble).
 
-```mermaid
+```{mermaid}
 C4Context
 title Component diagram for WordPress Charm
 

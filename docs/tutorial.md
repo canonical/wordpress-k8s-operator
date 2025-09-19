@@ -15,8 +15,8 @@ You can get a working setup by using a Multipass VM as outlined in the [Set up y
 ## What you'll do
 
 1. Deploy the [WordPress K8s charm](https://charmhub.io/wordpress-k8s)
-2. [Deploy and integrate a database](#deploy-and-integrate-database)
-3. [Get admin credentials](#get-admin-credentials)
+2. Deploy and integrate a database
+3. Get admin credentials
 4. Access the WordPress instance
 5. Clean up the environment
 
@@ -49,7 +49,7 @@ the `wordpress-k8s` charm.
 juju deploy wordpress-k8s
 ```
 
-## Deploy and integrate database <a name="deploy-and-integrate-database"></a>
+## Deploy and integrate database 
 
 Deployment of WordPress requires a relational database. The integration with the
 `mysql` [interface](https://documentation.ubuntu.com/juju/3.6/reference/relation/) is required by the `wordpress-k8s`
@@ -80,7 +80,7 @@ wordpress-k8s/0*  active    idle   10.1.200.161
 
 The deployment finishes when the status shows "Active" for both the WordPress and MySQL charms.
 
-## Get admin credentials <a name="get-admin-credentials"></a>
+## Get admin credentials 
 
 Now that we have an active deployment, let’s access the WordPress
 application by accessing the IP of a `wordpress-k8s` unit. To start managing WordPress as an

@@ -1,3 +1,5 @@
+(tutorial_index)=
+
 # Deploy the WordPress charm for the first time
 
 The `wordpress-k8s` charm helps deploy a horizontally scalable WordPress application. This

@@ -1,3 +1,5 @@
+(how_to_integrate_with_cos)=
+
 # How to integrate with COS
 
 ## Integrate with Prometheus K8s operator

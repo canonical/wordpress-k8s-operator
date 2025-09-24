@@ -1,3 +1,5 @@
+(how_to_configure_hostname)=
+
 # How to configure hostname
 
 Configure the WordPress hostname with the `blog_hostname` configuration:

@@ -1,3 +1,5 @@
+(explanation_charm_architecture)=
+
 # Charm architecture
 
 The wordpress-k8s charm aims to provide core functionalities of WordPress with horizontally

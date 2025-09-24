@@ -1,3 +1,5 @@
+(how_to_contribute)=
+
 # How to contribute
 
 Our documentation is hosted on the [Charmhub forum](https://discourse.charmhub.io/t/wordpress-documentation-overview/4052) to enable collaboration. Please use the "Help us improve this documentation" links on each documentation page to either directly change something you see that's wrong, ask a question, or make a suggestion about a potential change via the comments section.

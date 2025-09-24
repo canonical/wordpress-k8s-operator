@@ -1,3 +1,5 @@
+(explanation_security_overview)=
+
 # WordPress security overview
 
 This explanation covers several security-related topics for the WordPress charm.

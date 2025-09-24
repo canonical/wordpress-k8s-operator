@@ -1,3 +1,5 @@
+(how_to_configure_initial_settings)=
+
 # How to configure initial settings
 
 [note]

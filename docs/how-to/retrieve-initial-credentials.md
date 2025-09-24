@@ -1,3 +1,5 @@
+(how_to_retrieve_initial_credentials)=
+
 # How to retrieve initial credentials
 
 Run the following command to get the initial admin password that can be used to login at

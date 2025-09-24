@@ -1,3 +1,5 @@
+(how_to_configure_object_storage)=
+
 # How to configure object storage
 
 Object storage configuration is required for the `wordpress-k8s` charm to work with

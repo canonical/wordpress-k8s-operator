@@ -10,12 +10,12 @@ This charm will make operating WordPress straightforward for DevOps or SRE teams
 
 | | |
 |--|--|
-|  [Tutorials](https://charmhub.io/wordpress-k8s/docs/tutorial)</br>  Get started - a hands-on introduction to using the Charmed WordPress operator for new users </br> |  [How-to guides](https://charmhub.io/wordpress-k8s/docs/how-to-retrieve-initial-credentials) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/wordpress-k8s/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/wordpress-k8s/docs/explanation-architecture) </br> Concepts - discussion and clarification of key topics  |
+|  [Tutorials](tutorial_index)</br>  Get started - a hands-on introduction to using the Charmed WordPress operator for new users </br> |  [How-to guides](how_to_index) </br> Step-by-step guides covering key operations and common tasks |
+| [Reference](reference_index) </br> Technical information - specifications, APIs, architecture | [Explanation](explanation_index) </br> Concepts - discussion and clarification of key topics  |
 
 ## Contributing to this documentation
 
-Documentation is an important part of this project, and we take the same open-source approach to the documentation as the code. As such, we welcome community contributions, suggestions, and constructive feedback on our documentation. See [How to contribute](https://charmhub.io/wordpress-k8s/docs/how-to-contribute) for more information.
+Documentation is an important part of this project, and we take the same open-source approach to the documentation as the code. As such, we welcome community contributions, suggestions, and constructive feedback on our documentation. See [How to contribute](how_to_contribute) for more information.
 
 If there's a particular area of documentation that you'd like to see that's missing, please [file a bug](https://github.com/canonical/wordpress-k8s-operator/issues).
 
@@ -26,7 +26,7 @@ The WordPress Operator is a member of the Ubuntu family. It's an open-source pro
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-- [Contribute](https://github.com/canonical/wordpress-k8s-operator/blob/main/CONTRIBUTING.md)
+- [Contribute](how_to_contribute)
 
 Thinking about using the WordPress Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 

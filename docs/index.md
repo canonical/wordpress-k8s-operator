@@ -30,10 +30,11 @@ The WordPress Operator is a member of the Ubuntu family. It's an open-source pro
 
 Thinking about using the WordPress Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 
-# Contents
-
 ```{toctree}
-tutorial
+:hidden:
+:maxdepth: 1
+
+Tutorial <tutorial>
 how-to/index
 reference/index
 explanation/index

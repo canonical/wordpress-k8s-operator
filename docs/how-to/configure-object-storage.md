@@ -55,11 +55,11 @@ tenant: demo
 username: demo
 ```
 
-[note]
+```{note}
 The `swift-url` value can be obtained by running `swift auth`. The value should look
 something like http://<openstack-deployment-address>:8080/v3/AUTH_1d449b4237d3499dabd95210c33ca150, exported under
 OS_STORAGE_URL key.
-[/note]
+```
 
 You can then configure the `wordpress-k8s` charm using the yaml contents above.
 

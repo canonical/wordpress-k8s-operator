@@ -164,7 +164,9 @@ The `src/charm.py` is the default entry point for a charm and has the `Wordpress
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 
-> See more in the Juju docs: {ref}`juju:charm`.
+```{note}
+See more in the Juju docs: {ref}`juju:charm`.
+```
 
 The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
 

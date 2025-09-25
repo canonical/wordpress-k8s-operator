@@ -18,10 +18,10 @@ juju integrate wordpress-k8s nginx-ingress-integrator
 ## Enable Modsecurity 3.0 WAF
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
 
-[note]
+```{note}
 This feature is only available for
 [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
-[/note]
+```
 
 The modsecurity WAF is enabled by default.
 

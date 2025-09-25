@@ -10,9 +10,9 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 - Juju 3 installed. For more information about how to install Juju, see {ref}`juju:tutorial`.
 - Juju bootstrapped to a MicroK8s controller: `juju bootstrap microk8s tutorial-controller`
 
-[note]
+```{tip}
 You can get a working setup by using a Multipass VM as outlined in the {ref}`Set up your test environment <juju:set-up-your-deployment>` guide.
-[/note]
+```
 
 ## What you'll do
 
@@ -30,9 +30,9 @@ To be able to work inside the Multipass VM, log in with the following command:
 multipass shell my-juju-vm
 ```
 
-[note]
+```{note}
 If you're working locally, you don't need to do this step.
-[/note]
+```
 
 To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model in the MicroK8s controller using the following command:
@@ -108,7 +108,7 @@ password: <password>
 
 Password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`.
 
-[note]
+````{note}
  If you are using Multipass VM for this tutorial, you will need to route the IP from Multipass. To do this first get the IP of the Multipass VM.
  Outside the Multipass VM run:
  ```
@@ -120,8 +120,7 @@ Password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  ```
  sudo ip route add <UNIT_IP> via <VM_IP>
  ```
-[/note]
-
+````
 
 You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the admin username and password from the previous action.
 

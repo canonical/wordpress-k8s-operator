@@ -139,13 +139,13 @@ You achieved a basic deployment of the WordPress charm. If you want to go farthe
 or learn more about the charm, check out these pages:
 
 - Perform basic operations with your deployment like
-  [installing plugins](https://charmhub.io/wordpress-k8s/docs/how-to-install-plugins)
-  or [themes](https://charmhub.io/wordpress-k8s/docs/how-to-install-themes).
+  [installing plugins](how_to_install_plugins)
+  or [themes](how_to_install_themes).
 - Set up monitoring for your deployment by
-  [integrating with the Canonical Observability Stack (COS)](https://charmhub.io/wordpress-k8s/docs/how-to-integrate-with-cos).
-- Make your deployment more secure by [enabling antispam](https://charmhub.io/wordpress-k8s/docs/how-to-enable-antispam) or
-  [rotating secrets](https://charmhub.io/wordpress-k8s/docs/how-to-rotate-secrets),
+  [integrating with the Canonical Observability Stack (COS)](how_to_integrate_with_cos).
+- Make your deployment more secure by [enabling antispam](how_to_enable_antispam) or
+  [rotating secrets](how_to_rotate_secrets),
   and learn more about the charm's security in
-  [Security overview](https://charmhub.io/wordpress-k8s/docs/explanation-security).
-- Learn more about the available [relation endpoints](https://charmhub.io/wordpress-k8s/docs/reference-integrations)
+  [Security overview](explanation_security_overview).
+- Learn more about the available [relation endpoints](reference_relation_endpoints)
   for the WordPress charm.

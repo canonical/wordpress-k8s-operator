@@ -26,7 +26,7 @@ automatic updates of the WordPress application itself.
 ## Spam protection
 
 The WordPress charm has built-in spam protection that can be activated by providing the 
-`wp_plugin_akismet_key` [configuration option]( https://charmhub.io/wordpress-k8s/docs/how-to-enable-antispam).
+`wp_plugin_akismet_key` [configuration option](how_to_enable_antispam).
 For more information about Akismet spam protection, see
 [https://akismet.com/](https://akismet.com/).
 
@@ -36,7 +36,7 @@ For more information about Akismet spam protection, see
 
 WordPress can be vulnerable to new CVEs and may require updates to patch the CVEs. In case of an
 exposure to a CVE, it is recommended that you update your WordPress charm and rotate the secrets.
-See the [rotate-secrets](https://charmhub.io/wordpress-k8s/docs/how-to-rotate-secrets) action in the how-to guide.
+See the [rotate-secrets](how_to_rotate_secrets) action in the how-to guide.
 
 ### Plugins installation
 

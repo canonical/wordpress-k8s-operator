@@ -73,7 +73,7 @@ run necessary charm code defined by the main `src/charm.py`. The source code is 
 
 The wordpress-image is custom built to include a default set of plugins and themes. The list of
 plugins and themes can be found at the reference section of the
-[documentation](https://charmhub.io/wordpress-k8s/docs/reference-plugins). Since WordPress is
+[documentation](reference_plugins). Since WordPress is
 an application running on PHP, required libraries and dependencies are installed during the build
 process.
 
@@ -91,7 +91,7 @@ the latest stable version by default, downloaded from the source.
 
 ## Integrations
 
-See [Relation endpoints](../reference/relation-endpoints.md).
+See [Relation endpoints](reference_relation_endpoints).
 
 ### Peer relations
 

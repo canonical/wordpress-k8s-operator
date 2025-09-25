@@ -8,7 +8,7 @@ for information on contributing to the source code.
 ```
 
 Our documentation is stored in the `docs` directory alongside the [source code on GitHub](https://github.com/canonical/wordpress-k8s-operator/).
-It is based on the {ref}`Canonical starter pack <starter-pack>`
+It is based on the Canonical starter pack
 and hosted on [Read the Docs](https://about.readthedocs.com/). In structuring,
 the documentation employs the [Diátaxis](https://diataxis.fr/) approach.
 

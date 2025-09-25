@@ -7,11 +7,11 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 
 ## What you'll need
 - A working station, e.g., a laptop, with AMD64 architecture.
-- Juju 3 installed. For more information about how to install Juju, see [Get started with Juju](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/tutorial/).
+- Juju 3 installed. For more information about how to install Juju, see {ref}`juju:tutorial`.
 - Juju bootstrapped to a MicroK8s controller: `juju bootstrap microk8s tutorial-controller`
 
 [note]
-You can get a working setup by using a Multipass VM as outlined in the [Set up your test environment](https://canonical-juju.readthedocs-hosted.com/en/latest/user/howto/manage-your-deployment/manage-your-deployment-environment/#set-things-up) guide.
+You can get a working setup by using a Multipass VM as outlined in the {ref}`Set up your test environment <juju:set-up-your-deployment>` guide.
 [/note]
 
 ## What you'll do
@@ -54,7 +54,7 @@ juju deploy wordpress-k8s
 ## Deploy and integrate database 
 
 Deployment of WordPress requires a relational database. The integration with the
-`mysql` [interface](https://documentation.ubuntu.com/juju/3.6/reference/relation/) is required by the `wordpress-k8s`
+`mysql` {ref}`interface <juju:relation>` is required by the `wordpress-k8s`
 charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
 
 The following commands deploy the `mysql-k8s` charm and integrate it with the `wordpress-k8s` charm.
@@ -131,7 +131,7 @@ You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php`
 Congratulations! You have successfully deployed the WordPress charm, added a database, and accessed the application.
 
 You can clean up your environment by following this guide:
-[Tear down your test environment](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/howto/manage-your-deployment/manage-your-deployment-environment/#tear-things-down)
+{ref}`Tear down your test environment <juju:tear-things-down>`
 
 ## Next steps
 

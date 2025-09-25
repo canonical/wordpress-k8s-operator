@@ -105,13 +105,12 @@ among peers. See more about the secrets in the `rotate-wordpress-secrets` action
 Juju events allow progression of the charm in its lifecycle and encapsulates part of the execution
 context of a charm. Below is the list of observed events for `wordpress-k8s charm` with how the charm
 reacts to the event. For more information about the charm’s lifecycle in general, refer to the
-charm’s life [documentation](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/).
+{ref}`charm’s life documentation <juju:charm>`.
 
 ### `start`
 
 This event marks the charm’s state as started. The charm’s running state must be persisted by the
-charm in its own state. See the documentation on the
-[start event](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/#start).
+charm in its own state. See the documentation on the {ref}`start event <juju:hook-start>`.
 
 ### `uploads_storage_attached`
 
@@ -165,7 +164,7 @@ The `src/charm.py` is the default entry point for a charm and has the `Wordpress
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 
-> See more in the Juju docs: [Charm](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/charm/).
+> See more in the Juju docs: {ref}`juju:charm`.
 
 The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
 

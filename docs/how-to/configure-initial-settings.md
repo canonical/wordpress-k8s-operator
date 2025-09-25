@@ -26,4 +26,4 @@ WordPress (`http://<wordpress-unit-ip>/wp-admin/options-general.php`).
 
 You can also pass in the wordpress-k8s `configuration.yaml` file with the parameters above. See how
 to pass in a configuration file in the
-[Juju documentation](https://juju.is/docs/olm/manage-applications#heading--configure-an-application-during-deployment).
+{ref}`Juju documentation <juju:manage-applications>`.

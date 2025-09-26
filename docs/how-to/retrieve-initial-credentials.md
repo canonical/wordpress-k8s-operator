@@ -2,7 +2,7 @@
 
 # How to retrieve initial credentials
 
-Run the following command to get the initial admin password that can be used to login at
+Run the following command to get the initial admin password that can be used to log in at
 `http://<wordpress-unit-ip>/wp-login.php`.
 
 ```
@@ -22,7 +22,7 @@ unit-wordpress-k8s-0:
 
 The password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`.
 
-You can use the password to log in to the admin account in `http://<wordpress-unit-ip>/wp-admin.php`.
+You can use the password to log in to the admin account at `http://<wordpress-unit-ip>/wp-admin.php`.
 
 ```{note}
 If the `admin_password` value was passed in the `initial_settings` configuration, the

@@ -7,7 +7,7 @@ Web Application Firewall.
 
 ## Prerequisites
 
-Deploy and relate the [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
+Deploy and integrate the [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
 
 ```
 juju deploy nginx-ingress-integrator

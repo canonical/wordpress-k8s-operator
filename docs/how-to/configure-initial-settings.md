@@ -3,7 +3,7 @@
 # How to configure initial settings
 
 ```{note}
-This only works when setting up WordPress initially, before the database
+This only works when setting up WordPress charm initially before the database
 relation setup. Changing the value afterwards has no effect.
 ```
 

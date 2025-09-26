@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    "description lang=en": "Explanation material explaining key concepts about the WordPress charm."
+---
+
 (explanation_index)=
 
 # Explanation

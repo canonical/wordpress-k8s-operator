@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    "description lang=en": "The WordPress charm tutorial that walks a user through a basic WordPress deployment."
+---
+
 (tutorial_index)=
 
 # Deploy the WordPress charm for the first time

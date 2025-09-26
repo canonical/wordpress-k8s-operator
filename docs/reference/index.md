@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    "description lang=en": "Technical information related to the WordPress charm."
+---
+
 (reference_index)=
 
 # Reference

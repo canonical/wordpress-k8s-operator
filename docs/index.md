@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    "description lang=en": "A Juju charm deploying and managing WordPress on Kubernetes."
+---
+
 # WordPress operator
 
 A [Juju](https://juju.is/) {ref}`charm <juju:charm>` deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com/) is the world's most popular website builder, and it's free and open-source.

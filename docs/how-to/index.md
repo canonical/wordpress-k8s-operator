@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    "description lang=en": "How-to guides covering the entire WordPress charm operations lifecycle."
+---
+
 (how_to_index)=
 
 # How-to guides

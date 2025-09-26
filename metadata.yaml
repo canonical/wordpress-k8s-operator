@@ -4,9 +4,9 @@ name: wordpress-k8s
 display-name: WordPress
 summary: WordPress is an OSS to create a beautiful website.
 description: |
-  A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing
+  A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing
   WordPress on Kubernetes. [WordPress](https://wordpress.com/) is the world's most popular website
-  builder, and it's free and open-source.
+  builder, and it's free and open-source. 
 
   This charm simplifies initial deployment and operations of WordPress on Kubernetes, including scaling
   the number of instances, integration with SSO, access to OpenStack Swift object storage for redundant
@@ -17,7 +17,10 @@ description: |
   This charm will make operating WordPress straightforward for DevOps or SRE teams through Juju's clean
   interface. It will allow deployment into multiple environments to test changes and support scaling out
   for enterprise deployments.
-docs: https://discourse.charmhub.io/t/wordpress-documentation-overview/4052
+
+  For information about how to deploy, integrate, and manage this charm, see the Official
+  [WordPress K8s charm documentation](https://documentation.ubuntu.com/wordpress-k8s-charm/latest/).
+docs: https://documentation.ubuntu.com/wordpress-k8s-charm/latest/
 maintainers:
   - https://launchpad.net/~canonical-is-devops
 issues: https://github.com/canonical/wordpress-k8s-operator/issues

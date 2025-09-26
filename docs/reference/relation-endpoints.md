@@ -14,6 +14,7 @@ The database relation connects wordpress-k8s with charms that support the `mysql
 in the database side.
 
 Example database integrate command: 
+
 ```
 juju integrate wordpress-k8s:database mysql-k8s:database
 ```
@@ -37,10 +38,13 @@ Grafana relation data bag under the "dashboards" key. Requires Prometheus dataso
 integrated with Grafana.
 
 Grafana-Prometheus integrate command: 
+
 ```
 juju integrate grafana-k8s:grafana-source prometheus-k8s:grafana-source
 ```  
+
 Grafana-dashboard integrate command: 
+
 ```
 juju integrate wordpress-k8s grafana-dashboard
 ```
@@ -61,6 +65,7 @@ Kubernetes cluster must already have an nginx ingress controller deployed. Docum
 enable ingress in MicroK8s can be found [here](https://microk8s.io/docs/addon-ingress).
 
 Example ingress integrate command: 
+
 ```
 juju integrate wordpress-k8s nginx-ingress-integrator
 ```
@@ -77,6 +82,7 @@ This can then be queried through the Loki API or easily visualized through Grafa
 [here](https://charmhub.io/topics/canonical-observability-stack).
 
 Logging-endpoint integrate command: 
+
 ```
 juju integrate wordpress-k8s loki-k8s
 ```
@@ -93,6 +99,7 @@ Kubernetes pod. The metrics are exposed in the [open metrics format](https://git
 information about the metrics exposed, please refer to the [apache-exporter documentation](https://github.com/Lusitaniae/apache_exporter#collectors).
 
 Metrics-endpoint integrate command: 
+
 ```
 juju integrate wordpress-k8s prometheus-k8s
 ```

@@ -12,6 +12,7 @@ The `wordpress-k8s` charm helps deploy a horizontally scalable WordPress applica
 tutorial will walk you through each step to achieve a basic WordPress deployment.
 
 ## What you'll need
+
 - A working station, e.g., a laptop, with AMD64 architecture.
 - Juju 3 installed. For more information about how to install Juju, see {ref}`juju:tutorial`.
 - Juju bootstrapped to a MicroK8s controller: `juju bootstrap microk8s tutorial-controller`
@@ -69,6 +70,7 @@ The following commands deploy the `mysql-k8s` charm and integrate it with the `w
 juju deploy mysql-k8s --trust
 juju integrate wordpress-k8s mysql-k8s:database
 ```
+
 The `database` interface is required since `mysql-k8s` charm provides multiple compatible interfaces.
 
 Run `juju status` to see the current status of the deployment. The output should be similar to the following:
@@ -129,7 +131,6 @@ Password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ````
 
 You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the admin username and password from the previous action.
-
 
 ## Clean up the environment
 

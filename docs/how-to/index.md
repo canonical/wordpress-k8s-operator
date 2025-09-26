@@ -12,10 +12,12 @@ The following guides cover key processes and common tasks for managing
 and using the WordPress charm.
 
 ## Initial setup
+
 * [Retrieve initial credentials]
 * [Configure initial settings]
 
 ## Basic operations
+
 * [Configure hostname]
 * [Configure object storage]
 * [Install plugins]
@@ -23,15 +25,18 @@ and using the WordPress charm.
 * [Integrate with COS]
 
 ## Security
+
 * [Enable antispam]
 * [Enable WAF]
 * [Rotate secrets]
 
 ## Upgrade and redeployment 
+
 * [Upgrade]
 * [Redeploy]
 
 ## Development
+
 * [Contribute]
 
 <!--Links-->

@@ -15,7 +15,9 @@ juju integrate wordpress-k8s nginx-ingress-integrator
 ```
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
+
 ## Enable Modsecurity 3.0 WAF
+
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 ```{note}

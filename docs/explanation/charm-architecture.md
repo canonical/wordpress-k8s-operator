@@ -8,7 +8,6 @@ capabilities are enhanced through integration with the
 Canonical Observability Stack ([COS](https://charmhub.io/topics/canonical-observability-stack/))
 charms.
 
-
 ## Containers
 
 The core component of wordpress-k8s charm consists of a wordpress-k8s main workload container with an Apache Prometheus exporter. The services inside the container are driven by

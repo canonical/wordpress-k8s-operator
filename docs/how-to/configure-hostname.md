@@ -7,6 +7,7 @@ Configure the WordPress hostname with the `blog_hostname` configuration:
 ```
 juju config wordpress-k8s blog_hostname=<desired-hostname>
 ```
+
 Check that the configuration was updated with:
 
 ```bash

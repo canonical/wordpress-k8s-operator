@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2025-09-26
+
+- docs: Set up Read the Docs project to migrate the documentation.
+
 ## 2025-09-16
 
 - docs: Update tutorial based on user feedback.

@@ -1,3 +1,5 @@
+(how_to_install_plugins)=
+
 # How to install plugins
 
 Start by locating the plugin from the WordPress [plugins page](https://wordpress.org/plugins/).

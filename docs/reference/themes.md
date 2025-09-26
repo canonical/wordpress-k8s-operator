@@ -1,3 +1,5 @@
+(reference_themes)=
+
 # Themes
 
 By default, the following WordPress themes are installed with the latest version from source.

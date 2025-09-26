@@ -1,3 +1,5 @@
+(how_to_redeploy)=
+
 # How to redeploy
 
 This guide provides the necessary steps for migrating an existing WordPress

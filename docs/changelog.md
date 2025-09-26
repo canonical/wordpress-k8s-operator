@@ -1,3 +1,5 @@
+(changelog)=
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -6,24 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
-### 2025-09-16
+## 2025-09-26
+
+- docs: Set up Read the Docs project to migrate the documentation.
+
+## 2025-09-16
 
 - docs: Update tutorial based on user feedback.
 
-### 2025-07-02
+## 2025-07-02
 
 - docs: Update README and tutorial based on user feedback.
 
-### 2025-05-29
+## 2025-05-29
 
 - docs: Fix issues found with local audit for style guide checks.
 
-### 2025-03-11
+## 2025-03-11
 
 - fix: use supported YoastSEO plugin version.
 - docs: fix charm architecture diagram (separate charm containers boundary)
 
-### 2025-03-10
+## 2025-03-10
 
 - Add charm architecture diagram.
 - Add changelog for tracking user-relevant changes.

@@ -1,9 +1,11 @@
+(how_to_configure_object_storage)=
+
 # How to configure object storage
 
 Object storage configuration is required for the `wordpress-k8s` charm to work with
 multi-unit deployments.
 
-### Prerequisites
+## Prerequisites
 
 Follow the instructions on installing OpenStack from the OpenStack
 [documentation](https://docs.openstack.org/install-guide/). For testing purposes, you can install
@@ -33,7 +35,7 @@ export OS_PROJECT_DOMAIN_ID=default
 export OS_VOLUME_API_VERSION=3
 ```
 
-### Configure the OpenStack object storage plugin
+## Configure the OpenStack object storage plugin
 
 To configure Swift storage for `wordpress-k8s`, copy and paste the following yaml content and adjust
 the values accordingly.
@@ -53,11 +55,11 @@ tenant: demo
 username: demo
 ```
 
-[note]
+```{note}
 The `swift-url` value can be obtained by running `swift auth`. The value should look
 something like http://<openstack-deployment-address>:8080/v3/AUTH_1d449b4237d3499dabd95210c33ca150, exported under
 OS_STORAGE_URL key.
-[/note]
+```
 
 You can then configure the `wordpress-k8s` charm using the yaml contents above.
 

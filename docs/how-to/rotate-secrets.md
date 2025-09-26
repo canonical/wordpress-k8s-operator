@@ -1,3 +1,5 @@
+(how_to_rotate_secrets)=
+
 # How to rotate secrets
 
 To securely update all the WordPress secrets, run the following action.

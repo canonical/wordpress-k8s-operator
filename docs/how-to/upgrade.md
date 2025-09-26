@@ -1,3 +1,5 @@
+(how_to_upgrade)=
+
 # How to upgrade
 
 Before updating the charm you need to back up the database using

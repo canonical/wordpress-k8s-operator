@@ -8,7 +8,8 @@ myst:
 
 # Reference
 
-Reference landing page.
+The pages in this section contain technical information for topics relevant to
+the WordPress charm.
 
 ```{toctree}
 actions.md

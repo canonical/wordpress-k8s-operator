@@ -8,7 +8,8 @@ myst:
 
 # Explanation
 
-Explanation pages.
+The pages in this section provide additional context and deeper understanding of
+foundational topics and concepts relevant to the WordPress charm.
 
 ```{toctree}
 charm-architecture

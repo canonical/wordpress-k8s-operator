@@ -21,7 +21,6 @@ errmsg = @printf '$(RED_COLOR)Error: $(1)$(NO_COLOR)\n' && exit 1
 # Core
 # ==============================================================================
 
-include docs/Makefile
 include Makefile.docs
 
 .PHONY: help 

@@ -29,6 +29,7 @@ jobs:
         run: |
           for dir in compare base; do
             pushd ${dir}/docs
+            cd ${dir}/docs
             make install
             . .sphinx/venv/bin/activate
             make html
@@ -38,6 +39,7 @@ jobs:
         run: |
           for dir in compare base; do
             pushd ${dir}/docs
+            cd ${dir}/docs
             find ./_build/ -name '*.html' \
             | sed 's|/_build||;s|/index.html$|/|;s|.html$||' \
             | sort > urls.txt

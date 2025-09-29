@@ -37,4 +37,5 @@ header:
     - 'zap_rules.tsv'
     - 'lib/**'
     - 'wordpress_rock/patches/**'
+    - 'docs/**'
   comment: on-failure

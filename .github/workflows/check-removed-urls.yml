@@ -25,7 +25,17 @@ jobs:
           fetch-depth: 0
           path: base
       - uses: actions/setup-python@v5
+      - name: Check Makefiles
+        id: check-makefiles
+        run: |
+          if [ -f "compare/docs/Makefile" ] && [ -f "base/docs/Makefile" ]; then
+            echo "makefiles=true" >> $GITHUB_OUTPUT
+          else
+            echo "Docs Makefile not found in base or compare. Skipping URL check."
+            echo "makefiles=false" >> $GITHUB_OUTPUT
+          fi
       - name: Build docs
+        if: steps.check-makefiles.outputs.makefiles == 'true'
         run: |
           for dir in compare base; do
             pushd ${dir}/docs
@@ -35,6 +45,7 @@ jobs:
             popd
           done
       - name: Generate current URLs list
+        if: steps.check-makefiles.outputs.makefiles == 'true'
         run: |
           for dir in compare base; do
             pushd ${dir}/docs
@@ -44,6 +55,7 @@ jobs:
             popd
           done
       - name: Compare URLs
+        if: steps.check-makefiles.outputs.makefiles == 'true'
         run: |
           BASE_URLS_PATH="base/docs/urls.txt"
           COMPARE_URLS_PATH="compare/docs/urls.txt"

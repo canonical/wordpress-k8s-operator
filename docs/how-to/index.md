@@ -1,13 +1,23 @@
+---
+myst:
+  html_meta:
+    "description lang=en": "How-to guides covering the entire WordPress charm operations lifecycle."
+---
+
+(how_to_index)=
+
 # How-to guides
 
 The following guides cover key processes and common tasks for managing
 and using the WordPress charm.
 
 ## Initial setup
+
 * [Retrieve initial credentials]
 * [Configure initial settings]
 
 ## Basic operations
+
 * [Configure hostname]
 * [Configure object storage]
 * [Install plugins]
@@ -15,15 +25,18 @@ and using the WordPress charm.
 * [Integrate with COS]
 
 ## Security
+
 * [Enable antispam]
 * [Enable WAF]
 * [Rotate secrets]
 
 ## Upgrade and redeployment 
+
 * [Upgrade]
 * [Redeploy]
 
 ## Development
+
 * [Contribute]
 
 <!--Links-->
@@ -37,6 +50,24 @@ and using the WordPress charm.
 [Enable antispam]: enable-antispam.md
 [Enable WAF]: enable-waf.md
 [Rotate secrets]: rotate-secrets.md
-[Upgrade WordPress charm]: upgrade.md
+[Upgrade]: upgrade.md
 [Redeploy]: redeploy.md
 [Contribute]: contribute.md
+
+```{toctree}
+:hidden:
+
+Retrieve initial credentials <retrieve-initial-credentials.md>
+Configure initial settings <configure-initial-settings.md>
+Integrate with COS <integrate-with-cos.md>
+Configure hostname <configure-hostname.md>
+Install plugins <install-plugins.md>
+Install themes <install-themes.md>
+Configure object storage <configure-object-storage.md>
+Enable antispam <enable-antispam.md>
+Enable WAF <enable-waf.md>
+Rotate secrets <rotate-secrets.md>
+Upgrade <upgrade.md>
+Redeploy <redeploy.md>
+Contribute <contribute.md>
+```

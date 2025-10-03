@@ -1,3 +1,5 @@
+(explanation_charm_architecture)=
+
 # Charm architecture
 
 The wordpress-k8s charm aims to provide core functionalities of WordPress with horizontally
@@ -6,14 +8,13 @@ capabilities are enhanced through integration with the
 Canonical Observability Stack ([COS](https://charmhub.io/topics/canonical-observability-stack/))
 charms.
 
-
 ## Containers
 
 The core component of wordpress-k8s charm consists of a wordpress-k8s main workload container with an Apache Prometheus exporter. The services inside the container are driven by
 Pebble, a lightweight API-driven process supervisor that controls the lifecycle of a service.
 Learn more about Pebble and its layer configurations [in the Pebble documentation](https://github.com/canonical/pebble).
 
-```mermaid
+```{mermaid}
 C4Context
 title Component diagram for WordPress Charm
 
@@ -71,7 +72,7 @@ run necessary charm code defined by the main `src/charm.py`. The source code is 
 
 The wordpress-image is custom built to include a default set of plugins and themes. The list of
 plugins and themes can be found at the reference section of the
-[documentation](https://charmhub.io/wordpress-k8s/docs/reference-plugins). Since WordPress is
+[documentation](reference_plugins). Since WordPress is
 an application running on PHP, required libraries and dependencies are installed during the build
 process.
 
@@ -89,7 +90,7 @@ the latest stable version by default, downloaded from the source.
 
 ## Integrations
 
-See [Relation endpoints](../reference/relation-endpoints.md).
+See [Relation endpoints](reference_relation_endpoints).
 
 ### Peer relations
 
@@ -103,13 +104,12 @@ among peers. See more about the secrets in the `rotate-wordpress-secrets` action
 Juju events allow progression of the charm in its lifecycle and encapsulates part of the execution
 context of a charm. Below is the list of observed events for `wordpress-k8s charm` with how the charm
 reacts to the event. For more information about the charm’s lifecycle in general, refer to the
-charm’s life [documentation](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/).
+{ref}`charm’s life documentation <juju:charm>`.
 
 ### `start`
 
 This event marks the charm’s state as started. The charm’s running state must be persisted by the
-charm in its own state. See the documentation on the
-[start event](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/hook/#start).
+charm in its own state. See the documentation on the {ref}`start event <juju:hook-start>`.
 
 ### `uploads_storage_attached`
 
@@ -163,7 +163,9 @@ The `src/charm.py` is the default entry point for a charm and has the `Wordpress
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 
-> See more in the Juju docs: [Charm](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/charm/).
+```{note}
+See more in the Juju docs: {ref}`juju:charm`.
+```
 
 The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
 

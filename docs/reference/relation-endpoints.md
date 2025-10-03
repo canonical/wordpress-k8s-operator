@@ -1,8 +1,10 @@
+(reference_relation_endpoints)=
+
 # Relation endpoints
 
 See [Integrations](https://charmhub.io/wordpress-k8s/integrations).
 
-### Database
+## Database
 
 _Interface_: mysql_client    
 _Supported charms_: [Charmed MySQL](https://charmhub.io/mysql), [Charmed MySQL-K8s](https://charmhub.io/mysql-k8s)
@@ -12,11 +14,12 @@ The database relation connects wordpress-k8s with charms that support the `mysql
 in the database side.
 
 Example database integrate command: 
+
 ```
 juju integrate wordpress-k8s:database mysql-k8s:database
 ```
 
-### Grafana dashboard
+## Grafana dashboard
 
 _Interface_: grafana-dashboard  
 _Supported charms_: [grafana-k8s](https://charmhub.io/grafana-k8s)
@@ -35,15 +38,18 @@ Grafana relation data bag under the "dashboards" key. Requires Prometheus dataso
 integrated with Grafana.
 
 Grafana-Prometheus integrate command: 
+
 ```
 juju integrate grafana-k8s:grafana-source prometheus-k8s:grafana-source
 ```  
+
 Grafana-dashboard integrate command: 
+
 ```
 juju integrate wordpress-k8s grafana-dashboard
 ```
 
-### Ingress
+## Ingress
 
 _Interface_: ingress  
 _Supported charms_: [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
@@ -59,11 +65,12 @@ Kubernetes cluster must already have an nginx ingress controller deployed. Docum
 enable ingress in MicroK8s can be found [here](https://microk8s.io/docs/addon-ingress).
 
 Example ingress integrate command: 
+
 ```
 juju integrate wordpress-k8s nginx-ingress-integrator
 ```
 
-### Logging
+## Logging
 
 _Interface_: loki_push_api  
 _Supported charms_: [loki-k8s](https://charmhub.io/loki-k8s)
@@ -75,11 +82,12 @@ This can then be queried through the Loki API or easily visualized through Grafa
 [here](https://charmhub.io/topics/canonical-observability-stack).
 
 Logging-endpoint integrate command: 
+
 ```
 juju integrate wordpress-k8s loki-k8s
 ```
 
-### Metrics endpoint
+## Metrics endpoint
 
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape)  
 _Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)
@@ -91,6 +99,7 @@ Kubernetes pod. The metrics are exposed in the [open metrics format](https://git
 information about the metrics exposed, please refer to the [apache-exporter documentation](https://github.com/Lusitaniae/apache_exporter#collectors).
 
 Metrics-endpoint integrate command: 
+
 ```
 juju integrate wordpress-k8s prometheus-k8s
 ```

@@ -21,11 +21,11 @@ For DevOps or SRE teams this charm will make operating WordPress straightforward
 It will allow deployment into multiple environments for testing of changes, 
 and supports scaling out for enterprise deployments.
 
-For information about how to deploy, integrate, and manage this charm, see the Official [wordpress-k8s-operator Documentation](https://charmhub.io/wordpress-k8s/docs).
+For information about how to deploy, integrate, and manage this charm, see the Official [WordPress K8s charm documentation](https://documentation.ubuntu.com/wordpress-k8s-charm/latest/).
 
 ## Get started
 
-To begin, refer to the [Getting Started](https://charmhub.io/wordpress-k8s/docs/tutorial) tutorial for step-by-step instructions.
+To begin, refer to the [Getting Started](docs/tutorial.md) tutorial for step-by-step instructions.
 
 ### Basic operations
 
@@ -52,9 +52,37 @@ juju integrate wordpress-k8s mysql-k8s:database
 
 Apart from this required integration, the charm can be integrated with other Juju charms and services as well. You can find the full list of integrations in [the Charmhub documentation](https://charmhub.io/wordpress-k8s/integrations).
 
+## Documentation
+
+Our documentation is stored in the `docs` directory.
+It is based on the Canonical starter pack
+and hosted on [Read the Docs](https://about.readthedocs.com/). In structuring,
+the documentation employs the [Diátaxis](https://diataxis.fr/) approach.
+
+You may open a pull request with your documentation changes, or you can
+[file a bug](https://github.com/canonical/wordpress-k8s-operator/issues) to provide constructive feedback or suggestions.
+
+To run the documentation locally before submitting your changes:
+
+```bash
+cd docs
+make run
+```
+
+GitHub runs automatic checks on the documentation
+to verify spelling, validate links and style guide compliance.
+
+You can (and should) run the same checks locally:
+
+```bash
+make spelling
+make linkcheck
+make vale
+```
+
 ## Learn more
 
-- [Read more](https://charmhub.io/wordpress-k8s/docs)
+- [Read more](https://documentation.ubuntu.com/wordpress-k8s-charm/latest/)
 - [Developer documentation](https://codex.wordpress.org/Developer_Documentation)
 - [Official webpage](https://wordpress.com)
 - [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
@@ -66,6 +94,6 @@ It's an open source project that warmly welcomes community projects, contributio
 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
-- [Contribute](https://charmhub.io/wordpress-k8s/docs/how-to-contribute)
+- [Contribute](CONTRIBUTING.md)
 - [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 

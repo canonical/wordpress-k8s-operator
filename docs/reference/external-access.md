@@ -1,3 +1,5 @@
+(reference_external_access)=
+
 # External access requirements
 
 The WordPress charm may need to connect to external services and resources for

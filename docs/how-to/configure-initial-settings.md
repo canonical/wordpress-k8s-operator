@@ -1,13 +1,15 @@
+(how_to_configure_initial_settings)=
+
 # How to configure initial settings
 
-[note]
-This only works when setting up WordPress initially, before the database
+```{note}
+This only works when setting up WordPress charm initially before the database
 relation setup. Changing the value afterwards has no effect.
-[/note]
+```
 
 By providing configuration value for `initial_settings` at deployment, you can tweak a few
 WordPress settings. For detailed information on configurable parameters, please refer to the
-[reference guide](https://charmhub.io/wordpress-k8s/docs/reference-configurations).
+[reference guide](reference_configurations).
 
 ```
 WORDPRESS_SETTINGS=$(cat << EOF
@@ -24,4 +26,4 @@ WordPress (`http://<wordpress-unit-ip>/wp-admin/options-general.php`).
 
 You can also pass in the wordpress-k8s `configuration.yaml` file with the parameters above. See how
 to pass in a configuration file in the
-[Juju documentation](https://juju.is/docs/olm/manage-applications#heading--configure-an-application-during-deployment).
+{ref}`Juju documentation <juju:manage-applications>`.

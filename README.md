@@ -65,6 +65,7 @@ You may open a pull request with your documentation changes, or you can
 To run the documentation locally before submitting your changes:
 
 ```bash
+cd docs
 make run
 ```
 

@@ -22,6 +22,7 @@ refer to the
 To run the documentation locally before submitting your changes:
 
 ```bash
+cd docs
 make run
 ```
 

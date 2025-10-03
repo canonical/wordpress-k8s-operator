@@ -33,7 +33,7 @@ jobs:
       run: |
         set -ex
         sudo apt-get --fix-missing update
-        sudo apt -y install \
+        sudo apt-get -y install \
           cargo \
           libpython3-dev \
           libxml2-dev \

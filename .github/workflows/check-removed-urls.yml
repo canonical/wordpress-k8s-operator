@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # This implicitly gets the PR branch. Making it explicit causes problems
           # with private forks, but it is equivalent to the following:
@@ -24,7 +24,7 @@ jobs:
           repository: ${{ github.event.pull_request.base.repo.full_name }}
           fetch-depth: 0
           path: base
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
       - name: Check Makefiles
         id: check-makefiles
         run: |

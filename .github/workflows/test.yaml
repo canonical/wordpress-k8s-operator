@@ -49,3 +49,9 @@ jobs:
       test-tox-env: "integration-juju3"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
+  allure-report:
+    if: always() && !cancelled()
+    needs:
+      - integration-test
+      - integration-test-juju3
+    uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

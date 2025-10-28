@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint:disable=invalid-name,protected-access,unused-argument
+# pylint:disable=protected-access,unused-argument
 
 """Mocking and patching system for testing WordPress charm."""
 

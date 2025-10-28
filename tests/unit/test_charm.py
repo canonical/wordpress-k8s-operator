@@ -12,7 +12,6 @@ import typing
 import unittest.mock
 
 import ops.charm
-import ops.pebble
 import ops.testing
 import pytest
 

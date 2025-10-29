@@ -1,0 +1,34 @@
+name: build-cache.yaml
+on:
+  pull_request:
+jobs:
+  build-rock-cache:
+    name: Build Rock with Cache
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - name: Set LXC security nesting
+        if: ${{ inputs.rockcraft-enable-security-nesting }}
+        run: |
+          lxc profile set default security.nesting true
+      - name: Install charmcraftcache
+        if: ${{ inputs.charmcraftcache }}
+        run: |
+          pipx install charmcraftcache
+      - uses: actions/checkout@v5.0.0
+      - name: Pre-build script
+        if: ${{ inputs.pre-build-script != '' }}
+        run: bash -xe ${{ inputs.pre-build-script }}
+      - uses: canonical/operator-workflows/internal/build@cache
+        id: build
+        with:
+          build-plan: |
+            {
+              "type": "rock",
+              "name": "wordpress",
+              "source_file": "wordpress_rock/rockcraft.yaml",
+              "source_directory": "wordpress_rock",
+              "output_type": "registry",
+              "output": "2025-10-28T15-53-19-9ace__build__output__rock__wordpress"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}

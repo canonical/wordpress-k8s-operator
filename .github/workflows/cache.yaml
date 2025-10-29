@@ -36,5 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - uses: canonical/setup-lxd@v0.1.3
+    - name: Set LXC security nesting
+      if: ${{ inputs.rockcraft-enable-security-nesting }}
+      run: |
+        lxc profile set default security.nesting true
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3

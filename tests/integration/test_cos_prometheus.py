@@ -1,8 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=protected-access,too-many-locals
-
 """Integration tests for WordPress charm COS integration."""
 
 import pytest

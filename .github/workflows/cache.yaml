@@ -21,6 +21,7 @@ jobs:
               "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__wordpress"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: lxc list --project rockcraft
   build-rock-cache:
     name: Build Rock with Cache
     runs-on: ubuntu-latest
@@ -40,6 +41,7 @@ jobs:
               "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__wordpress_cached"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: lxc list --project rockcraft
   build-charm:
     name: Build Charm without Cache
     runs-on: ubuntu-latest

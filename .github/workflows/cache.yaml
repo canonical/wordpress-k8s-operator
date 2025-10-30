@@ -40,6 +40,25 @@ jobs:
               "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__wordpress_cached"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
+  build-charm:
+    name: Build Charm without Cache
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - uses: canonical/operator-workflows/internal/build@main
+        id: build
+        with:
+          build-plan: |
+            {
+              "type": "charm",
+              "name": "wordpress-k8s",
+              "source_file": "charmcraft.yaml",
+              "source_directory": ".",
+              "output_type": "file",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__wordpress-k8s"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
   build-charm-cache:
     name: Build Charm with Cache
     runs-on: ubuntu-latest

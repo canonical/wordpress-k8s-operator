@@ -1,9 +1,27 @@
-name: build-cache.yaml
+name: Test Craft Cache
 on:
   pull_request:
 jobs:
+  params:
+    name: Extract Params
+    runs-on: ubuntu-latest
+    outputs:
+      charm: ${{ steps.charm.outputs.charm }}
+      rock: ${{ steps.charm.outputs.rock }}
+      rock_dir: ${{ steps.charm.outputs.rock_dir }}
+      rock_file: ${{ steps.charm.outputs.rock_file }}
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - id: charm
+        run: echo "charm=$([ -f metadata.yaml ] && yq -r .name metadata.yaml || yq -r .name charmcraft.yaml)" >> "$GITHUB_OUTPUT"
+      - id: rock
+        run: |
+          echo "rock_file=$(ls *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
+          echo "rock_dir=$(ls *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
+          echo "rock=$(yq -r .name *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
   build-rock:
     name: Build Rock without Cache
+    needs: [ params ]
     runs-on: ubuntu-latest
     steps:
       - uses: canonical/setup-lxd@v0.1.3
@@ -14,16 +32,17 @@ jobs:
           build-plan: |
             {
               "type": "rock",
-              "name": "wordpress",
-              "source_file": "wordpress_rock/rockcraft.yaml",
-              "source_directory": "wordpress_rock",
+              "name": "${{ needs.params.outputs.rock}}",
+              "source_file": "${{ needs.params.outputs.rock_file }}",
+              "source_directory": "${{ needs.params.outputs.rock_dir }}",
               "output_type": "registry",
-              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__wordpress"
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__${{ needs.params.outputs.rock}}"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: lxc list --project rockcraft
   build-rock-cache:
     name: Build Rock with Cache
+    needs: [ params ]
     runs-on: ubuntu-latest
     steps:
       - uses: canonical/setup-lxd@v0.1.3
@@ -34,16 +53,17 @@ jobs:
           build-plan: |
             {
               "type": "rock",
-              "name": "wordpress",
-              "source_file": "wordpress_rock/rockcraft.yaml",
-              "source_directory": "wordpress_rock",
+              "name": "${{ needs.params.outputs.rock}}",
+              "source_file": "${{ needs.params.outputs.rock_file }}",
+              "source_directory": "${{ needs.params.outputs.rock_dir }}",
               "output_type": "registry",
-              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__wordpress_cached"
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__${{ needs.params.outputs.rock}}"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: lxc list --project rockcraft
   build-charm:
     name: Build Charm without Cache
+    needs: [ params ]
     runs-on: ubuntu-latest
     steps:
       - uses: canonical/setup-lxd@v0.1.3
@@ -54,15 +74,16 @@ jobs:
           build-plan: |
             {
               "type": "charm",
-              "name": "wordpress-k8s",
+              "name": "${{ needs.params.outputs.charm }}",
               "source_file": "charmcraft.yaml",
               "source_directory": ".",
               "output_type": "file",
-              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__wordpress-k8s"
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__${{ needs.params.outputs.charm }}"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
   build-charm-cache:
     name: Build Charm with Cache
+    needs: [ params ]
     runs-on: ubuntu-latest
     steps:
       - uses: canonical/setup-lxd@v0.1.3
@@ -73,10 +94,10 @@ jobs:
           build-plan: |
             {
               "type": "charm",
-              "name": "wordpress-k8s",
+              "name": "${{ needs.params.outputs.charm }}",
               "source_file": "charmcraft.yaml",
               "source_directory": ".",
               "output_type": "file",
-              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__wordpress-k8s_cached"
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__${{ needs.params.outputs.charm }}_cached"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}

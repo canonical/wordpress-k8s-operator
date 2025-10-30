@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/checkout@v5.0.0
-      - uses: canonical/operator-workflows/internal/build@main
+      - uses: canonical/operator-workflows/internal/build@measure
         id: build
         with:
           build-plan: |
@@ -68,7 +68,7 @@ jobs:
     steps:
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/checkout@v5.0.0
-      - uses: canonical/operator-workflows/internal/build@main
+      - uses: canonical/operator-workflows/internal/build@measure
         id: build
         with:
           build-plan: |

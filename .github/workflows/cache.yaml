@@ -57,7 +57,7 @@ jobs:
               "source_file": "${{ needs.params.outputs.rock_file }}",
               "source_directory": "${{ needs.params.outputs.rock_dir }}",
               "output_type": "registry",
-              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__${{ needs.params.outputs.rock}}"
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__${{ needs.params.outputs.rock}}_cache"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: lxc list --project rockcraft

@@ -47,6 +47,8 @@ jobs:
     steps:
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/checkout@v5.0.0
+      - name: Remove Android SDK
+        run: sudo rm -rf /usr/local/lib/android
       - uses: canonical/operator-workflows/internal/build@cache
         name: build
         with:

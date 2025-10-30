@@ -17,7 +17,7 @@ jobs:
       - id: rock
         run: |
           echo "rock_file=$(ls *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
-          echo "rock_dir=$(ls *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
+          echo "rock_dir=$(ls *_rock)" >> "$GITHUB_OUTPUT"
           echo "rock=$(yq -r .name *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
   build-rock:
     name: Build Rock without Cache

@@ -7,18 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: canonical/setup-lxd@v0.1.3
-      - name: Set LXC security nesting
-        if: ${{ inputs.rockcraft-enable-security-nesting }}
-        run: |
-          lxc profile set default security.nesting true
-      - name: Install charmcraftcache
-        if: ${{ inputs.charmcraftcache }}
-        run: |
-          pipx install charmcraftcache
       - uses: actions/checkout@v5.0.0
-      - name: Pre-build script
-        if: ${{ inputs.pre-build-script != '' }}
-        run: bash -xe ${{ inputs.pre-build-script }}
       - uses: canonical/operator-workflows/internal/build@main
         id: build
         with:
@@ -29,7 +18,7 @@ jobs:
               "source_file": "wordpress_rock/rockcraft.yaml",
               "source_directory": "wordpress_rock",
               "output_type": "registry",
-              "output": "2025-10-28T15-53-19-0001__build__output__rock__wordpress"
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__wordpress"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
   build-rock-cache:
@@ -37,18 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: canonical/setup-lxd@v0.1.3
-      - name: Set LXC security nesting
-        if: ${{ inputs.rockcraft-enable-security-nesting }}
-        run: |
-          lxc profile set default security.nesting true
-      - name: Install charmcraftcache
-        if: ${{ inputs.charmcraftcache }}
-        run: |
-          pipx install charmcraftcache
       - uses: actions/checkout@v5.0.0
-      - name: Pre-build script
-        if: ${{ inputs.pre-build-script != '' }}
-        run: bash -xe ${{ inputs.pre-build-script }}
       - uses: canonical/operator-workflows/internal/build@cache
         id: build
         with:
@@ -59,18 +37,25 @@ jobs:
               "source_file": "wordpress_rock/rockcraft.yaml",
               "source_directory": "wordpress_rock",
               "output_type": "registry",
-              "output": "2025-10-28T15-53-19-0002__build__output__rock__wordpress"
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__wordpress_cached"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
-  test-cache:
-    name: Test Cache
+  build-charm-cache:
+    name: Build Charm with Cache
     runs-on: ubuntu-latest
     steps:
-    - run: touch test
-    - name: Save Primes
-      id: cache-primes-save
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          test
-        key: test\?=%&
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - uses: canonical/operator-workflows/internal/build@cache
+        id: build
+        with:
+          build-plan: |
+            {
+              "type": "charm",
+              "name": "wordpress-k8s",
+              "source_file": "charmcraft.yaml",
+              "source_directory": ".",
+              "output_type": "file",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__wordpress-k8s_cached"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       charm: ${{ steps.charm.outputs.charm }}
-      rock: ${{ steps.charm.outputs.rock }}
-      rock_dir: ${{ steps.charm.outputs.rock_dir }}
-      rock_file: ${{ steps.charm.outputs.rock_file }}
+      rock: ${{ steps.rock.outputs.rock }}
+      rock_dir: ${{ steps.rock.outputs.rock_dir }}
+      rock_file: ${{ steps.rock.outputs.rock_file }}
     steps:
       - uses: actions/checkout@v5.0.0
       - id: charm

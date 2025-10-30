@@ -62,3 +62,15 @@ jobs:
               "output": "2025-10-28T15-53-19-0002__build__output__rock__wordpress"
             }
           github-token: ${{ secrets.GITHUB_TOKEN }}
+  test-cache:
+    name: Test Cache
+    runs-on: ubuntu-latest
+    steps:
+    - run: touch test
+    - name: Save Primes
+      id: cache-primes-save
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          test
+        key: test\?=%&

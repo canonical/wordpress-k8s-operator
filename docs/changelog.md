@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2025-11-04
+
+docs: Update the CONTRIBUTING.md file for the WordPress charm located in the canonical/wordpress-k8s-operator repository. Compare the charm’s current contributing file to the template CONTRIBUTING.md in canonical/platform-engineering-charm-template. Added the following sections: Code of conduct, Changelog, Submission, Describing pull requests, Signing commits.
+
 ## 2025-10-28
 
 - Refactor to fix some linting issues.

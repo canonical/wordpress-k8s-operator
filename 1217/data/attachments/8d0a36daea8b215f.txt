@@ -1,0 +1,40 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-849af-microk8s  microk8s/localhost  2.9.52   unsupported  12:45:44Z
+
+App            Version                  Status  Scale  Charm          Channel     Rev  Address         Exposed  Message
+mysql-k8s      8.0.41-0ubuntu0.22.04.1  active      1  mysql-k8s      8.0/stable  255  10.152.183.32   no       
+wordpress-k8s  6.8.1                    active      1  wordpress-k8s                0  10.152.183.242  no       
+
+Unit              Workload  Agent  Address      Ports  Message
+mysql-k8s/0*      active    idle   10.1.50.140         Primary
+wordpress-k8s/0*  active    idle   10.1.50.138         
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-mysql-k8s-0: 12:42:05 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Binlogs collector service does not exist
+unit-mysql-k8s-0: 12:42:05 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to reconcile binlogs collection during peer relation event
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
+[1m[31mERROR   [0m websockets.client:protocol.py:1009 data transfer failed
+Traceback (most recent call last):
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 953, in transfer_data
+    message = await self.read_message()
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1023, in read_message
+    frame = await self.read_data_frame(max_size=self.max_size)
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1098, in read_data_frame
+    frame = await self.read_frame(max_size)
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1155, in read_frame
+    frame = await Frame.read(
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/framing.py", line 70, in read
+    data = await reader(2)
+  File "/usr/lib/python3.10/asyncio/streams.py", line 708, in readexactly
+    await self._wait_for_data('readexactly')
+  File "/usr/lib/python3.10/asyncio/streams.py", line 501, in _wait_for_data
+    await self._waiter
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 924, in write
+    n = self._sock.send(data)
+OSError: [Errno 9] Bad file descriptor
+[33mWARNING [0m juju.client.connection:connection.py:543 Receiver: Connection closed, reconnecting

@@ -1,25 +1,19 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 type: charm
 bases:
-  - build-on:
-    - name: "ubuntu"
-      channel: "22.04"
-    run-on:
-    - name: "ubuntu"
-      channel: "22.04"
+- build-on:
+  - name: "ubuntu"
+    channel: "22.04"
+  run-on:
+  - name: "ubuntu"
+    channel: "22.04"
 parts:
   charm:
+    source: .
+    plugin: uv
     build-snaps:
-      - rustup
-    override-build: |
-      rustup default stable
-      craftctl default
-      $CRAFT_PART_BUILD/staging-venv/bin/pip \
-              install --target $CRAFT_PART_INSTALL/venv -v \
-              -r requirements-binary.txt
-    build-packages:
-      - libffi-dev
-      - libssl-dev
-      - pkg-config
-    charm-requirements: [ requirements-source.txt ]
+    - astral-uv

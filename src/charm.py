@@ -948,7 +948,7 @@ class WordpressCharm(CharmBase):
             ValueError: if addon_type is not one of theme/plugin.
         """
         if addon_type not in ("theme", "plugin"):
-            raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
+            raise ValueError(f"Addon type unknown {addon_type!r}, accept: (theme, plugin)")
 
     def _wp_addon_list(self, addon_type: str):
         """List all installed WordPress addons.
@@ -1067,14 +1067,14 @@ class WordpressCharm(CharmBase):
             exec_result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
             if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
-                    f"failed to install {addon_type} {repr(addon)}"
+                    f"failed to install {addon_type} {addon!r}"
                 )
         for addon in uninstall_addons:
             logger.info("Uninstall %s: %s", addon_type, repr(addon))
             exec_result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
             if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
-                    f"failed to uninstall {addon_type} {repr(addon)}"
+                    f"failed to uninstall {addon_type} {addon!r}"
                 )
 
     def _theme_reconciliation(self) -> None:
@@ -1159,7 +1159,7 @@ class WordpressCharm(CharmBase):
         """
         if action not in ("activate", "deactivate"):
             raise ValueError(
-                f"Unknown activation_status {repr(action)}, " "accept (activate, deactivate)"
+                f"Unknown activation_status {action!r}, accept (activate, deactivate)"
             )
         current_plugins = self._wp_addon_list("plugin")
         if not current_plugins.success:

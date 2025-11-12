@@ -36,15 +36,15 @@ def test_generate_wp_secret_keys(harness: ops.testing.Harness):
     harness.begin()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     wordpress_secrets = charm._generate_wp_secret_keys()
-    assert (
-        "default_admin_password" in wordpress_secrets
-    ), "WordPress should generate a default admin password"
+    assert "default_admin_password" in wordpress_secrets, (
+        "WordPress should generate a default admin password"
+    )
 
     del wordpress_secrets["default_admin_password"]
     key_values = list(wordpress_secrets.values())
-    assert set(wordpress_secrets.keys()) == set(
-        charm._wordpress_secret_key_fields()
-    ), "generated WordPress secrets should contain all required fields"
+    assert set(wordpress_secrets.keys()) == set(charm._wordpress_secret_key_fields()), (
+        "generated WordPress secrets should contain all required fields"
+    )
     assert len(key_values) == len(set(key_values)), "no two secret values should be the same"
     for value in key_values:
         assert not (value.isalnum() or len(value) < 64), "secret values should not be too simple"
@@ -61,9 +61,9 @@ def test_replica_consensus(
     """
     setup_replica_consensus()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
-    assert (
-        charm._replica_consensus_reached()
-    ), "units in application should reach consensus once leadership established"
+    assert charm._replica_consensus_reached(), (
+        "units in application should reach consensus once leadership established"
+    )
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -81,22 +81,22 @@ def test_replica_consensus_stable_after_leader_reelection(
     harness.begin_with_initial_hooks()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    assert (
-        not charm._replica_consensus_reached()
-    ), "units in application should not reach consensus before leadership established"
+    assert not charm._replica_consensus_reached(), (
+        "units in application should not reach consensus before leadership established"
+    )
     harness.set_leader()
-    assert (
-        charm._replica_consensus_reached()
-    ), "units in application should reach consensus once leadership established"
+    assert charm._replica_consensus_reached(), (
+        "units in application should reach consensus once leadership established"
+    )
     consensus = harness.get_relation_data(replica_relation_id, app_name)
     # The harness will emit a leader-elected event when calling ``set_leader(True)`` no matter
     # what the situation is, ``set_leader(False)`` does nothing here currently, just for the
     # aesthetic.
     harness.set_leader(False)
     harness.set_leader(True)
-    assert (
-        harness.get_relation_data(replica_relation_id, app_name) == consensus
-    ), "consensus once established should not change after leadership changed"
+    assert harness.get_relation_data(replica_relation_id, app_name) == consensus, (
+        "consensus once established should not change after leadership changed"
+    )
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -113,9 +113,9 @@ def test_database_relation(
     harness.begin_with_initial_hooks()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
 
-    assert (
-        charm._current_effective_db_info is None
-    ), "database info in charm state should not exist before database relation created"
+    assert charm._current_effective_db_info is None, (
+        "database info in charm state should not exist before database relation created"
+    )
 
     db_relation_id, db_info = setup_database_relation()
 
@@ -177,9 +177,9 @@ def test_wp_config(
 
     for secret_key in charm._wordpress_secret_key_fields():
         secret_value = replica_consensus[secret_key]
-        assert in_same_line(
-            wp_config, "define(", secret_key.upper(), secret_value
-        ), f"wp-config.php should contain a valid {secret_key}"
+        assert in_same_line(wp_config, "define(", secret_key.upper(), secret_value), (
+            f"wp-config.php should contain a valid {secret_key}"
+        )
 
     wp_config = charm._gen_wp_config()
 
@@ -197,12 +197,12 @@ def test_wp_install_cmd(
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
     install_cmd = charm._wp_install_cmd()
 
-    assert (
-        "--admin_user=admin" in install_cmd
-    ), 'admin user should be "admin" with the default configuration'
-    assert (
-        f"--admin_password={consensus['default_admin_password']}" in install_cmd
-    ), "admin password should be the same as the default_admin_password in peer relation data"
+    assert "--admin_user=admin" in install_cmd, (
+        'admin user should be "admin" with the default configuration'
+    )
+    assert f"--admin_password={consensus['default_admin_password']}" in install_cmd, (
+        "admin password should be the same as the default_admin_password in peer relation data"
+    )
 
     harness.update_config(
         {
@@ -233,9 +233,9 @@ def test_core_reconciliation_before_storage_ready(harness: ops.testing.Harness):
 
     with pytest.raises(WordPressWaitingStatusException):
         charm._core_reconciliation()
-    assert isinstance(
-        harness.model.unit.status, ops.charm.model.WaitingStatus
-    ), "unit should be in WaitingStatus"
+    assert isinstance(harness.model.unit.status, ops.charm.model.WaitingStatus), (
+        "unit should be in WaitingStatus"
+    )
     assert "storage" in harness.model.unit.status.message, "unit should wait for storage"
 
 
@@ -255,12 +255,12 @@ def test_core_reconciliation_before_peer_relation_ready(harness: ops.testing.Har
     # core reconciliation should fail
     with pytest.raises(WordPressWaitingStatusException):
         charm._core_reconciliation()
-    assert isinstance(
-        harness.model.unit.status, ops.charm.model.WaitingStatus
-    ), "unit should be in WaitingStatus"
-    assert (
-        "unit consensus" in harness.model.unit.status.message
-    ), "unit should wait for peer relation establishment right now"
+    assert isinstance(harness.model.unit.status, ops.charm.model.WaitingStatus), (
+        "unit should be in WaitingStatus"
+    )
+    assert "unit consensus" in harness.model.unit.status.message, (
+        "unit should wait for peer relation establishment right now"
+    )
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -280,12 +280,12 @@ def test_core_reconciliation_before_database_ready(
     with pytest.raises(WordPressBlockedStatusException):
         charm._core_reconciliation()
 
-    assert isinstance(
-        harness.model.unit.status, ops.charm.model.BlockedStatus
-    ), "unit should be in WaitingStatus"
-    assert (
-        "db relation" in harness.model.unit.status.message
-    ), "unit should wait for database connection info"
+    assert isinstance(harness.model.unit.status, ops.charm.model.BlockedStatus), (
+        "unit should be in WaitingStatus"
+    )
+    assert "db relation" in harness.model.unit.status.message, (
+        "unit should wait for database connection info"
+    )
 
 
 def test_addon_reconciliation_fail(harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch):
@@ -332,9 +332,9 @@ def test_core_reconciliation(
     )
     harness.update_config()
 
-    assert patch.database.is_wordpress_installed(
-        db_info["endpoints"], db_info["database"]
-    ), "WordPress should be installed after core reconciliation"
+    assert patch.database.is_wordpress_installed(db_info["endpoints"], db_info["database"]), (
+        "WordPress should be installed after core reconciliation"
+    )
 
     harness.update_relation_data(db_relation_id, "mysql", example_database_info_no_port_diff_host)
     harness.update_config()
@@ -346,9 +346,9 @@ def test_core_reconciliation(
         password=example_database_info_no_port_diff_host["password"],
     )
 
-    assert patch.database.is_wordpress_installed(
-        db_info["endpoints"], db_info["database"]
-    ), "WordPress should be installed after database config changed"
+    assert patch.database.is_wordpress_installed(db_info["endpoints"], db_info["database"]), (
+        "WordPress should be installed after database config changed"
+    )
 
 
 def test_get_initial_password_action_before_replica_consensus(
@@ -540,9 +540,9 @@ def test_theme_reconciliation(
         password=db_info["password"],
     )
 
-    assert patch.container.installed_themes == set(
-        charm._WORDPRESS_DEFAULT_THEMES
-    ), "installed themes should match the default installed themes with the default themes config"
+    assert patch.container.installed_themes == set(charm._WORDPRESS_DEFAULT_THEMES), (
+        "installed themes should match the default installed themes with the default themes config"
+    )
 
     harness.update_config({"themes": "123, abc"})
 
@@ -552,9 +552,9 @@ def test_theme_reconciliation(
 
     harness.update_config({"themes": "123"})
 
-    assert patch.container.installed_themes == set(
-        charm._WORDPRESS_DEFAULT_THEMES + ["123"]
-    ), "removing themes from themes config should trigger theme deletion"
+    assert patch.container.installed_themes == set(charm._WORDPRESS_DEFAULT_THEMES + ["123"]), (
+        "removing themes from themes config should trigger theme deletion"
+    )
 
 
 @pytest.mark.usefixtures("attach_storage")
@@ -580,9 +580,9 @@ def test_plugin_reconciliation(
         password=db_info["password"],
     )
 
-    assert patch.container.installed_plugins == set(
-        charm._WORDPRESS_DEFAULT_PLUGINS
-    ), "installed plugins should match the default installed plugins with the default plugins config"
+    assert patch.container.installed_plugins == set(charm._WORDPRESS_DEFAULT_PLUGINS), (
+        "installed plugins should match the default installed plugins with the default plugins config"
+    )
 
     harness.update_config({"plugins": "123, abc"})
 
@@ -592,9 +592,9 @@ def test_plugin_reconciliation(
 
     harness.update_config({"plugins": "123"})
 
-    assert patch.container.installed_plugins == set(
-        charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]
-    ), "removing plugins from plugins config should trigger plugin deletion"
+    assert patch.container.installed_plugins == set(charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]), (
+        "removing plugins from plugins config should trigger plugin deletion"
+    )
 
 
 def test_team_map():
@@ -898,7 +898,7 @@ def test_waiting_for_leader_installation_timeout(
     harness.update_relation_data(
         relation_id=replica_relation_id,
         app_or_unit=app_name,
-        key_values={k: "test" for k in WordpressCharm._wordpress_secret_key_fields()},
+        key_values=dict.fromkeys(WordpressCharm._wordpress_secret_key_fields(), "test"),
     )
     db_relation_id = harness.add_relation("database", "mysql")
     harness.add_relation_unit(db_relation_id, "mysql/0")

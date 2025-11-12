@@ -166,10 +166,7 @@ def test_wp_config(
         Returns:
             True if a line containing all matches is found. False otherwise.
         """
-        for line in content.splitlines():
-            if all(match in line for match in matches):
-                return True
-        return False
+        return any(all(match in line for match in matches) for line in content.splitlines())
 
     replica_consensus = setup_replica_consensus()
     charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
@@ -546,13 +543,13 @@ def test_theme_reconciliation(
 
     harness.update_config({"themes": "123, abc"})
 
-    assert patch.container.installed_themes == set(
-        charm._WORDPRESS_DEFAULT_THEMES + ["abc", "123"]
-    ), "adding themes to themes config should trigger theme installation"
+    assert patch.container.installed_themes == {*charm._WORDPRESS_DEFAULT_THEMES, "abc", "123"}, (
+        "adding themes to themes config should trigger theme installation"
+    )
 
     harness.update_config({"themes": "123"})
 
-    assert patch.container.installed_themes == set(charm._WORDPRESS_DEFAULT_THEMES + ["123"]), (
+    assert patch.container.installed_themes == {*charm._WORDPRESS_DEFAULT_THEMES, "123"}, (
         "removing themes from themes config should trigger theme deletion"
     )
 
@@ -586,13 +583,15 @@ def test_plugin_reconciliation(
 
     harness.update_config({"plugins": "123, abc"})
 
-    assert patch.container.installed_plugins == set(
-        charm._WORDPRESS_DEFAULT_PLUGINS + ["abc", "123"]
-    ), "adding plugins to plugins config should trigger plugin installation"
+    assert patch.container.installed_plugins == {
+        *charm._WORDPRESS_DEFAULT_PLUGINS,
+        "abc",
+        "123",
+    }, "adding plugins to plugins config should trigger plugin installation"
 
     harness.update_config({"plugins": "123"})
 
-    assert patch.container.installed_plugins == set(charm._WORDPRESS_DEFAULT_PLUGINS + ["123"]), (
+    assert patch.container.installed_plugins == {*charm._WORDPRESS_DEFAULT_PLUGINS, "123"}, (
         "removing plugins from plugins config should trigger plugin deletion"
     )
 

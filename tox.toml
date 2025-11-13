@@ -24,7 +24,8 @@ commands = [
     "ruff",
     "check",
     "--fix",
-    "--fix-only",
+    "--select",
+    "I",
     { replace = "ref", of = [
       "vars",
       "all_path",
@@ -142,6 +143,22 @@ commands = [
   ],
 ]
 dependency_groups = [ "integration-juju3" ]
+
+[env.lint-fix]
+description = "Apply coding style standards to code"
+commands = [
+  [
+    "ruff",
+    "check",
+    "--fix",
+    "--fix-only",
+    { replace = "ref", of = [
+      "vars",
+      "all_path",
+    ], extend = true },
+  ],
+]
+dependency_groups = [ "lint" ]
 
 [vars]
 src_path = "{toxinidir}/src/"

@@ -1,0 +1,6 @@
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active: 
+  mysql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active: 
+  mysql-k8s/0 [idle] active: Primary

@@ -1,11 +1,123 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
-[tool.bandit]
-exclude_dirs = ["/venv/"]
-[tool.bandit.assert_used]
-skips = ["*/integration/helper.py", "*/*test*"]
 
-# Testing tools configuration
+[project]
+name = "wordpress-k8s-operator"
+version = "0.0.0"
+description = "WordPress is an OSS to create a beautiful website."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [ "cosl==1.3.1", "mysql-connector-python==9.5", "ops==3.3.1", "pydantic==2.12.4", "requests==2.32.5" ]
+
+[dependency-groups]
+fmt = [ "ruff" ]
+lint = [
+  "codespell",
+  "juju>=2.9,<3",
+  "kubernetes",
+  "mypy",
+  "pep8-naming",
+  "pillow",
+  "pytest==8.1.1",
+  "pytest-cov",
+  "pytest-operator",
+  "python-keystoneclient",
+  "python-swiftclient",
+  "ruff",
+  "types-pyyaml",
+  "types-requests",
+  "websockets<14",
+]
+static = [ "bandit[toml]", "toml" ]
+unit = [ "coverage[toml]", "pytest" ]
+coverage-report = [ "coverage[toml]", "pytest" ]
+integration = [
+  "allure-pytest>=2.8.18",
+  "allure-pytest-collection-report @ git+https://github.com/canonical/data-platform-workflows@v24.0.0#subdirectory=python/pytest_plugins/allure_pytest_collection_report",
+  "juju>=2.9,<3",
+  "kubernetes",
+  "pillow",
+  "pytest==8.1.1",
+  "pytest-cov",
+  "pytest-operator",
+  "python-keystoneclient",
+  "python-swiftclient",
+  "types-pyyaml",
+  "types-requests",
+  "websockets<14",
+]
+integration-juju3 = [
+  "juju==3.6.1.2",
+  "kubernetes",
+  "macaroonbakery==1.3.1",
+  "pillow",
+  "pytest==8.1.1",
+  "pytest-cov",
+  "pytest-operator",
+  "python-keystoneclient",
+  "python-swiftclient",
+  "types-pyyaml",
+  "types-requests",
+]
+
+[tool.uv]
+package = false
+conflicts = [ [ { group = "integration-juju3" }, { group = "integration" }, { group = "lint" } ] ]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 99
+
+lint.select = [ "A", "B", "C", "CPY", "D", "E", "F", "I", "N", "RUF", "S", "SIM", "TC", "UP", "W" ]
+lint.ignore = [
+  "B904",
+  "D107",
+  "D203",
+  "D204",
+  "D205",
+  "D213",
+  "D215",
+  "D400",
+  "D404",
+  "D406",
+  "D407",
+  "D408",
+  "D409",
+  "D413",
+  "E501",
+  "S105",
+  "S603",
+  "TC002",
+  "TC006",
+  "UP006",
+  "UP007",
+  "UP035",
+  "UP045",
+]
+lint.per-file-ignores."tests/*" = [ "B011", "D100", "D101", "D102", "D103", "D104", "D212", "D415", "D417", "S" ]
+lint.flake8-copyright.author = "Canonical Ltd."
+lint.flake8-copyright.min-file-size = 1
+lint.flake8-copyright.notice-rgx = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+"
+lint.mccabe.max-complexity = 10
+lint.pydocstyle.convention = "google"
+
+[tool.codespell]
+skip = "build,lib,venv,icon.svg,.tox,.git,.mypy_cache,.ruff_cache,.coverage,htmlcov,uv.lock,grafana_dashboards"
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks slow and not very important tests",
+  "requires_secret: mark tests that require external secrets",
+]
+
 [tool.coverage.run]
 branch = true
 
@@ -13,46 +125,13 @@ branch = true
 fail_under = 90
 show_missing = true
 
-# Formatting tools configuration
-[tool.black]
-line-length = 99
-target-version = ["py38"]
-
-[tool.isort]
-line_length = 99
-profile = "black"
-
-# Linting tools configuration
-[tool.flake8]
-max-line-length = 99
-max-doc-length = 99
-max-complexity = 10
-exclude = [".git", "__pycache__", ".tox", "build", "dist", "*.egg_info", "venv"]
-select = ["E", "W", "F", "C", "N", "R", "D", "H"]
-# Ignore W503, E501 because using black creates errors with this
-ignore = ["W503", "E501"]
-# Ignore D104 Missing docstring in public package __init__
-# DCO020, DCO030: Ignore missing args in docstring in mocks
-per-file-ignores = [
-    "tests/unit/__init__.py:D104",
-    "tests/**:DCO020,DCO030,DCO050,DCO060,D205,D212"
-]
-docstring-convention = "google"
-# Check for properly formatted copyright header in each file
-copyright-check = "True"
-copyright-author = "Canonical Ltd."
-copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
-
-[tool.pytest.ini_options]
-markers = [
-    "slow: marks slow and not very important tests",
-    "requires_secret: mark tests that require external secrets"
-]
-
 [tool.mypy]
 ignore_missing_imports = true
 allow_redefinition = true
-plugins = ["pydantic.mypy"]
+plugins = [ "pydantic.mypy" ]
 
-[tool.pylint.'MESSAGES CONTROL']
-disable = "too-few-public-methods,too-many-arguments,too-many-lines,line-too-long,fixme"
+[tool.bandit]
+exclude_dirs = [ "/venv/" ]
+
+[tool.bandit.assert_used]
+skips = [ "*/integration/helper.py", "*/*test*" ]

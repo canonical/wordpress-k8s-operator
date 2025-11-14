@@ -3,7 +3,6 @@
 
 """Integration tests for WordPress charm COS addon management."""
 
-
 from typing import List, Set
 
 import pytest
@@ -34,9 +33,9 @@ async def test_wordpress_install_uninstall_themes(wordpress: WordpressApp):
             expected_themes = themes
             expected_themes.update(WordpressCharm._WORDPRESS_DEFAULT_THEMES)
             actual_themes = set(wordpress_client.list_themes())
-            assert (
-                expected_themes == actual_themes
-            ), f"theme installed {themes} should match themes setting in config"
+            assert expected_themes == actual_themes, (
+                f"theme installed {themes} should match themes setting in config"
+            )
 
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
@@ -52,13 +51,13 @@ async def test_wordpress_theme_installation_error(wordpress: WordpressApp):
     await wordpress.wait_for_wordpress_idle()
 
     for unit in wordpress.get_units():
-        assert (
-            unit.workload_status == "blocked"
-        ), "status should be 'blocked' since the theme in themes config does not exist"
+        assert unit.workload_status == "blocked", (
+            "status should be 'blocked' since the theme in themes config does not exist"
+        )
 
-        assert (
-            invalid_theme in unit.workload_status_message
-        ), "status message should contain the reason why it's blocked"
+        assert invalid_theme in unit.workload_status_message, (
+            "status message should contain the reason why it's blocked"
+        )
 
     await wordpress.set_config({"themes": ""})
     await wordpress.wait_for_wordpress_idle(status="active")
@@ -85,9 +84,9 @@ async def test_wordpress_install_uninstall_plugins(wordpress: WordpressApp):
             expected_plugins = plugins
             expected_plugins.update(WordpressCharm._WORDPRESS_DEFAULT_PLUGINS)
             actual_plugins = set(wordpress_client.list_plugins())
-            assert (
-                expected_plugins == actual_plugins
-            ), f"plugin installed {plugins} should match plugins setting in config"
+            assert expected_plugins == actual_plugins, (
+                f"plugin installed {plugins} should match plugins setting in config"
+            )
 
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
@@ -103,13 +102,13 @@ async def test_wordpress_plugin_installation_error(wordpress: WordpressApp):
     await wordpress.wait_for_wordpress_idle()
 
     for unit in wordpress.get_units():
-        assert (
-            unit.workload_status == "blocked"
-        ), "status should be 'blocked' since the plugin in plugins config does not exist"
+        assert unit.workload_status == "blocked", (
+            "status should be 'blocked' since the plugin in plugins config does not exist"
+        )
 
-        assert (
-            invalid_plugin in unit.workload_status_message
-        ), "status message should contain the reason why it's blocked"
+        assert invalid_plugin in unit.workload_status_message, (
+            "status message should contain the reason why it's blocked"
+        )
 
     await wordpress.set_config({"plugins": ""})
     await wordpress.wait_for_wordpress_idle(status="active")

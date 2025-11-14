@@ -9,9 +9,11 @@ jobs:
     secrets: inherit
     with:
       self-hosted-runner: false
+      with-uv: true
   integration-test:
     name: Integration Test
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: 
+      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       extra-arguments: >-
@@ -28,9 +30,11 @@ jobs:
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
       channel: 1.32/stable
+      with-uv: true
   integration-test-juju3:
     name: Integration Test on Juju3
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: 
+      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       extra-arguments: >-
@@ -49,9 +53,10 @@ jobs:
       test-tox-env: "integration-juju3"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
+      with-uv: true
   allure-report:
     if: always() && !cancelled()
     needs:
-      - integration-test
-      - integration-test-juju3
+    - integration-test
+    - integration-test-juju3
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

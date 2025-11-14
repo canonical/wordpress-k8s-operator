@@ -286,17 +286,17 @@ def run_standard_plugin_test(
             if isinstance(plugin, str)
             else set(plugin)
         ), f"{plugin} should be activated after {plugin_config_keys} being set"
-        assert (
-            database_instance.options == excepted_options
-        ), f"options of plugin {plugin} should be set correctly"
+        assert database_instance.options == excepted_options, (
+            f"options of plugin {plugin} should be set correctly"
+        )
 
         if additional_check_after_install is not None:
             additional_check_after_install()
 
-        harness.update_config({k: "" for k in plugin_config})
-        assert (
-            database_instance.activated_plugins == set()
-        ), f"{plugin} should be deactivated after {plugin_config_keys} being reset"
+        harness.update_config(dict.fromkeys(plugin_config, ""))
+        assert database_instance.activated_plugins == set(), (
+            f"{plugin} should be deactivated after {plugin_config_keys} being reset"
+        )
         assert (
             database_instance.options == {}
             if excepted_options_after_removed is None

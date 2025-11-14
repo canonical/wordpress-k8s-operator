@@ -34,6 +34,6 @@ async def test_database_endpoints_changed(machine_model: Model, wordpress: Wordp
 
     leader = await wait_for(functools.partial(get_mysql_primary_unit, mysql.units))
 
-    assert (
-        await leader.get_public_address() in await wordpress.get_wordpress_config()
-    ), "MySQL leader unit IP not found."
+    assert await leader.get_public_address() in await wordpress.get_wordpress_config(), (
+        "MySQL leader unit IP not found."
+    )

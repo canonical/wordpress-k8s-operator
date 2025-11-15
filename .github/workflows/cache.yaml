@@ -1,0 +1,148 @@
+name: Test Craft Cache
+on:
+  pull_request:
+jobs:
+  params:
+    name: Extract Params
+    runs-on: ubuntu-latest
+    outputs:
+      charm: ${{ steps.charm.outputs.charm }}
+      rock: ${{ steps.rock.outputs.rock }}
+      rock_dir: ${{ steps.rock.outputs.rock_dir }}
+      rock_file: ${{ steps.rock.outputs.rock_file }}
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - id: charm
+        run: echo "charm=$([ -f metadata.yaml ] && yq -r .name metadata.yaml || yq -r .name charmcraft.yaml)" >> "$GITHUB_OUTPUT"
+      - id: rock
+        run: |
+          echo "rock_file=$(echo *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
+          echo "rock_dir=$(echo *_rock)" >> "$GITHUB_OUTPUT"
+          echo "rock=$(yq -r .name *_rock/rockcraft.yaml)" >> "$GITHUB_OUTPUT"
+  build-rock:
+    name: Build Rock without Cache
+    needs: [ params ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - uses: canonical/operator-workflows/internal/build@measure
+        name: build
+        with:
+          build-plan: |
+            {
+              "type": "rock",
+              "name": "${{ needs.params.outputs.rock}}",
+              "source_file": "${{ needs.params.outputs.rock_file }}",
+              "source_directory": "${{ needs.params.outputs.rock_dir }}",
+              "output_type": "registry",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__${{ needs.params.outputs.rock}}"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: lxc list --project rockcraft
+  build-rock-cache:
+    name: Build Rock with Cache
+    needs: [ params ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - name: Remove Android SDK
+        run: sudo rm -rf /usr/local/lib/android
+      - uses: canonical/operator-workflows/internal/build@cache
+        name: build
+        with:
+          build-plan: |
+            {
+              "type": "rock",
+              "name": "${{ needs.params.outputs.rock}}",
+              "source_file": "${{ needs.params.outputs.rock_file }}",
+              "source_directory": "${{ needs.params.outputs.rock_dir }}",
+              "output_type": "registry",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__${{ needs.params.outputs.rock}}_cache"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: lxc list --project rockcraft
+  build-rock-cache-miss:
+    name: Build Rock with Cache Miss
+    needs: [ params ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - name: Remove Android SDK
+        run: sudo rm -rf /usr/local/lib/android
+      - uses: canonical/operator-workflows/internal/build@cache-miss
+        name: build
+        with:
+          build-plan: |
+            {
+              "type": "rock",
+              "name": "${{ needs.params.outputs.rock}}",
+              "source_file": "${{ needs.params.outputs.rock_file }}",
+              "source_directory": "${{ needs.params.outputs.rock_dir }}",
+              "output_type": "registry",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__rock__${{ needs.params.outputs.rock}}_cache_miss"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: lxc list --project rockcraft
+  build-charm:
+    name: Build Charm without Cache
+    needs: [ params ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - uses: canonical/operator-workflows/internal/build@measure
+        name: build
+        with:
+          build-plan: |
+            {
+              "type": "charm",
+              "name": "${{ needs.params.outputs.charm }}",
+              "source_file": "charmcraft.yaml",
+              "source_directory": ".",
+              "output_type": "file",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__${{ needs.params.outputs.charm }}"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+  build-charm-cache:
+    name: Build Charm with Cache
+    needs: [ params ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - uses: canonical/operator-workflows/internal/build@cache
+        name: build
+        with:
+          build-plan: |
+            {
+              "type": "charm",
+              "name": "${{ needs.params.outputs.charm }}",
+              "source_file": "charmcraft.yaml",
+              "source_directory": ".",
+              "output_type": "file",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__${{ needs.params.outputs.charm }}_cache"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+  build-charm-cache-miss:
+    name: Build Charm with Cache Miss
+    needs: [ params ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: canonical/setup-lxd@v0.1.3
+      - uses: actions/checkout@v5.0.0
+      - uses: canonical/operator-workflows/internal/build@cache-miss
+        name: build
+        with:
+          build-plan: |
+            {
+              "type": "charm",
+              "name": "${{ needs.params.outputs.charm }}",
+              "source_file": "charmcraft.yaml",
+              "source_directory": ".",
+              "output_type": "file",
+              "output": "${{ github.run_id }}_${{ github.run_attempt }}__build__output__charm__${{ needs.params.outputs.charm }}_cache_miss"
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}

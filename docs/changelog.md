@@ -12,6 +12,11 @@ Each revision is versioned by the date of the revision.
 
 - Refactor use consoliadted workflows for RTD validation.
 
+## 2025-11-04
+
+- docs: Update the CONTRIBUTING.md file for the WordPress charm located in the canonical/wordpress-k8s-operator repository.
+  Added the following sections to ensure consistency of style: Code of conduct, Submission, Describing pull requests, Signing commits.
+
 ## 2025-10-28
 
 - Refactor to fix some linting issues.

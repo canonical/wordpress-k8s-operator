@@ -25,7 +25,7 @@ This feature is only available for
 [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
 ```
 
-The modsecurity WAF is enabled by default.
+The Modsecurity WAF is enabled by default.
 
 To check if WAF is enabled, run `kubectl describe wordpress-k8s-ingress -m <juju-model-name>`
 where `<juju-model-name>` is the name of the model that your WordPress app is deployed on. For the

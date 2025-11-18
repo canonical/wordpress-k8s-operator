@@ -37,7 +37,7 @@ export OS_VOLUME_API_VERSION=3
 
 ## Configure the OpenStack object storage plugin
 
-To configure Swift storage for `wordpress-k8s`, copy and paste the following yaml content and adjust
+To configure Swift storage for `wordpress-k8s`, copy and paste the following YAML content and adjust
 the values accordingly.
 
 ```
@@ -61,7 +61,7 @@ something like http://<openstack-deployment-address>:8080/v3/AUTH_1d449b4237d349
 OS_STORAGE_URL key.
 ```
 
-You can then configure the `wordpress-k8s` charm using the yaml contents above.
+You can then configure the `wordpress-k8s` charm using the YAML contents above.
 
 ```bash
 juju config wordpress-k8s wp_plugin_openstack-objectstorage_config="$(cat <path-to-yaml>)"

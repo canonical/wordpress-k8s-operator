@@ -10,7 +10,7 @@ Each revision is versioned by the date of the revision.
 
 ## 2025-11-10
 
-- Refactor use consoliadted workflows for RTD validation.
+- Refactor use consolidated workflows for RTD validation.
 
 ## 2025-11-04
 

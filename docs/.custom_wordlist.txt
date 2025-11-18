@@ -1,5 +1,10 @@
 # Leave a blank line at the end of this file to support concatenation
+Akismet
+Akismet's
 antispam
+CVEs
+datasource
+Modsecurity
 rclone
 WAF
 WordPress

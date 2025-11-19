@@ -2,7 +2,7 @@
 
 # How to enable WAF
 
-This step will walk you through making your WordPress application secure using Modsecurity 3.0
+This step will walk you through making your WordPress application secure using ModSecurity 3.0
 Web Application Firewall.
 
 ## Prerequisites
@@ -16,7 +16,7 @@ juju integrate wordpress-k8s nginx-ingress-integrator
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
-## Enable Modsecurity 3.0 WAF
+## Enable ModSecurity 3.0 WAF
 
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
 
@@ -25,7 +25,7 @@ This feature is only available for
 [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) charm.
 ```
 
-The Modsecurity WAF is enabled by default.
+The ModSecurity WAF is enabled by default.
 
 To check if WAF is enabled, run `kubectl describe wordpress-k8s-ingress -m <juju-model-name>`
 where `<juju-model-name>` is the name of the model that your WordPress app is deployed on. For the

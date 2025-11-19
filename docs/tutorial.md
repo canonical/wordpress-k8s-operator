@@ -14,7 +14,7 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 ## What you'll need
 
 You will need a working station, e.g., a laptop, with AMD64 architecture. Your working station
-should have at least 4 CPUs, 8 GB of RAM, and 50 GB of disk space.
+should have at least 4 CPU cores, 8 GB of RAM, and 50 GB of disk space.
 
 ````{tip}
 You can use Multipass to create an isolated environment by running:

@@ -1,0 +1,124 @@
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-57bc7-microk8s  microk8s/localhost  2.9.52   unsupported  15:12:07Z
+
+App            Version                  Status  Scale  Charm          Channel     Rev  Address         Exposed  Message
+mysql-k8s      8.0.41-0ubuntu0.22.04.1  active      1  mysql-k8s      8.0/stable  255  10.152.183.197  no       
+wordpress-k8s  6.8.1                    active      1  wordpress-k8s                0  10.152.183.211  no       
+
+Unit              Workload  Agent  Address      Ports  Message
+mysql-k8s/0*      active    idle   10.1.126.12         Primary
+wordpress-k8s/0*  active    idle   10.1.126.10         
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-mysql-k8s-0: 15:08:31 ERROR unit.mysql-k8s/0.juju-log database-peers:1: Binlogs collector service does not exist
+unit-mysql-k8s-0: 15:08:31 ERROR unit.mysql-k8s/0.juju-log database-peers:1: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 15:08:40 ERROR unit.mysql-k8s/0.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'root', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', "CREATE USER 'serverconfig'@'%' IDENTIFIED BY '*****';GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;CREATE USER 'monitoring'@'%' IDENTIFIED BY '*****' WITH MAX_USER_CONNECTIONS 3;GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%';CREATE USER 'backups'@'%' IDENTIFIED BY '*****';GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO 'backups'@'%';GRANT SELECT ON performance_schema.log_status TO 'backups'@'%';GRANT SELECT ON performance_schema.keyring_component_status TO 'backups'@'%';GRANT SELECT ON performance_schema.replication_group_members TO 'backups'@'%';UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';ALTER USER 'root'@'localhost' IDENTIFIED BY '*****';REVOKE SYSTEM_USER, SYSTEM_VARIABLES_ADMIN, SUPER, REPLICATION_SLAVE_ADMIN, GROUP_REPLICATION_ADMIN, BINLOG_ADMIN, SET_USER_ID, ENCRYPTION_KEY_ADMIN, VERSION_TOKEN_ADMIN, CONNECTION_ADMIN ON *.* FROM 'root'@'localhost';FLUSH PRIVILEGES"], stdout='', stderr="Enter password: ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)\n"
+unit-mysql-k8s-0: 15:08:40 ERROR unit.mysql-k8s/0.juju-log Failed to configure users for: mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.
+unit-mysql-k8s-0: 15:08:40 ERROR unit.mysql-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'root', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', "CREATE USER 'serverconfig'@'%' IDENTIFIED BY '*****';GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;CREATE USER 'monitoring'@'%' IDENTIFIED BY '*****' WITH MAX_USER_CONNECTIONS 3;GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%';CREATE USER 'backups'@'%' IDENTIFIED BY '*****';GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO 'backups'@'%';GRANT SELECT ON performance_schema.log_status TO 'backups'@'%';GRANT SELECT ON performance_schema.keyring_component_status TO 'backups'@'%';GRANT SELECT ON performance_schema.replication_group_members TO 'backups'@'%';UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';ALTER USER 'root'@'localhost' IDENTIFIED BY '*****';REVOKE SYSTEM_USER, SYSTEM_VARIABLES_ADMIN, SUPER, REPLICATION_SLAVE_ADMIN, GROUP_REPLICATION_ADMIN, BINLOG_ADMIN, SET_USER_ID, ENCRYPTION_KEY_ADMIN, VERSION_TOKEN_ADMIN, CONNECTION_ADMIN ON *.* FROM 'root'@'localhost';FLUSH PRIVILEGES"], stdout='', stderr="Enter password: ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)\n"
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1095, in configure_mysql_users
+    self._run_mysqlcli_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 780, in _run_mysqlcli_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 1105, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 832, in _on_mysql_pebble_ready
+    self._configure_instance(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 731, in _configure_instance
+    self._mysql.configure_mysql_users()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1101, in configure_mysql_users
+    raise MySQLConfigureMySQLUsersError
+charms.mysql.v0.mysql.MySQLConfigureMySQLUsersError
+unit-mysql-k8s-0: 15:08:41 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-0: 15:08:41 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-0: 15:08:42 ERROR unit.mysql-k8s/0.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 227, in initialise_mysqld
+    process.wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1697, in wait
+    raise ExecError(self._command, exit_code, None, None)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/sbin/mysqld', '--initialize', '-u', 'mysql']
+unit-mysql-k8s-0: 15:08:47 ERROR unit.mysql-k8s/0.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 227, in initialise_mysqld
+    process.wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1697, in wait
+    raise ExecError(self._command, exit_code, None, None)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/sbin/mysqld', '--initialize', '-u', 'mysql']
+unit-mysql-k8s-0: 15:08:52 ERROR unit.mysql-k8s/0.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 227, in initialise_mysqld
+    process.wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1697, in wait
+    raise ExecError(self._command, exit_code, None, None)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/sbin/mysqld', '--initialize', '-u', 'mysql']
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
+[31m[1mERROR   [0m websockets.client:protocol.py:1009 data transfer failed
+Traceback (most recent call last):
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 953, in transfer_data
+    message = await self.read_message()
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1023, in read_message
+    frame = await self.read_data_frame(max_size=self.max_size)
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1098, in read_data_frame
+    frame = await self.read_frame(max_size)
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1155, in read_frame
+    frame = await Frame.read(
+  File "/home/runner/work/wordpress-k8s-operator/wordpress-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/framing.py", line 70, in read
+    data = await reader(2)
+  File "/usr/lib/python3.10/asyncio/streams.py", line 708, in readexactly
+    await self._wait_for_data('readexactly')
+  File "/usr/lib/python3.10/asyncio/streams.py", line 501, in _wait_for_data
+    await self._waiter
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 924, in write
+    n = self._sock.send(data)
+OSError: [Errno 9] Bad file descriptor
+[33mWARNING [0m juju.client.connection:connection.py:543 Receiver: Connection closed, reconnecting

@@ -13,22 +13,37 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 
 ## What you'll need
 
-```{tip}
-You can get a working setup by using a Multipass VM as outlined in the
-{ref}`Set up your test environment <juju:set-up-your-deployment>` guide.
-```
-
 You will need a working station, e.g., a laptop, with AMD64 architecture. Your working station
 should have at least 4 CPUs, 8 GB of RAM, and 50 GB of disk space.
 
-This tutorial requires the following software to be installed on your working station:
+````{tip}
+You can use Multipass to create an isolated environment by running:
+```
+multipass launch 24.04 --name charm-tutorial-vm --cpus 4 --memory 8G --disk 50G
+```
+````
+
+This tutorial requires the following software to be installed on your working station
+(either locally or in the Multipass VM):
 
 - Juju 3
-- MicroK8s 1.28
+- MicroK8s 1.33
 
-For more information about how to install Juju, see {ref}`juju:tutorial`.
+Use [Concierge](https://github.com/canonical/concierge) to set up Juju and MicroK8s:
 
-Finally, Juju must be bootstrapped to a MicroK8s controller. You can achieve this by running: 
+```
+sudo snap install --classic concierge
+sudo concierge prepare -p microk8s
+```
+
+This first command installs Concierge, and the second command uses Concierge to install
+and configure Juju and MicroK8s.
+
+For this tutorial, Juju must be bootstrapped to a MicroK8s controller. Concierge should
+complete this step for you, and you can verify by checking for `msg="Bootstrapped Juju" provider=microk8s`
+in the terminal output and by running `juju controllers`.
+
+If Concierge did not perform the bootstrap, run:
 
 ```
 juju bootstrap microk8s tutorial-controller
@@ -47,7 +62,7 @@ juju bootstrap microk8s tutorial-controller
 To be able to work inside the Multipass VM, log in with the following command:
 
 ```bash
-multipass shell my-juju-vm
+multipass shell charm-tutorial-vm 
 ```
 
 ```{note}

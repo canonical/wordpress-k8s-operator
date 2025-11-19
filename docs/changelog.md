@@ -20,6 +20,7 @@ Each revision is versioned by the date of the revision.
 
 - docs: Update the CONTRIBUTING.md file for the WordPress charm located in the canonical/wordpress-k8s-operator repository.
   Added the following sections to ensure consistency of style: Code of conduct, Submission, Describing pull requests, Signing commits.
+- docs: Update URL and slug configuration parameters for the RTD project.
 
 ## 2025-10-28
 

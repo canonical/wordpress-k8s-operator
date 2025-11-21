@@ -4,6 +4,7 @@
 # See LICENSE file for licensing details.
 
 """COS integration for WordPress charm."""
+
 from typing import Dict, List, TypedDict
 
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer

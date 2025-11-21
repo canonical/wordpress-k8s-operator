@@ -1,0 +1,166 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+skipsdist = true
+envlist = [ "lint", "unit", "static", "coverage-report" ]
+skip_missing_interpreters = true
+requires = [ "tox>=4.21" ]
+no_package = true
+
+[env_run_base]
+passenv = [ "PYTHONPATH", "CHARM_BUILD_DIR", "MODEL_SETTINGS" ]
+allowlist_externals = [ "docker" ]
+runner = "uv-venv-lock-runner"
+
+[env_run_base.setenv]
+PYTHONPATH = "{toxinidir}:{toxinidir}/lib:{[vars]src_path}"
+PYTHONBREAKPOINT = "ipdb.set_trace"
+PY_COLORS = "1"
+
+[env.fmt]
+description = "Apply coding style standards to code"
+commands = [
+  [
+    "ruff",
+    "check",
+    "--fix",
+    "--select",
+    "I",
+    { replace = "ref", of = [
+      "vars",
+      "all_path",
+    ], extend = true },
+  ],
+  [
+    "ruff",
+    "format",
+    { replace = "ref", of = [
+      "vars",
+      "all_path",
+    ], extend = true },
+  ],
+]
+dependency_groups = [ "fmt" ]
+
+[env.lint]
+description = "Check code against coding style standards"
+commands = [
+  [
+    "codespell",
+    "{toxinidir}",
+  ],
+  [
+    "ruff",
+    "format",
+    "--check",
+    "--diff",
+    { replace = "ref", of = [
+      "vars",
+      "all_path",
+    ], extend = true },
+  ],
+  [
+    "ruff",
+    "check",
+    { replace = "ref", of = [
+      "vars",
+      "all_path",
+    ], extend = true },
+  ],
+  [
+    "mypy",
+    { replace = "ref", of = [
+      "vars",
+      "all_path",
+    ], extend = true },
+  ],
+]
+dependency_groups = [ "lint" ]
+
+[env.static]
+description = "Run static analysis tests"
+commands = [ [ "bandit", "-c", "{toxinidir}/pyproject.toml", "-r", "{[vars]src_path}", "{[vars]tst_path}" ] ]
+dependency_groups = [ "static" ]
+
+[env.unit]
+description = "Run unit tests"
+commands = [
+  [
+    "coverage",
+    "run",
+    "--source={[vars]src_path}",
+    "-m",
+    "pytest",
+    "--ignore={[vars]tst_path}integration",
+    "-v",
+    "--tb",
+    "native",
+    "-s",
+    { replace = "posargs", extend = "true" },
+  ],
+  [
+    "coverage",
+    "report",
+  ],
+]
+dependency_groups = [ "unit" ]
+
+[env.coverage-report]
+description = "Create test coverage report"
+commands = [ [ "coverage", "report" ] ]
+dependency_groups = [ "coverage-report" ]
+
+[env.integration]
+description = "Run integration tests"
+commands = [
+  [
+    "pytest",
+    "{[vars]tst_path}",
+    "-v",
+    "--tb",
+    "native",
+    "--ignore={[vars]tst_path}unit",
+    "--log-cli-level=INFO",
+    "-s",
+    { replace = "posargs", extend = "true" },
+  ],
+]
+dependency_groups = [ "integration" ]
+
+[env.integration-juju3]
+description = "Run integration tests using Juju 3"
+commands = [
+  [
+    "pytest",
+    "{[vars]tst_path}",
+    "-v",
+    "--tb",
+    "native",
+    "--ignore={[vars]tst_path}unit",
+    "--log-cli-level=INFO",
+    "-s",
+    { replace = "posargs", extend = "true" },
+  ],
+]
+dependency_groups = [ "integration-juju3" ]
+
+[env.lint-fix]
+description = "Apply coding style standards to code"
+commands = [
+  [
+    "ruff",
+    "check",
+    "--fix",
+    "--fix-only",
+    { replace = "ref", of = [
+      "vars",
+      "all_path",
+    ], extend = true },
+  ],
+]
+dependency_groups = [ "lint" ]
+
+[vars]
+src_path = "{toxinidir}/src/"
+tst_path = "{toxinidir}/tests/"
+all_path = [ "{toxinidir}/src/", "{toxinidir}/tests/" ]

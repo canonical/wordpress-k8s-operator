@@ -15,10 +15,18 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = [ "cosl==1.3.1", "mysql-connector-python==9.5", "ops==3.3.1", "pydantic==2.12.4", "requests==2.32.5" ]
+dependencies = [
+  "cosl==1.3.1",
+  "mysql-connector-python==9.5",
+  "ops==3.3.1",
+  "pydantic==2.12.4",
+  "requests==2.32.5",
+]
 
 [dependency-groups]
-fmt = [ "ruff" ]
+fmt = [
+  "ruff",
+]
 lint = [
   "codespell",
   "juju>=2.9,<3",
@@ -36,9 +44,18 @@ lint = [
   "types-requests",
   "websockets<14",
 ]
-static = [ "bandit[toml]", "toml" ]
-unit = [ "coverage[toml]", "pytest" ]
-coverage-report = [ "coverage[toml]", "pytest" ]
+static = [
+  "bandit[toml]",
+  "toml",
+]
+unit = [
+  "coverage[toml]",
+  "pytest",
+]
+coverage-report = [
+  "coverage[toml]",
+  "pytest",
+]
 integration = [
   "allure-pytest>=2.8.18",
   "allure-pytest-collection-report @ git+https://github.com/canonical/data-platform-workflows@v24.0.0#subdirectory=python/pytest_plugins/allure_pytest_collection_report",

@@ -1,7 +1,6 @@
-# How to contribute 
+# Contributing
 
-This document explains the processes and practices recommended for contributing enhancements to the
-WordPress operator.
+This document explains the processes and practices recommended for contributing enhancements to the WordPress charm.
 
 ## Overview
 
@@ -10,7 +9,7 @@ WordPress operator.
 - If you would like to chat with us about your use-cases or proposed implementation, you can reach
   us at [Canonical Matrix public channel](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
   or [Discourse](https://discourse.charmhub.io/).
-- Familiarizing yourself with the [Juju documentation](https://canonical-juju.readthedocs-hosted.com/en/latest/user/howto/manage-charms/)
+- Familiarizing yourself with the [Juju documentation](https://documentation.ubuntu.com/juju/3.6/howto/manage-charms/)
   will help you a lot when working on new features or bug fixes.
 - All enhancements require review before being merged. Code review typically examines
   - code quality
@@ -29,7 +28,7 @@ When contributing, you must abide by the
 ## Changelog
 
 Please ensure that any new feature, fix, or significant change is documented by
-adding an entry to the [CHANGELOG.md](docs/changelog.md) file. Use the date of the
+adding an entry to the [CHANGELOG.md](./CHANGELOG.md) file. Use the date of the
 contribution as the header for new entries.
 
 To learn more about changelog best practices, visit [Keep a Changelog](https://keepachangelog.com/).
@@ -41,7 +40,7 @@ notify in advance the people involved to avoid confusion;
 also, reference the issue or bug number when you submit the changes.
 
 - [Fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks)
-  our [GitHub repository](link to GitHub repository)
+  our [GitHub repository](https://github.com/canonical/wordpress-k8s-operator)
   and add the changes to your fork, properly structuring your commits,
   providing detailed commit messages and signing your commits.
 - Make sure the updated project builds and runs without warnings or errors;
@@ -89,9 +88,8 @@ we use the [Canonical contributor license agreement](https://assets.ubuntu.com/v
 
 #### Canonical contributor agreement
 
-Canonical welcomes contributions to the WordPress Operator. Please check out our
-[contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing
-to the solution.
+Canonical welcomes contributions to the WordPress charm. Please check out our
+[contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
 
 The CLA sign-off is simple line at the
 end of the commit message certifying that you wrote it
@@ -105,15 +103,57 @@ To add signatures on your commits, follow the
 
 ## Develop
 
-To build and deploy the `wordpress-k8s` charm from source follow the steps below.
+To make contributions to this charm, you'll need a working
+[development setup](https://documentation.ubuntu.com/juju/latest/user/howto/manage-your-deployment/manage-your-deployment-environment/).
 
-### OCI image build and upload
+The code for this charm can be downloaded as follows:
 
-Use [Rockcraft](https://documentation.ubuntu.com/rockcraft/en/latest/) to create an
-OCI image for the WordPress app, and then upload the image to a [MicroK8s](https://microk8s.io/docs) registry,
+```
+git clone https://github.com/canonical/canonical/wordpress-k8s-operator
+```
+
+Make sure to install [`uv`](https://docs.astral.sh/uv/). For example, you can install `uv` on Ubuntu using:
+
+```bash
+sudo snap install astral-uv --classic
+```
+
+For other systems, follow the [`uv` installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+Then install `tox` with its extensions, and install a range of Python versions:
+
+```bash
+uv python install
+uv tool install tox --with tox-uv
+uv tool update-shell
+```
+
+To create a development environment, run:
+
+```bash
+uv sync
+source .venv/bin/activate
+```
+
+### Test
+
+This project uses `tox` for managing test environments. There are some pre-configured environments
+that can be used for linting and formatting code when you're preparing contributions to the charm:
+
+* ``tox``: Executes all of the basic checks and tests (``lint``, ``unit``, ``static``, and ``coverage-report``).
+* ``tox -e fmt``: Runs formatting using ``ruff``.
+* ``tox -e lint``: Runs a range of static code analysis to check the code.
+* ``tox -e static``: Runs other checks such as ``bandit`` for security issues.
+* ``tox -e unit``: Runs the unit tests.
+* ``tox -e integration``: Runs the integration tests.
+
+### Build the rock and charm
+
+Use [Rockcraft](https://documentation.ubuntu.com/rockcraft/stable/) to create an
+OCI image for the WordPress app, and then upload the image to a MicroK8s registry,
 which stores OCI archives so they can be downloaded and deployed.
 
-Enable MicroK8S registry:
+Enable the MicroK8s registry:
 
 ```bash
 microk8s enable registry
@@ -125,37 +165,22 @@ the MicroK8s registry:
 ```bash
 cd <project_dir>
 rockcraft pack
-skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:wordpress_1.0_amd64.rock docker://localhost:32000/wordpress:latest
+skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:<rock-name>.rock docker://localhost:32000/<app-name>:latest
 ```
 
-### Build the charm
+Build the charm in this git repository using:
 
-Build the charm locally using Charmcraft. It should output a `.charm` file.
-
-```bash
+```shell
 charmcraft pack
 ```
 
-### Deploy the charm
-
-Deploy the locally built WordPress charm with the following command.
+### Deploy
 
 ```bash
-juju deploy ./wordpress-k8s_ubuntu-22.04-amd64.charm \
-  --resource wordpress-image=localhost:32000/wordpress:latest
+# Create a model
+juju add-model charm-dev
+# Enable DEBUG logging
+juju model-config logging-config="<root>=INFO;unit=DEBUG"
+# Deploy the charm
+juju deploy ./wordpress-k8s*.charm
 ```
-
-You should now be able to see your local WordPress charm progress through the stages of the
-deployment through `juju status --watch 2s`.
-
-### Test
-
-This project uses `tox` for managing test environments. There are some pre-configured environments
-that can be used for linting and formatting code when you're preparing contributions to the charm:
-
-* `tox`: Runs all of the basic checks (`lint`, `unit`, `static`, and `coverage-report`).
-* `tox -e fmt`: Runs formatting using `black` and `isort`.
-* `tox -e lint`: Runs a range of static code analysis to check the code.
-* `tox -e static`: Runs other checks such as `bandit` for security issues.
-* `tox -e unit`: Runs the unit tests.
-* `tox -e integration`: Runs the integration tests.

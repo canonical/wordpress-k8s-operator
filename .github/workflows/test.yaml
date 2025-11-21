@@ -2,6 +2,8 @@ name: Tests
 
 on:
   pull_request:
+  schedule:
+  - cron: "0 15 * * SAT"
 
 jobs:
   unit-tests:
@@ -11,7 +13,8 @@ jobs:
       self-hosted-runner: false
   integration-test:
     name: Integration Test
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: 
+      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       extra-arguments: >-
@@ -30,7 +33,8 @@ jobs:
       channel: 1.32/stable
   integration-test-juju3:
     name: Integration Test on Juju3
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: 
+      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       extra-arguments: >-
@@ -50,8 +54,8 @@ jobs:
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
   allure-report:
-    if: always() && !cancelled()
+    if: ${{ (success() || failure()) && github.event_name == 'schedule' }}
     needs:
-      - integration-test
-      - integration-test-juju3
+    - integration-test
+    - integration-test-juju3
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

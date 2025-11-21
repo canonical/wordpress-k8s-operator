@@ -1,0 +1,23 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:806 Connecting to existing model github-pr-339d5-microk8s:testing on unspecified cloud
+[32mINFO    [0m juju.model:model.py:1994 Deploying local:jammy/wordpress-k8s-0
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] blocked: Waiting for db relation/config
+[32mINFO    [0m juju.model:model.py:1994 Deploying ch:amd64/jammy/mysql-k8s-255
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  mysql-k8s/0 [executing] unknown: 
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  wordpress-k8s/0 [executing] blocked: Waiting for db relation/config
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  wordpress-k8s/0 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active:
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active:

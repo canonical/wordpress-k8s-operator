@@ -54,7 +54,7 @@ jobs:
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
   allure-report:
-    if: ${{ (success() || failure()) && github.event_name == 'schedule' }}
+    if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
     - integration-test
     - integration-test-juju3

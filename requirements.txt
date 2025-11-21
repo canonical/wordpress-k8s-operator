@@ -1,2 +1,0 @@
--r requirements-source.txt
--r requirements-binary.txt

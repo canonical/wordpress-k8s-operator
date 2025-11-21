@@ -108,21 +108,21 @@ async def test_openstack_object_storage_plugin(
         swift_object_list = [
             o["name"] for o in swift_conn.get_container(container, full_listing=True)[1]
         ]
-        assert any(
-            nonce in f for f in swift_object_list
-        ), "media files uploaded should be stored in swift object storage"
+        assert any(nonce in f for f in swift_object_list), (
+            "media files uploaded should be stored in swift object storage"
+        )
         source_url = min(image_urls, key=len)
         for image_url in image_urls:
-            assert (
-                requests.get(image_url, timeout=10).status_code == 200
-            ), "the original image and resized images should be accessible from the WordPress site"
+            assert requests.get(image_url, timeout=10).status_code == 200, (
+                "the original image and resized images should be accessible from the WordPress site"
+            )
         for host in await wordpress.get_unit_ips():
             url_components = list(urllib.parse.urlsplit(source_url))
             url_components[1] = host
             url = urllib.parse.urlunsplit(url_components)
-            assert (
-                requests.get(url, timeout=10).content == image
-            ), "image downloaded from WordPress should match the image uploaded"
+            assert requests.get(url, timeout=10).content == image, (
+                "image downloaded from WordPress should match the image uploaded"
+            )
 
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
@@ -160,4 +160,4 @@ async def test_uploads_owner(wordpress: WordpressApp, ops_test: OpsTest):
 
     retcode, stdout, _ = await ops_test.run(*cmd)
     assert retcode == 0
-    assert "584792" == stdout.strip()
+    assert stdout.strip() == "584792"

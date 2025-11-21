@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Wordpress charm state."""
+
 import dataclasses
 import logging
 import os

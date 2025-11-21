@@ -19,9 +19,9 @@ async def test_ingress(wordpress: WordpressApp):
     assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections.
     """
     response = requests.get("http://127.0.0.1", headers={"Host": wordpress.name}, timeout=5)
-    assert (
-        response.status_code == 200 and "wordpress" in response.text.lower()
-    ), "Ingress should accept requests to WordPress and return correct contents"
+    assert response.status_code == 200 and "wordpress" in response.text.lower(), (
+        "Ingress should accept requests to WordPress and return correct contents"
+    )
 
     new_hostname = "wordpress.test"
     await wordpress.set_config({"blog_hostname": new_hostname})
@@ -29,9 +29,9 @@ async def test_ingress(wordpress: WordpressApp):
     response = requests.get(
         "https://127.0.0.1", headers={"Host": new_hostname}, timeout=5, verify=False
     )  # nosec
-    assert (
-        response.status_code == 200 and "wordpress" in response.text.lower()
-    ), "Ingress should update the server name indication based routing after blog_hostname updated"
+    assert response.status_code == 200 and "wordpress" in response.text.lower(), (
+        "Ingress should update the server name indication based routing after blog_hostname updated"
+    )
 
 
 @pytest.mark.usefixtures("prepare_mysql", "prepare_nginx_ingress", "prepare_swift")

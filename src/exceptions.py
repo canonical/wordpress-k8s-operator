@@ -2,14 +2,15 @@
 # See LICENSE file for licensing details.
 
 """User-defined exceptions used by WordPress charm."""
+
 import ops.model
 
 __all__ = [
-    "WordPressStatusException",
     "WordPressBlockedStatusException",
-    "WordPressWaitingStatusException",
-    "WordPressMaintenanceStatusException",
     "WordPressInstallError",
+    "WordPressMaintenanceStatusException",
+    "WordPressStatusException",
+    "WordPressWaitingStatusException",
 ]
 
 
@@ -43,19 +44,19 @@ class WordPressStatusException(Exception):  # noqa: N818
         self.status = self._status_class(message)
 
 
-class WordPressBlockedStatusException(WordPressStatusException):  # noqa: N818
+class WordPressBlockedStatusException(WordPressStatusException):
     """Same as :exc:`exceptions.WordPressStatusException`."""
 
     _status_class = ops.model.BlockedStatus
 
 
-class WordPressWaitingStatusException(WordPressStatusException):  # noqa: N818
+class WordPressWaitingStatusException(WordPressStatusException):
     """Same as :exc:`exceptions.WordPressStatusException`."""
 
     _status_class = ops.model.WaitingStatus
 
 
-class WordPressMaintenanceStatusException(WordPressStatusException):  # noqa: N818
+class WordPressMaintenanceStatusException(WordPressStatusException):
     """Same as :exc:`exceptions.WordPressStatusException`."""
 
     _status_class = ops.model.MaintenanceStatus

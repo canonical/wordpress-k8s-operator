@@ -5,6 +5,7 @@
 
 """Mocking and patching system for testing WordPress charm."""
 
+import contextlib
 import io
 import json
 import re
@@ -77,10 +78,8 @@ class WordPressDatabaseInstanceMock:
         Args:
             name: option name.
         """
-        try:
+        with contextlib.suppress(KeyError):
             del self.options[name]
-        except KeyError:
-            pass
 
 
 class WordpressDatabaseMock:
@@ -230,7 +229,7 @@ class WordpressDatabaseMock:
 
 class MysqlConnectorMock:
     # Mocked Error attribute can be ignored.
-    """A mock for :py:mod:`mysql.connector`."""  # noqa: DCO060
+    """A mock for :py:mod:`mysql.connector`."""
 
     # Mock for :class:`mysql.connector.Error`
     Error = mysql.connector.Error
@@ -429,7 +428,7 @@ class WordpressContainerMock:
 
         Raises:
             KeyError: if path is not found in the mock filesystem.
-        """  # noqa: DCO055
+        """
         try:
             del self.fs[path]
         except KeyError:
@@ -525,7 +524,7 @@ class WordpressContainerMock:
             return ExecProcessMock(
                 return_code=1,
                 stdout="",
-                stderr=f"Error, try to delete a non-existent theme {repr(theme)}",
+                stderr=f"Error, try to delete a non-existent theme {theme!r}",
             )
         self.installed_themes.remove(theme)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
@@ -561,7 +560,7 @@ class WordpressContainerMock:
             return ExecProcessMock(
                 return_code=1,
                 stdout="",
-                stderr=f"Error, try to delete a non-existent plugin {repr(plugin)}",
+                stderr=f"Error, try to delete a non-existent plugin {plugin!r}",
             )
         self.installed_plugins.remove(plugin)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
@@ -634,10 +633,8 @@ class WordpressContainerMock:
     def _mock_a2disconf(self, cmd):
         """Simulate ``a2disconf <conf>`` command execution in the container."""
         conf = cmd[1]
-        try:
+        with contextlib.suppress(KeyError):
             del self.fs[f"/etc/apache2/conf-enabled/{conf}.conf"]
-        except KeyError:
-            pass
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "version"])

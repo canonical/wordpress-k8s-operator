@@ -20,7 +20,8 @@ source openrc && printenv | grep OS_
 
 The output of the command above should look something similar to the following.
 
-```
+```{terminal}
+:input: source openrc && printenv | grep OS_
 export OS_CACERT=
 export OS_PROJECT_NAME=demo
 export OS_TENANT_NAME=demo

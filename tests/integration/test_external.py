@@ -37,12 +37,12 @@ async def test_akismet_plugin(
         wordpress_client.create_comment(
             post_id=post["id"], post_link=post["link"], content="test comment"
         )
-        assert (
-            len(wordpress_client.list_comments(status="spam", post_id=post["id"])) == 1
-        ), "Akismet plugin should move the triggered spam comment to the spam section"
-        assert (
-            len(wordpress_client.list_comments(post_id=post["id"])) == 1
-        ), "Akismet plugin should keep the normal comment"
+        assert len(wordpress_client.list_comments(status="spam", post_id=post["id"])) == 1, (
+            "Akismet plugin should move the triggered spam comment to the spam section"
+        )
+        assert len(wordpress_client.list_comments(post_id=post["id"])) == 1, (
+            "Akismet plugin should keep the normal comment"
+        )
 
 
 @pytest.mark.requires_secret
@@ -85,6 +85,6 @@ async def test_openid_plugin(
                 if attempt == 0:
                     continue
                 raise
-        assert (
-            "administrator" in wordpress_client.list_roles()
-        ), "An launchpad OpenID account should be associated with the WordPress admin user"
+        assert "administrator" in wordpress_client.list_roles(), (
+            "An launchpad OpenID account should be associated with the WordPress admin user"
+        )

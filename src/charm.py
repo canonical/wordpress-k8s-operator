@@ -15,7 +15,7 @@ import string
 import textwrap
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union, cast
 
 import mysql.connector
 import ops.charm
@@ -50,7 +50,7 @@ logger = logging.getLogger()
 class WordpressCharm(CharmBase):
     """Charm for WordPress on kubernetes."""
 
-    class _ReplicaRelationNotReady(Exception):
+    class _ReplicaRelationNotReady(Exception):  # noqa: N818 (private exception used internally)
         """Replica databag was accessed before peer relations are established."""
 
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
@@ -65,7 +65,7 @@ class WordpressCharm(CharmBase):
     _DEFAULT_MYSQL_PORT = 3306
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
-    _WORDPRESS_DEFAULT_THEMES = [
+    _WORDPRESS_DEFAULT_THEMES: ClassVar[List[str]] = [
         "launchpad",
         "light-wordpress-theme",
         "mscom",
@@ -87,7 +87,7 @@ class WordpressCharm(CharmBase):
         "xubuntu-website/xubuntu-thirteen",
     ]
 
-    _WORDPRESS_DEFAULT_PLUGINS = [
+    _WORDPRESS_DEFAULT_PLUGINS: ClassVar[List[str]] = [
         "404page",
         "akismet",
         "all-in-one-event-calendar",
@@ -628,7 +628,7 @@ class WordpressCharm(CharmBase):
             return types_.ExecResult(
                 success=False,
                 result=None,
-                message=f"command {cmd} failed" if not error_message else error_message,
+                message=error_message if error_message else f"command {cmd} failed",
             )
         return types_.ExecResult(success=True, result=None, message="")
 
@@ -1047,7 +1047,7 @@ class WordpressCharm(CharmBase):
             raise exceptions.WordPressBlockedStatusException("Failed to list addons.")
         if not exec_result.result:
             return
-        current_installed_addons = set(t["name"] for t in exec_result.result)
+        current_installed_addons = {t["name"] for t in exec_result.result}
         logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
         addons_in_config = [
             t.strip()

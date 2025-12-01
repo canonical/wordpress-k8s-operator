@@ -5,6 +5,7 @@
 
 """Mocking and patching system for testing WordPress charm."""
 
+import contextlib
 import io
 import json
 import re
@@ -77,10 +78,8 @@ class WordPressDatabaseInstanceMock:
         Args:
             name: option name.
         """
-        try:
+        with contextlib.suppress(KeyError):
             del self.options[name]
-        except KeyError:
-            pass
 
 
 class WordpressDatabaseMock:
@@ -634,10 +633,8 @@ class WordpressContainerMock:
     def _mock_a2disconf(self, cmd):
         """Simulate ``a2disconf <conf>`` command execution in the container."""
         conf = cmd[1]
-        try:
+        with contextlib.suppress(KeyError):
             del self.fs[f"/etc/apache2/conf-enabled/{conf}.conf"]
-        except KeyError:
-            pass
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "core", "version"])

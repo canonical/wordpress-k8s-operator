@@ -11,7 +11,7 @@ jobs:
       self-hosted-runner: false
   integration-test:
     name: Integration Test
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@cache-rock
     secrets: inherit
     with:
       extra-arguments: >-
@@ -30,7 +30,7 @@ jobs:
       channel: 1.32/stable
   integration-test-juju3:
     name: Integration Test on Juju3
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@cache-rock
     secrets: inherit
     with:
       extra-arguments: >-

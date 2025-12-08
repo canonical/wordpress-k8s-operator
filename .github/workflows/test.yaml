@@ -2,6 +2,8 @@ name: Tests
 
 on:
   pull_request:
+  schedule:
+  - cron: "0 15 * * SAT"
 
 jobs:
   unit-tests:
@@ -50,8 +52,8 @@ jobs:
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
   allure-report:
-    if: always() && !cancelled()
+    if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
-      - integration-test
-      - integration-test-juju3
+    - integration-test
+    - integration-test-juju3
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

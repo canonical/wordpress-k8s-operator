@@ -2,7 +2,7 @@
 
 # How to enable antispam (Akismet)
 
-Obtain an API key for Akismet by visiting the [Askimet official webpage](https://akismet.com/developers/)
+Obtain an API key for Akismet by visiting the [Akismet official webpage](https://akismet.com/developers/)
 and following the instructions.
 
 Using your key, enable the Akismet plugin with:

@@ -70,7 +70,7 @@ copyright = "%s CC-BY-SA, %s" % (datetime.date.today().year, author)
 # NOTE: The Open Graph Protocol (OGP) enhances page display in a social graph
 #       and is used by social media platforms; see https://ogp.me/
 
-ogp_site_url = "https://canonical-starter-pack.readthedocs-hosted.com/"
+ogp_site_url = "https://documentation.ubuntu.com/wordpress-k8s-charm/"
 
 
 # Preview name of the documentation website
@@ -136,7 +136,7 @@ html_context = {
     # Docs branch in the repo; used in links for viewing the source files
     #
     # TODO: To customise the branch, uncomment and update as needed.
-    'repo_default_branch': 'rtd-migration-test',
+    'repo_default_branch': 'main',
     # Docs location in the repo; used in links for viewing the source files
     #
 
@@ -169,7 +169,7 @@ html_theme_options = {
 # TODO: If your documentation is hosted on https://docs.ubuntu.com/,
 #       uncomment and update as needed.
 
-# slug = ''
+slug = 'wordpress-k8s-charm'
 
 #######################
 # Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
@@ -177,7 +177,7 @@ html_theme_options = {
 
 # Base URL of RTD hosted project
 
-html_baseurl = 'https://canonical-starter-pack.readthedocs-hosted.com/'
+html_baseurl = 'https://documentation.ubuntu.com/wordpress-k8s-charm/'
 
 # URL scheme. Add language and version scheme elements.
 # When configured with RTD variables, check for RTD environment so manual runs succeed:
@@ -369,5 +369,5 @@ if os.path.exists('./reuse/substitutions.yaml'):
 
 intersphinx_mapping = {
     'juju': ("https://documentation.ubuntu.com/juju/3.6/", None),
-    'starter-pack': ("https://canonical-starter-pack.readthedocs-hosted.com/latest/", None),
+    'starter-pack': ("https://canonical-starter-pack.readthedocs-hosted.com/stable/", None),
 }

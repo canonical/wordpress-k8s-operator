@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2025-11-19
+
+- docs: Update requirements section of the tutorial based on UX research.
+
+## 2025-11-10
+
+- Refactor use consolidated workflows for RTD validation.
+
+## 2025-11-04
+
+- docs: Update the CONTRIBUTING.md file for the WordPress charm located in the canonical/wordpress-k8s-operator repository.
+  Added the following sections to ensure consistency of style: Code of conduct, Submission, Describing pull requests, Signing commits.
+- docs: Update URL and slug configuration parameters for the RTD project.
+
 ## 2025-10-28
 
 - Refactor to fix some linting issues.

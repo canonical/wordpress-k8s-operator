@@ -183,3 +183,4 @@ update: install
 %:
 	$(MAKE) --no-print-directory install
 	. $(VENV); $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+

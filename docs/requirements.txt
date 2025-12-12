@@ -33,3 +33,4 @@ sphinxcontrib-mermaid
 # Vale dependencies
 rst2html
 vale
+

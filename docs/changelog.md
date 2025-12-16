@@ -12,6 +12,10 @@ Each revision is versioned by the date of the revision.
 
 - chore: eject deprecated resource-centre theme
 
+## 2025-12-11
+
+- docs: Update to version 1.3.1 of the Canonical starter pack.
+
 ## 2025-11-19
 
 - docs: Update requirements section of the tutorial based on UX research.

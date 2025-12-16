@@ -15,24 +15,24 @@ parts:
     plugin: dump
     source: files
     build-packages:
-    - apache2
-    - php
-    - rsync
+      - apache2
+      - php
+      - rsync
     overlay-packages:
-    - apache2
-    - libapache2-mod-php
-    - libgmp-dev
-    - php
-    - php-curl
-    - php-gd
-    - php-gmp
-    - php-mysql
-    - php-symfony-yaml
-    - php-xml
-    - pwgen
-    - python3
-    - python3-yaml
-    - ca-certificates
+      - apache2
+      - libapache2-mod-php
+      - libgmp-dev
+      - php
+      - php-curl
+      - php-gd
+      - php-gmp
+      - php-mysql
+      - php-symfony-yaml
+      - php-xml
+      - pwgen
+      - python3
+      - python3-yaml
+      - ca-certificates
     build-environment:
       # Required to source $CRAFT_OVERLAY/etc/apache2/envvars
       - APACHE_CONFDIR: /etc/apache2
@@ -270,20 +270,6 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/themes/xubuntu-website/
-  get-resource-centre:
-    after:
-      - wordpress
-    plugin: nil
-    build-packages: [bzr]
-    build-environment:
-      # bzr is unable to import system python package breezy
-      - PYTHONPATH: "/usr/lib/python3/dist-packages:/usr/local/lib/python3.12/dist-packages"
-    override-build: |
-      pip3 install breezy launchpadlib --break-system-packages 
-      bzr branch lp:resource-centre
-      cp -R . $CRAFT_PART_INSTALL
-    organize:
-      resource-centre: /var/www/html/wp-content/themes/resource-centre/
   # Post-install configuration
   wordpress-configure:
     plugin: nil
@@ -302,7 +288,6 @@ parts:
       - get-wp-theme-ubuntustudio-wp
       - get-wp-theme-launchpad
       - get-wp-theme-xubuntu-website
-      - get-resource-centre
       - get-ubuntu-community-wordpress-theme
     build-environment:
       - IMAGE_RUN_USER_ID: 584792

@@ -69,7 +69,6 @@ class WordpressCharm(CharmBase):
         "launchpad",
         "light-wordpress-theme",
         "mscom",
-        "resource-centre",
         "thematic",
         "twentytwentyfive",
         "twentytwentyfour",

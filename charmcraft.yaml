@@ -10,16 +10,7 @@ bases:
       channel: "22.04"
 parts:
   charm:
+    source: .
+    plugin: uv
     build-snaps:
-      - rustup
-    override-build: |
-      rustup default stable
-      craftctl default
-      $CRAFT_PART_BUILD/staging-venv/bin/pip \
-              install --target $CRAFT_PART_INSTALL/venv -v \
-              -r requirements-binary.txt
-    build-packages:
-      - libffi-dev
-      - libssl-dev
-      - pkg-config
-    charm-requirements: [ requirements-source.txt ]
+    - astral-uv

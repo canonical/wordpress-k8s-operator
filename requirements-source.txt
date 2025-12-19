@@ -1,4 +1,0 @@
-cosl==1.4.0
-ops==3.5.0
-pydantic==2.12.5
-requests==2.32.5

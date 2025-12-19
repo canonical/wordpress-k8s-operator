@@ -123,9 +123,9 @@ class WordpressClient:
             post_link=post_link,
             content=comment,
         )
-        assert comment_link.startswith(post_link) and comment in wp_client.get_post(
-            post_link
-        ), "admin user should be able to create a comment"
+        assert comment_link.startswith(post_link) and comment in wp_client.get_post(post_link), (
+            "admin user should be able to create a comment"
+        )
 
     def __init__(
         self,
@@ -347,7 +347,7 @@ class WordpressClient:
             except_status_code=200,
         )
         if "Duplicate comment detected" in response.text:
-            raise ValueError(f"Duplicate comment detected: {repr(content)}")
+            raise ValueError(f"Duplicate comment detected: {content!r}")
         return response.url
 
     def get_homepage(self) -> str:
@@ -548,7 +548,7 @@ class WordpressClient:
         emails = re.findall("""data-colname="Email"><a href='mailto:([^']+)'>""", user_page)
         usernames = re.findall('users\\.php">([^<]+)</a>', user_page)
         roles = re.findall('data-colname="Role">([^<]+)</td>', user_page)
-        for email, username, role in zip(emails, usernames, roles):
+        for email, username, role in zip(emails, usernames, roles, strict=True):
             if self.username in (email, username):
                 return [r.strip() for r in role.lower().split(",")]
         raise ValueError(f"User {self.username} not found")

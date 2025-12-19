@@ -14,6 +14,5 @@ foundational topics and concepts relevant to the WordPress charm.
 ```{toctree}
 :maxdepth: 1
 
-charm-architecture
 security-overview
 ```

@@ -225,7 +225,7 @@ templates_path = [".sphinx/_templates"]
 #       the sphinx_reredirects extension will be disabled.
 
 redirects = {
-    
+    "explanation/charm-architecture": "reference/charm-architecture",
 }
 
 

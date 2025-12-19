@@ -15,7 +15,7 @@ import string
 import textwrap
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union, cast
 
 import mysql.connector
 import ops.charm
@@ -50,7 +50,7 @@ logger = logging.getLogger()
 class WordpressCharm(CharmBase):
     """Charm for WordPress on kubernetes."""
 
-    class _ReplicaRelationNotReady(Exception):
+    class _ReplicaRelationNotReady(Exception):  # noqa: N818 (private exception used internally)
         """Replica databag was accessed before peer relations are established."""
 
     _WP_CONFIG_PATH = "/var/www/html/wp-config.php"
@@ -65,11 +65,10 @@ class WordpressCharm(CharmBase):
     _DEFAULT_MYSQL_PORT = 3306
 
     # Default themes and plugins are installed in oci image build time and defined in Dockerfile
-    _WORDPRESS_DEFAULT_THEMES = [
+    _WORDPRESS_DEFAULT_THEMES: ClassVar[List[str]] = [
         "launchpad",
         "light-wordpress-theme",
         "mscom",
-        "resource-centre",
         "thematic",
         "twentytwentyfive",
         "twentytwentyfour",
@@ -87,7 +86,7 @@ class WordpressCharm(CharmBase):
         "xubuntu-website/xubuntu-thirteen",
     ]
 
-    _WORDPRESS_DEFAULT_PLUGINS = [
+    _WORDPRESS_DEFAULT_PLUGINS: ClassVar[List[str]] = [
         "404page",
         "akismet",
         "all-in-one-event-calendar",
@@ -628,7 +627,7 @@ class WordpressCharm(CharmBase):
             return types_.ExecResult(
                 success=False,
                 result=None,
-                message=f"command {cmd} failed" if not error_message else error_message,
+                message=error_message if error_message else f"command {cmd} failed",
             )
         return types_.ExecResult(success=True, result=None, message="")
 
@@ -948,7 +947,7 @@ class WordpressCharm(CharmBase):
             ValueError: if addon_type is not one of theme/plugin.
         """
         if addon_type not in ("theme", "plugin"):
-            raise ValueError(f"Addon type unknown {repr(addon_type)}, accept: (theme, plugin)")
+            raise ValueError(f"Addon type unknown {addon_type!r}, accept: (theme, plugin)")
 
     def _wp_addon_list(self, addon_type: str):
         """List all installed WordPress addons.
@@ -1047,7 +1046,7 @@ class WordpressCharm(CharmBase):
             raise exceptions.WordPressBlockedStatusException("Failed to list addons.")
         if not exec_result.result:
             return
-        current_installed_addons = set(t["name"] for t in exec_result.result)
+        current_installed_addons = {t["name"] for t in exec_result.result}
         logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
         addons_in_config = [
             t.strip()
@@ -1067,14 +1066,14 @@ class WordpressCharm(CharmBase):
             exec_result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
             if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
-                    f"failed to install {addon_type} {repr(addon)}"
+                    f"failed to install {addon_type} {addon!r}"
                 )
         for addon in uninstall_addons:
             logger.info("Uninstall %s: %s", addon_type, repr(addon))
             exec_result = self._wp_addon_uninstall(addon_type=addon_type, addon_name=addon)
             if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
-                    f"failed to uninstall {addon_type} {repr(addon)}"
+                    f"failed to uninstall {addon_type} {addon!r}"
                 )
 
     def _theme_reconciliation(self) -> None:
@@ -1159,7 +1158,7 @@ class WordpressCharm(CharmBase):
         """
         if action not in ("activate", "deactivate"):
             raise ValueError(
-                f"Unknown activation_status {repr(action)}, " "accept (activate, deactivate)"
+                f"Unknown activation_status {action!r}, accept (activate, deactivate)"
             )
         current_plugins = self._wp_addon_list("plugin")
         if not current_plugins.success:

@@ -1,0 +1,78 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: get uploads directory owner
+    assert: uploads belongs to wordpress user.
+    ","","test_uploads_owner","tests.integration","","unknown","","","test_core","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: change upload limit related settings.
+    assert: upload limit change should be reflected in the upload page.
+    ","","test_change_upload_limit","tests.integration","","unknown","","","test_core","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: install a nonexistent theme.
+    assert: charm should switch to blocked state and the reason should be included in the status
+        message.
+    ","","test_wordpress_theme_installation_error","tests.integration","","unknown","","","test_addon","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: test WordPress basic functionality (login, post, comment).
+    assert: WordPress works normally as a blog site.
+    ","","test_wordpress_functionality","tests.integration","","unknown","","","test_core","",""
+"
+    arrange: after WordPress charm has been deployed, db relation established.
+    act: update charm configuration for OpenID plugin.
+    assert: A WordPress user should be created with correct roles according to the config.
+    ","","test_openid_plugin","tests.integration","","unknown","","","test_external","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: change themes setting in config.
+    assert: themes should be installed and uninstalled accordingly.
+    ","","test_wordpress_install_uninstall_themes","tests.integration","","unknown","","","test_addon","",""
+"
+    arrange: after charm deployed, db relation established and openstack swift server ready.
+    act: update charm configuration for openstack object storage plugin.
+    assert: openstack object storage plugin should be installed after the config update and
+        WordPress openstack swift object storage integration should be set up properly.
+        After openstack swift plugin activated, an image file uploaded to one unit through
+        WordPress media uploader should be accessible from all units.
+    ","","test_openstack_object_storage_plugin","tests.integration","","unknown","","","test_core","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: change plugins setting in config.
+    assert: plugins should be installed and uninstalled accordingly.
+    ","","test_wordpress_install_uninstall_plugins","tests.integration","","unknown","","","test_addon","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: install a nonexistent plugin.
+    assert: charm should switch to blocked state and the reason should be included in the status
+        message.
+    ","","test_wordpress_plugin_installation_error","tests.integration","","unknown","","","test_addon","",""
+"
+    arrange: WordPress charm is running and Nginx ingress integrator deployed and related to it.
+    act: update the use_nginx_ingress_modsec WordPress charm config.
+    assert: A Kubernetes ingress modsecurity should be enabled and proper rules should be set up
+        for WordPress.
+    ","","test_ingress_modsecurity","tests.integration","","unknown","","","test_ingress","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: update the config to trigger a new reconciliation.
+    assert: apache config test works properly and prevents the restart of the server.
+    ","","test_apache_config","tests.integration","","unknown","","","test_core","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: test wordpress server is up.
+    assert: wordpress service is up.
+    ","","test_wordpress_up","tests.integration","","unknown","","","test_core","",""
+"
+    arrange: after WordPress charm has been deployed, db relation established.
+    act: update charm configuration for Akismet plugin.
+    assert: Akismet plugin should be activated and spam detection function should be working.
+    ","","test_akismet_plugin","tests.integration","","unknown","","","test_external","",""
+"
+    arrange: after WordPress charm has been deployed and db relation established.
+    act: deploy the nginx-ingress-integrator charm and create the relation between ingress charm
+        and WordPress charm.
+    assert: A Kubernetes ingress should be created and the ingress should accept HTTPS connections.
+    ","","test_ingress","tests.integration","","unknown","","","test_ingress","",""

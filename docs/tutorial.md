@@ -49,16 +49,6 @@ If Concierge did not perform the bootstrap, run:
 juju bootstrap microk8s tutorial-controller
 ```
 
-## What you'll do
-
-1. Deploy the [WordPress K8s charm](https://charmhub.io/wordpress-k8s)
-2. Deploy and integrate a database
-3. Get admin credentials
-4. Access the WordPress instance
-5. Clean up the environment
-
-## Set up the environment
-
 To be able to work inside the Multipass VM, log in with the following command:
 
 ```bash
@@ -68,6 +58,16 @@ multipass shell charm-tutorial-vm
 ```{note}
 If you're working locally, you don't need to do this step.
 ```
+
+## What you'll do
+
+1. Deploy the [WordPress K8s charm](https://charmhub.io/wordpress-k8s)
+2. Deploy and integrate a database
+3. Get admin credentials
+4. Access the WordPress instance
+5. Clean up the environment
+
+## Set up the environment
 
 To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model in the MicroK8s controller using the following command:
@@ -103,7 +103,9 @@ The `database` interface is required since `mysql-k8s` charm provides multiple c
 
 Run `juju status` to see the current status of the deployment. The output should be similar to the following:
 
-```
+```{terminal}
+:output-only:
+
 Model               Controller          Cloud/Region        Version  SLA          Timestamp
 wordpress-tutorial  microk8s-localhost  microk8s/localhost  3.5.3    unsupported  18:48:09Z
 
@@ -133,7 +135,9 @@ juju run wordpress-k8s/0 get-initial-password
 
 The result should look something similar to the contents below:
 
-```
+```{terminal}
+:output-only:
+
 Running operation 1 with 1 task
   - task 2 on unit-wordpress-k8s-0
 

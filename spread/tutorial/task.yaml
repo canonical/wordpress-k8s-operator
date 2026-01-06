@@ -1,0 +1,12 @@
+summary: Tutorial test
+
+kill-timeout: 30m
+
+execute: |
+  juju add-model wordpress-tutorial
+  juju deploy wordpress-k8s
+  juju deploy mysql-k8s --trust
+  juju integrate wordpress-k8s mysql-k8s:database
+  juju wait-for application wordpress-k8s --query='status=="active"' --timeout 10m
+  juju wait-for application mysql-k8s --query='status=="active"' --timeout 10m
+  juju run wordpress-k8s/0 get-initial-password

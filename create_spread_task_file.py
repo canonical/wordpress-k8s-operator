@@ -24,8 +24,8 @@ def extract_commands_from_markdown(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    # Find the "What you'll need" section and exclude it
-    what_you_need_range = None
+    # Find sections to exclude: "What you'll need", "Requirements", or "Prerequisites"
+    excluded_section_ranges = []
     header_pattern = r'^(#+)\s+(.+)$'
     
     # Find all headers in the document
@@ -36,9 +36,10 @@ def extract_commands_from_markdown(file_path):
         position = match.start()
         headers.append((position, level, title))
     
-    # Find "What you'll need" section
+    # Find all sections with names: "What you'll need", "Requirements", or "Prerequisites"
+    excluded_section_names = ["what you'll need", "requirements", "prerequisites"]
     for i, (pos, level, title) in enumerate(headers):
-        if "what you'll need" in title.lower():
+        if title.lower() in excluded_section_names:
             start_pos = pos
             # Find the next header at the same or higher level (fewer or equal #)
             end_pos = len(content)
@@ -47,8 +48,7 @@ def extract_commands_from_markdown(file_path):
                 if next_level <= level:
                     end_pos = next_pos
                     break
-            what_you_need_range = (start_pos, end_pos)
-            break
+            excluded_section_ranges.append((start_pos, end_pos))
     
     # First, find all blocks with 4+ backticks to identify excluded regions
     excluded_ranges = []
@@ -56,9 +56,8 @@ def extract_commands_from_markdown(file_path):
     for match in re.finditer(pattern_4plus, content, re.DOTALL):
         excluded_ranges.append((match.start(), match.end()))
     
-    # Add "What you'll need" section to excluded ranges if found
-    if what_you_need_range:
-        excluded_ranges.append(what_you_need_range)
+    # Add all excluded sections to excluded ranges
+    excluded_ranges.extend(excluded_section_ranges)
     
     # Find all code blocks: exactly 3 backticks (not more), optional language, content, then exactly 3 backticks
     # Use negative lookbehind and lookahead to ensure exactly 3 backticks

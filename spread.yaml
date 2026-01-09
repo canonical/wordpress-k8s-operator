@@ -3,14 +3,23 @@ project: wordpress-k8s-operator
 path: /wordpress-k8s-operator
 environment:
   PROJECT_PATH: /wordpress-k8s-operator
-  SNAPD_TESTING_TOOLS: $PROJECT_PATH/tools/external/tools
-  PATH: /snap/bin:$PATH:$SNAPD_TESTING_TOOLS
-  CRAFT_DEBUG: 1 # Show exception tracebacks.
-  CRAFT_VERBOSITY_LEVEL: debug # Show debugging output when failing.
-  # Use the staging store for tests:
-  CHARMCRAFT_STORE_API_URL: https://api.staging.charmhub.io
-  CHARMCRAFT_UPLOAD_URL: https://storage.staging.snapcraftcontent.com
-  CHARMCRAFT_REGISTRY_URL: https://registry.staging.jujucharms.com
+  PROVIDER: microk8s
+  CHARMCRAFT_CHANNEL: latest/stable
+  JUJU_CHANNEL: 3/stable
+  LXD_CHANNEL: latest/stable
+  MICROK8S_CHANNEL: 1.28-strict/stable
+  MICROK8S_ADDONS: hostpath-storage
+
+  JUJU_BOOTSTRAP_OPTIONS: --model-default test-mode=true --model-default automatically-retry-hooks=false --model-default
+  JUJU_EXTRA_BOOTSTRAP_OPTIONS: ""
+  JUJU_BOOTSTRAP_CONSTRAINTS: ""
+
+  # important to ensure adhoc and linode/qemu behave the same
+  SUDO_USER: ""
+  SUDO_UID: ""
+
+  LANG: "C.UTF-8"
+  LANGUAGE: "en"
 
 exclude:
   - .git
@@ -27,36 +36,29 @@ backends:
   multipass:
     type: adhoc
     allocate: |
-      sleep 0.$RANDOM  # Minimize chances of a race condition
-      mkdir -p $HOME/.spread
+      # Mitigate issues found when launching multiple mutipass instances
+      # concurrently. See https://github.com/canonical/multipass/issues/3336
+      sleep 0.$RANDOM
+      sleep 0.$RANDOM
+      sleep 0.$RANDOM
+
+      mkdir -p "$HOME/.spread"
       export counter_file="$HOME/.spread/multipass-count"
+
+      # Sequential variable for unique instance names
       instance_num=$(flock -x $counter_file bash -c '
         [ -s $counter_file ] || echo 0 > $counter_file
         num=$(< $counter_file)
         echo $num
         echo $(( $num + 1 )) > $counter_file')
 
-      multipass_image=$(echo ${SPREAD_SYSTEM} | sed -e s/ubuntu-// -e s/-64//)
+      multipass_image=$(echo "${SPREAD_SYSTEM}" | sed -e s/ubuntu-// -e s/-64//)
 
       system=$(echo "${SPREAD_SYSTEM}" | tr . -)
       instance_name="spread-${SPREAD_BACKEND}-${instance_num}-${system}"
 
-      multipass launch --cpus 4 --disk 50G --memory 8G --name "${instance_name}" "${multipass_image}"
-
-      # Enable PasswordAuthentication for root over SSH.
-      multipass exec "$instance_name" -- \
-        sudo sh -c "echo root:${SPREAD_PASSWORD} | sudo chpasswd"
-      multipass exec "$instance_name" -- \
-        sudo sh -c \
-        "if [ -d /etc/ssh/sshd_config.d/ ]
-        then
-          echo 'PasswordAuthentication yes' > /etc/ssh/sshd_config.d/10-spread.conf
-          echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config.d/10-spread.conf
-        else
-          sed -i /etc/ssh/sshd_config -E -e 's/^#?PasswordAuthentication.*/PasswordAuthentication yes/' -e 's/^#?PermitRootLogin.*/PermitRootLogin yes/'
-        fi"
-      multipass exec "$instance_name" -- \
-        sudo systemctl restart ssh
+      multipass launch -vv --cpus 4 --disk 50G --memory 8G --name "${instance_name}" \
+        --cloud-init charm/tests/spread/lib/cloud-config.yaml "${multipass_image}"
 
       # Get the IP from the instance
       ip=$(multipass info --format csv "$instance_name" | tail -1 | cut -d\, -f3)
@@ -66,16 +68,41 @@ backends:
       multipass delete --purge "${instance_name}"
     systems:
       - ubuntu-24.04-64:
+          username: spread
+          password: spread
+          workers: 1
+  github-ci:
+    type: adhoc
+    allocate: |
+      echo "Allocating ad-hoc $SPREAD_SYSTEM"
+      if [ -z "${GITHUB_RUN_ID:-}" ]; then
+        FATAL "this back-end only works inside GitHub CI"
+        exit 1
+      fi
+      echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/99-spread-users
+      ADDRESS localhost:22
+    discard: |
+      echo "Discarding ad-hoc $SPREAD_SYSTEM"
+    systems:
+      - ubuntu-24.04-64:
+          username: ubuntu
+          password: ubuntu
           workers: 1
 
 prepare: |
+  snap refresh --hold
+
+  if systemctl is-enabled unattended-upgrades.service; then
+    systemctl stop unattended-upgrades.service
+    systemctl mask unattended-upgrades.service
+  fi
+
   sudo snap install --classic concierge
   sudo concierge prepare -p microk8s
 
 suites:
-  spread/: 
+  tests/spread/: 
     summary: tutorial test
     systems:
       - ubuntu-24.04-64
-
 

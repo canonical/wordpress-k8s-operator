@@ -87,47 +87,6 @@ def extract_commands_from_markdown(file_path):
     
     return commands
 
-
-def process_commands_with_waits(commands):
-    """
-    Process commands to add juju wait-for commands after juju deploy commands.
-    
-    Args:
-        commands: List of command strings
-        
-    Returns:
-        List of commands with wait-for commands inserted
-    """
-    processed = []
-    pending_deploys = []
-    
-    for command in commands:
-        # Check if this is a juju deploy command
-        if command.strip().startswith('juju deploy'):
-            # Extract the application name (first arg after 'juju deploy', before any options)
-            parts = command.strip().split()
-            if len(parts) >= 3:
-                app_name = parts[2]
-                pending_deploys.append(app_name)
-            processed.append(command)
-        else:
-            # Not a deploy command, so flush any pending wait-for commands
-            if pending_deploys:
-                for app_name in pending_deploys:
-                    wait_cmd = f"juju wait-for application {app_name} --query='status==\"active\"' --timeout 10m"
-                    processed.append(wait_cmd)
-                pending_deploys = []
-            processed.append(command)
-    
-    # Flush any remaining pending wait-for commands at the end
-    if pending_deploys:
-        for app_name in pending_deploys:
-            wait_cmd = f"juju wait-for application {app_name} --query='status==\"active\"' --timeout 10m"
-            processed.append(wait_cmd)
-    
-    return processed
-
-
 def write_task_yaml(commands, output_path="task.yaml"):
     """
     Write extracted commands to a task.yaml file.
@@ -136,8 +95,6 @@ def write_task_yaml(commands, output_path="task.yaml"):
         commands: List of command strings to write
         output_path: Path to the output YAML file
     """
-    # Process commands to add wait-for commands
-    commands = process_commands_with_waits(commands)
     
     with open(output_path, 'w', encoding='utf-8') as f:
         # Write the header

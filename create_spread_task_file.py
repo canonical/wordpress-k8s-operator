@@ -1,3 +1,6 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 #!/usr/bin/env python3
 """
 Extract commands from markdown files.

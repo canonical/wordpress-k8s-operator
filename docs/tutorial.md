@@ -171,7 +171,7 @@ Password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 Now let's access the WordPress application in a browser. First, grab the IP address of the WordPress charm unit:
 
 ```
-UNIT_IP=$(juju status --format json | jq -r '.applications.wordpress-k8s.units."wordpress-k8s/0"."address"')
+UNIT_IP=$(juju status --format json | jq -r '.applications.wordpress-k8s.units."wordpress-k8s/0".address')
 ```
 
 Test that the application is reachable using `curl`:

@@ -3,16 +3,6 @@ project: wordpress-k8s-operator
 path: /wordpress-k8s-operator
 environment:
   PROJECT_PATH: /wordpress-k8s-operator
-  PROVIDER: microk8s
-  CHARMCRAFT_CHANNEL: latest/stable
-  JUJU_CHANNEL: 3/stable
-  LXD_CHANNEL: latest/stable
-  MICROK8S_CHANNEL: 1.28-strict/stable
-  MICROK8S_ADDONS: hostpath-storage
-
-  JUJU_BOOTSTRAP_OPTIONS: --model-default test-mode=true --model-default automatically-retry-hooks=false --model-default
-  JUJU_EXTRA_BOOTSTRAP_OPTIONS: ""
-  JUJU_BOOTSTRAP_CONSTRAINTS: ""
 
   # important to ensure adhoc and linode/qemu behave the same
   SUDO_USER: ""

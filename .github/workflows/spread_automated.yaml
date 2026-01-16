@@ -1,6 +1,6 @@
-# This is a workflow to validate the auto-generated task.yaml file
+# This is a workflow to generate materials and run a Spread test on the tutorial
 
-name: 'validate Spread test'
+name: 'Test the tutorial with Spread'
 
 on:
   workflow_dispatch:

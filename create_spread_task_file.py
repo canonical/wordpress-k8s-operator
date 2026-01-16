@@ -113,11 +113,25 @@ def write_task_yaml(commands, output_path="task.yaml"):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python extract_commands.py <markdown_file>")
+        print("Usage: python extract_commands.py <markdown_file> [output_path]")
         print("Example: python extract_commands.py docs/tutorial.md")
+        print("Example: python extract_commands.py docs/tutorial.md tests/spread/tutorial/task.yaml")
+        print("Example: python extract_commands.py docs/tutorial.md tests/spread/tutorial/")
         sys.exit(1)
     
     file_path = sys.argv[1]
+    
+    # Get output path from command line or use default
+    if len(sys.argv) >= 3:
+        output_path = sys.argv[2]
+        # If output_path is a directory, append task.yaml
+        import os
+        if os.path.isdir(output_path) or output_path.endswith('/'):
+            output_file = os.path.join(output_path, "task.yaml")
+        else:
+            output_file = output_path
+    else:
+        output_file = "task.yaml"
     
     try:
         commands = extract_commands_from_markdown(file_path)
@@ -131,7 +145,6 @@ def main():
             print()
         
         # Write commands to task.yaml
-        output_file = "task.yaml"
         write_task_yaml(commands, output_file)
         print(f"\nCommands written to {output_file}")
         

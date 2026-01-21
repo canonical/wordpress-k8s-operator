@@ -1,0 +1,17 @@
+# This is a workflow to generate materials and run a Spread test on the tutorial
+
+name: 'Test the tutorial with Spread'
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/tutorial.md'
+
+jobs:
+  create-run-spread:
+    uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@spread-test-workflow
+    secrets: inherit
+

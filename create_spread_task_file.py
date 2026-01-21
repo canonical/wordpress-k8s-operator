@@ -14,18 +14,62 @@ import sys
 import re
 
 
+def extract_spread_comments(content):
+    """
+    Extract all SPREAD comment blocks from markdown content.
+    
+    Args:
+        content: Markdown content as string
+        
+    Returns:
+        List of tuples (position, command_string) for SPREAD blocks
+        
+    Raises:
+        ValueError: If a SPREAD comment block is not properly closed
+    """
+    spread_blocks = []
+    pattern = r'<!-- SPREAD\n(.*?)-->'
+    
+    # First check for unclosed SPREAD blocks
+    unclosed_pattern = r'<!-- SPREAD(?!\n.*?-->)'
+    unclosed_matches = list(re.finditer(unclosed_pattern, content, re.DOTALL))
+    
+    # More precise check: find all <!-- SPREAD and verify each has a closing -->
+    spread_starts = [m.start() for m in re.finditer(r'<!-- SPREAD', content)]
+    for start_pos in spread_starts:
+        # Look for --> after this position
+        remaining_content = content[start_pos:]
+        if '-->' not in remaining_content:
+            raise ValueError(f"Unclosed SPREAD comment block found at position {start_pos}")
+        # Check if --> appears before the next <!-- SPREAD (if any)
+        next_spread = remaining_content.find('<!-- SPREAD', 1)
+        closing_pos = remaining_content.find('-->')
+        if next_spread != -1 and closing_pos > next_spread:
+            raise ValueError(f"Unclosed SPREAD comment block found at position {start_pos}")
+    
+    for match in re.finditer(pattern, content, re.DOTALL):
+        command_content = match.group(1).strip()
+        if command_content:
+            spread_blocks.append((match.start(), command_content))
+    
+    return spread_blocks
+
+
 def extract_commands_from_markdown(file_path):
     """
-    Extract all commands from code blocks in a markdown file.
+    Extract all commands from code blocks and SPREAD comments in a markdown file.
     
     Args:
         file_path: Path to the markdown file
         
     Returns:
-        List of command strings found in code blocks
+        List of command strings found in code blocks and SPREAD comments, in document order
     """
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
+    
+    # Extract SPREAD comment blocks first (these are never excluded)
+    spread_blocks = extract_spread_comments(content)
     
     # Find sections to exclude: "What you'll need", "Requirements", or "Prerequisites"
     excluded_section_ranges = []
@@ -67,7 +111,7 @@ def extract_commands_from_markdown(file_path):
     pattern = r'(?<!`)```(?!`)([^\n]*)\n(.*?)(?<!`)```(?!`)'
     matches = re.finditer(pattern, content, re.DOTALL)
     
-    commands = []
+    code_blocks = []
     for match in matches:
         lang_identifier = match.group(1)
         code_content = match.group(2)
@@ -84,9 +128,16 @@ def extract_commands_from_markdown(file_path):
         if is_nested:
             continue
         
-        # Add non-empty code content
+        # Add non-empty code content with its position
         if code_content.strip():
-            commands.append(code_content.strip())
+            code_blocks.append((match_start, code_content.strip()))
+    
+    # Combine code blocks and SPREAD blocks, then sort by position
+    all_blocks = code_blocks + spread_blocks
+    all_blocks.sort(key=lambda x: x[0])
+    
+    # Extract just the command content, maintaining order
+    commands = [content for position, content in all_blocks]
     
     return commands
 

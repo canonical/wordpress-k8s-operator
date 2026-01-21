@@ -100,12 +100,10 @@ juju integrate wordpress-k8s mysql-k8s:database
 
 The `database` interface is required since `mysql-k8s` charm provides multiple compatible interfaces.
 
-Wait for the charms to finish deploying:
-
-```
+<!-- SPREAD
 juju wait-for application wordpress-k8s --query='status=="active"' --timeout 10m
 juju wait-for application mysql-k8s --query='status=="active"' --timeout 10m
-```
+-->
 
 Run `juju status` to check the current status of the deployment. The output should be similar to the following:
 
@@ -175,11 +173,9 @@ the WordPress charm unit in an environment variable:
 UNIT_IP=$(juju status --format json | jq -r '.applications."wordpress-k8s".units."wordpress-k8s/0".address')
 ```
 
-Test that the application is reachable using `curl`:
-
-```
+<!-- SPREAD
 curl http://$UNIT_IP/wp-login.php
-```
+-->
 
 Now access the WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the
 admin username and password from the previous action.

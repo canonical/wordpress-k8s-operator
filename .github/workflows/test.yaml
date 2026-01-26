@@ -12,28 +12,8 @@ jobs:
     with:
       self-hosted-runner: false
       with-uv: true
-#  integration-test:
-#    name: Integration Test
-#    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@install-refresh
-#    secrets: inherit
-#    with:
-#      extra-arguments: >-
-#        --openstack-rc=${GITHUB_WORKSPACE}/openrc
-#        --kube-config=${GITHUB_WORKSPACE}/kube-config
-#        --screenshot-dir=/tmp
-#      modules: '["test_addon", "test_core", "test_external", "test_ingress"]'
-#      pre-run-script: |
-#        -c "sudo microk8s enable hostpath-storage
-#          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-#          sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config
-#          chmod +x tests/integration/pre_run_script.sh
-#          ./tests/integration/pre_run_script.sh"
-#      setup-devstack-swift: true
-#      trivy-image-config: ./trivy.yaml
-#      channel: 1.32/stable
-#      with-uv: true
-  integration-test-juju3:
-    name: Integration Test on Juju3
+  integration-test:
+    name: Integration Test
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@install-refresh
     secrets: inherit
     with:
@@ -41,22 +21,42 @@ jobs:
         --openstack-rc=${GITHUB_WORKSPACE}/openrc
         --kube-config=${GITHUB_WORKSPACE}/kube-config
         --screenshot-dir=/tmp
-      juju-channel: 3/stable
-      channel: 1.32-strict/stable
-      modules: '["test_addon", "test_core", "test_cos_grafana", "test_cos_loki", "test_cos_prometheus"]'
+      modules: '["test_addon", "test_core", "test_external", "test_ingress"]'
       pre-run-script: |
         -c "sudo microk8s enable hostpath-storage
           sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
           sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config
-          chmod +x tests/integration/pre_run_script_juju3.sh
-          ./tests/integration/pre_run_script_juju3.sh"
-      test-tox-env: "integration-juju3"
+          chmod +x tests/integration/pre_run_script.sh
+          ./tests/integration/pre_run_script.sh"
       setup-devstack-swift: true
       trivy-image-config: ./trivy.yaml
+      channel: 1.32/stable
       with-uv: true
+#  integration-test-juju3:
+#    name: Integration Test on Juju3
+#    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@install-refresh
+#    secrets: inherit
+#    with:
+#      extra-arguments: >-
+#        --openstack-rc=${GITHUB_WORKSPACE}/openrc
+#        --kube-config=${GITHUB_WORKSPACE}/kube-config
+#        --screenshot-dir=/tmp
+#      juju-channel: 3/stable
+#      channel: 1.32-strict/stable
+#      modules: '["test_addon", "test_core", "test_cos_grafana", "test_cos_loki", "test_cos_prometheus"]'
+#      pre-run-script: |
+#        -c "sudo microk8s enable hostpath-storage
+#          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
+#          sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config
+#          chmod +x tests/integration/pre_run_script_juju3.sh
+#          ./tests/integration/pre_run_script_juju3.sh"
+#      test-tox-env: "integration-juju3"
+#      setup-devstack-swift: true
+#      trivy-image-config: ./trivy.yaml
+#      with-uv: true
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
-#    - integration-test
-    - integration-test-juju3
+    - integration-test
+#    - integration-test-juju3
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

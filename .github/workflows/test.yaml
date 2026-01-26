@@ -32,10 +32,8 @@ jobs:
 #      trivy-image-config: ./trivy.yaml
 #      channel: 1.32/stable
 #      with-uv: true
-#  integration-test-juju3:
-#    name: Integration Test on Juju3
-  integration-test:
-    name: Integration Test
+  integration-test-juju3:
+    name: Integration Test on Juju3
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@install-refresh
     secrets: inherit
     with:
@@ -59,6 +57,6 @@ jobs:
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
-    - integration-test
-#    - integration-test-juju3
+#    - integration-test
+    - integration-test-juju3
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

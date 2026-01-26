@@ -57,6 +57,6 @@ jobs:
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
-    - integration-test
+#    - integration-test
     - integration-test-juju3
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

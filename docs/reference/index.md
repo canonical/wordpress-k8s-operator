@@ -13,6 +13,7 @@ the WordPress charm.
 
 ```{toctree}
 actions.md
+charm-architecture
 configurations.md
 external-access
 plugins

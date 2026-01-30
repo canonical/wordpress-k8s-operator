@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2025-12-18
+
+- feat: Add resource-centre theme to WordPress charm
+
 ## 2025-12-17
 
 - docs: Moved architecture documentation from Explanation to Reference category.

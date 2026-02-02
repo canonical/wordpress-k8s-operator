@@ -12,9 +12,10 @@ on:
 
 jobs:
   create-run-spread:
-    uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@spread-test-workflow
+    uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@main
     secrets: inherit
     with:
       input-file: docs/tutorial.md
       output-dir: tests/spread/tutorial/
+      spread-job: github-ci:ubuntu-24.04-64:tests/spread/tutorial
 

@@ -11,6 +11,14 @@ myst:
 The `wordpress-k8s` charm helps deploy a horizontally scalable WordPress application. This
 tutorial will walk you through each step to achieve a basic WordPress deployment.
 
+## What you'll do
+
+1. Deploy the [WordPress K8s charm](https://charmhub.io/wordpress-k8s)
+2. Deploy and integrate a database
+3. Get admin credentials
+4. Access the WordPress instance
+5. Clean up the environment
+
 ## What you'll need
 
 You will need a working station, e.g., a laptop, with AMD64 architecture. Your working station
@@ -49,16 +57,6 @@ If Concierge did not perform the bootstrap, run:
 juju bootstrap microk8s tutorial-controller
 ```
 
-## What you'll do
-
-1. Deploy the [WordPress K8s charm](https://charmhub.io/wordpress-k8s)
-2. Deploy and integrate a database
-3. Get admin credentials
-4. Access the WordPress instance
-5. Clean up the environment
-
-## Set up the environment
-
 To be able to work inside the Multipass VM, log in with the following command:
 
 ```bash
@@ -69,9 +67,10 @@ multipass shell charm-tutorial-vm
 If you're working locally, you don't need to do this step.
 ```
 
+## Set up the environment
+
 To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model in the MicroK8s controller using the following command:
-
 
 ```
 juju add-model wordpress-tutorial
@@ -90,9 +89,9 @@ juju deploy wordpress-k8s
 
 Deployment of WordPress requires a relational database. The integration with the
 `mysql` {ref}`interface <juju:relation>` is required by the `wordpress-k8s`
-charm and hence, [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm will be used.
+charm, so we will use the [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm.
 
-The following commands deploy the `mysql-k8s` charm and integrate it with the `wordpress-k8s` charm.
+Let's deploy the `mysql-k8s` charm and integrate it with the `wordpress-k8s` charm:
 
 ```
 juju deploy mysql-k8s --trust
@@ -101,9 +100,16 @@ juju integrate wordpress-k8s mysql-k8s:database
 
 The `database` interface is required since `mysql-k8s` charm provides multiple compatible interfaces.
 
-Run `juju status` to see the current status of the deployment. The output should be similar to the following:
+<!-- SPREAD
+juju wait-for application wordpress-k8s --query='status=="active"' --timeout 10m
+juju wait-for application mysql-k8s --query='status=="active"' --timeout 10m
+-->
 
-```
+Run `juju status` to check the current status of the deployment. The output should be similar to the following:
+
+```{terminal}
+:output-only:
+
 Model               Controller          Cloud/Region        Version  SLA          Timestamp
 wordpress-tutorial  microk8s-localhost  microk8s/localhost  3.5.3    unsupported  18:48:09Z
 
@@ -116,7 +122,7 @@ mysql-k8s/0*      active    idle   10.1.200.163         Primary
 wordpress-k8s/0*  active    idle   10.1.200.161
 ```
 
-The deployment finishes when the status shows "Active" for both the WordPress and MySQL charms.
+When the status shows "Active" for both the WordPress and MySQL charms, the deployment is considered finished.
 
 ## Get admin credentials 
 
@@ -133,7 +139,9 @@ juju run wordpress-k8s/0 get-initial-password
 
 The result should look something similar to the contents below:
 
-```
+```{terminal}
+:output-only:
+
 Running operation 1 with 1 task
   - task 2 on unit-wordpress-k8s-0
 
@@ -158,11 +166,23 @@ Password should look something like: `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  ```
 ````
 
-You can now access your WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the admin username and password from the previous action.
+Now let's access the WordPress application in a browser. First, save the IP address of
+the WordPress charm unit in an environment variable:
+
+```
+UNIT_IP=$(juju status --format json | jq -r '.applications."wordpress-k8s".units."wordpress-k8s/0".address')
+```
+
+<!-- SPREAD
+curl http://$UNIT_IP/wp-login.php
+-->
+
+Now access the WordPress application at `http://<UNIT_IP>/wp-login.php` and log in with the
+admin username and password from the previous action.
 
 ## Clean up the environment
 
-Congratulations! You have successfully deployed the WordPress charm, added a database, and accessed the application.
+Congratulations! You successfully deployed the WordPress charm, added a database, and accessed the application.
 
 You can clean up your environment by following this guide:
 {ref}`Tear down your test environment <juju:tear-things-down>`

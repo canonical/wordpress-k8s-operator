@@ -9,7 +9,7 @@ on:
       - 'docs/tutorial.md'
 
 jobs:
-  create-run-spread:
+  tutorial-spread-test:
     uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@main
     secrets: inherit
     with:

@@ -4,9 +4,7 @@ name: 'Test the tutorial with Spread'
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  pull_request:
     paths:
       - 'docs/tutorial.md'
 

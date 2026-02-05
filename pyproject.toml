@@ -59,7 +59,7 @@ coverage-report = [
 integration = [
   "allure-pytest>=2.8.18",
   "allure-pytest-collection-report @ git+https://github.com/canonical/data-platform-workflows@v24.0.0#subdirectory=python/pytest_plugins/allure_pytest_collection_report",
-  "juju>=3.6,<4",
+  "juju>=2.9,<3",
   "kubernetes",
   "pillow",
   "pytest==9.0.2",

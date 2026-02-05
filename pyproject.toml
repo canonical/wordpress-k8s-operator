@@ -17,7 +17,7 @@ classifiers = [
 ]
 dependencies = [
   "cosl==1.4.0",
-  "mysql-connector-python==9.6.0",
+  "mysql-connector-python==9.5.0",
   "ops==3.5.1",
   "pydantic==2.12.5",
   "requests==2.32.5",
@@ -59,7 +59,7 @@ coverage-report = [
 integration = [
   "allure-pytest>=2.8.18",
   "allure-pytest-collection-report @ git+https://github.com/canonical/data-platform-workflows@v24.0.0#subdirectory=python/pytest_plugins/allure_pytest_collection_report",
-  "juju>=3.6,<4",
+  "juju>=2.9,<3",
   "kubernetes",
   "pillow",
   "pytest==9.0.2",

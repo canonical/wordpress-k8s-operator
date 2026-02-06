@@ -55,14 +55,18 @@ resources:
 provides:
   metrics-endpoint:
     interface: prometheus_scrape
+    optional: true
   grafana-dashboard:
     interface: grafana_dashboard
+    optional: true
 
 requires:
   database:
     interface: mysql_client
   nginx-route:
     interface: nginx-route
+    optional: true
     limit: 1
   logging:
     interface: loki_push_api
+    optional: true

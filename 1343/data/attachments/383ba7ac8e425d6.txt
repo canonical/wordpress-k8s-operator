@@ -1,0 +1,22 @@
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-f1488-microk8s  microk8s/localhost  2.9.53   unsupported  15:23:48Z
+
+App            Version                  Status  Scale  Charm          Channel     Rev  Address         Exposed  Message
+mysql-k8s      8.0.44-0ubuntu0.22.04.1  active      1  mysql-k8s      8.0/stable  343  10.152.183.28   no       
+wordpress-k8s  6.8.1                    active      1  wordpress-k8s                0  10.152.183.123  no       
+
+Unit              Workload  Agent  Address      Ports  Message
+mysql-k8s/0*      active    idle   10.1.76.142         
+wordpress-k8s/0*  active    idle   10.1.76.140         
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-mysql-k8s-0: 15:20:37 ERROR unit.mysql-k8s/0.juju-log database-peers:1: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 15:20:37 ERROR unit.mysql-k8s/0.juju-log database-peers:1: Failed to reconcile binlogs collection during peer relation event
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...

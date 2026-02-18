@@ -270,6 +270,14 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/themes/xubuntu-website/
+  get-resource-centre:
+    after:
+      - wordpress
+    plugin: dump
+    source: https://github.com/canonical/resource-centre-wordpress-theme.git
+    source-type: git
+    organize:
+      "*": /var/www/html/wp-content/themes/resource-centre/
   # Post-install configuration
   wordpress-configure:
     plugin: nil
@@ -288,6 +296,7 @@ parts:
       - get-wp-theme-ubuntustudio-wp
       - get-wp-theme-launchpad
       - get-wp-theme-xubuntu-website
+      - get-resource-centre
       - get-ubuntu-community-wordpress-theme
     build-environment:
       - IMAGE_RUN_USER_ID: 584792

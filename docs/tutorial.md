@@ -19,6 +19,8 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 4. Access the WordPress instance
 5. Clean up the environment
 
+<!-- SPREAD SKIP -->
+
 ## What you'll need
 
 You will need a working station, e.g., a laptop, with AMD64 architecture. Your working station
@@ -66,6 +68,8 @@ multipass shell charm-tutorial-vm
 ```{note}
 If you're working locally, you don't need to do this step.
 ```
+
+<!-- SPREAD SKIP END -->
 
 ## Set up the environment
 

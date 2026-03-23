@@ -8,7 +8,7 @@ instance to a new charm instance.
 ## Migrate database
 
 Follow the instructions
-in [the MySQL charm migration guide](https://canonical-charmed-mysql.readthedocs-hosted.com/how-to/back-up-and-restore/migrate-a-cluster/)
+in [the MySQL charm migration guide](https://canonical-charmed-mysql.readthedocs-hosted.com/8.0/how-to/back-up-and-restore/migrate-a-cluster/)
 to migrate the content of the WordPress MySQL database.
 
 ## Migrate media files

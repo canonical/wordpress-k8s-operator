@@ -43,6 +43,10 @@ Before making any changes, gather context on the upgrade:
 
 ### 5.4 Step-by-Step Execution
 
+#### Step 5.4.0: Create the Upgrade Branch
+1. From the repository root, create and switch to the upgrade branch: `git checkout -b <target_branch>` using the `target_branch` parameter from Section 4.
+2. All subsequent steps should be executed on this branch.
+
 #### Step 5.4.1: Run the Update Script
 1. Navigate to the `docs/` directory.
 2. Execute the update script by running: `make update` (this triggers `python3 .sphinx/update_sp.py`).
@@ -59,21 +63,25 @@ Before making any changes, gather context on the upgrade:
 #### Step 5.4.4: Reconcile Dependencies (`requirements.txt`)
 Update `docs/requirements.txt` with strict adherence to the following rules:
 * **Strict Pinning:** Every dependency in `docs/requirements.txt` MUST be explicitly pinned to an exact version (e.g., `package==1.2.3`). Do not leave any dependencies unpinned, even if the upstream starter pack does.
-* **Selective Upgrades:** If the update script output or the upstream starter pack indicates a *new* dependency or pins a *newer* version of an existing dependency, update the version in `docs/requirements.txt`.
+* **Selective Upgrades:** The update script's package list is the complete upstream set, not a delta of what changed. Cross-reference it against the existing `docs/requirements.txt` and only act on packages that are genuinely absent or whose version constraint is strictly newer than what is already pinned.
+* **Resolving Loose Constraints:** When the upstream specifies a loose constraint (e.g. `canonical-sphinx~=0.6`), query `https://pypi.org/pypi/<package>/json` to find the latest version satisfying that constraint and pin to it exactly (e.g. `canonical-sphinx==0.6.0`). Never copy a loose constraint verbatim into `requirements.txt`.
 * **Preserve Custom Extensions:** Do not remove custom dependencies that are required by `wordpress-k8s-operator` but are absent in the upstream starter pack (e.g., `sphinxcontrib-mermaid`).
 * **Limit Scope:** ONLY upgrade dependencies that were modified or introduced by the starter pack upgrade. Do NOT proactively upgrade other unrelated dependencies; a separate bot handles general dependency maintenance.
 
 ### 5.5 Validation and Testing
 After applying all file and dependency updates, verify that the documentation builds and passes all checks. Execute the following commands from the `docs/` directory:
 
-1. **Environment Setup:** Run `make install` to rebuild the virtual environment using the reconciled `requirements.txt`.
+1. **Environment Setup:** Run `make clean` first to remove the existing virtual environment and build artefacts. This is required because `make install` is a no-op when the venv directory already exists, so without this step the updated `requirements.txt` would be silently ignored. Then run `make install` to rebuild the virtual environment from scratch.
 2. **Build Documentation:** Run `make html`. The build must succeed without any Sphinx warnings or errors.
 3. **Run Automated Linting Checks:**
     * Run `make spelling`
     * Run `make woke`
     * Run `make linkcheck`
     * Run `make vale`
-4. **Fixing Failures:** If the linting or spelling checks fail due to new upstream rules (false positives), resolve them by appending the flagged words to `docs/.custom_wordlist.txt`.
+4. **Fixing Failures:** Use the following triage rules depending on which check fails:
+    * **`make spelling` / `make vale` (false positive):** If Vale or the spelling check flags a word that is correct per the Canonical style guide (a false positive), append it to `docs/.custom_wordlist.txt`.
+    * **`make vale` (real content error):** If Vale flags a genuine content issue (e.g. a product name missing a required qualifier like `Ubuntu 20.04` → `Ubuntu 20.04 LTS`), fix the content directly. Do not add real errors to the wordlist.
+    * **`make linkcheck` (broken link):** Run `git diff HEAD` on the affected file to determine whether the broken link predates this upgrade. If pre-existing, fix the URL to point to the correct current location. Only add a URL to `linkcheck_ignore` in `docs/conf.py` for links that are structurally correct but transiently unreachable (e.g. rate-limited). If the broken link was introduced by this upgrade, fix it before committing.
 
 ### 5.6 Cleanup and Finalization
 1. **Clean Temporary Files:** Delete the temporary `docs/.sphinx/update/` directory and the `docs/NEWFILES.txt` file.

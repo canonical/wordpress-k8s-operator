@@ -46,3 +46,9 @@ reference/index
 explanation/index
 changelog
 ```
+
+```{toctree}
+:hidden:
+
+contribute/index
+```

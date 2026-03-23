@@ -226,6 +226,7 @@ templates_path = [".sphinx/_templates"]
 
 redirects = {
     "explanation/charm-architecture": "reference/charm-architecture",
+    "how-to/contribute": "/contribute/documentation",
 }
 
 

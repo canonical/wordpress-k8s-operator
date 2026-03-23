@@ -35,10 +35,6 @@ and using the WordPress charm.
 * [Upgrade]
 * [Redeploy]
 
-## Development
-
-* [Contribute]
-
 <!--Links-->
 [Retrieve initial credentials]: retrieve-initial-credentials.md
 [Configure initial settings]: configure-initial-settings.md
@@ -52,7 +48,6 @@ and using the WordPress charm.
 [Rotate secrets]: rotate-secrets.md
 [Upgrade]: upgrade.md
 [Redeploy]: redeploy.md
-[Contribute]: contribute.md
 
 ```{toctree}
 :hidden:
@@ -69,5 +64,4 @@ Enable WAF <enable-waf.md>
 Rotate secrets <rotate-secrets.md>
 Upgrade <upgrade.md>
 Redeploy <redeploy.md>
-Contribute <contribute.md>
 ```

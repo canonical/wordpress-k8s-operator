@@ -1,6 +1,6 @@
 (how_to_contribute)=
 
-# How to contribute
+# Contribute to this documentation
 
 ```{note}
 See [CONTRIBUTING.md](https://github.com/canonical/wordpress-k8s-operator/blob/main/CONTRIBUTING.md)

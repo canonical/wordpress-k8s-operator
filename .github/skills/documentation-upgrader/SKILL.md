@@ -85,7 +85,8 @@ After applying all file and dependency updates, verify that the documentation bu
 
 ### 5.6 Cleanup and Finalization
 1. **Clean Temporary Files:** Delete the temporary `docs/.sphinx/update/` directory and the `docs/NEWFILES.txt` file.
-2. **Commit Changes:** Stage your changes and create a git commit using the target branch and commit message parameters.
+2. **Update Changelog:** Check for a changelog file at `docs/changelog.md` first; if it does not exist, fall back to `CHANGELOG.md` in the repository root. If neither exists, skip this step. Add a new entry modelled after the most recent existing entry for structure and date formatting. The entry should note the old and new starter pack versions, the dependency changes made to `requirements.txt`, and any content or linting fixes applied during the upgrade.
+3. **Commit Changes:** Stage your changes and create a git commit using the target branch and commit message parameters.
 
 ---
 

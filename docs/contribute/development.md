@@ -20,11 +20,6 @@ This document explains the processes and practices recommended for contributing 
 - For further information on contributing, please refer to our
   [Contributing Guide](https://github.com/canonical/is-charms-contributing-guide).
 
-## Code of conduct
-
-When contributing, you must abide by the
-[Ubuntu Code of Conduct](https://ubuntu.com/community/ethos/code-of-conduct).
-
 ## Changelog
 
 Please ensure that any new feature, fix, or significant change is documented by

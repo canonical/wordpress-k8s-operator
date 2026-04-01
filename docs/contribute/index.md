@@ -14,7 +14,6 @@ expectations and practices for participating in the project.
 
 The Platform Engineering team at Canonical sets the direction and priorities
 of the WordPress Operator. 
-
 Please consider the following documents before contributing to this project.
 
 ### Ubuntu Code of Conduct
@@ -48,6 +47,14 @@ All commits in a pull request must have cryptographic (verified) signatures.
 To add signatures on your commits, follow the
 [GitHub documentation](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
 
+```{include} contribute_ways.md
+```
+
+```{include} contribute_submissions.md
+```
+
+```{include} contribute_ai.md
+```
 
 ```{toctree}
 :hidden:

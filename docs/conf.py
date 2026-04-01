@@ -296,6 +296,7 @@ extensions = [
 
 exclude_patterns = [
     "doc-cheat-sheet*",
+    "contribute/contribute_*.md",
 ]
 
 # Adds custom CSS files, located under 'html_static_path'

@@ -2,11 +2,6 @@
 
 # Contribute to this documentation
 
-```{note}
-See [CONTRIBUTING.md](https://github.com/canonical/wordpress-k8s-operator/blob/main/CONTRIBUTING.md)
-for information on contributing to the source code.
-```
-
 Our documentation is stored in the `docs` directory alongside the [source code on GitHub](https://github.com/canonical/wordpress-k8s-operator/).
 It is based on the Canonical starter pack
 and hosted on [Read the Docs](https://about.readthedocs.com/). In structuring,

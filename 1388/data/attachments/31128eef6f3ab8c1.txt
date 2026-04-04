@@ -1,0 +1,4 @@
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] blocked: failed to install theme 'invalid-theme-sgkeahrgalejr'

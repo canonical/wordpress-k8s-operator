@@ -1,0 +1,26 @@
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2631 Waiting for model:
+  wordpress-k8s/0 [idle] blocked: failed to install plugin 'invalid-plugin-sgkeahrgalejr'
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-7b2f5-microk8s  microk8s/localhost  2.9.56   unsupported  15:30:46Z
+
+App            Version  Status  Scale  Charm          Channel     Rev  Address         Exposed  Message
+mysql-k8s      8.0.44   active      1  mysql-k8s      8.0/stable  400  10.152.183.132  no       
+wordpress-k8s  6.8.1    active      1  wordpress-k8s                0  10.152.183.52   no       
+
+Unit              Workload  Agent  Address       Ports  Message
+mysql-k8s/0*      active    idle   10.1.166.142         Primary
+wordpress-k8s/0*  active    idle   10.1.166.140         
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-mysql-k8s-0: 15:22:49 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 15:22:50 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 15:22:53 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster labels
+unit-mysql-k8s-0: 15:23:13 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster labels
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...

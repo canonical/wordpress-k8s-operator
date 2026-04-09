@@ -1,5 +1,3 @@
-### AI
-
 You are free to use any tools you want while preparing your contribution, including
 AI, provided that you do so lawfully and ethically.
 

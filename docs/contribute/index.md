@@ -53,7 +53,9 @@ To add signatures on your commits, follow the
 ```{include} contribute_submissions.md
 ```
 
-```{include} contribute_ai.md
+### AI
+
+```{include} ../reuse/contribute/contribute_ai.md
 ```
 
 ```{toctree}

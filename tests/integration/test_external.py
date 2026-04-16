@@ -7,7 +7,6 @@ import os
 import secrets
 
 import pytest
-from pytest import Config
 
 from tests.integration.helper import WordpressApp, WordpressClient
 

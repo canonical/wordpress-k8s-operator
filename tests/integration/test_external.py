@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for WordPress charm external service integration."""
-
+import os
 import secrets
 
 import pytest
@@ -15,16 +15,15 @@ from tests.integration.helper import WordpressApp, WordpressClient
 @pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
 async def test_akismet_plugin(
     wordpress: WordpressApp,
-    pytestconfig: Config,
 ):
     """
     arrange: after WordPress charm has been deployed, db relation established.
     act: update charm configuration for Akismet plugin.
     assert: Akismet plugin should be activated and spam detection function should be working.
     """
-    akismet_api_key = pytestconfig.getoption("--akismet-api-key")
+    akismet_api_key = os.environ.get("TEST_AKISMET_API_KEY")
     if not akismet_api_key:
-        raise ValueError("--akismet-api-key is required for running this test")
+        raise ValueError("TEST_AKISMET_API_KEY env is required for running this test")
 
     await wordpress.set_config({"wp_plugin_akismet_key": akismet_api_key})
     await wordpress.wait_for_wordpress_idle(status="active")
@@ -49,22 +48,21 @@ async def test_akismet_plugin(
 @pytest.mark.usefixtures("prepare_mysql")
 async def test_openid_plugin(
     wordpress: WordpressApp,
-    pytestconfig: Config,
 ):
     """
     arrange: after WordPress charm has been deployed, db relation established.
     act: update charm configuration for OpenID plugin.
     assert: A WordPress user should be created with correct roles according to the config.
     """
-    openid_username = pytestconfig.getoption("--openid-username")
+    openid_username = os.environ.get("TEST_OPENID_USERNAME")
     if not openid_username:
-        raise ValueError("--openid-username is required for running this test")
-    openid_password = pytestconfig.getoption("--openid-password")
+        raise ValueError("TEST_OPENID_USERNAME env is required for running this test")
+    openid_password = pytestconfig.getoption("TEST_OPENID_PASSWORD")
     if not openid_password:
-        raise ValueError("--openid-password is required for running this test")
-    launchpad_team = pytestconfig.getoption("--launchpad-team")
+        raise ValueError("TEST_OPENID_PASSWORD env is required for running this test")
+    launchpad_team = pytestconfig.getoption("TEST_OPENID_PASSWORD")
     if not launchpad_team:
-        raise ValueError("--launchpad-team is required for running this test")
+        raise ValueError("TEST_OPENID_PASSWORD is required for running this test")
     await wordpress.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})
     await wordpress.wait_for_wordpress_idle(status="active")
 

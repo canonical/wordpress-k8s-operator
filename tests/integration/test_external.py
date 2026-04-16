@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for WordPress charm external service integration."""
+
 import os
 import secrets
 

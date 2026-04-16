@@ -57,10 +57,10 @@ async def test_openid_plugin(
     openid_username = os.environ.get("TEST_OPENID_USERNAME")
     if not openid_username:
         raise ValueError("TEST_OPENID_USERNAME env is required for running this test")
-    openid_password = pytestconfig.getoption("TEST_OPENID_PASSWORD")
+    openid_password = os.environ.get("TEST_OPENID_PASSWORD")
     if not openid_password:
         raise ValueError("TEST_OPENID_PASSWORD env is required for running this test")
-    launchpad_team = pytestconfig.getoption("TEST_OPENID_PASSWORD")
+    launchpad_team = os.environ.get("TEST_OPENID_PASSWORD")
     if not launchpad_team:
         raise ValueError("TEST_OPENID_PASSWORD is required for running this test")
     await wordpress.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})

@@ -8,15 +8,24 @@ myst:
 
 # How-to guides
 
-The following guides cover key processes and common tasks for managing
-and using the WordPress charm.
+These guides cover key processes and common tasks across the full operations
+lifecycle of the WordPress charm. Whether you are standing up a new deployment
+or maintaining one in production, each guide focuses on a specific task and
+assumes you have a running Juju environment.
 
 ## Initial setup
+
+These guides walk you through the first steps after deploying the charm, giving
+you the credentials and baseline configuration needed before the site is ready
+to serve traffic.
 
 * [Retrieve initial credentials]
 * [Configure initial settings]
 
 ## Basic operations
+
+These guides cover the day-to-day operational tasks that keep a WordPress
+deployment running and integrated with the rest of your infrastructure.
 
 * [Configure hostname]
 * [Configure object storage]
@@ -26,17 +35,20 @@ and using the WordPress charm.
 
 ## Security
 
+These guides help you harden your WordPress deployment against spam, malicious
+traffic, and credential exposure. Apply them as a set for a defence-in-depth posture.
+
 * [Enable antispam]
 * [Enable WAF]
 * [Rotate secrets]
 
-## Upgrade and redeployment 
+## Maintenance and development
+
+These guides cover keeping the charm up to date, recovering from a broken
+deployment, and contributing improvements back to the project.
 
 * [Upgrade]
 * [Redeploy]
-
-## Development
-
 * [Contribute]
 
 <!--Links-->

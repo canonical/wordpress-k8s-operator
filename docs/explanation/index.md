@@ -8,8 +8,10 @@ myst:
 
 # Explanation
 
-The pages in this section provide additional context and deeper understanding of
-foundational topics and concepts relevant to the WordPress charm.
+The page in this section provides additional context and deeper understanding of
+a foundational topic relevant to the WordPress charm. By reading it, you will
+gain a clearer picture of how the charm approaches security and why its design
+choices matter for production deployments.
 
 ```{toctree}
 :maxdepth: 1

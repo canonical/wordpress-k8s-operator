@@ -1,9 +1,9 @@
 ---
-name: landing-page-helper
+name: diataxis-landing-page-helper
 description: To create or update documentation landing pages that organize content by functional domains, ensuring a professional, balanced aesthetic while adhering to the Diataxis framework.
 ---
 
-# SKILL: Information Architecture for Documentation Landing Pages
+# SKILL: Information Architecture for Diataxis-Aligned Landing Pages
 
 ## Purpose
 To create or update documentation landing pages that organize content by functional domains, ensuring a professional, balanced aesthetic while adhering to the Diataxis framework.
@@ -15,6 +15,7 @@ To create or update documentation landing pages that organize content by functio
 4.  **Aesthetic Pragmatism:** * If a Diataxis category contains **5 or more files**, use a **Structured** layout with section headers and descriptive text.
     * If a Diataxis category contains **fewer than 5 files**, use a **Flat** layout (simple directory).
 5.  **Avoid Meta-Documentation:** Do not describe the documentation itself (e.g., "This section contains guides on..."). Instead, provide context about the technology, the product lifecycle, or the specific use cases the guides address.
+6.  **US English Standard:** Use American English spelling conventions throughout all generated text (e.g., "behavior," "lifecycle," "organize," "modeling").
 
 ---
 
@@ -47,16 +48,22 @@ When the Rule of Two cannot be met through logical merging, use these specific f
 * **Reference:** "Advanced topics"
 * **Explanation:** "Conceptual deep-dives"
 
-### Step 4: Content Generation
-Regardless of layout or workflow, ensure the following elements are present:
+### Step 4: Content Generation (Split Responsibility Model)
+To ensure the page is both informative and future-proof, follow this distribution of detail:
 
-1.  **Category Description:** A high-level overview of the category’s domain value. Focus on the operational or conceptual goals (e.g., "Manage the lifecycle of your clusters from initial deployment to high-availability scaling"). **Do not use meta-phrases like "These guides cover..."**
-2.  **User Value Assessment:** A brief (1–2 sentence) summary of the technical outcomes or insights the user will gain.
-3.  **Section Narratives (Structured Layout Only):** Write 1–2 sentences of technical context for every domain header. 
-    * **Prohibited phrases:** "This section includes," "These guides explain," "Learn how to," or "Links to."
-    * **Required focus:** Describe the architectural importance, the operational requirement, or the specific use case (e.g., "Maintaining high availability requires a robust monitoring strategy to preemptively identify resource exhaustion").
-4.  **Strategic Guidance:** If a section contains multiple competing options (e.g., two different deployment methods), add a sentence advising the user on how to choose between them based on their environment or requirements.
-5.  **US English Spelling:** Use American English spelling conventions throughout all generated text (e.g., use "behavior" not "behaviour," "organize" not "organise," and "modeling" not "modelling").
+1.  **Initial Quadrant Description (Generic/Future-Proof):** Write a high-level overview of the category’s domain value. 
+    * **Constraint:** Describe the category’s relationship to the product's functional domain as if the category were already fully populated. 
+    * **Prohibited:** Do not refer to the specific number of current files or use their titles. Do not use meta-phrases like "These guides cover..."
+    * *Example:* "Manage the operational lifecycle of your deployment, from initial provisioning to high-availability scaling and maintenance."
+
+2.  **User Value Assessment (Specific/Immediate):** Provide a brief (1–2 sentence) summary of the technical outcomes or insights the user will gain from the *current* set of files. This is the primary home for specific details in a Flat Layout.
+    * *Example:* "You will learn to configure secure network gateways and establish encrypted communication between nodes."
+
+3.  **Section Narratives (Structured Layout Only - Use-Case Focused):** Write 1–2 sentences of technical context for every domain header.
+    * **Focus:** Describe the architectural importance or the specific use case (e.g., "Maintaining system health requires a proactive diagnostic strategy to identify resource bottlenecks before they impact performance").
+    * **Prohibited phrases:** "This section includes," "Learn how to," or "Links to."
+
+4.  **Strategic Guidance:** If a section contains multiple competing options (e.g., two different deployment methods), add a sentence advising the user on how to choose between them based on their requirements.
 
 ---
 

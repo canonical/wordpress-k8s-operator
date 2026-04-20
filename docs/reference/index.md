@@ -14,7 +14,7 @@ extending, or integrating the charm.
 
 ## Configuration and operations
 
-Operators control charm behaviour through configuration options and Juju
+Operators control charm behavior through configuration options and Juju
 actions. Understanding the overall charm architecture provides the structural
 context needed to see how those settings and actions interact at runtime.
 
@@ -35,7 +35,7 @@ integration.
 ## Extensibility
 
 Your WordPress site's functionality is extended through plugins and themes. The charm
-provides specific mechanisms for adding or customizing them within a
+provides mechanisms for adding or customizing them within a
 Juju-managed deployment.
 
 * [Plugins](plugins.md)

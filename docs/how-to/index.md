@@ -36,7 +36,7 @@ deployment healthy and connected to the rest of your infrastructure.
 
 A public-facing WordPress site is exposed to spam, malicious traffic, and
 credential leakage. The charm comes equipped with basic security features
-to provide your deployment with a defense-in-depth posture.
+that help to mitigate these threats.
 
 * [Enable antispam]
 * [Enable WAF]

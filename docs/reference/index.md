@@ -8,16 +8,15 @@ myst:
 
 # Reference
 
-The pages in this section contain technical specifications, API descriptions,
-and architectural details for the WordPress charm. Use them as authoritative
-look-up material when configuring, extending, or integrating the charm.
+Technical specifications, API descriptions, and architectural details for the
+WordPress charm serve as authoritative look-up material when configuring,
+extending, or integrating the charm.
 
 ## Configuration and operations
 
-This section documents the knobs available to operators and the automated
-actions the charm exposes. It also describes the overall charm architecture,
-providing the structural context needed to understand how those settings and
-actions interact at runtime.
+Operators control charm behaviour through configuration options and Juju
+actions. Understanding the overall charm architecture provides the structural
+context needed to see how those settings and actions interact at runtime.
 
 * [Configurations](configurations.md)
 * [Actions](actions.md)
@@ -25,16 +24,19 @@ actions interact at runtime.
 
 ## Connectivity
 
-This section covers how the WordPress charm exposes its service externally and
-how it integrates with other applications through Juju relation endpoints.
+The WordPress charm exposes its service externally and communicates with other
+applications through Juju relation endpoints. Correct connectivity
+configuration is essential for both end-user access and cross-application
+integration.
 
 * [Relation endpoints](relation-endpoints.md)
 * [External access](external-access.md)
 
 ## Extensibility
 
-This section details the plugins and themes that the charm supports, including
-the mechanisms for adding or customising them in your deployment.
+WordPress functionality is extended through plugins and themes. The charm
+provides specific mechanisms for adding or customising them within a
+Juju-managed deployment.
 
 * [Plugins](plugins.md)
 * [Themes](themes.md)

@@ -8,10 +8,10 @@ myst:
 
 # Explanation
 
-The page in this section provides additional context and deeper understanding of
-a foundational topic relevant to the WordPress charm. By reading it, you will
-gain a clearer picture of how the charm approaches security and why its design
-choices matter for production deployments.
+The WordPress charm makes deliberate security architecture and design choices
+that affect every production deployment. Understanding these decisions provides
+the foundation for evaluating risk and applying the charm's hardening options
+effectively.
 
 ```{toctree}
 :maxdepth: 1

@@ -8,24 +8,23 @@ myst:
 
 # How-to guides
 
-These guides cover key processes and common tasks across the full operations
-lifecycle of the WordPress charm. Whether you are standing up a new deployment
-or maintaining one in production, each guide focuses on a specific task and
-assumes you have a running Juju environment.
+Manage the full operations lifecycle of the WordPress charm, from initial
+deployment through production maintenance. Each task assumes a running Juju
+environment.
 
 ## Initial setup
 
-These guides walk you through the first steps after deploying the charm, giving
-you the credentials and baseline configuration needed before the site is ready
-to serve traffic.
+A freshly deployed WordPress charm requires admin credentials and a baseline
+configuration before the site is ready to serve traffic.
 
 * [Retrieve initial credentials]
 * [Configure initial settings]
 
 ## Basic operations
 
-These guides cover the day-to-day operational tasks that keep a WordPress
-deployment running and integrated with the rest of your infrastructure.
+Day-to-day operational tasks — hostname configuration, storage backends, plugin
+and theme management, and observability integration — keep a WordPress
+deployment healthy and connected to the rest of your infrastructure.
 
 * [Configure hostname]
 * [Configure object storage]
@@ -35,8 +34,9 @@ deployment running and integrated with the rest of your infrastructure.
 
 ## Security
 
-These guides help you harden your WordPress deployment against spam, malicious
-traffic, and credential exposure. Apply them as a set for a defence-in-depth posture.
+A public-facing WordPress site is exposed to spam, malicious traffic, and
+credential leakage. Applying antispam filtering, a web application firewall,
+and regular secret rotation together provides a defence-in-depth posture.
 
 * [Enable antispam]
 * [Enable WAF]
@@ -44,8 +44,8 @@ traffic, and credential exposure. Apply them as a set for a defence-in-depth pos
 
 ## Maintenance and development
 
-These guides cover keeping the charm up to date, recovering from a broken
-deployment, and contributing improvements back to the project.
+Charm upgrades, redeployments, and community contributions ensure the WordPress
+operator stays current and benefits from ongoing improvements.
 
 * [Upgrade]
 * [Redeploy]

@@ -3,7 +3,7 @@ name: landing-page-helper
 description: To create or update documentation landing pages that organize content by functional domains, ensuring a professional, balanced aesthetic while adhering to the Diataxis framework.
 ---
 
-# Landing Page Helper Skill
+# SKILL: Information Architecture for Documentation Landing Pages
 
 ## Purpose
 To create or update documentation landing pages that organize content by functional domains, ensuring a professional, balanced aesthetic while adhering to the Diataxis framework.
@@ -14,6 +14,7 @@ To create or update documentation landing pages that organize content by functio
 3.  **The Rule of Two:** A section header must contain at least two documents. If a theme only has one document, it must be merged into a broader related theme.
 4.  **Aesthetic Pragmatism:** * If a Diataxis category contains **5 or more files**, use a **Structured** layout with section headers and descriptive text.
     * If a Diataxis category contains **fewer than 5 files**, use a **Flat** layout (simple directory).
+5.  **Avoid Meta-Documentation:** Do not describe the documentation itself (e.g., "This section contains guides on..."). Instead, provide context about the technology, the product lifecycle, or the specific use cases the guides address.
 
 ---
 
@@ -49,10 +50,12 @@ When the Rule of Two cannot be met through logical merging, use these specific f
 ### Step 4: Content Generation
 Regardless of layout or workflow, ensure the following elements are present:
 
-1.  **Category Description:** A high-level overview of the category’s purpose (e.g., "These guides accompany you through the operations lifecycle...").
-2.  **User Value Assessment:** A brief (1–2 sentence) summary of what the user can expect to achieve or learn from this documentation set.
-3.  **Section Narratives (Structured Layout Only):** For every domain header, write 1–2 sentences of context. Explain *why* these tasks/items are grouped and their significance to the product.
-4.  **Strategic Guidance:** If a section contains multiple competing options (e.g., two different deployment methods), add a sentence advising the user on how to choose between them.
+1.  **Category Description:** A high-level overview of the category’s domain value. Focus on the operational or conceptual goals (e.g., "Manage the lifecycle of your clusters from initial deployment to high-availability scaling"). **Do not use meta-phrases like "These guides cover..."**
+2.  **User Value Assessment:** A brief (1–2 sentence) summary of the technical outcomes or insights the user will gain.
+3.  **Section Narratives (Structured Layout Only):** Write 1–2 sentences of technical context for every domain header. 
+    * **Prohibited phrases:** "This section includes," "These guides explain," "Learn how to," or "Links to."
+    * **Required focus:** Describe the architectural importance, the operational requirement, or the specific use case (e.g., "Maintaining high availability requires a robust monitoring strategy to preemptively identify resource exhaustion").
+4.  **Strategic Guidance:** If a section contains multiple competing options (e.g., two different deployment methods), add a sentence advising the user on how to choose between them based on their environment or requirements.
 
 ---
 

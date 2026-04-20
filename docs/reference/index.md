@@ -8,7 +8,7 @@ myst:
 
 # Reference
 
-Technical specifications, API descriptions, and architectural details for the
+Technical specifications and architectural details for the
 WordPress charm serve as authoritative look-up material when configuring,
 extending, or integrating the charm.
 
@@ -34,8 +34,8 @@ integration.
 
 ## Extensibility
 
-WordPress functionality is extended through plugins and themes. The charm
-provides specific mechanisms for adding or customising them within a
+Your WordPress site's functionality is extended through plugins and themes. The charm
+provides specific mechanisms for adding or customizing them within a
 Juju-managed deployment.
 
 * [Plugins](plugins.md)

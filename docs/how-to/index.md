@@ -9,21 +9,21 @@ myst:
 # How-to guides
 
 Manage the full operations lifecycle of the WordPress charm, from initial
-deployment through production maintenance. Each task assumes a running Juju
-environment.
+deployment through production maintenance. Each guide assumes that you've
+already deployed the charm with Juju.
 
 ## Initial setup
 
-A freshly deployed WordPress charm requires admin credentials and a baseline
-configuration before the site is ready to serve traffic.
+A freshly deployed WordPress charm requires admin credentials and baseline
+configurations before the site is ready to serve traffic.
 
 * [Retrieve initial credentials]
 * [Configure initial settings]
 
 ## Basic operations
 
-Day-to-day operational tasks — hostname configuration, storage backends, plugin
-and theme management, and observability integration — keep a WordPress
+Day-to-day operational tasks -- such as hostname configuration
+and theme management -- keep a WordPress
 deployment healthy and connected to the rest of your infrastructure.
 
 * [Configure hostname]
@@ -35,8 +35,8 @@ deployment healthy and connected to the rest of your infrastructure.
 ## Security
 
 A public-facing WordPress site is exposed to spam, malicious traffic, and
-credential leakage. Applying antispam filtering, a web application firewall,
-and regular secret rotation together provides a defence-in-depth posture.
+credential leakage. The charm comes equipped with basic security features
+to provide your deployment with a defense-in-depth posture.
 
 * [Enable antispam]
 * [Enable WAF]
@@ -44,8 +44,8 @@ and regular secret rotation together provides a defence-in-depth posture.
 
 ## Maintenance and development
 
-Charm upgrades, redeployments, and community contributions ensure the WordPress
-operator stays current and benefits from ongoing improvements.
+Upgrades, redeployments, and community contributions ensure the WordPress
+charm stays current and benefits from ongoing improvements.
 
 * [Upgrade]
 * [Redeploy]

@@ -56,6 +56,7 @@ Regardless of layout or workflow, ensure the following elements are present:
     * **Prohibited phrases:** "This section includes," "These guides explain," "Learn how to," or "Links to."
     * **Required focus:** Describe the architectural importance, the operational requirement, or the specific use case (e.g., "Maintaining high availability requires a robust monitoring strategy to preemptively identify resource exhaustion").
 4.  **Strategic Guidance:** If a section contains multiple competing options (e.g., two different deployment methods), add a sentence advising the user on how to choose between them based on their environment or requirements.
+5.  **US English Spelling:** Use American English spelling conventions throughout all generated text (e.g., use "behavior" not "behaviour," "organize" not "organise," and "modeling" not "modelling").
 
 ---
 

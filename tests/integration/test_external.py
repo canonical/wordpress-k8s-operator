@@ -60,9 +60,9 @@ async def test_openid_plugin(
     openid_password = os.environ.get("TEST_OPENID_PASSWORD")
     if not openid_password:
         raise ValueError("TEST_OPENID_PASSWORD env is required for running this test")
-    launchpad_team = os.environ.get("TEST_OPENID_PASSWORD")
+    launchpad_team = os.environ.get("TEST_LAUNCHPAD_TEAM")
     if not launchpad_team:
-        raise ValueError("TEST_OPENID_PASSWORD is required for running this test")
+        raise ValueError("TEST_LAUNCHPAD_TEAM is required for running this test")
     await wordpress.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})
     await wordpress.wait_for_wordpress_idle(status="active")
 

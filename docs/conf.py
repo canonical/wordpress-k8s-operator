@@ -369,4 +369,5 @@ if os.path.exists('./reuse/substitutions.yaml'):
 intersphinx_mapping = {
     'juju': ("https://documentation.ubuntu.com/juju/3.6/", None),
     'starter-pack': ("https://canonical-starter-pack.readthedocs-hosted.com/stable/", None),
+    'charmed-mysql': ("https://canonical-charmed-mysql.readthedocs-hosted.com/8.0/", None),
 }

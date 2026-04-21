@@ -12,6 +12,10 @@ Each revision is versioned by the date of the revision.
 
 - docs: Added a GitHub workflow and Spread materials for automated testing of the tutorial.
 
+## 2025-12-18
+
+- feat: Add resource-centre theme to WordPress charm
+
 ## 2025-12-17
 
 - docs: Moved architecture documentation from Explanation to Reference category.

@@ -20,6 +20,8 @@ This document explains the processes and practices recommended for contributing 
 ```{include} contribute_develop.md
 ```
 
+## Test
+
 ```{include} ../reuse/contribute/contribute_test.md
 ```
 

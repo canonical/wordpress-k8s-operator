@@ -12,7 +12,7 @@ from tests.integration.helper import WordpressApp, WordpressClient
 
 
 @pytest.mark.requires_secret
-@pytest.mark.usefixtures("prepare_mysql", "prepare_swift")
+@pytest.mark.usefixtures("prepare_mysql")
 async def test_akismet_plugin(
     wordpress: WordpressApp,
 ):

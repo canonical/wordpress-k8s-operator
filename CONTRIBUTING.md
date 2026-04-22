@@ -181,5 +181,3 @@ juju model-config logging-config="<root>=INFO;unit=DEBUG"
 juju deploy ./wordpress-k8s*.charm 
 ```
 
-
-

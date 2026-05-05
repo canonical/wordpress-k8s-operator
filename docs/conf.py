@@ -295,7 +295,11 @@ extensions = [
 
 exclude_patterns = [
     "doc-cheat-sheet*",
+    "jupyter_execute",
 ]
+
+# MyST-NB configuration: disable notebook execution during builds
+nb_execution_mode = "off"
 
 # Adds custom CSS files, located under 'html_static_path'
 
@@ -371,3 +375,21 @@ intersphinx_mapping = {
     'starter-pack': ("https://canonical-starter-pack.readthedocs-hosted.com/stable/", None),
     'charmed-mysql': ("https://canonical-charmed-mysql.readthedocs-hosted.com/8.0/", None),
 }
+
+
+def setup(app):
+    """Set up myst_nb with compatibility fix for canonical_sphinx.
+
+    canonical_sphinx loads myst_parser which registers all myst-related roles,
+    directives, transforms, and config values. When myst_nb subsequently calls
+    setup_myst_parser, it tries to re-register everything, causing conflicts.
+    We work around this by making setup_myst_parser a no-op before loading myst_nb.
+    """
+    import myst_parser.sphinx_ext.main as myst_main
+
+    # canonical_sphinx already called setup_sphinx (via myst_parser), so all myst_parser
+    # roles, directives, transforms, and config values are already registered.
+    # Make it a no-op so myst_nb doesn't re-register them.
+    myst_main.setup_sphinx = lambda app, load_parser=False: None
+
+    app.setup_extension("myst_nb")

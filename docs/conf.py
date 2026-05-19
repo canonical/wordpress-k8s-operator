@@ -31,7 +31,11 @@ author = "Canonical Ltd."
 # Sidebar documentation title; best kept reasonably short
 #
 # TODO: To include a version number, add it here (hardcoded or automated).
-#
+
+# Version
+
+version = f"{os.environ.get('READTHEDOCS_VERSION', 'local')}"
+
 # TODO: To disable the title, set to an empty string.
 
 html_title = project + " documentation"
@@ -168,10 +172,6 @@ if os.getenv("OPENAPI", ""):
 html_theme_options = {
  'source_edit_link': 'https://github.com/canonical/wordpress-k8s-operator',
 }
-
-# Version
-
-version = f"{os.environ.get('READTHEDOCS_VERSION', 'local')}"
 
 # Project slug; see https://meta.discourse.org/t/what-is-category-slug/87897
 #

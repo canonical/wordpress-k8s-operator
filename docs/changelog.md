@@ -10,7 +10,9 @@ Each revision is versioned by the date of the revision.
 
 ## 2026-05-19
 
-- docs: Upgraded documentation infrastructure from sphinx-docs-starter-pack 1.4.1 to sphinx-stack 2.0.
+- docs: Migrated the documentation URL under the Canonical domain.
+
+- docs(charmkeeper): Upgraded documentation infrastructure from sphinx-docs-starter-pack 1.4.1 to sphinx-stack 2.0.
   - Renamed `.sphinx/` directory to `_dev/`.
   - Moved virtual environment from `.sphinx/venv/` to `.venv/`.
   - Moved `_static/` and `_templates/` to docs root.

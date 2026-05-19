@@ -207,8 +207,8 @@ sitemap_excludes = [
 # Template and asset locations
 #######################
 
-html_static_path = [".sphinx/_static"]
-templates_path = [".sphinx/_templates"]
+html_static_path = ["_static"]
+templates_path = ["_templates"]
 
 
 #############
@@ -223,10 +223,17 @@ templates_path = [".sphinx/_templates"]
 
 # NOTE: If undefined, set to None, or empty,
 #       the sphinx_reredirects extension will be disabled.
+# Redirects migrated to redirects.txt for rediraffe extension
 
-redirects = {
-    "explanation/charm-architecture": "reference/charm-architecture",
-}
+redirects = {}
+
+# Add redirects to the 'redirects.txt' file for rediraffe
+# https://sphinxext-rediraffe.readthedocs.io/en/latest/
+
+rediraffe_redirects = "redirects.txt"
+
+# Strips '/index.html' from destination URLs when building with 'dirhtml'
+rediraffe_dir_only = True
 
 
 ###########################
@@ -272,6 +279,7 @@ extensions = [
     "canonical_sphinx",
     "notfound.extension",
     "sphinx_design",
+    "sphinx_rerediraffe",
     "sphinx_reredirects",
     "sphinx_tabs.tabs",
     "sphinxcontrib.jquery",
@@ -295,6 +303,7 @@ extensions = [
 
 exclude_patterns = [
     "doc-cheat-sheet*",
+    ".venv*",
 ]
 
 # Adds custom CSS files, located under 'html_static_path'

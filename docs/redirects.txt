@@ -1,0 +1,9 @@
+# Rediraffe redirects file
+# Format: "old-path" "new-path"
+# See: https://sphinxext-rediraffe.readthedocs.io/en/latest/
+
+# Existing redirects migrated from conf.py sphinx_reredirects
+# Note: sphinx_reredirects is kept for backward compatibility
+# These are duplicated here for rediraffe which is the new default
+
+"explanation/charm-architecture" "reference/charm-architecture"

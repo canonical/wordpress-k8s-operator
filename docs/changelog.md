@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-05-19
+
+- docs: Upgraded documentation infrastructure from sphinx-docs-starter-pack 1.4.1 to sphinx-stack 2.0.
+  - Renamed `.sphinx/` directory to `_dev/`.
+  - Moved virtual environment from `.sphinx/venv/` to `.venv/`.
+  - Moved `_static/` and `_templates/` to docs root.
+  - Updated Makefile with new variable naming conventions.
+  - Added `sphinx-rerediraffe` extension for redirects.
+  - Bumped dependencies: `canonical-sphinx` 0.5.2 → 0.6.0, `sphinx-tabs` 3.4.7 → 3.5.0,
+    `packaging` 25.0 → 26.2, `sphinxcontrib-svg2pdfconverter` 2.0.0 → 2.1.0.
+
 ## 2026-04-20
 
 - docs: Updated landing pages to include more descriptions and organization.

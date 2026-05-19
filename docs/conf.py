@@ -70,7 +70,7 @@ copyright = "%s CC-BY-SA, %s" % (datetime.date.today().year, author)
 # NOTE: The Open Graph Protocol (OGP) enhances page display in a social graph
 #       and is used by social media platforms; see https://ogp.me/
 
-ogp_site_url = "https://documentation.ubuntu.com/wordpress-k8s-charm/"
+ogp_site_url = f"https://canonical.com/juju/docs/wordpress-k8s-charm/{version}/"
 
 
 # Preview name of the documentation website
@@ -169,12 +169,16 @@ html_theme_options = {
  'source_edit_link': 'https://github.com/canonical/wordpress-k8s-operator',
 }
 
+# Version
+
+version = f"{os.environ.get('READTHEDOCS_VERSION', 'local')}"
+
 # Project slug; see https://meta.discourse.org/t/what-is-category-slug/87897
 #
 # TODO: If your documentation is hosted on https://docs.ubuntu.com/,
 #       uncomment and update as needed.
 
-slug = 'wordpress-k8s-charm'
+slug = 'juju/docs'
 
 #######################
 # Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
@@ -182,7 +186,7 @@ slug = 'wordpress-k8s-charm'
 
 # Use RTD canonical URL to ensure duplicate pages have a specific canonical URL
 
-html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
+html_baseurl = f"https://canonical.com/juju/docs/wordpress-k8s-charm/{version}/"
 
 # sphinx-sitemap uses html_baseurl to generate the full URL for each page:
 
@@ -312,7 +316,10 @@ html_css_files = ["https://assets.ubuntu.com/v1/d86746ef-cookie_banner.css"]
 
 # Adds custom JavaScript files, located under 'html_static_path'
 
-html_js_files = ["https://assets.ubuntu.com/v1/287a5e8f-bundle.js"]
+html_js_files = [
+    "https://assets.ubuntu.com/v1/287a5e8f-bundle.js",
+    "js/overwrite_links.js",
+]
 
 # Specifies a reST snippet to be appended to each .rst file
 

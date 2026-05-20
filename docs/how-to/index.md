@@ -64,7 +64,7 @@ charm stays current and benefits from ongoing improvements.
 [Rotate secrets]: rotate-secrets.md
 [Upgrade]: upgrade.md
 [Redeploy]: redeploy.md
-[Contribute]: contribute.md
+[Contribute]: contribute.rst
 
 ```{toctree}
 :hidden:

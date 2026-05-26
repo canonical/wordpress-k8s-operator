@@ -178,7 +178,7 @@ html_theme_options = {
 # TODO: If your documentation is hosted on https://docs.ubuntu.com/,
 #       uncomment and update as needed.
 
-slug = 'juju/docs'
+slug = 'juju/docs/wordpress-k8s-charm'
 
 #######################
 # Sitemap configuration: https://sphinx-sitemap.readthedocs.io/

@@ -1,5 +1,5 @@
  // Replace oldDomain with newDomain
- const oldDomain = 'documentation.ubuntu.com/wordpress-k8s-charm';
+ const oldDomain = 'canonical-wordpress-k8s-juju-charm.readthedocs-hosted.com';
  const newDomain = 'canonical.com/juju/docs/wordpress-k8s-charm';
 
  // Use a MutationObserver to wait for the RTD flyout element to appear in the DOM

@@ -298,8 +298,7 @@ exclude_patterns = [
     "jupyter_execute",
 ]
 
-# MyST-NB configuration: disable notebook execution during builds
-nb_execution_mode = "off"
+nb_execution_mode = "cache"
 
 # Adds custom CSS files, located under 'html_static_path'
 

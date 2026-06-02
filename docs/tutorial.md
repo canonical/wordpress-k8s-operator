@@ -49,8 +49,6 @@ This tutorial requires the following software to be installed on your working st
 Use [Concierge](https://github.com/canonical/concierge) to set up Juju and MicroK8s:
 
 ```{code-cell} bash
-:tags: [skip-execution]
-
 sudo snap install --classic concierge
 sudo concierge prepare -p microk8s
 ```
@@ -90,8 +88,6 @@ To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model in the MicroK8s controller using the following command:
 
 ```{code-cell} bash
-:tags: [skip-execution]
-
 juju add-model wordpress-tutorial
 ```
 
@@ -101,8 +97,6 @@ Start off by deploying the WordPress charm. By default it will deploy the latest
 the `wordpress-k8s` charm.
 
 ```{code-cell} bash
-:tags: [skip-execution]
-
 juju deploy wordpress-k8s
 ```
 
@@ -115,8 +109,6 @@ charm, so we will use the [`mysql-k8s`](https://charmhub.io/mysql-k8s) charm.
 Let's deploy the `mysql-k8s` charm and integrate it with the `wordpress-k8s` charm:
 
 ```{code-cell} bash
-:tags: [skip-execution]
-
 juju deploy mysql-k8s --trust
 juju integrate wordpress-k8s mysql-k8s:database
 ```
@@ -157,8 +149,6 @@ By running the `get-initial-password` action on a `wordpress-k8s` unit, Juju wil
 admin credentials setup for you. You can use the following command below.
 
 ```{code-cell} bash
-:tags: [skip-execution]
-
 juju run wordpress-k8s/0 get-initial-password
 ```
 
@@ -195,8 +185,6 @@ Now let's access the WordPress application in a browser. First, save the IP addr
 the WordPress charm unit in an environment variable:
 
 ```{code-cell} bash
-:tags: [skip-execution]
-
 UNIT_IP=$(juju status --format json | jq -r '.applications."wordpress-k8s".units."wordpress-k8s/0".address')
 ```
 

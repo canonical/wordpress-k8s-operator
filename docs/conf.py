@@ -303,6 +303,7 @@ exclude_patterns = [
 ]
 
 nb_execution_mode = "cache"
+nb_execution_timeout = 3600
 
 # Adds custom CSS files, located under 'html_static_path'
 

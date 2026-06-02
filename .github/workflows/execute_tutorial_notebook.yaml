@@ -1,0 +1,45 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: Execute Tutorial Notebook
+
+on:
+  pull_request:
+
+jobs:
+  execute-notebook:
+    name: Execute Tutorial Notebook
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install notebook dependencies
+        run: |
+          pip install jupytext nbconvert bash_kernel ipykernel
+          python -m bash_kernel.install
+
+      - name: Convert tutorial.md to notebook
+        run: |
+          jupytext --to notebook docs/tutorial.md -o docs/jupyter_execute/tutorial.ipynb
+
+      - name: Execute notebook
+        run: |
+          jupyter nbconvert \
+            --to notebook \
+            --execute \
+            --ExecutePreprocessor.timeout=3600 \
+            --ExecutePreprocessor.kernel_name=bash \
+            docs/jupyter_execute/tutorial.ipynb \
+            --output tutorial.ipynb
+
+      - name: Upload executed notebook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutorial-notebook
+          path: docs/jupyter_execute/tutorial.ipynb

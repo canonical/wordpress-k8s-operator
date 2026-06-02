@@ -1,6 +1,9 @@
 import datetime
 import os
+import sys
 import yaml
+
+sys.path.insert(0, os.path.abspath("_extensions"))
 
 # Configuration for the Sphinx documentation builder.
 # All configuration specific to your project should be done in this file.
@@ -289,6 +292,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_sitemap",
     "sphinxcontrib.mermaid",
+    "fetch_tutorial_notebook",
 ]
 
 # Excludes files or directories from processing

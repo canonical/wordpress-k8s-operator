@@ -14,29 +14,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install notebook dependencies
+      - name: Build docs
         run: |
-          pip install jupytext nbconvert bash_kernel ipykernel
-          python -m bash_kernel.install
-
-      - name: Convert tutorial.md to notebook
-        run: |
-          jupytext --to notebook docs/tutorial.md -o docs/jupyter_execute/tutorial.ipynb
-
-      - name: Execute notebook
-        run: |
-          jupyter nbconvert \
-            --to notebook \
-            --execute \
-            --ExecutePreprocessor.timeout=3600 \
-            --ExecutePreprocessor.kernel_name=bash \
-            docs/jupyter_execute/tutorial.ipynb \
-            --output tutorial.ipynb
+          cd docs && make html
 
       - name: Upload executed notebook artifact
         uses: actions/upload-artifact@v4

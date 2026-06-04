@@ -33,4 +33,4 @@ vale==3.13.0.0
 
 # Additional extensions 
 sphinxcontrib-mermaid==2.0.0
-bash_kernel
+bash_kernel==0.10.0

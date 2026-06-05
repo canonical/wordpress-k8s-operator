@@ -16,11 +16,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install bash kernel
-        run: |
-          pip install bash_kernel
-          python -m bash_kernel.install
-
       - name: Build docs
         run: |
           cd docs && make html

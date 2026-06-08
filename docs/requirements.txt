@@ -2,7 +2,7 @@
 canonical-sphinx==0.5.2
 
 # Extensions previously auto-loaded by canonical-sphinx
-myst-nb==1.1.2
+myst-parser==4.0.1
 sphinx-autobuild==2024.10.3
 sphinx-design==0.6.1
 sphinx-notfound-page==1.1.0
@@ -26,6 +26,7 @@ packaging==25.0
 sphinxcontrib-svg2pdfconverter[CairoSVG]==2.0.0
 sphinx-last-updated-by-git==0.3.8
 sphinx-sitemap==2.9.0
+myst-nb==1.1.2
 
 # Vale dependencies
 rst2html==2020.7.4

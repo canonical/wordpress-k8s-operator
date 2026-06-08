@@ -1,0 +1,8 @@
+repositories:
+  - repo: https://github.com/canonical/wordpress-k8s-operator
+    old_url: canonical-wordpress-k8s-juju-charm.readthedocs-hosted.com
+    new_url: canonical.com/juju/docs/wordpress-k8s-charm
+    versioning: multi
+    versions:
+      - name: latest
+        branch: main

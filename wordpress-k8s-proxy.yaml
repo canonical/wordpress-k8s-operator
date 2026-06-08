@@ -1,0 +1,12 @@
+repositories:
+  - product: juju
+    slug: juju/docs/wordpress-k8s-charm
+    old_url: canonical-wordpress-k8s-juju-charm.readthedocs-hosted.com
+    new_url: canonical.com/juju/docs/wordpress-k8s-charm
+    auth_token: fAk3t0KeN
+    exp_date: "2027-07-10"
+    versioning: multi
+    versions:
+      - name: latest
+        branch: main
+    environment: staging

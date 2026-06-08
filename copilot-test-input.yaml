@@ -1,0 +1,6 @@
+repositories: 
+  - repo: https://github.com/canonical/wordpress-k8s-operator 
+    old_url: documentation.ubuntu.com/wordpress-k8s-charm 
+    new_url: canonical.com/juju/docs/wordpress-k8s-charm 
+    product: juju
+

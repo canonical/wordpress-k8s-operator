@@ -7,7 +7,7 @@ on:
 
 jobs:
   docs-checks:
-    uses: canonical/operator-workflows/.github/workflows/docs.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/docs.yaml@erinecon-patch-1
     secrets: inherit
     with:
       vale-files: '["README.md", "CONTRIBUTING.md"]'

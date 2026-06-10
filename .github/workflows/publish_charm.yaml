@@ -3,12 +3,15 @@ name: Publish to edge
 on:
   push:
     branches:
-      - main
-      - track/*
+    - main
+    - track/*
 
 jobs:
   publish-to-edge:
     uses: canonical/operator-workflows/.github/workflows/publish_charm.yaml@main
+    permissions:
+      actions: read
+      contents: write
     secrets: inherit
     with:
       integration-test-workflow-file: test.yaml

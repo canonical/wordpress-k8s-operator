@@ -83,8 +83,8 @@ To facilitate the WordPress installation process,
 [WordPress CLI](https://make.wordpress.org/cli/handbook/guides/installing/) is embedded in the OCI
 image during the build step. The latest CLI PHP archive file from source is used.
 
-Currently, WordPress version 6.4.3 is used alongside Ubuntu 20.04 base image. The Ubuntu base image
-hasn't yet been upgraded to 22.04 due to an unsupported PHP version 8 for
+Currently, WordPress version 6.4.3 is used alongside Ubuntu 20.04 LTS base image. The Ubuntu base image
+hasn't yet been upgraded to Ubuntu 22.04 LTS due to an unsupported PHP version 8 for
 `wordpress-launchpad-integration` plugin (which currently supports PHP version 7). All other plugins and themes use
 the latest stable version by default, downloaded from the source.
 
@@ -161,7 +161,7 @@ secrets in peer-relation databag for upgraded deployment of WordPress if it was 
 
 The `src/charm.py` is the default entry point for a charm and has the `WordpressCharm` Python class which inherits from CharmBase.
 
-CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
+CharmBase is the base class from which all Charms are formed, defined by [Ops](https://documentation.ubuntu.com/ops) (Python framework for developing charms).
 
 ```{note}
 See more in the Juju docs: {ref}`juju:charm`.

@@ -5,6 +5,11 @@ on:
   schedule:
   - cron: "0 15 * * SAT"
 
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
 jobs:
   unit-tests:
     uses: canonical/operator-workflows/.github/workflows/test.yaml@main

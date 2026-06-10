@@ -92,7 +92,7 @@ make vale
 The WordPress Operator is a member of the Ubuntu family. 
 It's an open source project that warmly welcomes community projects, contributions, suggestions, fixes and constructive feedback.
 
-- [Code of conduct](https://ubuntu.com/community/code-of-conduct)
+- [Code of conduct](https://ubuntu.com/community/docs/ethos/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Contribute](CONTRIBUTING.md)
 - [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)

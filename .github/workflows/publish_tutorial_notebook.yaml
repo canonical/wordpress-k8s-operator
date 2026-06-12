@@ -1,0 +1,81 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: Publish Tutorial Notebook
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish-release:
+    name: Publish Notebook to Release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find artifact from PR workflow run
+        id: find-run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find the PR associated with the merge commit
+          PR_NUMBER=$(gh pr list --state merged --search "${{ github.sha }}" \
+            --json number --jq '.[0].number' || true)
+          if [ -z "$PR_NUMBER" ]; then
+            # Fallback: extract PR number from merge commit message
+            PR_NUMBER=$(git log -1 --format=%s | grep -oP '#\K\d+' || true)
+          fi
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR found for this commit. Skipping."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "PR number: $PR_NUMBER"
+          # Get the head SHA of the merged PR
+          HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid')
+          echo "PR head SHA: $HEAD_SHA"
+          # Find the successful execute workflow run for that commit
+          RUN_ID=$(gh run list \
+            --workflow=execute_tutorial_notebook.yaml \
+            --commit="$HEAD_SHA" \
+            --status=success \
+            --json databaseId \
+            --jq '.[0].databaseId' || true)
+          if [ -z "$RUN_ID" ]; then
+            echo "No successful execute workflow run found for commit $HEAD_SHA."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Run ID: $RUN_ID"
+          echo "run-id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifact from execute workflow
+        if: steps.find-run.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download "${{ steps.find-run.outputs.run-id }}" \
+            --name tutorial-notebook \
+            --dir .
+
+      - name: Create or update docs-latest release
+        if: steps.find-run.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Delete existing release if it exists
+          gh release delete docs-latest --yes || true
+          # Create new release with the notebook asset
+          gh release create docs-latest \
+            --title "Documentation Assets (latest)" \
+            --notes "Auto-generated documentation assets from the latest main branch. Contains the executed tutorial notebook." \
+            --prerelease \
+            tutorial.ipynb

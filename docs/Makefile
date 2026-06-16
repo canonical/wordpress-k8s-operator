@@ -27,7 +27,9 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo "* watch, build and serve the documentation:  make run"
 	@echo "* only build:                                make html"
+	@echo "* only build without executing notebooks:    make html-no-exec"
 	@echo "* only serve:                                make serve"
+	@echo "* serve without executing notebooks:         make serve-no-exec"
 	@echo "* clean built doc files:                     make clean-doc"
 	@echo "* clean full environment:                    make clean"
 	@echo "* check links:                               make linkcheck"
@@ -42,8 +44,8 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo
 
-.PHONY: help full-help html epub pdf linkcheck spelling spellcheck woke \
-        vale pa11y run serve install pa11y-install   \
+.PHONY: help full-help html html-no-exec epub pdf linkcheck spelling spellcheck woke \
+        vale pa11y run serve serve-no-exec install pa11y-install   \
         vale-install pdf-prep pdf-prep-force clean clean-doc \
         update lint-md
 
@@ -88,6 +90,12 @@ epub: install
 	. $(VENV); $(SPHINXBUILD) -b epub "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
 
 serve: html
+	cd "$(BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
+
+html-no-exec: install
+	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS) -D nb_execution_mode=off
+
+serve-no-exec: html-no-exec
 	cd "$(BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
 
 clean: clean-doc

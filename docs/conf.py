@@ -300,6 +300,7 @@ extensions = [
 exclude_patterns = [
     "doc-cheat-sheet*",
     "jupyter_execute",
+    ".jupyter_cache",
 ]
 
 nb_execution_mode = "cache"

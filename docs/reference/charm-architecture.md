@@ -161,7 +161,7 @@ secrets in peer-relation databag for upgraded deployment of WordPress if it was 
 
 The `src/charm.py` is the default entry point for a charm and has the `WordpressCharm` Python class which inherits from CharmBase.
 
-CharmBase is the base class from which all Charms are formed, defined by [Ops](https://documentation.ubuntu.com/ops) (Python framework for developing charms).
+CharmBase is the base class from which all Charms are formed, defined by [Ops](https://canonical.com/juju/docs/ops/latest/) (Python framework for developing charms).
 
 ```{note}
 See more in the Juju docs: {ref}`juju:charm`.

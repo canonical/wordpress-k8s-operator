@@ -60,13 +60,12 @@ $(DOCS_VENVDIR):
 	python3 -m venv $(DOCS_VENVDIR) || { echo "You must install python3-venv before you can build the documentation."; exit 1; }
 	. $(DOCS_VENV); pip install $(PIPOPTS) --require-virtualenv \
 	    --upgrade -r requirements.txt \
-            --log $(VENVDIR)/pip_install.log
-	. $(VENV); python -m bash_kernel.install --sys-prefix
-	@test ! -f $(VENVDIR)/pip_list.txt || \
-            mv $(VENVDIR)/pip_list.txt $(VENVDIR)/pip_list.txt.bak
-	@. $(VENV); pip list --local --format=freeze > $(VENVDIR)/pip_list.txt
-	@touch $(VENVDIR)
-            --log $(DOCS_VENVDIR)/pip_install.log
+        	--log $(DOCS_VENVDIR)/pip_install.log
+	. $(DOCS_VENV); python -m bash_kernel.install --sys-prefix
+	@test ! -f $(DOCS_VENVDIR)/pip_list.txt || \
+            mv $(DOCS_VENVDIR)/pip_list.txt $(DOCS_VENVDIR)/pip_list.txt.bak
+	@. $(DOCS_VENV); pip list --local --format=freeze > $(DOCS_VENVDIR)/pip_list.txt
+	@touch $(DOCS_VENVDIR)
 	@test ! -f $(DOCS_VENVDIR)/pip_list.txt || \
             mv $(DOCS_VENVDIR)/pip_list.txt $(DOCS_VENVDIR)/pip_list.txt.bak
 	@. $(DOCS_VENV); pip list --local --format=freeze > $(DOCS_VENVDIR)/pip_list.txt

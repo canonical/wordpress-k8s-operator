@@ -66,10 +66,6 @@ $(DOCS_VENVDIR):
             mv $(DOCS_VENVDIR)/pip_list.txt $(DOCS_VENVDIR)/pip_list.txt.bak
 	@. $(DOCS_VENV); pip list --local --format=freeze > $(DOCS_VENVDIR)/pip_list.txt
 	@touch $(DOCS_VENVDIR)
-	@test ! -f $(DOCS_VENVDIR)/pip_list.txt || \
-            mv $(DOCS_VENVDIR)/pip_list.txt $(DOCS_VENVDIR)/pip_list.txt.bak
-	@. $(DOCS_VENV); pip list --local --format=freeze > $(DOCS_VENVDIR)/pip_list.txt
-	@touch $(DOCS_VENVDIR)
 
 pa11y-install:
 	@command -v $(PA11Y_CMD) >/dev/null || { \

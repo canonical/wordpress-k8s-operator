@@ -30,7 +30,7 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 
 ```{code-cell} bash
 :tags: [remove-cell]
-source DEBIAN_FRONTEND=noninteractive
+export DEBIAN_FRONTEND=noninteractive
 ```
 
 ## What you'll need

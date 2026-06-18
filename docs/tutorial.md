@@ -28,6 +28,11 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 
 <!-- SPREAD SKIP -->
 
+```{code-cell} bash
+:tags: [remove-cell]
+source DEBIAN_FRONTEND=noninteractive
+```
+
 ## What you'll need
 
 You will need a working station, e.g., a laptop, with AMD64 architecture. Your working station
@@ -100,7 +105,7 @@ the `wordpress-k8s` charm.
 juju deploy wordpress-k8s
 ```
 
-## Deploy and integrate database 
+## Deploy and integrate database
 
 Deployment of WordPress requires a relational database. The integration with the
 `mysql` {ref}`interface <juju:relation>` is required by the `wordpress-k8s`
@@ -119,6 +124,11 @@ The `database` interface is required since `mysql-k8s` charm provides multiple c
 juju wait-for application wordpress-k8s --query='status=="active"' --timeout 10m
 juju wait-for application mysql-k8s --query='status=="active"' --timeout 10m
 -->
+```{code-cell} bash
+:tags: [remove-cell]
+juju wait-for application wordpress-k8s --query='status=="active"' --timeout 10m
+juju wait-for application mysql-k8s --query='status=="active"' --timeout 10m
+```
 
 Run `juju status` to check the current status of the deployment. The output should be similar to the following:
 

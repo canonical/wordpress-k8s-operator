@@ -27,9 +27,9 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo "* watch, build and serve the documentation:  make run"
 	@echo "* only build:                                make html"
-	@echo "* only build without executing notebooks:    make html-no-exec"
+	@echo "* build and execute notebooks:               make html-with-exec"
 	@echo "* only serve:                                make serve"
-	@echo "* serve without executing notebooks:         make serve-no-exec"
+	@echo "* serve and execute notebooks:               make serve-with-exec"
 	@echo "* clean built doc files:                     make clean-doc"
 	@echo "* clean full environment:                    make clean"
 	@echo "* check links:                               make linkcheck"
@@ -44,8 +44,8 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo
 
-.PHONY: help full-help html html-no-exec epub pdf linkcheck spelling spellcheck woke \
-        vale pa11y run serve serve-no-exec install pa11y-install   \
+.PHONY: help full-help html html-with-exec epub pdf linkcheck spelling spellcheck woke \
+        vale pa11y run serve serve-with-exec install pa11y-install   \
         vale-install pdf-prep pdf-prep-force clean clean-doc \
         update lint-md
 
@@ -84,7 +84,7 @@ run: install
 
 # Does not depend on $(BUILDDIR) to rebuild properly at every run.
 html: install
-	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
+	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS) -D nb_execution_mode=off
 
 epub: install
 	. $(VENV); $(SPHINXBUILD) -b epub "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
@@ -92,10 +92,10 @@ epub: install
 serve: html
 	cd "$(BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
 
-html-no-exec: install
-	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS) -D nb_execution_mode=off
+html-with-exec: install
+	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
 
-serve-no-exec: html-no-exec
+serve-with-exec: html-with-exec
 	cd "$(BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
 
 clean: clean-doc

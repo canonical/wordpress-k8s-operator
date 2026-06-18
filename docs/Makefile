@@ -104,6 +104,8 @@ clean: clean-doc
 	rm -rf $(SPHINXDIR)/node_modules/
 	rm -rf $(SPHINXDIR)/styles
 	rm -rf $(VALE_CONFIG)
+	rm -rf .jupyter_cache
+	rm -rf jupyter_execute
 
 clean-doc:
 	git clean -fx "$(BUILDDIR)"

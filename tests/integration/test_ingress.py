@@ -10,7 +10,7 @@ import requests
 from tests.integration.helper import WordpressApp
 
 
-@pytest.mark.usefixtures("prepare_mysql", "prepare_nginx_ingress", "prepare_swift")
+@pytest.mark.usefixtures("prepare_mysql", "prepare_nginx_ingress")
 async def test_ingress(wordpress: WordpressApp):
     """
     arrange: after WordPress charm has been deployed and db relation established.
@@ -34,7 +34,7 @@ async def test_ingress(wordpress: WordpressApp):
     )
 
 
-@pytest.mark.usefixtures("prepare_mysql", "prepare_nginx_ingress", "prepare_swift")
+@pytest.mark.usefixtures("prepare_mysql", "prepare_nginx_ingress")
 async def test_ingress_modsecurity(
     wordpress: WordpressApp,
     kube_config: str,

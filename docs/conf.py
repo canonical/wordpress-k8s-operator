@@ -1,6 +1,9 @@
 import datetime
 import os
+import sys
 import yaml
+
+sys.path.insert(0, os.path.abspath("_extensions"))
 
 # Configuration for the Sphinx documentation builder.
 # All configuration specific to your project should be done in this file.
@@ -289,13 +292,19 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_sitemap",
     "sphinxcontrib.mermaid",
+    "fetch_tutorial_notebook",
 ]
 
 # Excludes files or directories from processing
 
 exclude_patterns = [
     "doc-cheat-sheet*",
+    "jupyter_execute",
 ]
+
+nb_execution_mode = "cache"
+nb_execution_timeout = 3600
+nb_execution_show_tb = True
 
 # Adds custom CSS files, located under 'html_static_path'
 
@@ -369,4 +378,23 @@ if os.path.exists('./reuse/substitutions.yaml'):
 intersphinx_mapping = {
     'juju': ("https://documentation.ubuntu.com/juju/3.6/", None),
     'starter-pack': ("https://canonical-starter-pack.readthedocs-hosted.com/stable/", None),
+    'charmed-mysql': ("https://canonical-charmed-mysql.readthedocs-hosted.com/8.0/", None),
 }
+
+
+def setup(app):
+    """Set up myst_nb with compatibility fix for canonical_sphinx.
+
+    canonical_sphinx loads myst_parser which registers all myst-related roles,
+    directives, transforms, and config values. When myst_nb subsequently calls
+    setup_myst_parser, it tries to re-register everything, causing conflicts.
+    We work around this by making setup_myst_parser a no-op before loading myst_nb.
+    """
+    import myst_parser.sphinx_ext.main as myst_main
+
+    # canonical_sphinx already called setup_sphinx (via myst_parser), so all myst_parser
+    # roles, directives, transforms, and config values are already registered.
+    # Make it a no-op so myst_nb doesn't re-register them.
+    myst_main.setup_sphinx = lambda app, load_parser=False: None
+
+    app.setup_extension("myst_nb")

@@ -10,7 +10,7 @@ juju run mysql/leader create-backup
 ```
 
 Additional information can be found about backing up in
-[the MySQL documentation](https://canonical-charmed-mysql.readthedocs-hosted.com/how-to/back-up-and-restore/create-a-backup/).
+{ref}`the MySQL documentation <charmed-mysql:create-a-backup>`.
 
 Then you can upgrade the WordPress charm:
 

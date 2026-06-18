@@ -8,7 +8,15 @@ requires = [ "tox>=4.21" ]
 no_package = true
 
 [env_run_base]
-passenv = [ "PYTHONPATH", "CHARM_BUILD_DIR", "MODEL_SETTINGS" ]
+passenv = [
+  "PYTHONPATH",
+  "CHARM_BUILD_DIR",
+  "MODEL_SETTINGS",
+  "TEST_AKISMET_API_KEY",
+  "TEST_OPENID_USERNAME",
+  "TEST_OPENID_PASSWORD",
+  "TEST_LAUNCHPAD_TEAM"
+]
 allowlist_externals = [ "docker" ]
 runner = "uv-venv-lock-runner"
 

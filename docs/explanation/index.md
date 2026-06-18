@@ -8,8 +8,8 @@ myst:
 
 # Explanation
 
-The pages in this section provide additional context and deeper understanding of
-foundational topics and concepts relevant to the WordPress charm.
+This section provides additional context and deeper understanding of
+specific topics and concepts relevant to the WordPress charm.
 
 ```{toctree}
 :maxdepth: 1

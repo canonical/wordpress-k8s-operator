@@ -8,7 +8,7 @@ myst:
 
 A [Juju](https://juju.is/) {ref}`charm <juju:charm>` deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com/) is the world's most popular website builder, and it's free and open-source.
 
-This charm simplifies initial deployment and operations of WordPress on Kubernetes, including scaling the number of instances, integration with SSO, access to OpenStack Swift object storage for redundant file storage, and more. It allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://microk8s.io/) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) to public cloud Kubernetes offerings.
+This charm simplifies initial deployment and operations of WordPress on Kubernetes, including scaling the number of instances, integration with SSO, access to OpenStack Swift object storage for redundant file storage, and more. It allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://canonical.com/microk8s) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) to public cloud Kubernetes offerings.
 
 This charm will make operating WordPress straightforward for DevOps or SRE teams through Juju's clean interface. It will allow deployment into multiple environments to test changes and support scaling out for enterprise deployments.
 
@@ -29,7 +29,7 @@ If there's a particular area of documentation that you'd like to see that's miss
 
 The WordPress Operator is a member of the Ubuntu family. It's an open-source project that warmly welcomes community projects, contributions, suggestions, fixes, and constructive feedback.
 
-- [Code of conduct](https://ubuntu.com/community/code-of-conduct)
+- [Code of conduct](https://ubuntu.com/community/docs/ethos/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 - [Contribute](how_to_contribute)

@@ -59,6 +59,7 @@ $(VENVDIR):
 	. $(VENV); pip install $(PIPOPTS) --require-virtualenv \
 	    --upgrade -r requirements.txt \
             --log $(VENVDIR)/pip_install.log
+	. $(VENV); python -m bash_kernel.install --sys-prefix
 	@test ! -f $(VENVDIR)/pip_list.txt || \
             mv $(VENVDIR)/pip_list.txt $(VENVDIR)/pip_list.txt.bak
 	@. $(VENV); pip list --local --format=freeze > $(VENVDIR)/pip_list.txt

@@ -11,6 +11,8 @@ on:
 jobs:
   tutorial-spread-test:
     uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@main
+    permissions:
+      contents: read
     secrets: inherit
     with:
       input-file: docs/tutorial.md

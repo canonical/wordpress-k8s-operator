@@ -28,11 +28,6 @@ tutorial will walk you through each step to achieve a basic WordPress deployment
 
 <!-- SPREAD SKIP -->
 
-```{code-cell} bash
-:tags: [remove-cell]
-export DEBIAN_FRONTEND=noninteractive
-```
-
 ## What you'll need
 
 You will need a working station, e.g., a laptop, with AMD64 architecture. Your working station
@@ -54,7 +49,7 @@ This tutorial requires the following software to be installed on your working st
 Use [Concierge](https://github.com/canonical/concierge) to set up Juju and MicroK8s:
 
 ```{code-cell} bash
-sudo snap install --classic concierge
+sudo snap install --classic concierge < /dev/null
 sudo concierge prepare -p microk8s
 ```
 
@@ -124,11 +119,14 @@ The `database` interface is required since `mysql-k8s` charm provides multiple c
 juju wait-for application wordpress-k8s --query='status=="active"' --timeout 10m
 juju wait-for application mysql-k8s --query='status=="active"' --timeout 10m
 -->
+
+<!-- SPREAD SKIP -->
 ```{code-cell} bash
 :tags: [remove-cell]
 juju wait-for application wordpress-k8s --query='status=="active"' --timeout 10m
 juju wait-for application mysql-k8s --query='status=="active"' --timeout 10m
 ```
+<!-- SPREAD SKIP END -->
 
 Run `juju status` to check the current status of the deployment. The output should be similar to the following:
 

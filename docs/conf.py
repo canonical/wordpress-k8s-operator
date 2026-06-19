@@ -73,7 +73,7 @@ copyright = "%s CC-BY-SA, %s" % (datetime.date.today().year, author)
 # NOTE: The Open Graph Protocol (OGP) enhances page display in a social graph
 #       and is used by social media platforms; see https://ogp.me/
 
-ogp_site_url = "https://documentation.ubuntu.com/wordpress-k8s-charm/"
+ogp_site_url = f"https://canonical.com/juju/docs/wordpress-k8s-charm/"
 
 
 # Preview name of the documentation website
@@ -177,7 +177,7 @@ html_theme_options = {
 # TODO: If your documentation is hosted on https://docs.ubuntu.com/,
 #       uncomment and update as needed.
 
-slug = 'wordpress-k8s-charm'
+slug = 'juju/docs/wordpress-k8s-charm'
 
 #######################
 # Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
@@ -185,7 +185,7 @@ slug = 'wordpress-k8s-charm'
 
 # Use RTD canonical URL to ensure duplicate pages have a specific canonical URL
 
-html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
+html_baseurl = f"https://canonical.com/juju/docs/wordpress-k8s-charm/"
 
 # sphinx-sitemap uses html_baseurl to generate the full URL for each page:
 
@@ -316,7 +316,8 @@ html_css_files = [
 # Adds custom JavaScript files, located under 'html_static_path'
 
 html_js_files = [
-    'js/bundle.js'
+    'js/bundle.js',
+    'js/overwrite_links.js',
 ]
 
 
@@ -398,3 +399,6 @@ def setup(app):
     myst_main.setup_sphinx = lambda app, load_parser=False: None
 
     app.setup_extension("myst_nb")
+
+# URL migration configuration
+sitemap_filename = "doc-sitemap.xml"

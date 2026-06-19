@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -21,7 +21,7 @@ jobs:
           cd docs && make html
 
       - name: Upload executed notebook artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tutorial-notebook
           path: docs/jupyter_execute/tutorial.ipynb

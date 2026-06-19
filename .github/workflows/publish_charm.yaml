@@ -12,6 +12,7 @@ jobs:
     permissions:
       actions: read
       contents: write
+      packages: write
     secrets: inherit
     with:
       integration-test-workflow-file: test.yaml

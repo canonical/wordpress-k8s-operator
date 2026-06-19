@@ -31,6 +31,24 @@ def dashboard_exist(loggedin_session: requests.Session, unit_address: str):
     return len(dashboards)
 
 
+def grafana_login_ready(
+    loggedin_session: requests.Session, unit_address: str, password: str
+) -> bool:
+    """Return True when Grafana accepts login, handling transient startup 401s."""
+    response = loggedin_session.post(
+        f"http://{unit_address}:3000/login",
+        json={
+            "user": "admin",
+            "password": password,
+        },
+        timeout=10,
+    )
+    if response.status_code == 401:
+        return False
+    response.raise_for_status()
+    return True
+
+
 @pytest.mark.usefixtures("prepare_mysql")
 async def test_grafana_integration(
     wordpress: WordpressApp,
@@ -53,13 +71,16 @@ async def test_grafana_integration(
     status: FullStatus = await wordpress.model.get_status(filters=[grafana.name])
     for unit in status.applications[grafana.name].units.values():
         sess = requests.session()
-        sess.post(
-            f"http://{unit.address}:3000/login",
-            json={
-                "user": "admin",
-                "password": password,
-            },
-        ).raise_for_status()
+        await wait_for(
+            functools.partial(
+                grafana_login_ready,
+                loggedin_session=sess,
+                unit_address=unit.address,
+                password=password,
+            ),
+            timeout=5 * 60,
+            check_interval=5,
+        )
         await wait_for(
             functools.partial(dashboard_exist, loggedin_session=sess, unit_address=unit.address),
             timeout=60 * 20,

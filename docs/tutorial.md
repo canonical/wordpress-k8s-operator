@@ -88,7 +88,7 @@ To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model in the MicroK8s controller using the following command:
 
 ```{code-cell} bash
-juju add-model wordpress-tutorial
+juju add-model wordpress-tutorial-$(date +%s)
 ```
 
 ## Deploy the WordPress charm

@@ -88,7 +88,16 @@ To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model in the MicroK8s controller using the following command:
 
 ```{code-cell} bash
-juju add-model wordpress-tutorial-$(date +%s)
+:tags: [remove-cell]
+
+if [ -n "${CI:-}" ]; then
+  juju destroy-model wordpress-tutorial --force --destroy-storage --no-prompt 2>/dev/null || true
+  microk8s kubectl delete namespace wordpress-tutorial --ignore-not-found=true || true
+fi
+```
+
+```{code-cell} bash
+juju add-model wordpress-tutorial
 ```
 
 ## Deploy the WordPress charm

@@ -453,7 +453,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 57
+LIBPATCH = 58
 
 PYDEPS = ["ops>=2.0.0"]
 
@@ -4275,6 +4275,14 @@ class KafkaProviderEventHandlers(ProviderEventHandlers):
         if relation.app == self.charm.app:
             logging.info("Secret changed event ignored for Secret Owner")
 
+        if relation.name != self.relation_data.relation_name:
+            logger.debug(
+                "Ignoring secret-changed from endpoint %s (expected %s)",
+                relation.name,
+                self.relation_data.relation_name,
+            )
+            return
+
         remote_unit = None
         for unit in relation.units:
             if unit.app != self.charm.app:
@@ -5301,6 +5309,14 @@ class OpenSearchRequiresEventHandlers(RequirerEventHandlers):
             )
             return
 
+        if relation.name != self.relation_data.relation_name:
+            logger.debug(
+                "Ignoring secret-changed from endpoint %s (expected %s)",
+                relation.name,
+                self.relation_data.relation_name,
+            )
+            return
+
         if relation.app == self.charm.app:
             logging.info("Secret changed event ignored for Secret Owner")
 
@@ -5563,6 +5579,14 @@ class EtcdProviderEventHandlers(ProviderEventHandlers):
             )
             return
 
+        if relation.name != self.relation_data.relation_name:
+            logger.debug(
+                "Ignoring secret-changed from endpoint %s (expected %s)",
+                relation.name,
+                self.relation_data.relation_name,
+            )
+            return
+
         if relation.app == self.charm.app:
             logging.info("Secret changed event ignored for Secret Owner")
 
@@ -5707,6 +5731,14 @@ class EtcdRequirerEventHandlers(RequirerEventHandlers):
 
         if relation.app == self.charm.app:
             logging.info("Secret changed event ignored for Secret Owner")
+
+        if relation.name != self.relation_data.relation_name:
+            logger.debug(
+                "Ignoring secret-changed from endpoint %s (expected %s)",
+                relation.name,
+                self.relation_data.relation_name,
+            )
+            return
 
         remote_unit = None
         for unit in relation.units:

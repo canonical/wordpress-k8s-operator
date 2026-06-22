@@ -23,7 +23,7 @@ _DOWNLOAD_URL = (
 def _fetch_notebook(app):
     """Download pre-executed tutorial notebook from GitHub releases.
 
-    Populates the jupyter-cache so that myst-nb finds a cache hit for tutorial.md
+    Populates the jupyter-cache so that myst-nb finds a cache hit for tutorial.ipynb.
     and renders the pre-executed outputs without re-running the notebook.
 
     If the download or caching fails, the build continues without cached outputs
@@ -58,7 +58,7 @@ def _fetch_notebook(app):
         cache = get_cache(str(Path(app.srcdir) / ".jupyter_cache"))
         cache.cache_notebook_file(
             path=str(tmp_path),
-            uri=str(Path(app.srcdir) / "tutorial.md"),
+            uri=str(Path(app.srcdir) / "tutorial.ipynb"),
             check_validity=False,
             overwrite=True,
         )

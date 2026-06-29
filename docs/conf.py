@@ -300,11 +300,13 @@ extensions = [
 exclude_patterns = [
     "doc-cheat-sheet*",
     "jupyter_execute",
+    ".jupyter_cache",
 ]
 
 nb_execution_mode = "cache"
 nb_execution_timeout = 3600
 nb_execution_show_tb = True
+nb_execution_raise_on_error = True
 
 # Adds custom CSS files, located under 'html_static_path'
 

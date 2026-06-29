@@ -27,7 +27,9 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo "* watch, build and serve the documentation:  make run"
 	@echo "* only build:                                make html"
+	@echo "* build and execute notebooks:               make html-with-exec"
 	@echo "* only serve:                                make serve"
+	@echo "* serve and execute notebooks:               make serve-with-exec"
 	@echo "* clean built doc files:                     make clean-doc"
 	@echo "* clean full environment:                    make clean"
 	@echo "* check links:                               make linkcheck"
@@ -42,8 +44,8 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo
 
-.PHONY: help full-help html epub pdf linkcheck spelling spellcheck woke \
-        vale pa11y run serve install pa11y-install   \
+.PHONY: help full-help html html-with-exec epub pdf linkcheck spelling spellcheck woke \
+        vale pa11y run serve serve-with-exec install pa11y-install   \
         vale-install pdf-prep pdf-prep-force clean clean-doc \
         update lint-md
 
@@ -82,12 +84,18 @@ run: install
 
 # Does not depend on $(BUILDDIR) to rebuild properly at every run.
 html: install
-	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
+	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS) -D nb_execution_mode=off
 
 epub: install
 	. $(VENV); $(SPHINXBUILD) -b epub "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
 
 serve: html
+	cd "$(BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
+
+html-with-exec: install
+	. $(VENV); $(SPHINXBUILD) --fail-on-warning --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
+
+serve-with-exec: html-with-exec
 	cd "$(BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
 
 clean: clean-doc
@@ -96,6 +104,8 @@ clean: clean-doc
 	rm -rf $(SPHINXDIR)/node_modules/
 	rm -rf $(SPHINXDIR)/styles
 	rm -rf $(VALE_CONFIG)
+	rm -rf .jupyter_cache
+	rm -rf jupyter_execute
 
 clean-doc:
 	git clean -fx "$(BUILDDIR)"

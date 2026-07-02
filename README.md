@@ -5,7 +5,7 @@
 
 # WordPress operator
 
-A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
+A [Juju](https://juju.is/) [charm](https://canonical.com/juju/docs/juju-cli/3.6/reference/charm/) deploying and managing WordPress on Kubernetes. [WordPress](https://wordpress.com) is the world's most popular website builder, and it's free and open-source.
 
 This charm simplifies the deployment and operations of WordPress on Kubernetes,
 including scaling the number of instances, integration with SSO, 
@@ -21,7 +21,7 @@ For DevOps or SRE teams this charm will make operating WordPress straightforward
 It will allow deployment into multiple environments for testing of changes, 
 and supports scaling out for enterprise deployments.
 
-For information about how to deploy, integrate, and manage this charm, see the Official [WordPress K8s charm documentation](https://documentation.ubuntu.com/wordpress-k8s-charm/latest/).
+For information about how to deploy, integrate, and manage this charm, see the Official [WordPress K8s charm documentation](https://canonical.com/juju/docs/wordpress-k8s-charm/).
 
 ## Get started
 
@@ -54,8 +54,9 @@ Apart from this required integration, the charm can be integrated with other Juj
 
 ## Documentation
 
-Our documentation is stored in the `docs` directory.
-It is based on the Canonical starter pack
+Our documentation is stored in the `docs` directory
+and can be viewed at https://canonical.com/juju/docs/wordpress-k8s-charm/.
+It is based on the Canonical Sphinx Stack
 and hosted on [Read the Docs](https://about.readthedocs.com/). In structuring,
 the documentation employs the [Diátaxis](https://diataxis.fr/) approach.
 
@@ -82,7 +83,7 @@ make vale
 
 ## Learn more
 
-- [Read more](https://documentation.ubuntu.com/wordpress-k8s-charm/latest/)
+- [Read more](https://canonical.com/juju/docs/wordpress-k8s-charm/)
 - [Developer documentation](https://codex.wordpress.org/Developer_Documentation)
 - [Official webpage](https://wordpress.com)
 - [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)

@@ -62,7 +62,7 @@ Web Application Firewall ([WAF](https://docs.nginx.com/nginx-waf/)).
 
 Note that the
 Kubernetes cluster must already have an nginx ingress controller deployed. Documentation to
-enable ingress in MicroK8s can be found [here](https://microk8s.io/docs/addon-ingress).
+enable ingress in MicroK8s can be found [here](https://canonical.com/microk8s/docs/addon-ingress).
 
 Example ingress integrate command: 
 

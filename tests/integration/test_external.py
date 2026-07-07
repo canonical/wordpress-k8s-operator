@@ -14,7 +14,7 @@ from tests.integration.helper import WordpressApp, WordpressClient
 @pytest.mark.requires_secret
 @pytest.mark.skipif(
     not os.getenv("TEST_AKISMET_API_KEY"),
-    reason="TEST_AKISMET_API_KEY env is required for running this test",
+    reason="TEST_AKISMET_API_KEY environment variable is required for running this test",
 )
 @pytest.mark.usefixtures("prepare_mysql")
 async def test_akismet_plugin(
@@ -25,7 +25,8 @@ async def test_akismet_plugin(
     act: update charm configuration for Akismet plugin.
     assert: Akismet plugin should be activated and spam detection function should be working.
     """
-    akismet_api_key = os.environ["TEST_AKISMET_API_KEY"]
+    akismet_api_key = os.environ.get("TEST_AKISMET_API_KEY")
+    assert akismet_api_key is not None
 
     await wordpress.set_config({"wp_plugin_akismet_key": akismet_api_key})
     await wordpress.wait_for_wordpress_idle(status="active")
@@ -54,8 +55,8 @@ async def test_akismet_plugin(
         and os.getenv("TEST_LAUNCHPAD_TEAM")
     ),
     reason=(
-        "TEST_OPENID_USERNAME, TEST_OPENID_PASSWORD and TEST_LAUNCHPAD_TEAM envs are "
-        "required for running this test"
+        "TEST_OPENID_USERNAME, TEST_OPENID_PASSWORD and TEST_LAUNCHPAD_TEAM "
+        "environment variables are required for running this test"
     ),
 )
 @pytest.mark.usefixtures("prepare_mysql")
@@ -67,9 +68,12 @@ async def test_openid_plugin(
     act: update charm configuration for OpenID plugin.
     assert: A WordPress user should be created with correct roles according to the config.
     """
-    openid_username = os.environ["TEST_OPENID_USERNAME"]
-    openid_password = os.environ["TEST_OPENID_PASSWORD"]
-    launchpad_team = os.environ["TEST_LAUNCHPAD_TEAM"]
+    openid_username = os.environ.get("TEST_OPENID_USERNAME")
+    assert openid_username is not None
+    openid_password = os.environ.get("TEST_OPENID_PASSWORD")
+    assert openid_password is not None
+    launchpad_team = os.environ.get("TEST_LAUNCHPAD_TEAM")
+    assert launchpad_team is not None
     await wordpress.set_config({"wp_plugin_openid_team_map": f"{launchpad_team}=administrator"})
     await wordpress.wait_for_wordpress_idle(status="active")
 

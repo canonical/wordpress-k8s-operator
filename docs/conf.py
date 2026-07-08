@@ -314,6 +314,8 @@ exclude_patterns = [
     ".venv*",
     "jupyter_execute",
     ".jupyter_cache",
+    "superpowers",
+    "superpowers/**",
 ]
 
 nb_execution_mode = "cache"

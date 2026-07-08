@@ -10,7 +10,7 @@ Each revision is versioned by the date of the revision.
 
 ## 2026-07-08
 
-- chore(docs): Update intersphinx mapping and links to documentation sets that migrated
+- chore(docs): Update Intersphinx mapping and links to documentation sets that migrated
   under the Ubuntu or Canonical domains.
 
 ## 2026-05-19

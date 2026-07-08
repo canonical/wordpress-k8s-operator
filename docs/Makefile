@@ -29,7 +29,9 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo "* watch, build and serve the documentation:  make run"
 	@echo "* only build:                                make html"
+	@echo "* build and execute notebooks:               make html-with-exec"
 	@echo "* only serve:                                make serve"
+	@echo "* serve and execute notebooks:               make serve-with-exec"
 	@echo "* clean built doc files:                     make clean-doc"
 	@echo "* clean full environment:                    make clean"
 	@echo "* check links:                               make linkcheck"
@@ -44,8 +46,8 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo
 
-.PHONY: help full-help html epub pdf linkcheck spelling spellcheck woke \
-        vale pa11y run serve install pa11y-install   \
+.PHONY: help full-help html html-with-exec epub pdf linkcheck spelling spellcheck woke \
+        vale pa11y run serve serve-with-exec install pa11y-install   \
         vale-install pdf-prep pdf-prep-force clean clean-doc \
         update lint-md
 

@@ -34,7 +34,11 @@ author = "Canonical Ltd."
 # Sidebar documentation title; best kept reasonably short
 #
 # TODO: To include a version number, add it here (hardcoded or automated).
-#
+
+# Version
+
+version = f"{os.environ.get('READTHEDOCS_VERSION', 'local')}"
+
 # TODO: To disable the title, set to an empty string.
 
 html_title = project + " documentation"
@@ -73,7 +77,7 @@ copyright = "%s CC-BY-SA, %s" % (datetime.date.today().year, author)
 # NOTE: The Open Graph Protocol (OGP) enhances page display in a social graph
 #       and is used by social media platforms; see https://ogp.me/
 
-ogp_site_url = "https://documentation.ubuntu.com/wordpress-k8s-charm/"
+ogp_site_url = f"https://canonical.com/juju/docs/wordpress-k8s-charm/{version}/"
 
 
 # Preview name of the documentation website
@@ -177,7 +181,7 @@ html_theme_options = {
 # TODO: If your documentation is hosted on https://docs.ubuntu.com/,
 #       uncomment and update as needed.
 
-slug = 'wordpress-k8s-charm'
+slug = 'juju/docs/wordpress-k8s-charm'
 
 #######################
 # Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
@@ -185,7 +189,7 @@ slug = 'wordpress-k8s-charm'
 
 # Use RTD canonical URL to ensure duplicate pages have a specific canonical URL
 
-html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
+html_baseurl = f"https://canonical.com/juju/docs/wordpress-k8s-charm/{version}/"
 
 # sphinx-sitemap uses html_baseurl to generate the full URL for each page:
 
@@ -210,8 +214,8 @@ sitemap_excludes = [
 # Template and asset locations
 #######################
 
-html_static_path = [".sphinx/_static"]
-templates_path = [".sphinx/_templates"]
+html_static_path = ["_static"]
+templates_path = ["_templates"]
 
 
 #############
@@ -226,10 +230,17 @@ templates_path = [".sphinx/_templates"]
 
 # NOTE: If undefined, set to None, or empty,
 #       the sphinx_reredirects extension will be disabled.
+# Redirects migrated to redirects.txt for rediraffe extension
 
-redirects = {
-    "explanation/charm-architecture": "reference/charm-architecture",
-}
+redirects = {}
+
+# Add redirects to the 'redirects.txt' file for rediraffe
+# https://sphinxext-rediraffe.readthedocs.io/en/latest/
+
+rediraffe_redirects = "redirects.txt"
+
+# Strips '/index.html' from destination URLs when building with 'dirhtml'
+rediraffe_dir_only = True
 
 
 ###########################
@@ -275,6 +286,7 @@ extensions = [
     "canonical_sphinx",
     "notfound.extension",
     "sphinx_design",
+    "sphinx_rerediraffe",
     "sphinx_reredirects",
     "sphinx_tabs.tabs",
     "sphinxcontrib.jquery",
@@ -299,6 +311,7 @@ extensions = [
 
 exclude_patterns = [
     "doc-cheat-sheet*",
+    ".venv*",
     "jupyter_execute",
     ".jupyter_cache",
 ]
@@ -310,17 +323,14 @@ nb_execution_raise_on_error = True
 
 # Adds custom CSS files, located under 'html_static_path'
 
-html_css_files = [
-    'cookie-banner.css'
-]
-
+html_css_files = ["https://assets.ubuntu.com/v1/d86746ef-cookie_banner.css"]
 
 # Adds custom JavaScript files, located under 'html_static_path'
 
 html_js_files = [
-    'js/bundle.js'
+    "https://assets.ubuntu.com/v1/287a5e8f-bundle.js",
+    "js/overwrite_links.js",
 ]
-
 
 # Specifies a reST snippet to be appended to each .rst file
 
@@ -379,7 +389,7 @@ if os.path.exists('./reuse/substitutions.yaml'):
 
 intersphinx_mapping = {
     'juju': ("https://documentation.ubuntu.com/juju/3.6/", None),
-    'starter-pack': ("https://canonical-starter-pack.readthedocs-hosted.com/stable/", None),
+    'starter-pack': ("https://documentation.ubuntu.com/sphinx-stack/latest/", None),
     'charmed-mysql': ("https://canonical-charmed-mysql.readthedocs-hosted.com/8.0/", None),
 }
 

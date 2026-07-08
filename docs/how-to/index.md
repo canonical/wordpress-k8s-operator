@@ -81,5 +81,5 @@ Enable WAF <enable-waf.md>
 Rotate secrets <rotate-secrets.md>
 Upgrade <upgrade.md>
 Redeploy <redeploy.md>
-Contribute <contribute.md>
+Contribute <contribute>
 ```

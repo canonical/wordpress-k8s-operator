@@ -1,0 +1,153 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+"""Unit tests for the tutorial-notebook Sphinx fetch extension."""
+
+import importlib.util
+import sys
+import types
+from pathlib import Path
+from urllib.error import URLError
+
+import pytest
+
+_MODULE_PATH = (
+    Path(__file__).resolve().parents[2] / "docs" / "_extensions" / "fetch_tutorial_notebook.py"
+)
+
+
+def _load_module():
+    """Load the extension module directly from its file path."""
+    spec = importlib.util.spec_from_file_location("fetch_tutorial_notebook", _MODULE_PATH)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class _FakeConfig:
+    def __init__(self):
+        self.nb_execution_mode = "cache"
+
+
+class _FakeApp:
+    def __init__(self, srcdir):
+        self.srcdir = str(srcdir)
+        self.config = _FakeConfig()
+        self.connected = []
+
+    def connect(self, event, callback):
+        self.connected.append((event, callback))
+
+
+class _FakeResponse:
+    def __init__(self, data):
+        self._data = data
+
+    def read(self):
+        return self._data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+@pytest.fixture(name="module")
+def module_fixture():
+    return _load_module()
+
+
+def test_not_on_rtd_returns_early(module, monkeypatch, tmp_path):
+    monkeypatch.delenv("READTHEDOCS", raising=False)
+    called = {"urlopen": False}
+
+    def _fake_urlopen(*args, **kwargs):
+        called["urlopen"] = True
+        raise AssertionError("urlopen should not be called off RTD")
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", _fake_urlopen)
+    app = _FakeApp(tmp_path)
+
+    module._fetch_notebook(app)
+
+    assert called["urlopen"] is False
+    assert app.config.nb_execution_mode == "cache"
+
+
+def test_download_and_cache_success(module, monkeypatch, tmp_path):
+    monkeypatch.setenv("READTHEDOCS", "True")
+    monkeypatch.setattr(
+        module.urllib.request,
+        "urlopen",
+        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
+    )
+
+    recorded = {}
+
+    class _FakeCache:
+        def cache_notebook_file(self, path, uri, check_validity, overwrite):
+            recorded["path"] = path
+            recorded["uri"] = uri
+            recorded["check_validity"] = check_validity
+            recorded["overwrite"] = overwrite
+
+    fake_jupyter_cache = types.ModuleType("jupyter_cache")
+    fake_jupyter_cache.get_cache = lambda location: _FakeCache()
+    monkeypatch.setitem(sys.modules, "jupyter_cache", fake_jupyter_cache)
+
+    app = _FakeApp(tmp_path)
+
+    module._fetch_notebook(app)
+
+    assert recorded["uri"] == str(tmp_path / "tutorial.ipynb")
+    assert recorded["overwrite"] is True
+    assert recorded["check_validity"] is False
+    assert app.config.nb_execution_mode == "cache"
+
+
+def test_download_failure_sets_mode_off(module, monkeypatch, tmp_path):
+    monkeypatch.setenv("READTHEDOCS", "True")
+
+    def _raise(*a, **k):
+        raise URLError("boom")
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", _raise)
+    app = _FakeApp(tmp_path)
+
+    module._fetch_notebook(app)
+
+    assert app.config.nb_execution_mode == "off"
+
+
+def test_cache_failure_sets_mode_off(module, monkeypatch, tmp_path):
+    monkeypatch.setenv("READTHEDOCS", "True")
+    monkeypatch.setattr(
+        module.urllib.request,
+        "urlopen",
+        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
+    )
+
+    fake_jupyter_cache = types.ModuleType("jupyter_cache")
+
+    def _boom(location):
+        raise RuntimeError("cache exploded")
+
+    fake_jupyter_cache.get_cache = _boom
+    monkeypatch.setitem(sys.modules, "jupyter_cache", fake_jupyter_cache)
+
+    app = _FakeApp(tmp_path)
+
+    module._fetch_notebook(app)
+
+    assert app.config.nb_execution_mode == "off"
+
+
+def test_setup_registers_hook(module, tmp_path):
+    app = _FakeApp(tmp_path)
+
+    result = module.setup(app)
+
+    assert ("builder-inited", module._fetch_notebook) in app.connected
+    assert result["parallel_read_safe"] is True
+    assert result["parallel_write_safe"] is True

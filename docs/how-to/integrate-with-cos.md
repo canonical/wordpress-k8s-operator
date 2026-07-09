@@ -4,7 +4,7 @@
 
 ## Integrate with Prometheus K8s operator
 
-Deploy and relate [`prometheus-k8s`](https://charmhub.io/prometheus-k8s) charm with `wordpress-k8s`
+Deploy and integrate [`prometheus-k8s`](https://charmhub.io/prometheus-k8s) charm with `wordpress-k8s`
 charm through the `metrics-endpoint` relation via `prometheus_scrape` interface. Prometheus should
 start scraping the metrics exposed at `:9117/metrics` endpoint.
 

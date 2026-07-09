@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-07-08
+
+- chore(docs): Update Intersphinx mapping and links to documentation sets that migrated
+  under the Ubuntu or Canonical domains.
+
 ## 2026-05-19
 
 - docs: Migrated the documentation URL under the Canonical domain.

@@ -390,7 +390,7 @@ if os.path.exists('./reuse/substitutions.yaml'):
 intersphinx_mapping = {
     'juju': ("https://documentation.ubuntu.com/juju/3.6/", None),
     'starter-pack': ("https://documentation.ubuntu.com/sphinx-stack/latest/", None),
-    'charmed-mysql': ("https://canonical-charmed-mysql.readthedocs-hosted.com/8.0/", None),
+    'charmed-mysql': ("https://canonical.com/data/mysql/docs/8.0/", None),
 }
 
 

@@ -5,14 +5,14 @@
 The wordpress-k8s charm aims to provide core functionalities of WordPress with horizontally
 scalable architecture, leveraging its flexible capabilities enhanced by plugins. Operational
 capabilities are enhanced through integration with the
-Canonical Observability Stack ([COS](https://charmhub.io/topics/canonical-observability-stack/))
+Canonical Observability Stack ([COS](https://documentation.ubuntu.com/observability/track-3.0/))
 charms.
 
 ## Containers
 
 The core component of wordpress-k8s charm consists of a wordpress-k8s main workload container with an Apache Prometheus exporter. The services inside the container are driven by
 Pebble, a lightweight API-driven process supervisor that controls the lifecycle of a service.
-Learn more about Pebble and its layer configurations [in the Pebble documentation](https://github.com/canonical/pebble).
+Learn more about Pebble and its layer configurations [in the Pebble documentation](https://ubuntu.com/docs/pebble/).
 
 ```{mermaid}
 C4Context

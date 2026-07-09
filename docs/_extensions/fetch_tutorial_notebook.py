@@ -55,7 +55,18 @@ def _fetch_notebook(app):
 
         from jupyter_cache import get_cache  # noqa: PLC0415
 
-        cache = get_cache(str(Path(app.srcdir) / ".jupyter_cache"))
+        # myst-nb reads its cache from nb_execution_cache_path when configured,
+        # otherwise from `<outdir>/../.jupyter_cache` (see myst_nb.sphinx_ext).
+        # We must populate that exact location: on Read the Docs the build output
+        # lives outside the source tree, so writing under srcdir would be silently
+        # ignored and the notebook re-executed.
+        configured_cache_path = getattr(app.config, "nb_execution_cache_path", "")
+        if configured_cache_path:
+            cache_dir = configured_cache_path
+        else:
+            cache_dir = str((Path(app.outdir).parent / ".jupyter_cache").resolve())
+
+        cache = get_cache(cache_dir)
         cache.cache_notebook_file(
             path=str(tmp_path),
             uri=str(Path(app.srcdir) / "tutorial.ipynb"),

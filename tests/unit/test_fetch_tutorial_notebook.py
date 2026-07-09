@@ -27,11 +27,15 @@ def _load_module():
 class _FakeConfig:
     def __init__(self):
         self.nb_execution_mode = "cache"
+        self.nb_execution_cache_path = ""
 
 
 class _FakeApp:
-    def __init__(self, srcdir):
+    def __init__(self, srcdir, outdir=None):
         self.srcdir = str(srcdir)
+        # Mirror Sphinx: outdir defaults to a subdir of srcdir, but on Read the
+        # Docs it lives outside the source tree entirely.
+        self.outdir = str(outdir) if outdir is not None else str(Path(srcdir) / "_build")
         self.config = _FakeConfig()
         self.connected = []
 
@@ -104,6 +108,82 @@ def test_download_and_cache_success(module, monkeypatch, tmp_path):
     assert recorded["overwrite"] is True
     assert recorded["check_validity"] is False
     assert app.config.nb_execution_mode == "cache"
+
+
+def test_cache_written_to_myst_nb_read_location(module, monkeypatch, tmp_path):
+    """Cache must be written where myst-nb reads it: outdir.parent/.jupyter_cache.
+
+    Reproduces the RTD failure: when the build output dir lives outside the
+    source tree (as on Read the Docs), writing the cache under srcdir means
+    myst-nb never finds it and re-executes the notebook.
+    """
+    monkeypatch.setenv("READTHEDOCS", "True")
+    monkeypatch.setattr(
+        module.urllib.request,
+        "urlopen",
+        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
+    )
+
+    srcdir = tmp_path / "docs"
+    srcdir.mkdir()
+    outdir = tmp_path / "rtd_output" / "html"
+    outdir.mkdir(parents=True)
+
+    captured = {}
+
+    class _FakeCache:
+        def cache_notebook_file(self, path, uri, check_validity, overwrite):
+            pass
+
+    fake_jupyter_cache = types.ModuleType("jupyter_cache")
+
+    def _get_cache(location):
+        captured["location"] = location
+        return _FakeCache()
+
+    fake_jupyter_cache.get_cache = _get_cache
+    monkeypatch.setitem(sys.modules, "jupyter_cache", fake_jupyter_cache)
+
+    app = _FakeApp(srcdir, outdir=outdir)
+
+    module._fetch_notebook(app)
+
+    expected = str((Path(app.outdir).parent / ".jupyter_cache").resolve())
+    assert captured["location"] == expected
+
+
+def test_cache_honors_explicit_execution_cache_path(module, monkeypatch, tmp_path):
+    """When nb_execution_cache_path is configured, the cache is written there."""
+    monkeypatch.setenv("READTHEDOCS", "True")
+    monkeypatch.setattr(
+        module.urllib.request,
+        "urlopen",
+        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
+    )
+
+    configured = tmp_path / "custom_cache"
+
+    captured = {}
+
+    class _FakeCache:
+        def cache_notebook_file(self, path, uri, check_validity, overwrite):
+            pass
+
+    fake_jupyter_cache = types.ModuleType("jupyter_cache")
+
+    def _get_cache(location):
+        captured["location"] = location
+        return _FakeCache()
+
+    fake_jupyter_cache.get_cache = _get_cache
+    monkeypatch.setitem(sys.modules, "jupyter_cache", fake_jupyter_cache)
+
+    app = _FakeApp(tmp_path / "docs")
+    app.config.nb_execution_cache_path = str(configured)
+
+    module._fetch_notebook(app)
+
+    assert captured["location"] == str(configured)
 
 
 def test_download_failure_sets_mode_off(module, monkeypatch, tmp_path):

@@ -4,6 +4,10 @@
 """Unit tests for the CI-artifact notebook cache helper."""
 
 import importlib.util
+import io
+import json
+import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -64,3 +68,76 @@ def test_resolve_repo_bad_url_raises(module, monkeypatch):
     monkeypatch.setattr(module, "_git", lambda *args: "not-a-remote")
     with pytest.raises(module.HelperError):
         module._resolve_repo()
+
+
+def _nb_bytes(code_sources):
+    cells = [{"cell_type": "markdown", "source": "# Title", "metadata": {}}]
+    cells += [
+        {"cell_type": "code", "source": s, "metadata": {}, "outputs": [], "execution_count": None}
+        for s in code_sources
+    ]
+    return json.dumps({"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}).encode()
+
+
+def _zip_with(name, data):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr(name, data)
+    return buf.getvalue()
+
+
+def test_extract_notebook_reads_ipynb(module):
+    payload = _nb_bytes(["echo one"])
+    zip_bytes = _zip_with("tutorial.ipynb", payload)
+    assert module._extract_notebook(zip_bytes) == payload
+
+
+def test_find_successful_run_returns_id(module, monkeypatch):
+    monkeypatch.setattr(
+        module, "_api_get_json", lambda path, token: {"workflow_runs": [{"id": 4242}]}
+    )
+    assert module._find_successful_run("o", "r", "sha", "t") == 4242
+
+
+def test_find_successful_run_none_raises(module, monkeypatch):
+    monkeypatch.setattr(module, "_api_get_json", lambda path, token: {"workflow_runs": []})
+    with pytest.raises(module.HelperError):
+        module._find_successful_run("o", "r", "sha", "t")
+
+
+def test_assert_commit_pushed_404_raises(module, monkeypatch):
+    def _raise(path, token):
+        raise module.urllib.error.HTTPError(path, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(module, "_api_get_json", _raise)
+    with pytest.raises(module.HelperError):
+        module._assert_commit_pushed("o", "r", "sha", "t")
+
+
+def test_populate_cache_mismatch_raises(module, tmp_path):
+    source = tmp_path / "tutorial.ipynb"
+    source.write_bytes(_nb_bytes(["echo one"]))
+    with pytest.raises(module.HelperError):
+        module._populate_cache(_nb_bytes(["echo DIFFERENT"]), source, tmp_path / ".jupyter_cache")
+
+
+def test_populate_cache_success_calls_cache(module, monkeypatch, tmp_path):
+    source = tmp_path / "tutorial.ipynb"
+    source.write_bytes(_nb_bytes(["echo one"]))
+    recorded = {}
+
+    class _FakeCache:
+        def cache_notebook_file(self, path, uri, check_validity, overwrite):
+            recorded["uri"] = uri
+            recorded["overwrite"] = overwrite
+            recorded["check_validity"] = check_validity
+
+    fake_jc = type(sys)("jupyter_cache")
+    fake_jc.get_cache = lambda cache_dir: _FakeCache()
+    monkeypatch.setitem(sys.modules, "jupyter_cache", fake_jc)
+
+    module._populate_cache(_nb_bytes(["echo one"]), source, tmp_path / ".jupyter_cache")
+
+    assert recorded["uri"] == str(source.resolve())
+    assert recorded["overwrite"] is True
+    assert recorded["check_validity"] is False

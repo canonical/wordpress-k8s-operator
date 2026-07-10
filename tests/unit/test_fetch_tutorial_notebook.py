@@ -8,7 +8,6 @@ import json
 import sys
 import types
 from pathlib import Path
-from urllib.error import URLError
 
 import pytest
 
@@ -236,7 +235,7 @@ def test_cache_failure_sets_mode_off(module, monkeypatch, tmp_path):
 
 
 def test_code_cells_match_true_ignores_markdown_and_outputs(module, tmp_path):
-    local = _write_local_notebook(tmp_path, ["echo one", "echo two"])
+    _write_local_notebook(tmp_path, ["echo one", "echo two"])
     candidate = _nb_bytes(["echo one", "echo two"])
     assert module._code_cells_match(candidate, Path(tmp_path) / "tutorial.ipynb") is True
 

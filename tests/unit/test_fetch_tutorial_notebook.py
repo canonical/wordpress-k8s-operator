@@ -19,12 +19,20 @@ _MODULE_PATH = (
 def _nb_bytes(code_sources):
     """Build minimal notebook JSON bytes with the given code-cell sources."""
     cells = [
-        {"cell_type": "code", "source": src, "metadata": {}, "outputs": [], "execution_count": None}
+        {
+            "cell_type": "code",
+            "source": src,
+            "metadata": {},
+            "outputs": [],
+            "execution_count": None,
+        }
         for src in code_sources
     ]
     # Include a markdown cell to prove non-code cells are ignored by the matcher.
     cells.insert(0, {"cell_type": "markdown", "source": "# Title", "metadata": {}})
-    return json.dumps({"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}).encode()
+    return json.dumps(
+        {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    ).encode()
 
 
 def _write_local_notebook(srcdir, code_sources):
@@ -254,7 +262,11 @@ def test_code_cells_match_false_on_bad_json(module, tmp_path):
 def test_code_cells_match_normalizes_list_sources(module, tmp_path):
     (Path(tmp_path) / "tutorial.ipynb").write_bytes(
         json.dumps(
-            {"cells": [{"cell_type": "code", "source": ["echo ", "one"]}], "nbformat": 4, "nbformat_minor": 5}
+            {
+                "cells": [{"cell_type": "code", "source": ["echo ", "one"]}],
+                "nbformat": 4,
+                "nbformat_minor": 5,
+            }
         ).encode()
     )
     candidate = _nb_bytes(["echo one"])

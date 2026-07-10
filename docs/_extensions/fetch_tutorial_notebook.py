@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 _GITHUB_REPO = "canonical/wordpress-k8s-operator"
 _RELEASE_TAG = "docs-latest"
 _ASSET_NAME = "tutorial.ipynb"
-_DOWNLOAD_URL = (
-    f"https://github.com/{_GITHUB_REPO}/releases/download/{_RELEASE_TAG}/{_ASSET_NAME}"
-)
+_DOWNLOAD_URL = f"https://github.com/{_GITHUB_REPO}/releases/download/{_RELEASE_TAG}/{_ASSET_NAME}"
 _COMMIT_ASSET_NAME = "commit.txt"
 _COMMIT_URL = (
     f"https://github.com/{_GITHUB_REPO}/releases/download/{_RELEASE_TAG}/{_COMMIT_ASSET_NAME}"

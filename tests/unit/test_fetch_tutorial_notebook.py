@@ -4,6 +4,7 @@
 """Unit tests for the tutorial-notebook Sphinx fetch extension."""
 
 import importlib.util
+import json
 import sys
 import types
 from pathlib import Path
@@ -14,6 +15,32 @@ import pytest
 _MODULE_PATH = (
     Path(__file__).resolve().parents[2] / "docs" / "_extensions" / "fetch_tutorial_notebook.py"
 )
+
+
+def _nb_bytes(code_sources):
+    """Build minimal notebook JSON bytes with the given code-cell sources."""
+    cells = [
+        {"cell_type": "code", "source": src, "metadata": {}, "outputs": [], "execution_count": None}
+        for src in code_sources
+    ]
+    # Include a markdown cell to prove non-code cells are ignored by the matcher.
+    cells.insert(0, {"cell_type": "markdown", "source": "# Title", "metadata": {}})
+    return json.dumps({"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}).encode()
+
+
+def _write_local_notebook(srcdir, code_sources):
+    """Write a local tutorial.ipynb into srcdir and return its code sources."""
+    (Path(srcdir) / "tutorial.ipynb").write_bytes(_nb_bytes(code_sources))
+    return code_sources
+
+
+def _set_rtd_env(monkeypatch, *, version_type="branch", commit="abc123"):
+    monkeypatch.setenv("READTHEDOCS", "True")
+    monkeypatch.setenv("READTHEDOCS_VERSION_TYPE", version_type)
+    if commit is None:
+        monkeypatch.delenv("READTHEDOCS_GIT_COMMIT_HASH", raising=False)
+    else:
+        monkeypatch.setenv("READTHEDOCS_GIT_COMMIT_HASH", commit)
 
 
 def _load_module():

@@ -76,7 +76,9 @@ def _nb_bytes(code_sources):
         {"cell_type": "code", "source": s, "metadata": {}, "outputs": [], "execution_count": None}
         for s in code_sources
     ]
-    return json.dumps({"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}).encode()
+    return json.dumps(
+        {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    ).encode()
 
 
 def _zip_with(name, data):
@@ -163,3 +165,153 @@ def test_strip_auth_redirect_drops_authorization(module):
     assert new is not None
     assert not any(k.lower() == "authorization" for k in new.headers)
     assert any(k.lower() == "accept" for k in new.headers)
+
+
+def test_api_get_json_401_raises_helper_error(module, monkeypatch):
+    """Test 401 HTTP error maps to HelperError with token message."""
+
+    def _fake_urlopen(request, timeout):
+        raise module.urllib.error.HTTPError("http://x", 401, "Unauthorized", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", _fake_urlopen)
+    with pytest.raises(module.HelperError, match="rejected the token"):
+        module._api_get_json("/path", "token")
+
+
+def test_api_get_json_403_no_rate_limit_raises_helper_error(module, monkeypatch):
+    """Test 403 without rate-limit headers maps to HelperError with token message."""
+
+    def _fake_urlopen(request, timeout):
+        raise module.urllib.error.HTTPError("http://x", 403, "Forbidden", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", _fake_urlopen)
+    with pytest.raises(module.HelperError, match="rejected the token"):
+        module._api_get_json("/path", "token")
+
+
+def test_api_get_json_403_with_rate_limit_raises_rate_limit_error(module, monkeypatch):
+    """Test 403 with X-RateLimit-Remaining: 0 maps to HelperError mentioning rate limit."""
+
+    def _fake_urlopen(request, timeout):
+        headers = {"X-RateLimit-Remaining": "0"}
+        raise module.urllib.error.HTTPError("http://x", 403, "Forbidden", headers, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", _fake_urlopen)
+    with pytest.raises(module.HelperError, match="rate limit") as exc_info:
+        module._api_get_json("/path", "token")
+    assert "token" not in str(exc_info.value).lower()
+
+
+def test_api_get_json_429_with_retry_after_raises_rate_limit_error(module, monkeypatch):
+    """Test 429 with Retry-After header maps to HelperError mentioning rate limit and retry time."""
+
+    def _fake_urlopen(request, timeout):
+        headers = {"Retry-After": "120"}
+        raise module.urllib.error.HTTPError("http://x", 429, "Too Many Requests", headers, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", _fake_urlopen)
+    with pytest.raises(module.HelperError, match=r"rate limit.*retry after 120 seconds"):
+        module._api_get_json("/path", "token")
+
+
+def test_api_get_json_500_propagates_as_http_error(module, monkeypatch):
+    """Test 500 HTTP error propagates as HTTPError, not HelperError."""
+
+    def _fake_urlopen(request, timeout):
+        raise module.urllib.error.HTTPError("http://x", 500, "Internal Server Error", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", _fake_urlopen)
+    with pytest.raises(module.urllib.error.HTTPError):
+        module._api_get_json("/path", "token")
+
+
+def test_api_get_bytes_410_raises_expired_error(module, monkeypatch):
+    """Test 410 HTTP error in artifact download maps to HelperError mentioning expired."""
+
+    class _FakeOpener:
+        def open(self, request, timeout):
+            raise module.urllib.error.HTTPError("http://x", 410, "Gone", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "build_opener", lambda *handlers: _FakeOpener())
+    with pytest.raises(module.HelperError, match="expired"):
+        module._api_get_bytes("http://x", "token")
+
+
+def test_api_get_bytes_404_raises_helper_error(module, monkeypatch):
+    """Test 404 HTTP error in artifact download maps to HelperError."""
+
+    class _FakeOpener:
+        def open(self, request, timeout):
+            raise module.urllib.error.HTTPError("http://x", 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "build_opener", lambda *handlers: _FakeOpener())
+    with pytest.raises(module.HelperError, match="no longer available"):
+        module._api_get_bytes("http://x", "token")
+
+
+def test_artifact_download_url_missing_artifact_raises(module, monkeypatch):
+    """Test that missing tutorial-notebook in artifacts list raises HelperError."""
+    monkeypatch.setattr(
+        module,
+        "_api_get_json",
+        lambda path, token: {
+            "artifacts": [{"name": "other-artifact", "archive_download_url": "u"}]
+        },
+    )
+    with pytest.raises(module.HelperError, match="no 'tutorial-notebook' artifact"):
+        module._artifact_download_url("o", "r", 123, "t")
+
+
+def test_extract_notebook_no_ipynb_raises(module):
+    """Test that a zip without .ipynb raises HelperError."""
+    zip_bytes = _zip_with("readme.txt", b"Not a notebook")
+    with pytest.raises(module.HelperError, match=r"No \.ipynb found"):
+        module._extract_notebook(zip_bytes)
+
+
+def test_extract_notebook_prefers_tutorial_ipynb(module):
+    """Test that tutorial.ipynb is preferred over other .ipynb files."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("other.ipynb", b"other content")
+        zf.writestr("tutorial.ipynb", b"preferred content")
+        zf.writestr("another.ipynb", b"another content")
+    with pytest.raises(AssertionError):
+        # Sanity check: this tests our test helper
+        result = module._extract_notebook(buf.getvalue())
+        assert result == b"other content", "Should prefer tutorial.ipynb"
+    result = module._extract_notebook(buf.getvalue())
+    assert result == b"preferred content"
+
+
+def test_main_returns_1_on_helper_error(module, monkeypatch):
+    """Test that main() returns 1 when a step raises HelperError."""
+    monkeypatch.setattr(module, "_resolve_token", lambda: "token")
+
+    def _raise_helper_error():
+        raise module.HelperError("Test error")
+
+    monkeypatch.setattr(module, "_resolve_repo", _raise_helper_error)
+    assert module.main([]) == 1
+
+
+def test_main_returns_1_on_url_error(module, monkeypatch):
+    """Test that main() returns 1 when a step raises URLError (no traceback)."""
+    monkeypatch.setattr(module, "_resolve_token", lambda: "token")
+
+    def _raise_url_error():
+        raise module.urllib.error.URLError("Network error")
+
+    monkeypatch.setattr(module, "_resolve_repo", _raise_url_error)
+    assert module.main([]) == 1
+
+
+def test_main_returns_1_on_os_error(module, monkeypatch):
+    """Test that main() returns 1 when a step raises OSError (no traceback)."""
+    monkeypatch.setattr(module, "_resolve_token", lambda: "token")
+
+    def _raise_os_error():
+        raise OSError("File system error")
+
+    monkeypatch.setattr(module, "_resolve_repo", _raise_os_error)
+    assert module.main([]) == 1

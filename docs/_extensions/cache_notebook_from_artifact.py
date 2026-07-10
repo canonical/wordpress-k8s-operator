@@ -40,7 +40,7 @@ class HelperError(Exception):
 
 
 def _git(*args):
-    """Return stripped stdout of a git command run in this file's repo."""
+    """Return stripped stdout of a git command (run from the current working directory)."""
     result = subprocess.run(
         ["git", *args],  # noqa: S607
         capture_output=True,
@@ -86,6 +86,16 @@ def _api_get_json(path, token):
         with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
             return json.loads(response.read())
     except urllib.error.HTTPError as exc:
+        if exc.code in (403, 429) and (
+            exc.headers.get("X-RateLimit-Remaining") == "0" or exc.headers.get("Retry-After")
+        ):
+            retry_after = exc.headers.get("Retry-After")
+            msg = f"GitHub API rate limit reached (HTTP {exc.code}). Wait and re-run"
+            if retry_after:
+                msg += f"; retry after {retry_after} seconds."
+            else:
+                msg += "."
+            raise HelperError(msg) from exc
         if exc.code in (401, 403):
             raise HelperError(
                 "GitHub API rejected the token (HTTP "
@@ -124,8 +134,22 @@ def _api_get_bytes(url, token):
         headers={**_API_HEADERS, "Authorization": f"Bearer {token}"},
     )
     opener = urllib.request.build_opener(_StripAuthRedirect())
-    with opener.open(request, timeout=120) as response:
-        return response.read()
+    try:
+        with opener.open(request, timeout=120) as response:
+            return response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 410:
+            raise HelperError(
+                "The CI artifact for this commit has expired (GitHub deletes artifacts after "
+                "~90 days). Push a fresh commit and wait for the Execute Tutorial Notebook "
+                "workflow, then re-run."
+            ) from exc
+        if exc.code == 404:
+            raise HelperError(
+                "The CI artifact is no longer available. Push a fresh commit and wait for the "
+                "Execute Tutorial Notebook workflow, then re-run."
+            ) from exc
+        raise
 
 
 def _assert_commit_pushed(owner, repo, commit, token):
@@ -158,7 +182,7 @@ def _find_successful_run(owner, repo, commit, token):
 
 def _artifact_download_url(owner, repo, run_id, token):
     """Return the archive_download_url of the tutorial-notebook artifact for a run."""
-    path = f"/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
+    path = f"/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts?per_page=100"
     artifacts = _api_get_json(path, token).get("artifacts", [])
     for artifact in artifacts:
         if artifact.get("name") == _ARTIFACT_NAME:
@@ -172,9 +196,19 @@ def _artifact_download_url(owner, repo, run_id, token):
 def _extract_notebook(zip_bytes):
     """Return the tutorial.ipynb bytes from the artifact zip."""
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
+        preferred = None
+        fallback = None
         for name in archive.namelist():
             if name.endswith(".ipynb"):
-                return archive.read(name)
+                if Path(name).name == _SOURCE_NOTEBOOK:
+                    preferred = name
+                    break
+                if fallback is None:
+                    fallback = name
+        if preferred:
+            return archive.read(preferred)
+        if fallback:
+            return archive.read(fallback)
     raise HelperError(f"No .ipynb found inside the '{_ARTIFACT_NAME}' artifact.")
 
 
@@ -189,6 +223,8 @@ def _load_matcher():
 def _populate_cache(nb_bytes, source_path, cache_dir):
     """Verify code cells match the source, then cache the notebook bytes."""
     source_path = Path(source_path)
+    # Match guard: compare only code-cell sources (what myst-nb renders); a metadata-only
+    # drift causes a cache MISS → loud --fail-on-warning failure, not a silent stale render.
     if not _load_matcher()(nb_bytes, source_path):
         raise HelperError(
             f"CI artifact code cells don't match {source_path}. The notebook changed since "
@@ -234,6 +270,13 @@ def main(argv=None):
         _populate_cache(nb_bytes, args.source, args.cache_dir)
     except HelperError as exc:
         logger.error("error: %s", exc)
+        return 1
+    except (urllib.error.URLError, OSError) as exc:
+        logger.error(
+            "error: network/API request failed: %s. Check your connection and GitHub status, "
+            "then re-run.",
+            exc,
+        )
         return 1
     return 0
 

@@ -107,28 +107,23 @@ def test_not_on_rtd_returns_early(module, monkeypatch, tmp_path):
 
 
 def test_download_and_cache_success(module, monkeypatch, tmp_path):
-    monkeypatch.setenv("READTHEDOCS", "True")
-    monkeypatch.setattr(
-        module.urllib.request,
-        "urlopen",
-        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
-    )
+    _set_rtd_env(monkeypatch, version_type="external", commit="x")
+    _write_local_notebook(tmp_path, ["echo one"])
+    monkeypatch.setattr(module, "_download_bytes", lambda url: _nb_bytes(["echo one"]))
 
     recorded = {}
 
     class _FakeCache:
         def cache_notebook_file(self, path, uri, check_validity, overwrite):
-            recorded["path"] = path
             recorded["uri"] = uri
-            recorded["check_validity"] = check_validity
             recorded["overwrite"] = overwrite
+            recorded["check_validity"] = check_validity
 
     fake_jupyter_cache = types.ModuleType("jupyter_cache")
     fake_jupyter_cache.get_cache = lambda location: _FakeCache()
     monkeypatch.setitem(sys.modules, "jupyter_cache", fake_jupyter_cache)
 
     app = _FakeApp(tmp_path)
-
     module._fetch_notebook(app)
 
     assert recorded["uri"] == str(tmp_path / "tutorial.ipynb")
@@ -144,17 +139,14 @@ def test_cache_written_to_myst_nb_read_location(module, monkeypatch, tmp_path):
     source tree (as on Read the Docs), writing the cache under srcdir means
     myst-nb never finds it and re-executes the notebook.
     """
-    monkeypatch.setenv("READTHEDOCS", "True")
-    monkeypatch.setattr(
-        module.urllib.request,
-        "urlopen",
-        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
-    )
-
     srcdir = tmp_path / "docs"
     srcdir.mkdir()
     outdir = tmp_path / "rtd_output" / "html"
     outdir.mkdir(parents=True)
+
+    _set_rtd_env(monkeypatch, version_type="external", commit="x")
+    _write_local_notebook(srcdir, ["echo one"])
+    monkeypatch.setattr(module, "_download_bytes", lambda url: _nb_bytes(["echo one"]))
 
     captured = {}
 
@@ -181,12 +173,11 @@ def test_cache_written_to_myst_nb_read_location(module, monkeypatch, tmp_path):
 
 def test_cache_honors_explicit_execution_cache_path(module, monkeypatch, tmp_path):
     """When nb_execution_cache_path is configured, the cache is written there."""
-    monkeypatch.setenv("READTHEDOCS", "True")
-    monkeypatch.setattr(
-        module.urllib.request,
-        "urlopen",
-        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
-    )
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    _set_rtd_env(monkeypatch, version_type="external", commit="x")
+    _write_local_notebook(docs_dir, ["echo one"])
+    monkeypatch.setattr(module, "_download_bytes", lambda url: _nb_bytes(["echo one"]))
 
     configured = tmp_path / "custom_cache"
 
@@ -205,7 +196,7 @@ def test_cache_honors_explicit_execution_cache_path(module, monkeypatch, tmp_pat
     fake_jupyter_cache.get_cache = _get_cache
     monkeypatch.setitem(sys.modules, "jupyter_cache", fake_jupyter_cache)
 
-    app = _FakeApp(tmp_path / "docs")
+    app = _FakeApp(docs_dir)
     app.config.nb_execution_cache_path = str(configured)
 
     module._fetch_notebook(app)
@@ -214,12 +205,9 @@ def test_cache_honors_explicit_execution_cache_path(module, monkeypatch, tmp_pat
 
 
 def test_download_failure_sets_mode_off(module, monkeypatch, tmp_path):
-    monkeypatch.setenv("READTHEDOCS", "True")
-
-    def _raise(*a, **k):
-        raise URLError("boom")
-
-    monkeypatch.setattr(module.urllib.request, "urlopen", _raise)
+    _set_rtd_env(monkeypatch, version_type="external", commit="x")
+    _write_local_notebook(tmp_path, ["echo one"])
+    monkeypatch.setattr(module, "_download_bytes", lambda url: None)
     app = _FakeApp(tmp_path)
 
     module._fetch_notebook(app)
@@ -327,3 +315,119 @@ def test_wait_times_out_returns_none(module, monkeypatch):
     monkeypatch.setattr(module.time, "sleep", lambda s: None)
     monkeypatch.setattr(module, "_download_bytes", lambda url: b"never-matches\n")
     assert module._wait_for_fresh_notebook("target-sha") is None
+
+
+class _RecordingCache:
+    def __init__(self):
+        self.cached = False
+
+    def cache_notebook_file(self, path, uri, check_validity, overwrite):
+        self.cached = True
+
+
+def _install_fake_cache(monkeypatch):
+    cache = _RecordingCache()
+    fake = types.ModuleType("jupyter_cache")
+    fake.get_cache = lambda location: cache
+    monkeypatch.setitem(sys.modules, "jupyter_cache", fake)
+    return cache
+
+
+def test_branch_build_sha_match_caches(module, monkeypatch, tmp_path):
+    _set_rtd_env(monkeypatch, version_type="branch", commit="sha-1")
+    _write_local_notebook(tmp_path, ["echo one"])
+    monkeypatch.setattr(module, "_wait_for_fresh_notebook", lambda c: _nb_bytes(["echo one"]))
+    cache = _install_fake_cache(monkeypatch)
+
+    app = _FakeApp(tmp_path)
+    module._fetch_notebook(app)
+
+    assert cache.cached is True
+    assert app.config.nb_execution_mode == "cache"
+
+
+def test_branch_build_timeout_degrades(module, monkeypatch, tmp_path):
+    _set_rtd_env(monkeypatch, version_type="branch", commit="sha-1")
+    _write_local_notebook(tmp_path, ["echo one"])
+    monkeypatch.setattr(module, "_wait_for_fresh_notebook", lambda c: None)
+    cache = _install_fake_cache(monkeypatch)
+
+    app = _FakeApp(tmp_path)
+    module._fetch_notebook(app)
+
+    assert cache.cached is False
+    assert app.config.nb_execution_mode == "off"
+
+
+def test_branch_build_content_mismatch_degrades(module, monkeypatch, tmp_path):
+    _set_rtd_env(monkeypatch, version_type="branch", commit="sha-1")
+    _write_local_notebook(tmp_path, ["echo LOCAL"])
+    monkeypatch.setattr(module, "_wait_for_fresh_notebook", lambda c: _nb_bytes(["echo REMOTE"]))
+    cache = _install_fake_cache(monkeypatch)
+
+    app = _FakeApp(tmp_path)
+    module._fetch_notebook(app)
+
+    assert cache.cached is False
+    assert app.config.nb_execution_mode == "off"
+
+
+def test_pr_build_content_match_caches_without_waiting(module, monkeypatch, tmp_path):
+    _set_rtd_env(monkeypatch, version_type="external", commit="pr-head")
+    _write_local_notebook(tmp_path, ["echo one"])
+
+    def _no_wait(commit):
+        raise AssertionError("PR builds must not wait")
+
+    monkeypatch.setattr(module, "_wait_for_fresh_notebook", _no_wait)
+    monkeypatch.setattr(module, "_download_bytes", lambda url: _nb_bytes(["echo one"]))
+    cache = _install_fake_cache(monkeypatch)
+
+    app = _FakeApp(tmp_path)
+    module._fetch_notebook(app)
+
+    assert cache.cached is True
+    assert app.config.nb_execution_mode == "cache"
+
+
+def test_pr_build_content_mismatch_degrades(module, monkeypatch, tmp_path):
+    _set_rtd_env(monkeypatch, version_type="external", commit="pr-head")
+    _write_local_notebook(tmp_path, ["echo LOCAL"])
+    monkeypatch.setattr(module, "_download_bytes", lambda url: _nb_bytes(["echo REMOTE"]))
+    cache = _install_fake_cache(monkeypatch)
+
+    app = _FakeApp(tmp_path)
+    module._fetch_notebook(app)
+
+    assert cache.cached is False
+    assert app.config.nb_execution_mode == "off"
+
+
+def test_commit_hash_unset_uses_single_fetch(module, monkeypatch, tmp_path):
+    _set_rtd_env(monkeypatch, version_type="branch", commit=None)
+    _write_local_notebook(tmp_path, ["echo one"])
+
+    def _no_wait(commit):
+        raise AssertionError("must not wait without a commit hash")
+
+    monkeypatch.setattr(module, "_wait_for_fresh_notebook", _no_wait)
+    monkeypatch.setattr(module, "_download_bytes", lambda url: _nb_bytes(["echo one"]))
+    cache = _install_fake_cache(monkeypatch)
+
+    app = _FakeApp(tmp_path)
+    module._fetch_notebook(app)
+
+    assert cache.cached is True
+
+
+def test_download_returns_none_degrades(module, monkeypatch, tmp_path):
+    _set_rtd_env(monkeypatch, version_type="external", commit="pr-head")
+    _write_local_notebook(tmp_path, ["echo one"])
+    monkeypatch.setattr(module, "_download_bytes", lambda url: None)
+    cache = _install_fake_cache(monkeypatch)
+
+    app = _FakeApp(tmp_path)
+    module._fetch_notebook(app)
+
+    assert cache.cached is False
+    assert app.config.nb_execution_mode == "off"

@@ -84,7 +84,7 @@ def _wait_for_fresh_notebook(commit):
 def _fetch_notebook(app):
     """Download pre-executed tutorial notebook from GitHub releases.
 
-    Populates the jupyter-cache so that myst-nb finds a cache hit for tutorial.ipynb.
+    Populates the jupyter-cache so that myst-nb finds a cache hit for tutorial.ipynb
     and renders the pre-executed outputs without re-running the notebook.
 
     If the download or caching fails, the build continues without cached outputs
@@ -93,17 +93,28 @@ def _fetch_notebook(app):
     if not os.environ.get("READTHEDOCS"):
         return
 
-    logger.info("Fetching pre-executed tutorial notebook from %s", _DOWNLOAD_URL)
+    version_type = os.environ.get("READTHEDOCS_VERSION_TYPE", "")
+    commit = os.environ.get("READTHEDOCS_GIT_COMMIT_HASH", "")
 
-    try:
-        with urllib.request.urlopen(_DOWNLOAD_URL, timeout=60) as response:  # noqa: S310
-            nb_bytes = response.read()
-    except (URLError, OSError) as exc:
+    if version_type != "external" and commit:
+        logger.info("Waiting for docs-latest to match commit %s", commit)
+        nb_bytes = _wait_for_fresh_notebook(commit)
+    else:
+        logger.info("Fetching tutorial notebook from %s", _DOWNLOAD_URL)
+        nb_bytes = _download_bytes(_DOWNLOAD_URL)
+
+    if nb_bytes is None:
         logger.warning(
-            "Failed to download tutorial notebook from %s: %s. "
-            "Tutorial will render without execution outputs.",
-            _DOWNLOAD_URL,
-            exc,
+            "No fresh tutorial notebook available. Rendering without execution outputs."
+        )
+        app.config.nb_execution_mode = "off"
+        return
+
+    local_notebook = Path(app.srcdir) / "tutorial.ipynb"
+    if not _code_cells_match(nb_bytes, local_notebook):
+        logger.warning(
+            "Published tutorial notebook does not match local code cells. "
+            "Rendering without execution outputs."
         )
         app.config.nb_execution_mode = "off"
         return
@@ -130,11 +141,11 @@ def _fetch_notebook(app):
         cache = get_cache(cache_dir)
         cache.cache_notebook_file(
             path=str(tmp_path),
-            uri=str(Path(app.srcdir) / "tutorial.ipynb"),
+            uri=str(local_notebook),
             check_validity=False,
             overwrite=True,
         )
-        logger.info("Successfully cached tutorial notebook from %s", _DOWNLOAD_URL)
+        logger.info("Successfully cached tutorial notebook")
     except Exception as exc:  # noqa: BLE001
         logger.warning(
             "Failed to cache tutorial notebook: %s. "

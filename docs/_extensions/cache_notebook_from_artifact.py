@@ -106,11 +106,11 @@ def _api_get_bytes(url, token):
 
 
 def _assert_commit_pushed(owner, repo, commit, token):
-    """Raise HelperError if the commit is not present on the remote (HTTP 404)."""
+    """Raise HelperError if the commit is not present on the remote (HTTP 404 or 422)."""
     try:
         _api_get_json(f"/repos/{owner}/{repo}/commits/{commit}", token)
     except urllib.error.HTTPError as exc:
-        if exc.code == 404:
+        if exc.code in (404, 422):
             raise HelperError(
                 f"Commit {commit} isn't pushed to the remote yet. Push it and wait for the "
                 "Execute Tutorial Notebook workflow to finish, then re-run."

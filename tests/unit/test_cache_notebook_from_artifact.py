@@ -105,12 +105,22 @@ def test_find_successful_run_none_raises(module, monkeypatch):
         module._find_successful_run("o", "r", "sha", "t")
 
 
-def test_assert_commit_pushed_404_raises(module, monkeypatch):
+@pytest.mark.parametrize("code", [404, 422])
+def test_assert_commit_pushed_not_found_raises(module, monkeypatch, code):
     def _raise(path, token):
-        raise module.urllib.error.HTTPError(path, 404, "Not Found", {}, None)
+        raise module.urllib.error.HTTPError(path, code, "err", {}, None)
 
     monkeypatch.setattr(module, "_api_get_json", _raise)
     with pytest.raises(module.HelperError):
+        module._assert_commit_pushed("o", "r", "sha", "t")
+
+
+def test_assert_commit_pushed_other_error_reraises(module, monkeypatch):
+    def _raise(path, token):
+        raise module.urllib.error.HTTPError(path, 500, "boom", {}, None)
+
+    monkeypatch.setattr(module, "_api_get_json", _raise)
+    with pytest.raises(module.urllib.error.HTTPError):
         module._assert_commit_pushed("o", "r", "sha", "t")
 
 

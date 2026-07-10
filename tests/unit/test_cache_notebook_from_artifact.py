@@ -151,3 +151,15 @@ def test_populate_cache_success_calls_cache(module, monkeypatch, tmp_path):
     assert recorded["uri"] == str(source.resolve())
     assert recorded["overwrite"] is True
     assert recorded["check_validity"] is False
+
+
+def test_strip_auth_redirect_drops_authorization(module):
+    handler = module._StripAuthRedirect()
+    req = module.urllib.request.Request(
+        "https://api.github.com/x",
+        headers={"Authorization": "Bearer secret", "Accept": "application/vnd.github+json"},
+    )
+    new = handler.redirect_request(req, None, 302, "Found", {}, "https://storage.example.com/y")
+    assert new is not None
+    assert not any(k.lower() == "authorization" for k in new.headers)
+    assert any(k.lower() == "accept" for k in new.headers)

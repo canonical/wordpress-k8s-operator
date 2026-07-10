@@ -95,13 +95,36 @@ def _api_get_json(path, token):
         raise
 
 
+class _StripAuthRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirect handler that drops the Authorization header on redirect.
+
+    GitHub's artifact download endpoint returns a 302 to a pre-signed storage
+    URL that must be fetched without the GitHub token; sending it makes the
+    storage host reject the request with HTTP 401.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        """Build the redirected request without the Authorization header."""
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None:
+            for key in list(new.headers):
+                if key.lower() == "authorization":
+                    del new.headers[key]
+        return new
+
+
 def _api_get_bytes(url, token):
-    """GET an absolute URL and return raw bytes (used for the artifact zip download)."""
+    """GET an absolute URL and return raw bytes (used for the artifact zip download).
+
+    Follows GitHub's 302 redirect to signed storage, dropping the Authorization
+    header on the redirect so the storage host does not reject the request (401).
+    """
     request = urllib.request.Request(  # noqa: S310
         url,
         headers={**_API_HEADERS, "Authorization": f"Bearer {token}"},
     )
-    with urllib.request.urlopen(request, timeout=120) as response:  # noqa: S310
+    opener = urllib.request.build_opener(_StripAuthRedirect())
+    with opener.open(request, timeout=120) as response:
         return response.read()
 
 

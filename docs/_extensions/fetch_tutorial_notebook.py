@@ -3,6 +3,7 @@
 
 """Sphinx extension to fetch pre-executed tutorial notebook from GitHub releases."""
 
+import json
 import logging
 import os
 import tempfile
@@ -18,6 +19,33 @@ _ASSET_NAME = "tutorial.ipynb"
 _DOWNLOAD_URL = (
     f"https://github.com/{_GITHUB_REPO}/releases/download/{_RELEASE_TAG}/{_ASSET_NAME}"
 )
+
+
+def _code_cell_sources(nb_bytes):
+    """Return the ordered list of normalized code-cell sources, or None on error."""
+    try:
+        nb = json.loads(nb_bytes)
+        sources = []
+        for cell in nb.get("cells", []):
+            if cell.get("cell_type") != "code":
+                continue
+            source = cell.get("source", "")
+            if isinstance(source, list):
+                source = "".join(source)
+            sources.append(source)
+        return sources
+    except (ValueError, TypeError):
+        return None
+
+
+def _code_cells_match(candidate_bytes, local_path):
+    """True iff candidate and local notebook have identical ordered code cells."""
+    candidate = _code_cell_sources(candidate_bytes)
+    try:
+        local = _code_cell_sources(local_path.read_bytes())
+    except OSError:
+        return False
+    return candidate is not None and candidate == local
 
 
 def _fetch_notebook(app):

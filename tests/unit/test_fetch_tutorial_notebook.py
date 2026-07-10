@@ -216,12 +216,9 @@ def test_download_failure_sets_mode_off(module, monkeypatch, tmp_path):
 
 
 def test_cache_failure_sets_mode_off(module, monkeypatch, tmp_path):
-    monkeypatch.setenv("READTHEDOCS", "True")
-    monkeypatch.setattr(
-        module.urllib.request,
-        "urlopen",
-        lambda *a, **k: _FakeResponse(b"notebook-bytes"),
-    )
+    _set_rtd_env(monkeypatch, version_type="external", commit="x")
+    _write_local_notebook(tmp_path, ["echo one"])
+    monkeypatch.setattr(module, "_download_bytes", lambda url: _nb_bytes(["echo one"]))
 
     fake_jupyter_cache = types.ModuleType("jupyter_cache")
 

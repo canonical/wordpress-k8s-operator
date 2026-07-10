@@ -320,6 +320,11 @@ nb_execution_mode = "cache"
 nb_execution_timeout = 3600
 nb_execution_show_tb = True
 nb_execution_raise_on_error = True
+# Merge consecutive stream outputs (e.g. successive stdout lines from a cell)
+# into a single rendered output block instead of one block per flush. Applies
+# at render time, so it takes effect for both live execution and the cached
+# notebook used on Read the Docs.
+nb_merge_streams = True
 
 # Adds custom CSS files, located under 'html_static_path'
 

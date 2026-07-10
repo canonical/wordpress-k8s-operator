@@ -32,6 +32,8 @@ help:
 	@echo "* build and execute notebooks:               make html-with-exec"
 	@echo "* only serve:                                make serve"
 	@echo "* serve and execute notebooks:               make serve-with-exec"
+	@echo "* build with CI notebook outputs:            make html-with-artifact"
+	@echo "* serve with CI notebook outputs:            make serve-with-artifact"
 	@echo "* clean built doc files:                     make clean-doc"
 	@echo "* clean full environment:                    make clean"
 	@echo "* check links:                               make linkcheck"
@@ -46,8 +48,8 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo
 
-.PHONY: help full-help html html-with-exec epub pdf linkcheck spelling spellcheck woke \
-        vale pa11y run serve serve-with-exec install pa11y-install   \
+.PHONY: help full-help html html-with-exec html-with-artifact epub pdf linkcheck spelling spellcheck woke \
+        vale pa11y run serve serve-with-exec serve-with-artifact install pa11y-install   \
         vale-install pdf-prep pdf-prep-force clean clean-doc \
         update lint-md
 
@@ -98,6 +100,13 @@ html-with-exec: install
 	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
 
 serve-with-exec: html-with-exec
+	cd "$(DOCS_BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
+
+html-with-artifact: install
+	. $(DOCS_VENV); python "$(DOCS_SOURCEDIR)/_extensions/cache_notebook_from_artifact.py" --source "$(DOCS_SOURCEDIR)/tutorial.ipynb" --cache-dir .jupyter_cache
+	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
+
+serve-with-artifact: html-with-artifact
 	cd "$(DOCS_BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
 
 clean: clean-doc

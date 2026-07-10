@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import tempfile
+import time
 import urllib.request
 from pathlib import Path
 from urllib.error import URLError
@@ -19,6 +20,12 @@ _ASSET_NAME = "tutorial.ipynb"
 _DOWNLOAD_URL = (
     f"https://github.com/{_GITHUB_REPO}/releases/download/{_RELEASE_TAG}/{_ASSET_NAME}"
 )
+_COMMIT_ASSET_NAME = "commit.txt"
+_COMMIT_URL = (
+    f"https://github.com/{_GITHUB_REPO}/releases/download/{_RELEASE_TAG}/{_COMMIT_ASSET_NAME}"
+)
+_POLL_INTERVAL_SECONDS = 15
+_WAIT_TIMEOUT_SECONDS = 180
 
 
 def _code_cell_sources(nb_bytes):
@@ -46,6 +53,32 @@ def _code_cells_match(candidate_bytes, local_path):
     except OSError:
         return False
     return candidate is not None and candidate == local
+
+
+def _download_bytes(url):
+    """Download bytes from url, or return None on network error / missing asset."""
+    try:
+        with urllib.request.urlopen(url, timeout=60) as response:  # noqa: S310
+            return response.read()
+    except (URLError, OSError):
+        return None
+
+
+def _wait_for_fresh_notebook(commit):
+    """Poll commit.txt until it matches `commit`, then return the notebook bytes.
+
+    Returns None if the release does not become fresh within the timeout. This
+    covers the merge-time race where the publish workflow has not yet replaced
+    docs-latest for the commit Read the Docs is currently building.
+    """
+    deadline = time.monotonic() + _WAIT_TIMEOUT_SECONDS
+    while True:
+        published = _download_bytes(_COMMIT_URL)
+        if published is not None and published.decode(errors="replace").strip() == commit:
+            return _download_bytes(_DOWNLOAD_URL)
+        if time.monotonic() >= deadline:
+            return None
+        time.sleep(_POLL_INTERVAL_SECONDS)
 
 
 def _fetch_notebook(app):

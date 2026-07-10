@@ -285,3 +285,45 @@ def test_setup_registers_hook(module, tmp_path):
     assert ("builder-inited", module._fetch_notebook) in app.connected
     assert result["parallel_read_safe"] is True
     assert result["parallel_write_safe"] is True
+
+
+def test_wait_returns_notebook_when_commit_matches_first_try(module, monkeypatch):
+    monkeypatch.setattr(module, "_WAIT_TIMEOUT_SECONDS", 5)
+    monkeypatch.setattr(module, "_POLL_INTERVAL_SECONDS", 0)
+    calls = []
+
+    def _fake_download(url):
+        calls.append(url)
+        if url == module._COMMIT_URL:
+            return b"target-sha\n"
+        return b"NOTEBOOK"
+
+    monkeypatch.setattr(module, "_download_bytes", _fake_download)
+    result = module._wait_for_fresh_notebook("target-sha")
+    assert result == b"NOTEBOOK"
+
+
+def test_wait_retries_until_commit_matches(module, monkeypatch):
+    monkeypatch.setattr(module, "_WAIT_TIMEOUT_SECONDS", 5)
+    monkeypatch.setattr(module, "_POLL_INTERVAL_SECONDS", 0)
+    monkeypatch.setattr(module.time, "sleep", lambda s: None)
+    seq = [b"old-sha\n", None, b"target-sha\n"]  # stale, then 404, then match
+
+    def _fake_download(url):
+        if url == module._COMMIT_URL:
+            return seq.pop(0)
+        return b"NOTEBOOK"
+
+    monkeypatch.setattr(module, "_download_bytes", _fake_download)
+    result = module._wait_for_fresh_notebook("target-sha")
+    assert result == b"NOTEBOOK"
+    assert seq == []
+
+
+def test_wait_times_out_returns_none(module, monkeypatch):
+    # Timeout budget of 0 means the loop runs once then gives up.
+    monkeypatch.setattr(module, "_WAIT_TIMEOUT_SECONDS", 0)
+    monkeypatch.setattr(module, "_POLL_INTERVAL_SECONDS", 0)
+    monkeypatch.setattr(module.time, "sleep", lambda s: None)
+    monkeypatch.setattr(module, "_download_bytes", lambda url: b"never-matches\n")
+    assert module._wait_for_fresh_notebook("target-sha") is None

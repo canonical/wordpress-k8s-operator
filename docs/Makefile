@@ -91,7 +91,7 @@ html: install
 	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS) -D nb_execution_mode=off
 
 epub: install
-	. $(DOCS_VENV); $(SPHINX_BUILD) -b epub "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
+	. $(DOCS_VENV); $(SPHINX_BUILD) -b epub "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS) -D nb_execution_mode=off
 
 serve: html
 	cd "$(DOCS_BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
@@ -123,7 +123,7 @@ clean-doc:
 	rm -rf $(DEV_DIR)/.doctrees
 
 linkcheck: install
-	. $(DOCS_VENV) ; $(SPHINX_BUILD) -b linkcheck -q "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) || { grep --color -F "[broken]" "$(DOCS_BUILDDIR)/output.txt"; exit 1; }
+	. $(DOCS_VENV) ; $(SPHINX_BUILD) -b linkcheck -q "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) -D nb_execution_mode=off || { grep --color -F "[broken]" "$(DOCS_BUILDDIR)/output.txt"; exit 1; }
 	exit 0
 
 pa11y: pa11y-install html
@@ -193,7 +193,7 @@ pdf-prep-force:
 	apt-get install --no-install-recommends -y $(DOCS_PDFPACKAGES) \
 
 pdf: pdf-prep
-	@. $(DOCS_VENV); $(SPHINX_BUILD) -M latexpdf "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS)
+	@. $(DOCS_VENV); $(SPHINX_BUILD) -M latexpdf "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) -D nb_execution_mode=off
 	@rm ./$(DOCS_BUILDDIR)/latex/front-page-light.pdf || true
 	@rm ./$(DOCS_BUILDDIR)/latex/normal-page-footer.pdf || true
 	@find ./$(DOCS_BUILDDIR)/latex -name "*.pdf" -exec mv -t ./$(DOCS_BUILDDIR) {} +

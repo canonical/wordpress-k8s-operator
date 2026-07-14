@@ -22,6 +22,27 @@ You may open a pull request with your documentation changes, or you can
 `file a bug <https://github.com/canonical/wordpress-k8s-operator/issues>`_
 to provide constructive feedback or suggestions.
 
+Developing with Jupyter notebooks
+---------------------------------
+
+The tutorial documentation is written in Jupyter notebook, which can be executed in a local environment. 
+This allows you to test the code cells, and verify that they work as expected.
+The documentation is set up so that Read the Docs renders the code cell output of the Jupyter notebook executed in GitHub Workflows.
+
+For local development of the Jupyter notebooks, you can install [JupyterLab](https://jupyter.org/install) or use the [Jupyter notebook VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter).
+
+The Makefile targets `make html-with-exec` and `make serve-with-exec` are intended to be used within VMs or containers to execute the Jupyter notebook.
+This is intended for developers who want to test the code cells locally in the Jupyter notebooks.
+Since the Jupyter notebook documentation often will involve installing software such as Juju, LXD, and Kubernetes, it is recommended to use a VM or container to avoid conflicts with your local environment.
+In addition, the installation would need superuser privileges.
+
+The Makefile targets `make html-with-artifact` and `make serve-with-artifact` download the artifacts of the executed Jupyter notebook from GitHub Workflows, and use them to render the documentation locally.
+This is intended for developers who want to preview the documentation locally. 
+As the executed Jupyter notebook will be used by Read the Docs to render the documentation, this should result in the same output.
+To use this target, the commit must be pushed to GitHub and the workflow to execute jupyter notebook must complete successfully.
+In addition, the `GITHUB_TOKEN` environment variable must be set to a valid GitHub token with permission to read the repository and workflows.
+As this GitHub token is used to find and download the artifact from the workflow run of the same commit hash.
+
 AI usage
 --------
 

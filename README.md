@@ -2,7 +2,7 @@
 [![Publish to edge](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/publish_charm.yaml/badge.svg)](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/publish_charm.yaml)
 [![Promote charm](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/wordpress-k8s-operator/actions/workflows/promote_charm.yaml)
 [![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
-[![Documentation status](https://app.readthedocs.com/projects/canonical-wordpress-k8s-juju-charm/badge/?version=latest)](https://app.readthedocs.com/projects/canonical-wordpress-k8s-juju-charm/badge/?version=latest)
+[![Documentation status](https://app.readthedocs.com/projects/canonical-wordpress-k8s-juju-charm/badge/?version=latest)](https://canonical.com/juju/docs/wordpress-k8s-charm/latest/)
 
 # WordPress operator
 

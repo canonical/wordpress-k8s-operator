@@ -58,7 +58,7 @@ Ingress manages external http/https access to services in a Kubernetes cluster.
 The `ingress` relation through [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator)
 charm enables additional `blog_hostname` and `use_nginx_ingress_modesec` configurations that
 provide capabilities such as ModSecurity enabled
-Web Application Firewall ([WAF](https://docs.nginx.com/nginx-waf/)).
+Web Application Firewall ([WAF](https://docs.nginx.com/waf/)).
 
 Note that the
 Kubernetes cluster must already have an nginx ingress controller deployed. Documentation to

@@ -92,9 +92,13 @@ def _fetch_notebook(app):
         return
 
     version_type = os.environ.get("READTHEDOCS_VERSION_TYPE", "")
+    # On Read the Docs, the default-branch build is exposed as version "latest".
+    # For tags/other branches, docs-latest will never match the commit being built,
+    # so waiting only adds delay before we fall back to rendering without outputs.
+    version = os.environ.get("READTHEDOCS_VERSION", "latest")
     commit = os.environ.get("READTHEDOCS_GIT_COMMIT_HASH", "")
 
-    if version_type != "external" and commit:
+    if version_type == "branch" and version == "latest" and commit:
         logger.info("Waiting for docs-latest to match commit %s", commit)
         nb_bytes = _wait_for_fresh_notebook(commit)
     else:

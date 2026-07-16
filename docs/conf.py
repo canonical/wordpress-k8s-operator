@@ -3,7 +3,7 @@ import os
 import sys
 import yaml
 
-sys.path.insert(0, os.path.abspath("_extensions"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "_extensions"))
 
 # Configuration for the Sphinx documentation builder.
 # All configuration specific to your project should be done in this file.
@@ -404,14 +404,15 @@ def setup(app):
 
     canonical_sphinx loads myst_parser which registers all myst-related roles,
     directives, transforms, and config values. When myst_nb subsequently calls
-    setup_myst_parser, it tries to re-register everything, causing conflicts.
-    We work around this by making setup_myst_parser a no-op before loading myst_nb.
+    myst_parser setup again, it tries to re-register everything, causing conflicts.
     """
     import myst_parser.sphinx_ext.main as myst_main
 
-    # canonical_sphinx already called setup_sphinx (via myst_parser), so all myst_parser
-    # roles, directives, transforms, and config values are already registered.
-    # Make it a no-op so myst_nb doesn't re-register them.
-    myst_main.setup_sphinx = lambda app, load_parser=False: None
+    # Only apply the no-op patch when myst_parser is already loaded by canonical_sphinx.
+    if "myst_parser" in app.extensions:
+        def _noop_setup_sphinx(app, load_parser=False):
+            return None
+
+        myst_main.setup_sphinx = _noop_setup_sphinx
 
     app.setup_extension("myst_nb")

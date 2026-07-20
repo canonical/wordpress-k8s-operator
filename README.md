@@ -25,7 +25,7 @@ For information about how to deploy, integrate, and manage this charm, see the O
 
 ## Get started
 
-To begin, refer to the [Getting Started](docs/tutorial.md) tutorial for step-by-step instructions.
+To begin, refer to the [Getting Started](docs/tutorial.ipynb) tutorial for step-by-step instructions.
 
 ### Basic operations
 

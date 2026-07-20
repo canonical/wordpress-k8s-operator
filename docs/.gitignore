@@ -19,6 +19,10 @@ _build
 # Node.js
 package*.json
 
+# Cached output
+.jupyter_cache
+jupyter_execute
+
 # Unrelated cache and config files
 .DS_Store
 __pycache__

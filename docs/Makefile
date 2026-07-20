@@ -29,7 +29,11 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo "* watch, build and serve the documentation:  make run"
 	@echo "* only build:                                make html"
+	@echo "* build and execute notebooks:               make html-with-exec"
 	@echo "* only serve:                                make serve"
+	@echo "* serve and execute notebooks:               make serve-with-exec"
+	@echo "* build with CI notebook outputs:            make html-with-artifact"
+	@echo "* serve with CI notebook outputs:            make serve-with-artifact"
 	@echo "* clean built doc files:                     make clean-doc"
 	@echo "* clean full environment:                    make clean"
 	@echo "* check links:                               make linkcheck"
@@ -44,8 +48,8 @@ help:
 	@echo "-------------------------------------------------------------"
 	@echo
 
-.PHONY: help full-help html epub pdf linkcheck spelling spellcheck woke \
-        vale pa11y run serve install pa11y-install   \
+.PHONY: help full-help html html-with-exec html-with-artifact epub pdf linkcheck spelling spellcheck woke \
+        vale pa11y run serve serve-with-exec serve-with-artifact install pa11y-install   \
         vale-install pdf-prep pdf-prep-force clean clean-doc \
         update lint-md
 
@@ -61,6 +65,7 @@ $(DOCS_VENVDIR):
 	. $(DOCS_VENV); pip install $(PIPOPTS) --require-virtualenv \
 	    --upgrade -r requirements.txt \
             --log $(DOCS_VENVDIR)/pip_install.log
+	. $(DOCS_VENV); python -m bash_kernel.install --sys-prefix
 	@test ! -f $(DOCS_VENVDIR)/pip_list.txt || \
             mv $(DOCS_VENVDIR)/pip_list.txt $(DOCS_VENVDIR)/pip_list.txt.bak
 	@. $(DOCS_VENV); pip list --local --format=freeze > $(DOCS_VENVDIR)/pip_list.txt
@@ -79,16 +84,29 @@ pymarkdownlnt-install: install
 install: $(DOCS_VENVDIR)
 
 run: install
-	. $(DOCS_VENV); $(DOCS_VENVDIR)/bin/sphinx-autobuild -b dirhtml --host $(SPHINX_HOST) --port $(SPHINX_PORT) "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) $(SPHINX_AUTOBUILD_OPTS)
+	. $(DOCS_VENV); $(DOCS_VENVDIR)/bin/sphinx-autobuild -b dirhtml --host $(SPHINX_HOST) --port $(SPHINX_PORT) "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) $(SPHINX_AUTOBUILD_OPTS) -D nb_execution_mode=off
 
 # Does not depend on $(DOCS_BUILDDIR) to rebuild properly at every run.
 html: install
-	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
+	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS) -D nb_execution_mode=off
 
 epub: install
-	. $(DOCS_VENV); $(SPHINX_BUILD) -b epub "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
+	. $(DOCS_VENV); $(SPHINX_BUILD) -b epub "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS) -D nb_execution_mode=off
 
 serve: html
+	cd "$(DOCS_BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
+
+html-with-exec: install
+	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
+
+serve-with-exec: html-with-exec
+	cd "$(DOCS_BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
+
+html-with-artifact: install
+	. $(DOCS_VENV); python "$(DOCS_SOURCEDIR)/_extensions/cache_notebook_from_artifact.py" --source "$(DOCS_SOURCEDIR)/tutorial.ipynb" --cache-dir .jupyter_cache
+	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
+
+serve-with-artifact: html-with-artifact
 	cd "$(DOCS_BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
 
 clean: clean-doc
@@ -97,13 +115,15 @@ clean: clean-doc
 	rm -rf $(DEV_DIR)/node_modules/
 	rm -rf $(DEV_DIR)/styles
 	rm -rf $(VALE_CONFIG)
+	rm -rf .jupyter_cache
+	rm -rf jupyter_execute
 
 clean-doc:
 	git clean -fx "$(DOCS_BUILDDIR)"
 	rm -rf $(DEV_DIR)/.doctrees
 
 linkcheck: install
-	. $(DOCS_VENV) ; $(SPHINX_BUILD) -b linkcheck -q "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) || { grep --color -F "[broken]" "$(DOCS_BUILDDIR)/output.txt"; exit 1; }
+	. $(DOCS_VENV) ; $(SPHINX_BUILD) -b linkcheck -q "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) -D nb_execution_mode=off || { grep --color -F "[broken]" "$(DOCS_BUILDDIR)/output.txt"; exit 1; }
 	exit 0
 
 pa11y: pa11y-install html
@@ -173,7 +193,7 @@ pdf-prep-force:
 	apt-get install --no-install-recommends -y $(DOCS_PDFPACKAGES) \
 
 pdf: pdf-prep
-	@. $(DOCS_VENV); $(SPHINX_BUILD) -M latexpdf "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS)
+	@. $(DOCS_VENV); $(SPHINX_BUILD) -M latexpdf "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" $(SPHINX_OPTS) -D nb_execution_mode=off
 	@rm ./$(DOCS_BUILDDIR)/latex/front-page-light.pdf || true
 	@rm ./$(DOCS_BUILDDIR)/latex/normal-page-footer.pdf || true
 	@find ./$(DOCS_BUILDDIR)/latex -name "*.pdf" -exec mv -t ./$(DOCS_BUILDDIR) {} +

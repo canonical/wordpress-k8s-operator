@@ -71,11 +71,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
+          # Record the commit this asset was built from so the RTD extension can
+          # detect whether docs-latest is fresh for the commit it is building.
+          echo "$GITHUB_SHA" > commit.txt
           # Delete existing release if it exists
           gh release delete docs-latest --yes || true
-          # Create new release with the notebook asset
+          # Create new release with the notebook asset and its source commit
           gh release create docs-latest \
             --title "Documentation Assets (latest)" \
             --notes "Auto-generated documentation assets from the latest main branch. Contains the executed tutorial notebook." \
             --prerelease \
-            tutorial.ipynb
+            tutorial.ipynb commit.txt

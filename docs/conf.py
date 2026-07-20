@@ -1,6 +1,9 @@
 import datetime
 import os
+import sys
 import yaml
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "_extensions"))
 
 # Configuration for the Sphinx documentation builder.
 # All configuration specific to your project should be done in this file.
@@ -303,6 +306,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_sitemap",
     "sphinxcontrib.mermaid",
+    "fetch_tutorial_notebook",
 ]
 
 # Excludes files or directories from processing
@@ -310,7 +314,19 @@ extensions = [
 exclude_patterns = [
     "doc-cheat-sheet*",
     ".venv*",
+    "jupyter_execute",
+    ".jupyter_cache",
 ]
+
+nb_execution_mode = "cache"
+nb_execution_timeout = 3600
+nb_execution_show_tb = True
+nb_execution_raise_on_error = True
+# Merge consecutive stream outputs (e.g. successive stdout lines from a cell)
+# into a single rendered output block instead of one block per flush. Applies
+# at render time, so it takes effect for both live execution and the cached
+# notebook used on Read the Docs.
+nb_merge_streams = True
 
 # Adds custom CSS files, located under 'html_static_path'
 
@@ -383,3 +399,22 @@ intersphinx_mapping = {
     'starter-pack': ("https://documentation.ubuntu.com/sphinx-stack/latest/", None),
     'charmed-mysql': ("https://canonical.com/data/mysql/docs/8.0/", None),
 }
+
+
+def setup(app):
+    """Set up myst_nb with compatibility fix for canonical_sphinx.
+
+    canonical_sphinx loads myst_parser which registers all myst-related roles,
+    directives, transforms, and config values. When myst_nb subsequently calls
+    myst_parser setup again, it tries to re-register everything, causing conflicts.
+    """
+    import myst_parser.sphinx_ext.main as myst_main
+
+    # Only apply the no-op patch when myst_parser is already loaded by canonical_sphinx.
+    if "myst_parser" in app.extensions:
+        def _noop_setup_sphinx(app, load_parser=False):
+            return None
+
+        myst_main.setup_sphinx = _noop_setup_sphinx
+
+    app.setup_extension("myst_nb")

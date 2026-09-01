@@ -1,9 +1,6 @@
 import datetime
 import os
-import sys
 import yaml
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "_extensions"))
 
 # Configuration for the Sphinx documentation builder.
 # All configuration specific to your project should be done in this file.
@@ -306,7 +303,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_sitemap",
     "sphinxcontrib.mermaid",
-    "fetch_tutorial_notebook",
+    "canonical_sphinx_notebooks",
 ]
 
 # Excludes files or directories from processing
@@ -318,15 +315,38 @@ exclude_patterns = [
     ".jupyter_cache",
 ]
 
-nb_execution_mode = "cache"
-nb_execution_timeout = 3600
-nb_execution_show_tb = True
-nb_execution_raise_on_error = True
-# Merge consecutive stream outputs (e.g. successive stdout lines from a cell)
-# into a single rendered output block instead of one block per flush. Applies
-# at render time, so it takes effect for both live execution and the cached
-# notebook used on Read the Docs.
-nb_merge_streams = True
+##############################
+# Pre-executed notebooks     #
+##############################
+
+# canonical-sphinx-notebooks fetches the tutorial notebook that CI already executed and
+# populates the jupyter-cache, so Read the Docs renders real outputs without needing a
+# Juju cluster to run against.
+#
+# It also owns the myst-nb settings this file used to set by hand -- nb_execution_mode,
+# nb_execution_timeout, nb_execution_show_tb, nb_execution_raise_on_error and
+# nb_merge_streams. An explicit value here would still take precedence, so they are
+# removed rather than repeated.
+
+nbexec_notebooks = ["tutorial.ipynb"]
+
+# The publish workflow attaches the executed notebook to the docs-latest release as a
+# loose .ipynb, not the extension's default executed-notebooks.zip.
+nbexec_asset_name = "tutorial.ipynb"
+
+# On the default-branch build, missing or stale outputs are a real failure and should
+# stop the build. On a pull-request preview they are expected: docs-latest belongs to
+# main, so it legitimately will not match a branch that edits the notebook.
+#
+# "warn" is deliberately unused: .readthedocs.yaml sets fail_on_warning, which would
+# silently promote it to "error".
+nbexec_on_missing = {"latest": "error", "external": "ignore"}
+
+# The workflow that executes the notebook must not consume its own published outputs.
+# The extension enables itself on CI as well as Read the Docs, so without this it would
+# disable execution in the one job whose entire purpose is to execute.
+# See .github/workflows/execute_tutorial_notebook.yaml.
+nbexec_enabled = False if os.environ.get("NBEXEC_DISABLE") else "auto"
 
 # Adds custom CSS files, located under 'html_static_path'
 
@@ -399,22 +419,3 @@ intersphinx_mapping = {
     'starter-pack': ("https://documentation.ubuntu.com/sphinx-stack/latest/", None),
     'charmed-mysql': ("https://canonical.com/data/mysql/docs/8.0/", None),
 }
-
-
-def setup(app):
-    """Set up myst_nb with compatibility fix for canonical_sphinx.
-
-    canonical_sphinx loads myst_parser which registers all myst-related roles,
-    directives, transforms, and config values. When myst_nb subsequently calls
-    myst_parser setup again, it tries to re-register everything, causing conflicts.
-    """
-    import myst_parser.sphinx_ext.main as myst_main
-
-    # Only apply the no-op patch when myst_parser is already loaded by canonical_sphinx.
-    if "myst_parser" in app.extensions:
-        def _noop_setup_sphinx(app, load_parser=False):
-            return None
-
-        myst_main.setup_sphinx = _noop_setup_sphinx
-
-    app.setup_extension("myst_nb")

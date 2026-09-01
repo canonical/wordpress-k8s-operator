@@ -17,6 +17,13 @@ jobs:
           fetch-depth: 0
 
       - name: Build docs
+        # This is the only job that actually executes the notebook. The
+        # canonical-sphinx-notebooks extension enables itself on CI as well as on Read
+        # the Docs, so without NBEXEC_DISABLE it would populate the cache from the
+        # previously published outputs and skip execution entirely -- republishing stale
+        # outputs as though they were fresh.
+        env:
+          NBEXEC_DISABLE: "1"
         run: |
           cd docs && make html-with-exec
 

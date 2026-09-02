@@ -17,11 +17,10 @@ jobs:
           fetch-depth: 0
 
       - name: Build docs
-        # This is the only job that actually executes the notebook. NBEXEC_DISABLE keeps
-        # docs/conf.py from loading canonical-sphinx-notebooks at all for this build: the
-        # extension forces execution off during builder-inited even when it is disabled
-        # via config rather than omitted, which would prevent the fresh execution this
-        # job exists to produce.
+        # This is the only job that actually executes the notebook. NBEXEC_DISABLE stops
+        # the extension from fetching docs-latest and populating the cache from it; a
+        # setup() hook in docs/conf.py then restores real execution, since the extension
+        # would otherwise force it off the same way it does for "no usable outputs".
         env:
           NBEXEC_DISABLE: "1"
         run: |

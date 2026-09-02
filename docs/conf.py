@@ -303,17 +303,8 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_sitemap",
     "sphinxcontrib.mermaid",
+    "canonical_sphinx_notebooks",
 ]
-
-# The workflow that executes the notebook for real (uploading its output for later
-# publishing) must not load this extension at all. Even disabled via nbexec_enabled, it
-# still forces nb_execution_mode="off" during builder-inited -- which would prevent the
-# very execution that job exists to perform, not skip past it. Omitting the extension
-# entirely leaves myst-nb at its own default "auto" mode, which executes because
-# tutorial.ipynb is committed with empty cell outputs. See
-# .github/workflows/execute_tutorial_notebook.yaml.
-if not os.environ.get("NBEXEC_DISABLE"):
-    extensions.append("canonical_sphinx_notebooks")
 
 # Excludes files or directories from processing
 
@@ -330,13 +321,18 @@ exclude_patterns = [
 
 # canonical-sphinx-notebooks fetches the tutorial notebook that CI already executed and
 # populates the jupyter-cache, so Read the Docs renders real outputs without needing a
-# Juju cluster to run against. Not loaded at all in the execute-notebook job -- see the
-# "extensions" list above.
+# Juju cluster to run against.
 #
 # It also owns the myst-nb settings this file used to set by hand -- nb_execution_mode,
 # nb_execution_timeout, nb_execution_show_tb, nb_execution_raise_on_error and
-# nb_merge_streams -- when it is loaded. An explicit value here would still take
-# precedence, so they are removed rather than repeated.
+# nb_merge_streams. An explicit value here would still take precedence, so they are
+# removed rather than repeated.
+#
+# The extension must stay loaded everywhere, including the execute-notebook job: it is
+# also what bootstraps myst-nb itself (docs/conf.py has no myst-nb setup of its own any
+# more), so omitting it entirely stops .ipynb being recognized as a document at all,
+# rather than just skipping the fetch. See setup() below for how that job still gets
+# real execution despite the extension being disabled.
 
 nbexec_notebooks = ["tutorial.ipynb"]
 
@@ -351,6 +347,33 @@ nbexec_asset_name = "tutorial.ipynb"
 # "warn" is deliberately unused: .readthedocs.yaml sets fail_on_warning, which would
 # silently promote it to "error".
 nbexec_on_missing = {"latest": "error", "external": "ignore"}
+
+# The workflow that executes the notebook must not consume its own published outputs.
+# The extension enables itself on CI as well as Read the Docs, so without this it would
+# fetch docs-latest and populate the cache from it instead of letting real execution
+# happen. See .github/workflows/execute_tutorial_notebook.yaml.
+nbexec_enabled = False if os.environ.get("NBEXEC_DISABLE") else "auto"
+
+
+def setup(app):
+    """Restore real execution in the job whose entire purpose is to execute.
+
+    Disabling the extension (above) is not enough on its own: canonical-sphinx-notebooks
+    forces nb_execution_mode="off" whenever it is disabled, the same fallback it uses
+    when it cannot find usable published outputs -- appropriate on Read the Docs, where
+    there is no cluster to execute against, but wrong here.
+
+    The extension's own builder-inited handler runs at priority 400, specifically ahead
+    of myst-nb's own (default 500) snapshotting of nb_execution_mode. Registering this
+    handler at 450 runs it after the extension has forced execution off but before
+    myst-nb reads the config value, so it wins.
+    """
+    if os.environ.get("NBEXEC_DISABLE"):
+
+        def _restore_execution(app):
+            app.config.nb_execution_mode = "cache"
+
+        app.connect("builder-inited", _restore_execution, priority=450)
 
 # Adds custom CSS files, located under 'html_static_path'
 

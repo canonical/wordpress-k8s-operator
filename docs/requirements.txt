@@ -28,6 +28,13 @@ sphinxcontrib-svg2pdfconverter[CairoSVG]==2.1.0
 sphinx-last-updated-by-git==0.3.8
 sphinx-sitemap==2.9.0
 myst-nb==1.1.2
+# Fetches CI-executed notebooks into the jupyter-cache; replaces the extensions
+# that used to live in docs/_extensions/. Pinned to a commit, not a PyPI release
+# or a branch: canonical-sphinx-notebooks has not published to PyPI yet, and a
+# branch ref would let a later unrelated push silently change what gets
+# installed on the next docs rebuild. Switch to a "==" version pin once
+# canonical-sphinx-notebooks ships a release.
+canonical-sphinx-notebooks @ git+https://github.com/canonical/canonical-sphinx-notebooks.git@98039e329091169f5614c1dbeacf51240d63857f
 
 # Vale dependencies
 rst2html==2020.7.4

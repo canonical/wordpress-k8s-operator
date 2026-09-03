@@ -9,19 +9,13 @@ on:
 jobs:
   execute-notebook:
     name: Execute Tutorial Notebook
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Build docs
-        run: |
-          cd docs && make html-with-exec
-
-      - name: Upload executed notebook artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tutorial-notebook
-          path: docs/jupyter_execute/tutorial.ipynb
+    uses: canonical/canonical-sphinx-notebooks/.github/workflows/execute-notebooks.yaml@48c6e2fcf0bf44fc0cc1af230c26f055538d2aa1
+    with:
+      working-directory: docs
+      # NBEXEC_DISABLE stops canonical-sphinx-notebooks fetching docs-latest and
+      # populating the cache from it; docs/conf.py's setup() then restores real
+      # execution, since the extension would otherwise force it off the same way it
+      # does for "no usable outputs". See that function's docstring.
+      build-command: NBEXEC_DISABLE=1 make html-with-exec
+      notebooks-path: jupyter_execute/tutorial.ipynb
+      artifact-name: tutorial-notebook

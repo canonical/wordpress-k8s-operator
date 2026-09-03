@@ -103,7 +103,8 @@ serve-with-exec: html-with-exec
 	cd "$(DOCS_BUILDDIR)"; python3 -m http.server --bind $(SPHINX_HOST) $(SPHINX_PORT)
 
 html-with-artifact: install
-	. $(DOCS_VENV); python "$(DOCS_SOURCEDIR)/_extensions/cache_notebook_from_artifact.py" --source "$(DOCS_SOURCEDIR)/tutorial.ipynb" --cache-dir .jupyter_cache
+	. $(DOCS_VENV); nbexec cache --srcdir "$(DOCS_SOURCEDIR)" --cache-dir .jupyter_cache \
+		--workflow execute_tutorial_notebook.yaml --artifact tutorial-notebook
 	. $(DOCS_VENV); $(SPHINX_BUILD) --fail-on-warning --keep-going -b dirhtml "$(DOCS_SOURCEDIR)" "$(DOCS_BUILDDIR)" -w $(DEV_DIR)/warnings.txt $(SPHINX_OPTS)
 
 serve-with-artifact: html-with-artifact

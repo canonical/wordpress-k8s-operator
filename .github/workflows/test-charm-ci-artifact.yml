@@ -3,7 +3,7 @@ name: Test charm-ci artifact build
 on:
   pull_request:
     paths:
-      - ".github/charm-ci-test/artifacts.yaml"
+      - "artifacts.yaml"
       - ".github/workflows/test-charm-ci-artifact.yml"
       - "wordpress_rock/**"
 
@@ -16,5 +16,5 @@ jobs:
       packages: write
       actions: read
     with:
-      working-directory: .github/charm-ci-test
+      working-directory: .
       artifact-retention-days: 30

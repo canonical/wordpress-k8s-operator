@@ -348,6 +348,14 @@ nbexec_asset_name = "tutorial.ipynb"
 # silently promote it to "error".
 nbexec_on_missing = {"latest": "error", "external": "ignore"}
 
+# The default 180s wait covers a typical publish_tutorial_notebook.yaml run comfortably,
+# but the "latest" build races that workflow on every merge to main: RTD starts building
+# on the same push, before publish_tutorial_notebook.yaml has necessarily republished
+# docs-latest for the new commit. 10 minutes gives real headroom for a slow GitHub
+# Actions queue without masking a genuine failure -- nbexec_on_missing still fails the
+# build loudly if the release never catches up at all.
+nbexec_wait_timeout = 600
+
 # The workflow that executes the notebook must not consume its own published outputs.
 # The extension enables itself on CI as well as Read the Docs, so without this it would
 # fetch docs-latest and populate the cache from it instead of letting real execution

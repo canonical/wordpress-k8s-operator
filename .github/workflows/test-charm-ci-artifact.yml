@@ -1,0 +1,20 @@
+name: Test charm-ci artifact build
+
+on:
+  pull_request:
+    paths:
+      - ".github/charm-ci-test/artifacts.yaml"
+      - ".github/workflows/test-charm-ci-artifact.yml"
+      - "wordpress_rock/**"
+
+jobs:
+  build-artifacts:
+    name: Build WordPress rock with charm-ci branch
+    uses: yanksyoon/charm-ci/.github/workflows/build-artifacts.yml@fix/isd-512-artifact-default
+    permissions:
+      contents: read
+      packages: write
+      actions: read
+    with:
+      working-directory: .github/charm-ci-test
+      artifact-retention-days: 30

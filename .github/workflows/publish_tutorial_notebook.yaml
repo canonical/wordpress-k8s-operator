@@ -67,10 +67,9 @@ jobs:
             sleep 30
           done
           if [ -z "$RUN_ID" ] || [ "$CONCLUSION" != "success" ]; then
-            echo "No successful execute workflow run found for commit $HEAD_SHA" \
-              "(run: ${RUN_ID:-none}, conclusion: ${CONCLUSION:-timed out})."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "::error::No successful execute workflow run found for commit $HEAD_SHA" \
+              "(run: ${RUN_ID:-none}, conclusion: ${CONCLUSION:-timed out}) after waiting 15m."
+            exit 1
           fi
           echo "Run ID: $RUN_ID"
           echo "run-id=$RUN_ID" >> "$GITHUB_OUTPUT"

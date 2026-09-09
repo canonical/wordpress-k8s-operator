@@ -40,17 +40,36 @@ jobs:
           # Get the head SHA of the merged PR
           HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid')
           echo "PR head SHA: $HEAD_SHA"
-          # Find the successful execute workflow run for that commit
-          RUN_ID=$(gh run list \
-            --workflow=execute_tutorial_notebook.yaml \
-            --commit="$HEAD_SHA" \
-            --status=success \
-            --json databaseId \
-            --jq '.[0].databaseId' || true)
-          if [ -z "$RUN_ID" ]; then
-            echo "No successful execute workflow run found for commit $HEAD_SHA."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Wait for the execute workflow run for that commit to finish. On a fast
+          # merge, this push event can fire before the PR's own pull_request-triggered
+          # run (started separately, minutes earlier) has completed, so poll instead
+          # of checking once.
+          DEADLINE=$((SECONDS + 900))
+          RUN_ID=""
+          CONCLUSION=""
+          while [ "$SECONDS" -lt "$DEADLINE" ]; do
+            RUN_JSON=$(gh run list \
+              --workflow=execute_tutorial_notebook.yaml \
+              --commit="$HEAD_SHA" \
+              --json databaseId,status,conclusion \
+              --jq '.[0]')
+            if [ -n "$RUN_JSON" ]; then
+              RUN_ID=$(echo "$RUN_JSON" | jq -r '.databaseId')
+              STATUS=$(echo "$RUN_JSON" | jq -r '.status')
+              CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion')
+              if [ "$STATUS" = "completed" ]; then
+                break
+              fi
+              echo "Run $RUN_ID for commit $HEAD_SHA is still $STATUS; waiting..."
+            else
+              echo "No execute workflow run found yet for commit $HEAD_SHA; waiting..."
+            fi
+            sleep 30
+          done
+          if [ -z "$RUN_ID" ] || [ "$CONCLUSION" != "success" ]; then
+            echo "::error::No successful execute workflow run found for commit $HEAD_SHA" \
+              "(run: ${RUN_ID:-none}, conclusion: ${CONCLUSION:-timed out}) after waiting 15m."
+            exit 1
           fi
           echo "Run ID: $RUN_ID"
           echo "run-id=$RUN_ID" >> "$GITHUB_OUTPUT"

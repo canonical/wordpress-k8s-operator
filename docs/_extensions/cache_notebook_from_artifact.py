@@ -7,6 +7,12 @@ Downloads the ``tutorial-notebook`` artifact produced by the Execute Tutorial No
 workflow for the current commit and caches it so that ``make html-with-artifact`` renders
 the CI outputs locally without a live cluster. Uses only the standard library plus
 ``jupyter_cache``; no ``gh`` CLI is required.
+
+The Execute Tutorial Notebook workflow only runs ``on: pull_request``, so a checkout of a
+``main`` merge commit never has a direct run of its own. In that case this falls back to the
+``docs-latest`` GitHub release (the same source Read the Docs uses, published by the
+Publish Tutorial Notebook workflow) and relies on the code-cell match check in
+``_populate_cache`` to reject it if it's stale.
 """
 
 import argparse
@@ -29,6 +35,8 @@ _API_BASE = "https://api.github.com"
 _WORKFLOW_FILE = "execute_tutorial_notebook.yaml"
 _ARTIFACT_NAME = "tutorial-notebook"
 _SOURCE_NOTEBOOK = "tutorial.ipynb"
+_RELEASE_TAG = "docs-latest"
+_RELEASE_COMMIT_ASSET = "commit.txt"
 _API_HEADERS = {
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -193,6 +201,32 @@ def _artifact_download_url(owner, repo, run_id, token):
     )
 
 
+def _release_asset_url(owner, repo, asset):
+    """Return the public download URL of an asset on the docs-latest release."""
+    return f"https://github.com/{owner}/{repo}/releases/download/{_RELEASE_TAG}/{asset}"
+
+
+def _download_release_notebook(owner, repo):
+    """Return (nb_bytes, source_commit) from the docs-latest release, or (None, None).
+
+    Used as a fallback when there's no direct Execute Tutorial Notebook run for the
+    current commit (e.g. on a main merge commit). The caller's code-cell match check
+    is what actually guards against a stale release; source_commit is only for logging.
+    """
+    try:
+        with urllib.request.urlopen(  # noqa: S310
+            _release_asset_url(owner, repo, _RELEASE_COMMIT_ASSET), timeout=60
+        ) as response:
+            source_commit = response.read().decode(errors="replace").strip()
+        with urllib.request.urlopen(  # noqa: S310
+            _release_asset_url(owner, repo, _SOURCE_NOTEBOOK), timeout=60
+        ) as response:
+            nb_bytes = response.read()
+    except (urllib.error.URLError, OSError):
+        return None, None
+    return nb_bytes, source_commit
+
+
 def _extract_notebook(zip_bytes):
     """Return the tutorial.ipynb bytes from the artifact zip."""
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
@@ -264,9 +298,27 @@ def main(argv=None):
         commit = _current_commit()
         logger.info("Looking up CI artifact for %s/%s @ %s", owner, repo, commit)
         _assert_commit_pushed(owner, repo, commit, token)
-        run_id = _find_successful_run(owner, repo, commit, token)
-        url = _artifact_download_url(owner, repo, run_id, token)
-        nb_bytes = _extract_notebook(_api_get_bytes(url, token))
+        try:
+            run_id = _find_successful_run(owner, repo, commit, token)
+        except HelperError as direct_error:
+            # No run for this exact commit (e.g. HEAD is a main merge commit, which
+            # never triggers the pull_request-only Execute Tutorial Notebook workflow
+            # on its own). Fall back to the docs-latest release published by the
+            # Publish Tutorial Notebook workflow.
+            logger.info(
+                "%s Falling back to the '%s' release.", direct_error, _RELEASE_TAG
+            )
+            nb_bytes, source_commit = _download_release_notebook(owner, repo)
+            if nb_bytes is None:
+                raise direct_error
+            logger.info(
+                "Using '%s' release notebook (built from commit %s)",
+                _RELEASE_TAG,
+                source_commit or "unknown",
+            )
+        else:
+            url = _artifact_download_url(owner, repo, run_id, token)
+            nb_bytes = _extract_notebook(_api_get_bytes(url, token))
         _populate_cache(nb_bytes, args.source, args.cache_dir)
     except HelperError as exc:
         logger.error("error: %s", exc)

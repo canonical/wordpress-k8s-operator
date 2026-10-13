@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-10-13
+
+- docs: Updated the home page to the "mature" home page pattern, with a categorised "In this documentation" table.
+- docs: Updated the WordPress and Ubuntu versions in the charm architecture page.
+- docs: Added `cos` and `ops` intersphinx mappings.
+
 ## 2026-07-08
 
 - chore(docs): Update Intersphinx mapping and links to documentation sets that migrated

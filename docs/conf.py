@@ -398,6 +398,8 @@ intersphinx_mapping = {
     'juju': ("https://documentation.ubuntu.com/juju/3.6/", None),
     'starter-pack': ("https://documentation.ubuntu.com/sphinx-stack/latest/", None),
     'charmed-mysql': ("https://canonical.com/data/mysql/docs/8.0/", None),
+    'cos': ("https://documentation.ubuntu.com/observability/latest/", None),
+    'ops': ("https://canonical.com/juju/docs/ops/latest/", None),
 }
 
 

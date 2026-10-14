@@ -32,17 +32,15 @@ clean interface.
 * -
   -
 * - **Get started**
-  - {ref}`Guided tutorial <tutorial_index>`
+  - {ref}`Deploy the WordPress charm <tutorial_index>`
 * - **Deployment**
   - {ref}`Retrieve initial credentials <how_to_retrieve_initial_credentials>` | {ref}`Configure initial settings <how_to_configure_initial_settings>` | {ref}`Configure hostname <how_to_configure_hostname>` | {ref}`Configurations <reference_configurations>`
 * - **Operations**
-  - {ref}`Upgrade <how_to_upgrade>` | {ref}`Redeploy <how_to_redeploy>` | {ref}`Actions <reference_actions>`
+  - {ref}`Upgrade <how_to_upgrade>` | {ref}`Redeploy <how_to_redeploy>` | {ref}`Integrate with COS <how_to_integrate_with_cos>` | {ref}`Relation endpoints <reference_relation_endpoints>` | {ref}`Actions <reference_actions>`
 * - **Scaling and storage**
   - {ref}`Configure object storage <how_to_configure_object_storage>` | {ref}`External access requirements <reference_external_access>`
 * - **Plugins and themes**
   - {ref}`Install plugins <how_to_install_plugins>` | {ref}`Install themes <how_to_install_themes>` | {ref}`Plugins <reference_plugins>` | {ref}`Themes <reference_themes>`
-* - **Integrations**
-  - {ref}`Integrate with COS <how_to_integrate_with_cos>` | {ref}`Relation endpoints <reference_relation_endpoints>`
 * - **Design**
   - {ref}`Charm architecture <reference_charm_architecture>`
 * - **Security**

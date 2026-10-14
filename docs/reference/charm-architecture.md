@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    "description lang=en": "Describes the WordPress charm's architecture, including its containers, OCI image, integrations, and Juju events."
+---
+
 (reference_charm_architecture)=
 
 # Charm architecture

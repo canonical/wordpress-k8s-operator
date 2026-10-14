@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-10-14
+
+- chore: added a `terraform/charm` Terraform module for the `wordpress-k8s` charm,
+  compliant with the CC008 Charm Terraform Standard. Added the
+  `terraform_modules_compliance.yaml`, `terraform_modules_release.yaml`,
+  `generate_terraform_docs.yaml` and `test_terraform_modules.yaml` CI workflows.
+
 ## 2026-07-08
 
 - chore(docs): Update Intersphinx mapping and links to documentation sets that migrated

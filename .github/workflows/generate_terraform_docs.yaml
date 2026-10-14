@@ -4,18 +4,18 @@
 name: Update Terraform documentation
 
 # Keep the `paths` filters below and the `terraform-directory` input in sync with
-# the directory where the Terraform modules live.
+# the directories where the Terraform modules live.
 on:
   pull_request:
     paths:
-      - '**/terraform/**'
-      - '.github/workflows/generate_terraform_docs.yaml'
+      - "terraform/**"
+      - ".github/workflows/generate_terraform_docs.yaml"
   push:
     branches:
       - main
     paths:
-      - '**/terraform/**'
-      - '.github/workflows/generate_terraform_docs.yaml'
+      - "terraform/**"
+      - ".github/workflows/generate_terraform_docs.yaml"
 
 permissions:
   contents: write

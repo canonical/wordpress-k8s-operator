@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - '**/terraform/**'
-      - '.github/workflows/terraform_modules_compliance.yaml'
+      - "**/terraform/**"
+      - ".github/workflows/terraform_modules_compliance.yaml"
 
 jobs:
   terraform-compliance:

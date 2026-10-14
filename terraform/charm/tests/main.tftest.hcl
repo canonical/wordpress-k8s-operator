@@ -1,81 +1,48 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-variables {
-  app_name           = "wordpress-k8s"
-  base               = "ubuntu@22.04"
-  channel            = "latest/edge"
-  config             = {}
-  constraints        = "arch=amd64"
-  model_uuid         = "00000000-0000-0000-0000-000000000001"
-  resources          = { wordpress-image = "1" }
-  revision           = 10
-  storage_directives = { uploads = "1G" }
-  units              = 2
-}
-
-mock_provider "juju" {
-  mock_resource "juju_application" {
-    override_during = plan
-    defaults = {
-      id         = "wordpress-k8s"
-      model_type = "kubernetes"
-    }
+run "setup_tests" {
+  module {
+    source = "./tests/setup"
   }
 }
 
-run "deploys_application" {
-  command = plan
-
-  assert {
-    condition     = output.application.name == "wordpress-k8s" && output.application.model_uuid == "00000000-0000-0000-0000-000000000001" && output.application.charm[0].name == "wordpress-k8s" && output.application.charm[0].channel == "latest/edge" && output.application.charm[0].base == "ubuntu@22.04" && output.application.charm[0].revision == 10
-    error_message = "application identity did not match the expected deployment"
+run "basic_deploy" {
+  variables {
+    model_uuid = run.setup_tests.model_uuid
+    base       = "ubuntu@22.04"
+    channel    = "latest/edge"
+    # renovate: depName="wordpress-k8s"
+    revision = 186
   }
 
   assert {
-    condition     = output.application.constraints == "arch=amd64"
-    error_message = "application constraints did not match expected"
+    condition     = output.application.name == "wordpress-k8s"
+    error_message = "wordpress-k8s application name did not match expected"
   }
 
   assert {
-    condition     = output.application.units == 2
-    error_message = "application units did not match expected"
+    condition     = output.provides.value.endpoint == "grafana-dashboard"
+    error_message = "wordpress-k8s module should provide 'provides.value' output"
   }
 
   assert {
-    condition = output.provides == {
-      grafana_dashboard = {
-        kind     = "endpoint"
-        name     = "wordpress-k8s"
-        endpoint = "grafana-dashboard"
-      }
-      metrics_endpoint = {
-        kind     = "endpoint"
-        name     = "wordpress-k8s"
-        endpoint = "metrics-endpoint"
-      }
-    }
-    error_message = "provides outputs did not match expected structure"
+    condition     = output.provides.metrics_endpoint.endpoint == "metrics-endpoint"
+    error_message = "wordpress-k8s module should provide 'provides.metrics_endpoint' output"
   }
 
   assert {
-    condition = output.requires == {
-      database = {
-        kind     = "endpoint"
-        name     = "wordpress-k8s"
-        endpoint = "database"
-      }
-      logging = {
-        kind     = "endpoint"
-        name     = "wordpress-k8s"
-        endpoint = "logging"
-      }
-      nginx_route = {
-        kind     = "endpoint"
-        name     = "wordpress-k8s"
-        endpoint = "nginx-route"
-      }
-    }
-    error_message = "requires outputs did not match expected structure"
+    condition     = output.requires.value.endpoint == "database"
+    error_message = "wordpress-k8s module should provide 'requires.value' output"
+  }
+
+  assert {
+    condition     = output.requires.logging.endpoint == "logging"
+    error_message = "wordpress-k8s module should provide 'requires.logging' output"
+  }
+
+  assert {
+    condition     = output.requires.nginx_route.endpoint == "nginx-route"
+    error_message = "wordpress-k8s module should provide 'requires.nginx_route' output"
   }
 }

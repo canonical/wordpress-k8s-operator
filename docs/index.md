@@ -44,7 +44,7 @@ clean interface.
 * - **Design**
   - {ref}`Charm architecture <reference_charm_architecture>`
 * - **Security**
-  - {ref}`Security overview <explanation_security_overview>` | {ref}`Enable WAF <how_to_enable_waf>` | {ref}`Enable antispam <how_to_enable_antispam>` | {ref}`Rotate secrets <how_to_rotate_secrets>`
+  - {ref}`Overview <explanation_security_overview>` | {ref}`Enable WAF <how_to_enable_waf>` | {ref}`Enable antispam <how_to_enable_antispam>` | {ref}`Rotate secrets <how_to_rotate_secrets>`
 ```
 
 ## How this documentation is organized

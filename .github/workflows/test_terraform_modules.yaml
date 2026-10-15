@@ -17,3 +17,10 @@ jobs:
     with:
       k8s-controller: true
       terraform-directories: '["terraform/charm"]'
+  terraform-tests-product:
+    uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@030c5b20a0bb880dcf1ed326bff0fc16b6eb6ac1  # main
+    secrets: inherit
+    with:
+      k8s-controller: false
+      lxd-controller-with-k8s-cloud: true
+      terraform-directories: '["terraform/product"]'

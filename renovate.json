@@ -23,6 +23,15 @@
         "minor",
         "patch"
       ]
+    },
+    {
+      "enabled": false,
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchFileNames": [
+        "docs/requirements.txt"
+      ]
     }
   ],
   "regexManagers": [

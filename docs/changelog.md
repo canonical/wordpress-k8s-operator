@@ -22,6 +22,12 @@ Each revision is versioned by the date of the revision.
   `terraform_modules_compliance.yaml`, `terraform_modules_release.yaml`,
   `generate_terraform_docs.yaml` and `test_terraform_modules.yaml` CI workflows.
 
+## 2026-10-13
+
+- docs: Updated the home page to the "mature" home page pattern, with a categorised "In this documentation" table.
+- docs: Updated the WordPress and Ubuntu versions in the charm architecture page.
+- docs: Added `cos` and `ops` intersphinx mappings.
+
 ## 2026-07-08
 
 - chore(docs): Update Intersphinx mapping and links to documentation sets that migrated

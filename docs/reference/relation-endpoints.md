@@ -93,8 +93,8 @@ _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrap
 _Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)
 
 The `metrics-endpoint` relation allows scraping the `/metrics` endpoint provided by `apache-exporter` sidecar
-on port 9117, which provides apache metrics from apache’s `/server-status` route. This internal
-apache’s `/server-status` route is not exposed and can only be accessed from within the same
+on port 9117, which provides Apache metrics from the `/server-status` route. This internal
+Apache route is not exposed and can only be accessed from within the same
 Kubernetes pod. The metrics are exposed in the [open metrics format](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#data-model) and will only be scraped by Prometheus once the relation becomes active. For more
 information about the metrics exposed, please refer to the [apache-exporter documentation](https://github.com/Lusitaniae/apache_exporter#collectors).
 

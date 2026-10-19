@@ -7,6 +7,12 @@
   ],
   "packageRules": [
     {
+      "enabled": false,
+      "matchFileNames": [
+        "docs/**"
+      ]
+    },
+    {
       "enabled": true,
       "matchDatasources": [
         "docker"

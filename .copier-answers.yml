@@ -9,7 +9,7 @@ github_url: https://github.com/canonical/wordpress-k8s-operator
 html_favicon: ''
 license_name: Apache-2.0
 license_url: https://github.com/canonical/wordpress-k8s-operator/blob/main/LICENSE
-linkcheck_timeout: 30
+linkcheck_timeout: 90
 llms_txt_description: A Juju charm that deploys and manages WordPress, the open-source
     website builder, on Kubernetes. The documentation covers deployment, configuration,
     plugin and theme management, observability, and upgrades.

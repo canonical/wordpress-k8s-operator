@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-10-15
+
+- feat: added a `terraform/product` Terraform product module that deploys `wordpress-k8s`
+  in a Kubernetes model and a bundled `mysql` in a separate machine model, integrated through
+  a cross-model offer. The bundled `mysql` is skipped when `mysql_integration` is set, and
+  `ingress_integration` and `logging_integration` integrate WordPress with existing providers.
+
+## 2026-10-14
+
+- chore: added a `terraform/charm` Terraform module for the `wordpress-k8s` charm,
+  compliant with the CC008 Charm Terraform Standard. Added the
+  `terraform_modules_compliance.yaml`, `terraform_modules_release.yaml`,
+  `generate_terraform_docs.yaml` and `test_terraform_modules.yaml` CI workflows.
+
 ## 2026-10-13
 
 - docs: Updated the home page to the "mature" home page pattern, with a categorised "In this documentation" table.

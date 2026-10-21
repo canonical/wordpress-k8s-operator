@@ -40,4 +40,5 @@ header:
   - '.readthedocs.yaml'
   - 'docs/**'
   - 'uv.lock'
+  - '**/MAJOR_VERSION'
   comment: on-failure

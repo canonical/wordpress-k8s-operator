@@ -8,6 +8,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-10-15
+
+- feat: added a `terraform/product` Terraform product module that deploys `wordpress-k8s`
+  in a Kubernetes model and a bundled `mysql` in a separate machine model, integrated through
+  a cross-model offer. The bundled `mysql` is skipped when `mysql_integration` is set, and
+  `ingress_integration` and `logging_integration` integrate WordPress with existing providers.
+
+## 2026-10-14
+
+- chore: added a `terraform/charm` Terraform module for the `wordpress-k8s` charm,
+  compliant with the CC008 Charm Terraform Standard. Added the
+  `terraform_modules_compliance.yaml`, `terraform_modules_release.yaml`,
+  `generate_terraform_docs.yaml` and `test_terraform_modules.yaml` CI workflows.
+
+## 2026-10-13
+
+- docs: Updated the home page to the "mature" home page pattern, with a categorised "In this documentation" table.
+- docs: Updated the WordPress and Ubuntu versions in the charm architecture page.
+- docs: Added `cos` and `ops` intersphinx mappings.
+
+## 2026-07-08
+
+- chore(docs): Update Intersphinx mapping and links to documentation sets that migrated
+  under the Ubuntu or Canonical domains.
+
+## 2026-05-19
+
+- docs: Migrated the documentation URL under the Canonical domain.
+
+- docs(charmkeeper): Upgraded documentation infrastructure from sphinx-docs-starter-pack 1.4.1 to sphinx-stack 2.0.
+  - Renamed `.sphinx/` directory to `_dev/`.
+  - Moved virtual environment from `.sphinx/venv/` to `.venv/`.
+  - Moved `_static/` and `_templates/` to docs root.
+  - Updated Makefile with new variable naming conventions.
+  - Added `sphinx-rerediraffe` extension for redirects.
+  - Bumped dependencies: `canonical-sphinx` 0.5.2 → 0.6.0, `sphinx-tabs` 3.4.7 → 3.5.0,
+    `packaging` 25.0 → 26.2, `sphinxcontrib-svg2pdfconverter` 2.0.0 → 2.1.0.
+
 ## 2026-04-20
 
 - docs: Updated landing pages to include more descriptions and organization.

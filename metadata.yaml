@@ -4,7 +4,7 @@ name: wordpress-k8s
 display-name: WordPress
 summary: WordPress is an OSS to create a beautiful website.
 description: |
-  A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing
+  A [Juju](https://juju.is/) [charm](https://canonical.com/juju/docs/juju-cli/3.6/reference/charm/) deploying and managing
   WordPress on Kubernetes. [WordPress](https://wordpress.com/) is the world's most popular website
   builder, and it's free and open-source. 
 
@@ -19,8 +19,8 @@ description: |
   for enterprise deployments.
 
   For information about how to deploy, integrate, and manage this charm, see the Official
-  [WordPress K8s charm documentation](https://documentation.ubuntu.com/wordpress-k8s-charm/latest/).
-docs: https://documentation.ubuntu.com/wordpress-k8s-charm/latest/
+  [WordPress K8s charm documentation](https://canonical.com/juju/docs/wordpress-k8s-charm/).
+docs: https://canonical.com/juju/docs/wordpress-k8s-charm/
 maintainers:
   - https://launchpad.net/~canonical-is-devops
 issues: https://github.com/canonical/wordpress-k8s-operator/issues

@@ -5,6 +5,8 @@ antispam
 CVEs
 databag
 datasource
+Intersphinx
+Makefile
 rclone
 redeployments
 WAF

@@ -29,6 +29,25 @@
         "minor",
         "patch"
       ]
+    },
+    {
+      "enabled": false,
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchFileNames": [
+        "docs/requirements.txt"
+      ]
+    },
+    {
+      "description": "python-libjuju 3.x supports Juju 3.1-3.6 controllers only. The `integration` tox env runs against the controller bootstrapped by the Integration Test workflow, which uses juju-channel 2.9/stable, so a major bump of the juju client breaks those jobs. Re-enable when that workflow moves to Juju 3.",
+      "matchPackageNames": [
+        "juju"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
     }
   ],
   "regexManagers": [

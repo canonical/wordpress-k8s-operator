@@ -24,7 +24,7 @@ permissions:
 jobs:
   terraform-docs:
     name: Update Terraform documentation
-    uses: canonical/operator-workflows/.github/workflows/generate_terraform_docs.yaml@030c5b20a0bb880dcf1ed326bff0fc16b6eb6ac1  # main
+    uses: canonical/operator-workflows/.github/workflows/generate_terraform_docs.yaml@c81a9cdd5acfba473f2f52a4cfbeed7132062df1  # main
     secrets: inherit
     with:
       terraform-directory: terraform/charm,terraform/product

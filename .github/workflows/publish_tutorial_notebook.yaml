@@ -12,12 +12,12 @@ on:
 jobs:
   publish-release:
     name: Publish Notebook to Release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Find artifact from PR workflow run
         id: find-run

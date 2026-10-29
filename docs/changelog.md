@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-10-29
+
+- fix: themes and plugins can be installed from a URL with `<slug>=<url>` in the `themes`
+  and `plugins` config. Before, a URL entry was installed and then deleted on the next
+  reconciliation, because it never matched the installed folder name.
+
 ## 2026-10-19
 
 - chore: moved the documentation tooling to the centrally managed

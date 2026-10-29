@@ -19,5 +19,13 @@ To install multiple themes at once, append more themes separated by a comma.
 juju config wordpress-k8s themes=<theme-slug>,<theme-slug>
 ```
 
+To install a theme that isn't on wordpress.org, for example a zip from a GitHub release,
+give its slug and URL as `<slug>=<url>`. The slug must be the theme's folder name inside the
+zip, otherwise the charm removes the theme on the next reconciliation.
+
+```
+juju config wordpress-k8s themes=<theme-slug>=https://example.com/<theme-slug>.zip
+```
+
 Once the configuration is complete, you can navigate to `http://<wordpress-unit-ip>/wp-admin/themes.php` to
 verify your new theme installation.

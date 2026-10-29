@@ -20,6 +20,23 @@ import ops.pebble
 from charm import WordpressCharm
 
 
+def _installed_addon_name(source: str) -> str:
+    """Get the name a theme/plugin gets after ``wp <theme|plugin> install <source>``.
+
+    A slug installs under the same name. A zip URL installs under the folder name inside the
+    zip, which this mock takes to be the zip file name without ``.zip``.
+
+    Args:
+        source: slug or zip URL passed to ``wp <theme|plugin> install``.
+
+    Returns:
+        Name of the installed theme/plugin.
+    """
+    if "://" not in source:
+        return source
+    return source.split("?")[0].rstrip("/").rsplit("/", 1)[-1].removesuffix(".zip")
+
+
 class WordPressDatabaseInstanceMock:
     """The simulation of a WordPress installed MySQL database."""
 
@@ -512,7 +529,7 @@ class WordpressContainerMock:
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "theme", "install"])
     def _mock_wp_theme_install(self, cmd):
         """Simulate ``wp theme install <theme>`` command execution in the container."""
-        theme = cmd[3]
+        theme = _installed_addon_name(cmd[3])
         self.installed_themes.add(theme)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 
@@ -548,7 +565,7 @@ class WordpressContainerMock:
     @_exec_handler.register(lambda cmd: cmd[:3] == ["wp", "plugin", "install"])
     def _mock_wp_plugin_install(self, cmd):
         """Simulate ``wp plugin install <plugin>`` command execution in the container."""
-        plugin = cmd[3]
+        plugin = _installed_addon_name(cmd[3])
         self.installed_plugins.add(plugin)
         return ExecProcessMock(return_code=0, stdout="", stderr="")
 

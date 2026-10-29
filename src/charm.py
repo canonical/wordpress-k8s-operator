@@ -1027,6 +1027,26 @@ class WordpressCharm(CharmBase):
             cmd = ["wp", "plugin", "uninstall", addon_name, "--deactivate"]
         return self._wrapped_run_wp_cli(cmd, timeout=600)
 
+    @staticmethod
+    def _parse_addon_entry(entry: str) -> Tuple[str, str]:
+        """Split a themes/plugins config entry into its installed name and install source.
+
+        ``<slug>`` installs ``<slug>`` from wordpress.org. ``<slug>=<url>`` installs from
+        ``<url>`` (e.g. a zip release) and expects it to install under ``<slug>``, so later
+        reconciliations keep it instead of deleting it.
+
+        Args:
+            entry: one comma-separated entry from the themes/plugins config.
+
+        Returns:
+            Tuple of (installed name, install source).
+        """
+        name, sep, source = entry.partition("=")
+        name, source = name.strip(), source.strip()
+        if sep and source and re.fullmatch(r"[\w.-]+", name):
+            return name, source
+        return entry, entry
+
     def _addon_reconciliation(self, addon_type: str) -> None:
         """Reconciliation process for WordPress addons (theme/plugin).
 
@@ -1048,22 +1068,32 @@ class WordpressCharm(CharmBase):
             return
         current_installed_addons = {t["name"] for t in exec_result.result}
         logger.debug("Currently installed %s %s", addon_type, current_installed_addons)
-        addons_in_config = [
-            t.strip()
+        # Maps each addon's installed name to what ``wp <type> install`` is given.
+        addon_sources = dict(
+            self._parse_addon_entry(t.strip())
             for t in cast(str, self.model.config[f"{addon_type}s"]).split(",")
             if t.strip()
-        ]
+        )
+        for name in addon_sources:
+            if "://" in name:
+                logger.warning(
+                    "%s %r is a URL; it installs under its folder name and is removed on the "
+                    "next reconciliation. Use <slug>=<url> instead.",
+                    addon_type,
+                    name,
+                )
         default_addons = (
             self._WORDPRESS_DEFAULT_THEMES
             if addon_type == "theme"
             else self._WORDPRESS_DEFAULT_PLUGINS
         )
-        desired_addons = set(itertools.chain(addons_in_config, default_addons))
+        desired_addons = set(itertools.chain(addon_sources, default_addons))
         install_addons = desired_addons - current_installed_addons
         uninstall_addons = current_installed_addons - desired_addons
         for addon in install_addons:
-            logger.info("Install %s: %s", addon_type, repr(addon))
-            exec_result = self._wp_addon_install(addon_type=addon_type, addon_name=addon)
+            source = addon_sources.get(addon, addon)
+            logger.info("Install %s: %r from %r", addon_type, addon, source)
+            exec_result = self._wp_addon_install(addon_type=addon_type, addon_name=source)
             if not exec_result.success:
                 raise exceptions.WordPressBlockedStatusException(
                     f"failed to install {addon_type} {addon!r}"

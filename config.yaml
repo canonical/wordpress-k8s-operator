@@ -30,13 +30,15 @@ options:
     type: string
     description: |
       Plugin slugs of plugins to be installed, separated by comma. Including or excluding
-      a default plugin here will have no effect.
+      a default plugin here will have no effect. To install from a URL (e.g. a zip
+      release), use <slug>=<url>, where <slug> is the plugin's folder name inside the zip.
     default: ""
   themes:
     type: string
     description: |
       Theme slugs of themes to be installed, separated by comma. Including or excluding
-      a default theme here will have no effect.
+      a default theme here will have no effect. To install from a URL (e.g. a zip
+      release), use <slug>=<url>, where <slug> is the theme's folder name inside the zip.
     default: ""
   wp_plugin_akismet_key:
     type: string

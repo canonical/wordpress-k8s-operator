@@ -19,5 +19,13 @@ To install multiple plugins at once, append more plugins separated by a comma.
 juju config wordpress-k8s plugins=<plugin-slug>,<plugin-slug>
 ```
 
+To install a plugin that isn't on wordpress.org, for example a zip from a GitHub release,
+give its slug and URL as `<slug>=<url>`. The slug must be the plugin's folder name inside the
+zip, otherwise the charm removes the plugin on the next reconciliation.
+
+```
+juju config wordpress-k8s plugins=<plugin-slug>=https://example.com/<plugin-slug>.zip
+```
+
 Once the configuration is complete, you can navigate to `http://<wordpress-unit-ip>/wp-admin/plugins.php` to
 verify your new plugin installation.

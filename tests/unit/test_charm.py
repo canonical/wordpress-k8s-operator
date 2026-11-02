@@ -596,6 +596,95 @@ def test_plugin_reconciliation(
     )
 
 
+@pytest.mark.parametrize(
+    "entry, expected",
+    [
+        pytest.param("abc", ("abc", "abc"), id="slug"),
+        pytest.param(
+            "my-theme=https://example.com/my-theme.zip",
+            ("my-theme", "https://example.com/my-theme.zip"),
+            id="slug and url",
+        ),
+        pytest.param(
+            "my-theme = https://example.com/a.zip?x=1",
+            ("my-theme", "https://example.com/a.zip?x=1"),
+            id="spaces and query string",
+        ),
+        pytest.param(
+            "https://example.com/a.zip?x=1",
+            ("https://example.com/a.zip?x=1", "https://example.com/a.zip?x=1"),
+            id="plain url with = in query",
+        ),
+        pytest.param("abc=", ("abc=", "abc="), id="empty source"),
+    ],
+)
+def test_parse_addon_entry(entry: str, expected: tuple):
+    """
+    arrange: a themes/plugins config entry.
+    act: parse it.
+    assert: the installed name and install source are split correctly.
+    """
+    assert WordpressCharm._parse_addon_entry(entry) == expected
+
+
+@pytest.mark.parametrize("addon_type", ["theme", "plugin"])
+@pytest.mark.usefixtures("attach_storage")
+def test_addon_reconciliation_from_url(
+    addon_type: str,
+    patch: WordpressPatch,
+    harness: ops.testing.Harness,
+    setup_replica_consensus: typing.Callable[[], dict],
+    setup_database_relation_no_port: typing.Callable[[], typing.Tuple[int, dict]],
+):
+    """
+    arrange: after peer relation established and database ready.
+    act: add a <slug>=<zip url> entry to the themes/plugins config, reconcile again, then
+        remove it.
+    assert: the addon is installed under its slug, kept on later reconciliations, and deleted
+        once removed from the config.
+    """
+    harness.set_can_connect(harness.model.unit.containers["wordpress"], True)
+    setup_replica_consensus()
+    charm: WordpressCharm = typing.cast(WordpressCharm, harness.charm)
+    _, db_info = setup_database_relation_no_port()
+    patch.database.prepare_database(
+        host=db_info["endpoints"],
+        database=db_info["database"],
+        user=db_info["username"],
+        password=db_info["password"],
+    )
+    defaults = set(
+        charm._WORDPRESS_DEFAULT_THEMES
+        if addon_type == "theme"
+        else charm._WORDPRESS_DEFAULT_PLUGINS
+    )
+
+    def installed() -> set:
+        if addon_type == "theme":
+            return patch.container.installed_themes
+        return patch.container.installed_plugins
+
+    harness.update_config(
+        {f"{addon_type}s": "custom=https://example.com/releases/download/v1/custom.zip, abc"}
+    )
+
+    assert installed() == {*defaults, "custom", "abc"}, (
+        "an addon installed from a URL should be kept under its slug"
+    )
+
+    harness.update_config({f"{addon_type}s": "custom=https://example.com/custom.zip, abc"})
+
+    assert installed() == {*defaults, "custom", "abc"}, (
+        "a later reconciliation should not delete an addon installed from a URL"
+    )
+
+    harness.update_config({f"{addon_type}s": "abc"})
+
+    assert installed() == {*defaults, "abc"}, (
+        "removing a URL addon from the config should delete it"
+    )
+
+
 def test_team_map():
     """
     arrange: no arrange.

@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-11-03
+
+- fix: Yoast SEO is pinned to 28.2, which supports the image's WordPress (6.8.1). Yoast SEO
+  28.8 needs WordPress 7.0 and could not be activated. The rock build now fails if a bundled
+  plugin's header requires a newer WordPress.
+
 ## 2026-10-29
 
 - fix: themes and plugins can be installed from a URL with `<slug>=<url>` in the `themes`

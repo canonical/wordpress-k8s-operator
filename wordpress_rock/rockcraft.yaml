@@ -79,6 +79,7 @@ parts:
       - apache2
     plugin: nil
     build-environment:
+      # Also set in get-wordpress-plugins; keep the two in step.
       - WP_VERSION: 6.8.1
     build-packages:
       - curl
@@ -103,6 +104,12 @@ parts:
       - curl
       - unzip
     build-environment:
+      # Keep in step with WP_VERSION in the wordpress part.
+      - WP_VERSION: 6.8.1
+      # A bare <slug> downloads latest-stable; <slug>:<version> pins a version.
+      # Pin a plugin when its latest release needs a newer WordPress than
+      # WP_VERSION. The build fails if any plugin's header requires one.
+      # wordpress-seo 28.8 needs WordPress 7.0.
       - WP_PLUGINS: >-
           404page
           all-in-one-event-calendar
@@ -133,18 +140,22 @@ parts:
           wp-mastodon-share
           wp-polls
           wp-statistics
-          wordpress-seo
+          wordpress-seo:28.2
     override-build: |
-      for plugin in $WP_PLUGINS;
+      for entry in $WP_PLUGINS;
         do
-          curl -sSL "https://downloads.wordpress.org/plugin/${plugin}.latest-stable.zip" -o "${plugin}.zip"
-          unzip -q "${plugin}.zip"
-          rm "${plugin}.zip"
+          slug="${entry%%:*}"
+          version="${entry#*:}"
+          [ "$version" = "$entry" ] && version=latest-stable
+          curl -fsSL "https://downloads.wordpress.org/plugin/${slug}.${version}.zip" -o "${slug}.zip"
+          unzip -q "${slug}.zip"
+          rm "${slug}.zip"
       done
       curl -sSL "https://downloads.wordpress.org/plugin/openid.3.6.1.zip" -o "openid.zip"
       unzip -q "openid.zip"
       rm "openid.zip"
       git apply $CRAFT_PART_SRC/patches/openid.patch
+      bash "$CRAFT_PART_SRC/check_plugin_requirements.sh" "$WP_VERSION" .
       cp -R . $CRAFT_PART_INSTALL
     organize:
       "*": /var/www/html/wp-content/plugins/

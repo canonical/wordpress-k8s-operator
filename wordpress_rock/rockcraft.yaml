@@ -104,8 +104,6 @@ parts:
       - curl
       - unzip
     build-environment:
-      # Keep in step with WP_VERSION in the wordpress part.
-      - WP_VERSION: 6.8.1
       # A bare <slug> downloads latest-stable; <slug>:<version> pins a version.
       # Pin a plugin when its latest release needs a newer WordPress than
       # WP_VERSION. The build fails if any plugin's header requires one.
@@ -155,7 +153,6 @@ parts:
       unzip -q "openid.zip"
       rm "openid.zip"
       git apply $CRAFT_PART_SRC/patches/openid.patch
-      bash "$CRAFT_PART_SRC/check_plugin_requirements.sh" "$WP_VERSION" .
       cp -R . $CRAFT_PART_INSTALL
     organize:
       "*": /var/www/html/wp-content/plugins/
@@ -192,6 +189,20 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/plugins/xubuntu-team-members/
+  check-wordpress-plugin-requirements:
+    after:
+      - get-wordpress-launchpad-integration
+      - get-wordpress-teams-integration
+      - get-openstack-objectstorage-k8s
+      - get-wp-plugin-xubuntu-team-members
+    source: .
+    plugin: nil
+    build-packages:
+      - php
+    override-build: |
+      php "$CRAFT_PART_SRC/check_plugin_requirements.php" \
+        "$CRAFT_STAGE/var/www/html" \
+        "$CRAFT_STAGE/var/www/html/wp-content/plugins"
   # Wordpress themes
   get-light-wordpress-theme:
     after:

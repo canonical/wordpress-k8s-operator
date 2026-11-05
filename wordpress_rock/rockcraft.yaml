@@ -189,20 +189,6 @@ parts:
     source-type: git
     organize:
       "*": /var/www/html/wp-content/plugins/xubuntu-team-members/
-  check-wordpress-plugin-requirements:
-    after:
-      - get-wordpress-launchpad-integration
-      - get-wordpress-teams-integration
-      - get-openstack-objectstorage-k8s
-      - get-wp-plugin-xubuntu-team-members
-    source: .
-    plugin: nil
-    build-packages:
-      - php
-    override-build: |
-      php "$CRAFT_PART_SRC/check_plugin_requirements.php" \
-        "$CRAFT_STAGE/var/www/html" \
-        "$CRAFT_STAGE/var/www/html/wp-content/plugins"
   # Wordpress themes
   get-light-wordpress-theme:
     after:
@@ -311,9 +297,16 @@ parts:
       - get-wp-theme-launchpad
       - get-wp-theme-xubuntu-website
       - get-ubuntu-community-wordpress-theme
+    build-packages:
+      - php-cli
     build-environment:
       - IMAGE_RUN_USER_ID: 584792
       - IMAGE_RUN_GROUP_ID: 584792
+    override-build: |
+      php "$CRAFT_PROJECT_DIR/check_plugin_requirements.php" \
+        "$CRAFT_STAGE/var/www/html" \
+        "$CRAFT_STAGE/var/www/html/wp-content/plugins"
+      craftctl default
     override-prime: |
       craftctl default
       rm -rf **/.git

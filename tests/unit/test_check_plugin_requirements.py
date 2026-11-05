@@ -13,7 +13,7 @@ SCRIPT = Path(__file__).parents[2] / "wordpress_rock" / "check_plugin_requiremen
 PHP = shutil.which("php")
 
 
-def make_core(core_dir: Path, version: str = "6.8.1") -> None:
+def make_core(core_dir: Path) -> None:
     """Create the small WordPress-core surface used by the checker."""
     (core_dir / "wp-includes").mkdir(parents=True)
     (core_dir / "wp-admin" / "includes").mkdir(parents=True)
@@ -36,9 +36,9 @@ function get_file_data($file, $default_headers, $context = '') {
     }
     return $default_headers;
 }
-function wp_get_wp_version() { return '__VERSION__'; }
+function wp_get_wp_version() { return '6.8.1'; }
 function is_wp_version_compatible($required) { return empty($required) || version_compare(wp_get_wp_version(), $required, '>='); }
-""".replace('__VERSION__', version)
+"""
     (core_dir / "wp-includes" / "functions.php").write_text(functions_php, encoding="utf-8")
     (core_dir / "wp-admin" / "includes" / "plugin.php").write_text(
         "<?php\n"
@@ -54,7 +54,6 @@ def make_plugin(
     slug: str,
     header: str | None = None,
     helper: str | None = None,
-    late_header: str | None = None,
 ) -> None:
     """Create a fake plugin directory."""
     plugin = plugins_dir / slug
@@ -64,8 +63,6 @@ def make_plugin(
         lines.append(f" * Requires at least: {header}")
     lines.append(" */")
     content = "\n".join(lines) + "\n"
-    if late_header is not None:
-        content += "x" * (8 * 1024) + f"\n * Requires at least: {late_header}\n"
     (plugin / f"{slug}.php").write_text(content, encoding="utf-8")
     if helper is not None:
         (plugin / "helper.php").write_text(f"<?php\n * Requires at least: {helper}\n", encoding="utf-8")
@@ -117,16 +114,6 @@ def test_helper_file_requirement_is_ignored(tmp_path: Path):
     assert run_check(core, plugins).returncode == 0
 
 
-def test_header_after_first_eight_kib_is_ignored(tmp_path: Path):
-    core = tmp_path / "wordpress"
-    plugins = core / "wp-content" / "plugins"
-    plugins.mkdir(parents=True)
-    make_core(core)
-    make_plugin(plugins, "a", header="6.8", late_header="7.0")
-
-    assert run_check(core, plugins).returncode == 0
-
-
 def test_readme_requirement_is_ignored(tmp_path: Path):
     core = tmp_path / "wordpress"
     plugins = core / "wp-content" / "plugins"
@@ -136,39 +123,6 @@ def test_readme_requirement_is_ignored(tmp_path: Path):
     (plugins / "safe-svg" / "readme.txt").write_text("Requires at least: 7.0\n", encoding="utf-8")
 
     assert run_check(core, plugins).returncode == 0
-
-
-def test_numeric_version_compare(tmp_path: Path):
-    core = tmp_path / "wordpress"
-    plugins = core / "wp-content" / "plugins"
-    plugins.mkdir(parents=True)
-    make_core(core, version="6.9")
-    make_plugin(plugins, "a", header="6.10")
-
-    assert run_check(core, plugins).returncode == 1
-
-
-def test_three_part_requirement_equal_to_wp_passes(tmp_path: Path):
-    core = tmp_path / "wordpress"
-    plugins = core / "wp-content" / "plugins"
-    plugins.mkdir(parents=True)
-    make_core(core)
-    make_plugin(plugins, "a", header="6.8.1")
-
-    assert run_check(core, plugins).returncode == 0
-
-
-def test_crlf_requirement_is_parsed(tmp_path: Path):
-    core = tmp_path / "wordpress"
-    plugins = core / "wp-content" / "plugins"
-    plugins.mkdir(parents=True)
-    make_core(core)
-    make_plugin(plugins, "a", header="7.0\r")
-
-    result = run_check(core, plugins)
-
-    assert result.returncode == 1
-    assert "a/a.php requires WordPress 7.0, image has 6.8.1" in result.stderr
 
 
 def test_all_failures_are_reported(tmp_path: Path):

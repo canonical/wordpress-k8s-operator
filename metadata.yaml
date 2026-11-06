@@ -61,6 +61,7 @@ provides:
 requires:
   database:
     interface: mysql_client
+    limit: 1
   nginx-route:
     interface: nginx-route
     limit: 1

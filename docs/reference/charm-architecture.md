@@ -1,11 +1,17 @@
-(explanation_charm_architecture)=
+---
+myst:
+  html_meta:
+    "description lang=en": "Describes the WordPress charm's architecture, including its containers, OCI image, integrations, and Juju events."
+---
+
+(reference_charm_architecture)=
 
 # Charm architecture
 
 The wordpress-k8s charm aims to provide core functionalities of WordPress with horizontally
 scalable architecture, leveraging its flexible capabilities enhanced by plugins. Operational
 capabilities are enhanced through integration with the
-Canonical Observability Stack ([COS](https://documentation.ubuntu.com/observability/track-3.0/))
+Canonical Observability Stack ({external+cos:doc}`COS <index>`)
 charms.
 
 ## Containers
@@ -83,10 +89,8 @@ To facilitate the WordPress installation process,
 [WordPress CLI](https://make.wordpress.org/cli/handbook/guides/installing/) is embedded in the OCI
 image during the build step. The latest CLI PHP archive file from source is used.
 
-Currently, WordPress version 6.4.3 is used alongside Ubuntu 20.04 LTS base image. The Ubuntu base image
-hasn't yet been upgraded to Ubuntu 22.04 LTS due to an unsupported PHP version 8 for
-`wordpress-launchpad-integration` plugin (which currently supports PHP version 7). All other plugins and themes use
-the latest stable version by default, downloaded from the source.
+Currently, WordPress version 6.8.1 is used alongside an Ubuntu 24.04 LTS base image. All other
+plugins and themes use the latest stable version by default, downloaded from the source.
 
 ## Integrations
 
@@ -161,7 +165,7 @@ secrets in peer-relation databag for upgraded deployment of WordPress if it was 
 
 The `src/charm.py` is the default entry point for a charm and has the `WordpressCharm` Python class which inherits from CharmBase.
 
-CharmBase is the base class from which all Charms are formed, defined by [Ops](https://canonical.com/juju/docs/ops/latest/) (Python framework for developing charms).
+CharmBase is the base class from which all Charms are formed, defined by {external+ops:doc}`Ops <index>` (Python framework for developing charms).
 
 ```{note}
 See more in the Juju docs: {ref}`juju:charm`.

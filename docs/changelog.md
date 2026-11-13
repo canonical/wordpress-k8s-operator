@@ -8,6 +8,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-11-03
+
+- fix: Yoast SEO is pinned to 28.2, which supports the image's WordPress (6.8.1). Yoast SEO
+  28.8 needs WordPress 7.0 and could not be activated. The rock build now fails if a bundled
+  plugin's header requires a newer WordPress.
+
+## 2026-10-29
+
+- fix: themes and plugins can be installed from a URL with `<slug>=<url>` in the `themes`
+  and `plugins` config. Before, a URL entry was installed and then deleted on the next
+  reconciliation, because it never matched the installed folder name.
+
+## 2026-10-19
+
+- chore: moved the documentation tooling to the centrally managed
+  `platform-engineering-documentation-files` Copier template and added a scheduled workflow
+  that keeps it in sync. There is no change to the charm.
+
+## 2026-10-15
+
+- feat: added a `terraform/product` Terraform product module that deploys `wordpress-k8s`
+  in a Kubernetes model and a bundled `mysql` in a separate machine model, integrated through
+  a cross-model offer. The bundled `mysql` is skipped when `mysql_integration` is set, and
+  `ingress_integration` and `logging_integration` integrate WordPress with existing providers.
+
+## 2026-10-14
+
+- chore: added a `terraform/charm` Terraform module for the `wordpress-k8s` charm,
+  compliant with the CC008 Charm Terraform Standard. Added the
+  `terraform_modules_compliance.yaml`, `terraform_modules_release.yaml`,
+  `generate_terraform_docs.yaml` and `test_terraform_modules.yaml` CI workflows.
+
+## 2026-10-13
+
+- docs: Updated the home page to the "mature" home page pattern, with a categorised "In this documentation" table.
+- docs: Updated the WordPress and Ubuntu versions in the charm architecture page.
+- docs: Added `cos` and `ops` intersphinx mappings.
+
 ## 2026-07-08
 
 - chore(docs): Update Intersphinx mapping and links to documentation sets that migrated

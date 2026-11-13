@@ -11,3 +11,4 @@ rclone
 redeployments
 WAF
 WordPress
+Yoast

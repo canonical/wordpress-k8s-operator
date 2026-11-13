@@ -38,6 +38,8 @@ header:
   - 'lib/**'
   - 'wordpress_rock/patches/**'
   - '.readthedocs.yaml'
+  - '.copier-answers.yml'
   - 'docs/**'
   - 'uv.lock'
+  - '**/MAJOR_VERSION'
   comment: on-failure

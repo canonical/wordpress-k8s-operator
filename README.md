@@ -84,7 +84,7 @@ make vale
 ## Learn more
 
 - [Read more](https://canonical.com/juju/docs/wordpress-k8s-charm/)
-- [Developer documentation](https://codex.wordpress.org/Developer_Documentation)
+- [Developer documentation](https://developer.wordpress.org/)
 - [Official webpage](https://wordpress.com)
 - [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 

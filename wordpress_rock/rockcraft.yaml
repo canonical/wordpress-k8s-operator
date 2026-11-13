@@ -103,6 +103,10 @@ parts:
       - curl
       - unzip
     build-environment:
+      # A bare <slug> downloads latest-stable; <slug>:<version> pins a version.
+      # Pin a plugin when its latest release needs a newer WordPress than
+      # the image ships. The build fails if any plugin's header requires one.
+      # wordpress-seo 28.8 needs WordPress 7.0.
       - WP_PLUGINS: >-
           404page
           all-in-one-event-calendar
@@ -133,19 +137,25 @@ parts:
           wp-mastodon-share
           wp-polls
           wp-statistics
-          wordpress-seo
+          wordpress-seo:28.2
     override-build: |
-      for plugin in $WP_PLUGINS;
+      # Work in a separate folder so only plugins, not this part's source
+      # files, are installed into wp-content/plugins.
+      mkdir plugins && cd plugins
+      for entry in $WP_PLUGINS;
         do
-          curl -sSL "https://downloads.wordpress.org/plugin/${plugin}.latest-stable.zip" -o "${plugin}.zip"
-          unzip -q "${plugin}.zip"
-          rm "${plugin}.zip"
+          slug="${entry%%:*}"
+          version="${entry#*:}"
+          [ "$version" = "$entry" ] && version=latest-stable
+          curl -fsSL "https://downloads.wordpress.org/plugin/${slug}.${version}.zip" -o "${slug}.zip"
+          unzip -q "${slug}.zip"
+          rm "${slug}.zip"
       done
       curl -sSL "https://downloads.wordpress.org/plugin/openid.3.6.1.zip" -o "openid.zip"
       unzip -q "openid.zip"
       rm "openid.zip"
-      git apply $CRAFT_PART_SRC/patches/openid.patch
-      cp -R . $CRAFT_PART_INSTALL
+      git apply "$CRAFT_PART_SRC/patches/openid.patch"
+      cp -R . "$CRAFT_PART_INSTALL"
     organize:
       "*": /var/www/html/wp-content/plugins/
   ## Plugins fetched via git
@@ -289,9 +299,17 @@ parts:
       - get-wp-theme-launchpad
       - get-wp-theme-xubuntu-website
       - get-ubuntu-community-wordpress-theme
+    build-packages:
+      - php-cli
     build-environment:
       - IMAGE_RUN_USER_ID: 584792
       - IMAGE_RUN_GROUP_ID: 584792
+    override-build: |
+      # Fail if a bundled plugin needs a newer WordPress than the image ships.
+      php "$CRAFT_PROJECT_DIR/check_plugin_requirements.php" \
+        "$CRAFT_STAGE/var/www/html" \
+        "$CRAFT_STAGE/var/www/html/wp-content/plugins"
+      craftctl default
     override-prime: |
       craftctl default
       rm -rf **/.git

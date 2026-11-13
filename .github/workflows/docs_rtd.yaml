@@ -6,5 +6,6 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/docs_rtd.yaml@main
     secrets: inherit
     with:
+      python-version: '3.12'
       enable-sphinx-python-dependency-build-checks: false
 

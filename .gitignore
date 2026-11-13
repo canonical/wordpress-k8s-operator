@@ -5,6 +5,8 @@ build
 .coverage
 __pycache__
 **/*.rock
+**/.terraform/
+**/.terraform.lock.hcl
 
 # BEGIN VALE WORKFLOW IGNORE
 .vale/styles/*

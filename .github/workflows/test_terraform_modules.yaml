@@ -12,13 +12,13 @@ on:
 
 jobs:
   terraform-tests-k8s:
-    uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@c81a9cdd5acfba473f2f52a4cfbeed7132062df1  # main
+    uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@8c89aed9e2cd37a613b172cd67fd672ae8dc05f6  # main
     secrets: inherit
     with:
       k8s-controller: true
       terraform-directories: '["terraform/charm"]'
   terraform-tests-product:
-    uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@c81a9cdd5acfba473f2f52a4cfbeed7132062df1  # main
+    uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@8c89aed9e2cd37a613b172cd67fd672ae8dc05f6  # main
     secrets: inherit
     with:
       k8s-controller: false

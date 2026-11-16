@@ -18,9 +18,9 @@ Operators control charm behavior through configuration options and Juju
 actions. Understanding the overall charm architecture provides the structural
 context needed to see how those settings and actions interact at runtime.
 
-* [Configurations](configurations.md)
-* [Actions](actions.md)
-* [Charm architecture](charm-architecture.md)
+* {ref}`Configurations <reference_configurations>`
+* {ref}`Actions <reference_actions>`
+* {ref}`Charm architecture <reference_charm_architecture>`
 
 ## Connectivity
 
@@ -29,8 +29,8 @@ applications through Juju relation endpoints. Correct connectivity
 configuration is essential for both end-user access and cross-application
 integration.
 
-* [Relation endpoints](relation-endpoints.md)
-* [External access](external-access.md)
+* {ref}`Relation endpoints <reference_relation_endpoints>`
+* {ref}`External access <reference_external_access>`
 
 ## Extensibility
 
@@ -38,8 +38,8 @@ Your WordPress site's functionality is extended through plugins and themes. The 
 provides mechanisms for adding or customizing them within a
 Juju-managed deployment.
 
-* [Plugins](plugins.md)
-* [Themes](themes.md)
+* {ref}`Plugins <reference_plugins>`
+* {ref}`Themes <reference_themes>`
 
 ```{toctree}
 :hidden:

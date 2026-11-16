@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-11-16
+
+- docs(chore): Update landing pages to use `{ref}`-based references over direct paths.
+
 ## 2026-11-03
 
 - fix: Yoast SEO is pinned to 28.2, which supports the image's WordPress (6.8.1). Yoast SEO

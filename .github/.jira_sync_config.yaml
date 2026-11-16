@@ -1,9 +1,15 @@
+# template-version: 1
+# This file is synced from canonical/platform-engineering-charm-template.
+# Remove this comment block to opt this file out of automatic template propagation.
+# See https://github.com/canonical/gh-jira-sync-bot for config
 settings:
   add_gh_comment: true
   components:
   - WordPress
-  epic_key: ISD-3981
   jira_project_key: ISD
+  labels:
+  - bug
+  - enhancement
   label_mapping:
     bug: Bug
     enhancement: Story

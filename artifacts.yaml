@@ -1,0 +1,4 @@
+version: 1
+rocks:
+  - name: wordpress
+    rockcraft-yaml: wordpress_rock/rockcraft.yaml

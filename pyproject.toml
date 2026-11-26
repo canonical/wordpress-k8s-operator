@@ -34,7 +34,9 @@ lint = [
   "mypy",
   "pep8-naming",
   "pillow",
-  "pytest==9.2.0",
+  # pytest-operator pins pytest-asyncio<0.23, which is incompatible with pytest>=9.2
+  # (FixtureManager._arg2fixturedefs was removed).
+  "pytest==9.1.1",
   "pytest-cov",
   "pytest-operator",
   "python-keystoneclient",
@@ -66,7 +68,9 @@ integration = [
   "juju>=2.9,<3",
   "kubernetes",
   "pillow",
-  "pytest==9.2.0",
+  # pytest-operator pins pytest-asyncio<0.23, which is incompatible with pytest>=9.2
+  # (FixtureManager._arg2fixturedefs was removed).
+  "pytest==9.1.1",
   "pytest-cov",
   "pytest-operator",
   "python-keystoneclient",
@@ -80,7 +84,9 @@ integration-juju3 = [
   "kubernetes",
   "macaroonbakery==1.3.4",
   "pillow",
-  "pytest==9.2.0",
+  # pytest-operator pins pytest-asyncio<0.23, which is incompatible with pytest>=9.2
+  # (FixtureManager._arg2fixturedefs was removed).
+  "pytest==9.1.1",
   "pytest-cov",
   "pytest-operator",
   "python-keystoneclient",

@@ -48,6 +48,13 @@
         "major"
       ],
       "enabled": false
+    },
+    {
+      "description": "pytest-operator pins pytest-asyncio<0.23, which breaks with pytest>=9.2 (FixtureManager._arg2fixturedefs was removed). Lift this cap once pytest-operator supports a newer pytest-asyncio or the integration tests move off pytest-operator.",
+      "matchPackageNames": [
+        "pytest"
+      ],
+      "allowedVersions": "<9.2"
     }
   ],
   "regexManagers": [

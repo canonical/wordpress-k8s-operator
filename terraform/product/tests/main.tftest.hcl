@@ -84,7 +84,7 @@ run "basic_deploy" {
   }
 
   assert {
-    condition     = output.metadata.risk == "edge"
-    error_message = "the metadata should report the requested risk"
+    condition     = juju_application.mysql[0].charm[0].channel == "8.0/edge"
+    error_message = "the bundled mysql channel should follow the requested risk"
   }
 }

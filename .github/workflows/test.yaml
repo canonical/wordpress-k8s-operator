@@ -19,7 +19,7 @@ jobs:
       with-uv: true
   integration-test:
     name: Integration Test
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: yanksyoon/operator-workflows/.github/workflows/integration_test.yaml@fix/isd-512-artifact-default
     secrets: inherit
     with:
       extra-arguments: >-
@@ -39,7 +39,7 @@ jobs:
       with-uv: true
   integration-test-juju3:
     name: Integration Test on Juju3
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: yanksyoon/operator-workflows/.github/workflows/integration_test.yaml@fix/isd-512-artifact-default
     secrets: inherit
     with:
       extra-arguments: >-

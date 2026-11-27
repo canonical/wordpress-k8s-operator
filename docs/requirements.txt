@@ -33,7 +33,6 @@ sphinx-llm==1.1.0
 sphinxcontrib-mermaid==2.1.1
 
 # Vale dependencies
-rst2html==2020.7.4
 vale==3.22.0.0
 
 # Downstream-specific dependencies (tutorial notebook)
